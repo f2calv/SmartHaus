@@ -229,6 +229,34 @@ try
         })
         ;
 
+    builder.Services.Configure<ApiBehaviorOptions>(options =>
+    {
+        options.InvalidModelStateResponseFactory = context =>
+        {
+            var apiLogger = context.HttpContext.RequestServices
+                .GetRequiredService<ILoggerFactory>()
+                .CreateLogger("ApiModelValidation");
+
+            var errors = context.ModelState
+                .Where(state => state.Value?.Errors.Count > 0)
+                .ToDictionary(
+                    state => state.Key,
+                    state => state.Value!.Errors.Select(error => error.ErrorMessage).ToArray());
+
+            apiLogger.LogWarning(
+                "{ClassName} invalid model state for {Method} {Path} with QueryString={QueryString} ContentType={ContentType} ContentLength={ContentLength} Errors={Errors}",
+                nameof(Program),
+                context.HttpContext.Request.Method,
+                context.HttpContext.Request.Path,
+                context.HttpContext.Request.QueryString.ToString(),
+                context.HttpContext.Request.ContentType,
+                context.HttpContext.Request.ContentLength,
+                errors);
+
+            return new BadRequestObjectResult(context.ModelState);
+        };
+    });
+
     if (enabledFeatures.Contains(FeatureNames.Buderus))
         mvcBuilder.AddApplicationPart(typeof(BuderusController).Assembly);
     if (enabledFeatures.Contains(FeatureNames.DoorBird))

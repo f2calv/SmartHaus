@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
+public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]
@@ -52,6 +52,15 @@ public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : Contro
         [FromQuery] string? camera_name = null,
         [FromQuery] double? score = null)
     {
+        logger.LogDebug(
+            "{ClassName} smart detect webhook received with Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, QueryString={QueryString}",
+            nameof(UbiquitiController),
+            type,
+            camera_id,
+            camera_name,
+            score,
+            HttpContext.Request.QueryString.ToString());
+
         var eventType = type?.ToLowerInvariant() switch
         {
             "person" => UbiquitiEventType.SmartDetectPerson,
@@ -61,7 +70,16 @@ public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : Contro
             _ => (UbiquitiEventType?)null,
         };
         if (eventType is null)
+        {
+            logger.LogWarning(
+                "{ClassName} unknown smart detect type {Type} for {Method} {Path} with QueryString={QueryString}",
+                nameof(UbiquitiController),
+                type,
+                HttpContext.Request.Method,
+                HttpContext.Request.Path,
+                HttpContext.Request.QueryString.ToString());
             return BadRequest($"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.");
+        }
 
         await ubiquitiQuerySvc.SendAlert(eventType.Value, camera_id, camera_name, score);
         return Ok("ok");
