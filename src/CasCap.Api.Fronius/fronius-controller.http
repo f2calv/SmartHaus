@@ -1,0 +1,52 @@
+### Fronius Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get inverter snapshot
+GET {{baseUrl}}/api/v1/fronius
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get inverter readings (default limit 100)
+GET {{baseUrl}}/api/v1/fronius/readings
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get inverter readings with custom limit
+GET {{baseUrl}}/api/v1/fronius/readings?limit=50
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get power flow realtime data
+GET {{baseUrl}}/api/v1/fronius/powerflow
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get inverter realtime data (CommonInverterData)
+GET {{baseUrl}}/api/v1/fronius/inverter/realtimedata
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get inverter realtime data (MinMaxInverterData)
+GET {{baseUrl}}/api/v1/fronius/inverter/realtimedata?dataCollection=MinMaxInverterData
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get inverter info
+GET {{baseUrl}}/api/v1/fronius/inverter/info
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get active device info
+GET {{baseUrl}}/api/v1/fronius/devices
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get meter realtime data (system scope)
+GET {{baseUrl}}/api/v1/fronius/meter
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get meter realtime data (device scope)
+GET {{baseUrl}}/api/v1/fronius/meter?scope=Device&deviceId=0
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get storage realtime data (system scope)
+GET {{baseUrl}}/api/v1/fronius/storage
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get storage realtime data (device scope)
+GET {{baseUrl}}/api/v1/fronius/storage?scope=Device&deviceId=0
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

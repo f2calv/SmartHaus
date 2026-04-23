@@ -1,0 +1,63 @@
+<Project>
+
+  <PropertyGroup>
+    <RootNamespace>CasCap</RootNamespace>
+    <LangVersion>14.0</LangVersion>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <!--nullable we disable on a per project basis-->
+    <Nullable>enable</Nullable>
+    <UserSecretsId>75a41453-de3c-4bd8-ad0b-068430f8bb20</UserSecretsId>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+
+  <!-- Exclude test projects from XML documentation requirements -->
+  <PropertyGroup Condition="$(MSBuildProjectName.Contains('Test'))">
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- https://learn.microsoft.com/en-us/dotnet/core/project-sdk/msbuild-props -->
+    <!-- default for IsPackable is true, we change this to false here so that we must be explicit in each project when creating NuGet packages -->
+    <IsPackable>false</IsPackable>
+
+    <Authors>Alex Vincent</Authors>
+    <!-- <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile> -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <PackageProjectUrl>https://github.com/f2calv/SmartHaus</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <AllowedOutputExtensionsInPackageBuildOutputFolder>$(AllowedOutputExtensionsInPackageBuildOutputFolder);.pdb</AllowedOutputExtensionsInPackageBuildOutputFolder>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' OR '$(TF_BUILD)' == 'true'">
+    <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <!-- IDE1006 - suppress roslyn naming convention messages -->
+    <!-- IDE0079 - Remove unnecessary suppression -->
+    <!-- IDE0042 - Variable declaration can be deconstructed -->
+    <!-- CS0162 - Unreachable code detected. -->
+    <!-- CS1574 - XML comment has cref attribute that could not be resolved -->
+    <!-- S125 - Remove this commented out code. -->
+    <!-- NETSDK1233 - Targeting .NET 10.0 or higher in Visual Studio 2022 XX.XX is not supported. -->
+    <!-- NU1901 - Package has a known low severity vulnerability. -->
+    <!-- NU1902 - Package has a known moderate severity vulnerability. -->
+    <!-- NU1903 - Package has a known high severity vulnerability. -->
+    <NoWarn>IDE1006;IDE0079;IDE0042;CS0162;CS1574;S125;NETSDK1233;NU1901;NU1902;NU1903</NoWarn>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <PackageIcon>icon.png</PackageIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\icon.png" Pack="true" PackagePath="\"/>
+    <None Include="README.md" Pack="true" PackagePath="\" Condition="Exists('README.md')"/>
+  </ItemGroup>
+
+</Project>

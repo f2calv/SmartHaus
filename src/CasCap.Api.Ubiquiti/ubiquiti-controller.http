@@ -1,0 +1,17 @@
+### Ubiquiti Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get current snapshot
+GET {{baseUrl}}/api/v1/ubiquiti
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Event callback - motion detected (no auth required)
+GET {{baseUrl}}/api/v1/ubiquiti/event/motion?camera_id=ABC123&camera_name=Front+Door
+
+### Event callback - smart detection (no auth required)
+GET {{baseUrl}}/api/v1/ubiquiti/event/smart?type=person&camera_id=ABC123&camera_name=Front+Door&score=0.95
+
+### Event callback - doorbell ring (no auth required)
+GET {{baseUrl}}/api/v1/ubiquiti/event/ring?camera_id=ABC123&camera_name=Front+Door

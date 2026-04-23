@@ -1,0 +1,26 @@
+### Shelly Cloud API (3rd party)
+### Direct calls to the Shelly Cloud REST API
+### Auth key is sent in the POST form body
+### See: https://shelly-api-docs.shelly.cloud/cloud-control-api/
+
+@baseUrl = {{$dotenv SHELLY_BASE_URL}}
+@authKey = {{$dotenv SHELLY_AUTH_KEY}}
+@deviceId = YOUR_SHELLY_DEVICE_ID
+
+### Get device status
+POST {{baseUrl}}/device/status
+Content-Type: application/x-www-form-urlencoded
+
+auth_key={{authKey}}&id={{deviceId}}
+
+### Turn relay on
+POST {{baseUrl}}/device/relay/control
+Content-Type: application/x-www-form-urlencoded
+
+auth_key={{authKey}}&id={{deviceId}}&channel=0&turn=on
+
+### Turn relay off
+POST {{baseUrl}}/device/relay/control
+Content-Type: application/x-www-form-urlencoded
+
+auth_key={{authKey}}&id={{deviceId}}&channel=0&turn=off

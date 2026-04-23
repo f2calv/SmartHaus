@@ -1,0 +1,25 @@
+### Buderus Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get current snapshot
+GET {{baseUrl}}/api/v1/buderus
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get all cached values
+GET {{baseUrl}}/api/v1/buderus/values
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get cached values by datapoint id
+GET {{baseUrl}}/api/v1/buderus/dhwCircuits
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set a datapoint value
+PUT {{baseUrl}}/api/v1/buderus/heatingCircuits/hc1/temperatureRoomSetpoint
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "value": 21.0
+}

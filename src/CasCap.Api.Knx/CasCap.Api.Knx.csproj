@@ -1,0 +1,50 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>true</IsPackable>
+    <Description>.NET client library for KNX building automation — connects via KNXnet/IP tunnelling or routing, monitors group-address telegrams, and fans events out to configurable sinks.</Description>
+    <PackageTags>knx,knxnet-ip,building-automation,smart-home,home-automation,dotnet</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\GetKnxState.lua" />
+    <EmbeddedResource Include="Resources\SetKnxState.lua" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CasCap.App.Tests" />
+    <InternalsVisibleTo Include="CasCap.Api.Knx.Tests" />
+    <InternalsVisibleTo Include="CasCap.Api.Knx.Sinks" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Asp.Versioning.Mvc" />
+    <PackageReference Include="Knx.Falcon.Sdk" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
+    <PackageReference Include="Tiveria.Home.Knx" />
+    <PackageReference Include="SolarCalculator" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Caching\CasCap.Common.Caching.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Serialization.Json\CasCap.Common.Serialization.Json.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Serialization.MessagePack\CasCap.Common.Serialization.MessagePack.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions.Diagnostics.HealthChecks\CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.Caching" />
+    <PackageReference Include="CasCap.Common.Configuration" />
+    <PackageReference Include="CasCap.Common.Extensions" />
+    <PackageReference Include="CasCap.Common.Serialization.MessagePack" />
+    <PackageReference Include="CasCap.Common.Serialization.Json" />
+    <PackageReference Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" />
+  </ItemGroup>
+
+</Project>

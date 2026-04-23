@@ -1,0 +1,41 @@
+### Signal CLI Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+@phoneNumber = {{$dotenv SIGNAL_CLI_PHONE_NUMBER}}
+
+### Get version and build info
+GET {{baseUrl}}/api/v1/signalcli/about
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get signal-cli configuration
+GET {{baseUrl}}/api/v1/signalcli/configuration
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List registered accounts
+GET {{baseUrl}}/api/v1/signalcli/accounts
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List contacts for account
+GET {{baseUrl}}/api/v1/signalcli/contacts?number={{phoneNumber}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List groups for account
+GET {{baseUrl}}/api/v1/signalcli/groups?number={{phoneNumber}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List linked devices for account
+GET {{baseUrl}}/api/v1/signalcli/devices?number={{phoneNumber}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List identities for account
+GET {{baseUrl}}/api/v1/signalcli/identities?number={{phoneNumber}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List attachments
+GET {{baseUrl}}/api/v1/signalcli/attachments
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List sticker packs for account
+GET {{baseUrl}}/api/v1/signalcli/sticker-packs?number={{phoneNumber}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

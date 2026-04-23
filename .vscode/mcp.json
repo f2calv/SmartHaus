@@ -1,0 +1,114 @@
+{
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "grafana-mcp-url",
+      "description": "Grafana MCP SSE endpoint URL (e.g. https://grafana-mcp.example.com/sse)"
+    },
+    {
+      "type": "promptString",
+      "id": "haus-base-url",
+      "description": "Haus API base URL (e.g. https://haus.example.com)"
+    },
+    {
+      "type": "promptString",
+      "id": "haus-basic-auth",
+      "description": "Haus MCP Basic Auth (base64-encoded username:password)",
+      "password": true
+    }
+  ],
+  "servers": {
+    "grafana": {
+      "type": "http",
+      "url": "${input:grafana-mcp-url}"
+    },
+    "hausBuderusDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/buderus"
+    },
+    "hausBuderus": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/buderus",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausDoorBirdDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/doorbird"
+    },
+    "hausDoorBird": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/doorbird",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausFroniusDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/fronius"
+    },
+    "hausFronius": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/fronius",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausKnxDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/knx"
+    },
+    "hausKnx": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/knx",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausShellyDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/shelly"
+    },
+    "hausShelly": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/shelly",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausSicceDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/sicce"
+    },
+    "hausSicce": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/sicce",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausUbiquitiDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/ubiquiti"
+    },
+    "hausUbiquiti": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/ubiquiti",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    },
+    "hausWizDev": {
+      "type": "http",
+      "url": "http://localhost:8080/mcp/wiz"
+    },
+    "hausWiz": {
+      "type": "http",
+      "url": "${input:haus-base-url}/mcp/wiz",
+      "headers": {
+        "Authorization": "Basic ${input:haus-basic-auth}"
+      }
+    }
+  }
+}

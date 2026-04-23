@@ -1,0 +1,212 @@
+# =============================================================================
+# SmartHaus — Docker Compose
+# =============================================================================
+#
+# Single compose file with profiles for different use cases.
+#
+# ── Local Development (default) ──────────────────────────────────────────────
+#   Starts infrastructure services only. The application runs from Visual
+#   Studio / dotnet run, with appsettings.Development.json pointing here.
+#
+#   docker compose up
+#
+# ── Visitor Demo ─────────────────────────────────────────────────────────────
+#   Self-contained demo. Builds the app from source and launches the EdgeHardware
+#   feature — monitors CPU temperature and GPU telemetry with no external hardware
+#   dependencies. Ollama provides local LLM inference with GPU support.
+#
+#   docker compose --profile demo up --build
+#
+#   After startup, wait for the Ollama model pull to finish:
+#     docker compose --profile demo logs ollama-init -f
+#
+#   Then send test events using ubiquiti-demo.http or curl:
+#     curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
+#
+#   Or query the EdgeHardware snapshot:
+#     curl http://localhost:8080/api/v1.0/edgehardware
+#
+# Service endpoints:
+#   Redis            : localhost:6379
+#   P3x Redis UI     : http://localhost:7843
+#   OTEL Collector   : localhost:4317 (gRPC) / 4318 (HTTP)
+#   Azurite          : localhost:10000 (Blob) / 10001 (Queue) / 10002 (Table)
+#   Ollama           : http://localhost:11434        [demo profile]
+#   signal-cli REST  : http://localhost:8081          [demo profile]
+#   SmartHaus API    : http://localhost:8080/swagger   [demo profile]
+# =============================================================================
+
+# =============================================================================
+# Services
+# =============================================================================
+services:
+
+  # ---------- Infrastructure (always started) ----------
+
+  redis:
+    image: redis
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    ports:
+      - 6379:6379
+    volumes:
+      - ./.docker/redis.conf:/usr/local/etc/redis/redis.conf
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  p3x:
+    image: patrikx3/p3x-redis-ui
+    ports:
+      - 7843:7843
+    volumes:
+      - ./.docker/p3x.json:/settings/.p3xrs-redis-ui.json
+    depends_on:
+      - redis
+
+  otelcol:
+    image: otel/opentelemetry-collector
+    ports:
+      - 4317:4317
+      - 4318:4318
+    volumes:
+      - ./.docker/otelcol.yaml:/etc/otelcol/config.yaml
+
+  azurite:
+    image: mcr.microsoft.com/azure-storage/azurite
+    command: azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    ports:
+      - 10000:10000
+      - 10001:10001
+      - 10002:10002
+    volumes:
+      - azurite_data:/data
+
+  # ---------- Demo profile: Ollama ----------
+
+  ollama:
+    profiles: [ demo ]
+    image: ollama/ollama:latest
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama_data:/root/.ollama
+    environment:
+      OLLAMA_NUM_PARALLEL: 1
+      OLLAMA_MAX_LOADED_MODELS: 1
+    # GPU support — requires NVIDIA Container Toolkit on the host.
+    # To run on CPU only, remove or comment out the deploy block.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:11434 || exit 1" ]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 10s
+
+  # One-shot service that pulls the Ollama model after the server is healthy.
+  # Monitor progress: docker compose --profile demo logs ollama-init -f
+  ollama-init:
+    profiles: [ demo ]
+    image: ollama/ollama:latest
+    depends_on:
+      ollama:
+        condition: service_healthy
+    environment:
+      OLLAMA_HOST: http://ollama:11434
+    entrypoint: [ "sh", "-c", "ollama pull qwen3.5:4b" ]
+    restart: "no"
+
+  # ---------- Demo profile: signal-cli ----------
+
+  # signal-cli REST API — enables Signal messaging with the Comms feature.
+  # Register a phone number via the API after startup:
+  #   POST http://localhost:8081/v1/register/<number>
+  # or link an existing device via QR code:
+  #   GET  http://localhost:8081/v1/qrcodelink?device_name=haus-demo
+  signalcli:
+    profiles: [ demo ]
+    image: bbernhard/signal-cli-rest-api:latest
+    ports:
+      - 8081:8080
+    environment:
+      MODE: json-rpc
+    volumes:
+      - signalcli_data:/home/.local/share/signal-cli
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -sf http://localhost:8080/v1/health || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 15s
+
+  # ---------- Demo profile: SmartHaus (EdgeHardware + Comms) ----------
+
+  smarthaus:
+    profiles: [ demo ]
+    build:
+      context: .
+      args:
+        CONFIGURATION: Release
+    ports:
+      - 8080:8080
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+
+      # Feature selection
+      CasCap__FeatureConfig__EnabledFeatures: EdgeHardware,Ubiquiti,Comms
+
+      # Container hostname overrides (Development.json uses localhost, compose uses container names)
+      ConnectionStrings__Redis: redis:6379,allowAdmin=true,abortConnect=false
+      ConnectionStrings__OtlpExporter: http://otelcol:4317/
+      CasCap__CachingConfig__RemoteCacheConnectionString: redis:6379,allowAdmin=true,abortConnect=false
+      CasCap__SignalRHubConfig__SignalRHub: http://smarthaus:8080
+      CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
+
+      # Azurite connection strings (compose uses azurite hostname instead of 127.0.0.1)
+      CasCap__EdgeHardwareConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__UbiquitiConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__BuderusConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__DoorBirdConfig__AzureBlobStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;BlobEndpoint=http://azurite:10000/devstoreaccount1;
+      CasCap__DoorBirdConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__FroniusConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__KnxConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__ShellyConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__MieleConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+      CasCap__WizConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
+
+      # AI — all providers point at the single Ollama instance
+      CasCap__AIConfig__Providers__EdgeOllamaGpu__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeOllamaGpu__ModelName: qwen3.5:4b
+      CasCap__AIConfig__Providers__EdgeOllamaGpuVL__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeOllamaCpuVLC__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeOllamaWhisper__Endpoint: http://ollama:11434
+    depends_on:
+      redis:
+        condition: service_healthy
+      otelcol:
+        condition: service_started
+      signalcli:
+        condition: service_healthy
+    healthcheck:
+      test: [ "CMD", "curl", "-sf", "http://localhost:8080/healthz/live" ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
+    restart: unless-stopped
+
+# =============================================================================
+# Volumes
+# =============================================================================
+volumes:
+  azurite_data:
+  ollama_data:
+  signalcli_data:

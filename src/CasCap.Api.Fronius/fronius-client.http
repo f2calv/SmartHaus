@@ -1,0 +1,32 @@
+### Fronius Solar API (3rd party device)
+### Direct calls to the Fronius Symo Gen24 inverter on the local network
+### No authentication required
+
+@baseUrl = {{$dotenv FRONIUS_BASE_URL}}
+
+### Get power flow realtime data
+GET {{baseUrl}}/solar_api/v1/GetPowerFlowRealtimeData.fcgi
+
+### Get inverter realtime data (CommonInverterData)
+GET {{baseUrl}}/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=CommonInverterData
+
+### Get inverter realtime data (MinMaxInverterData)
+GET {{baseUrl}}/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceId=1&DataCollection=MinMaxInverterData
+
+### Get inverter info
+GET {{baseUrl}}/solar_api/v1/GetInverterInfo.cgi
+
+### Get active device info
+GET {{baseUrl}}/solar_api/v1/GetActiveDeviceInfo.cgi
+
+### Get meter realtime data (system scope)
+GET {{baseUrl}}/solar_api/v1/GetMeterRealtimeData.cgi?Scope=System
+
+### Get meter realtime data (device scope)
+GET {{baseUrl}}/solar_api/v1/GetMeterRealtimeData.cgi?Scope=Device&DeviceId=0
+
+### Get storage realtime data (system scope)
+GET {{baseUrl}}/solar_api/v1/GetStorageRealtimeData.cgi?Scope=System
+
+### Get storage realtime data (device scope)
+GET {{baseUrl}}/solar_api/v1/GetStorageRealtimeData.cgi?Scope=Device&DeviceId=0

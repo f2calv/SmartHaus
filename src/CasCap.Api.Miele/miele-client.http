@@ -1,0 +1,60 @@
+### Miele Cloud API (3rd party)
+### Direct calls to the Miele 3rd Party Cloud API
+### OAuth Bearer token must be obtained from the Miele developer portal
+### See: https://www.miele.com/developer/
+
+@baseUrl = {{$dotenv MIELE_BASE_URL}}
+@token = {{$dotenv MIELE_AUTH_TOKEN}}
+@deviceId = YOUR_MIELE_DEVICE_ID
+
+### Get all devices
+GET {{baseUrl}}/devices
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Get all devices (short)
+GET {{baseUrl}}/short/devices
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Get a specific device
+GET {{baseUrl}}/devices/{{deviceId}}
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Get device identification
+GET {{baseUrl}}/devices/{{deviceId}}/ident
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Get device state
+GET {{baseUrl}}/devices/{{deviceId}}/state
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Get available device actions
+GET {{baseUrl}}/devices/{{deviceId}}/actions
+Authorization: Bearer {{token}}
+
+### Execute device action (e.g. start)
+PUT {{baseUrl}}/devices/{{deviceId}}/actions
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "processAction": 1
+}
+
+### Get available programs
+GET {{baseUrl}}/devices/{{deviceId}}/programs
+Authorization: Bearer {{token}}
+Accept-Language: en
+
+### Start a program
+PUT {{baseUrl}}/devices/{{deviceId}}/programs
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "programId": 1
+}

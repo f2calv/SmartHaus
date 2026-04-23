@@ -1,0 +1,98 @@
+name: _gitops-helm-update
+
+on:
+  workflow_call:
+    inputs:
+      manifest-paths:
+        type: string
+        description: Accepts multiple manifest file paths when separated by a space e.g. src/workloads/file1.yaml src/workloads/file2.yaml
+        required: true
+      tag:
+        type: string
+        description: e.g. 1.2.3
+        required: true
+      tag-override:
+        type: string
+        description: e.g. latest, latest-dev
+      namespace:
+        type: string
+        description: Destination Kubernetes namespace for the application.
+        required: true
+      image-registry:
+        type: string
+        description: e.g. ghcr.io/gh-user, xyz.azurecr.io or docker.io
+        required: true
+      image-repository:
+        type: string
+        description: e.g. [optional-prefix/]myimage
+        required: true
+      chart-registry:
+        type: string
+        description: e.g. ghcr.io/gh-user, xyz.azurecr.io or docker.io
+      chart-registry-username:
+        type: string
+      chart-registry-password:
+        type: string
+      chart-repository:
+        type: string
+        description: e.g. [optional-prefix/]charts/myname
+      gitops-repo:
+        type: string
+        description: e.g. gh-user/my-repo-name
+      gitops-repo-path:
+        type: string
+        description: Path where the GitOps repository is checked-out to.
+        default: .
+      gitops-repo-branch:
+        type: string
+        description: e.g. main
+        default: main
+      gitops-repo-update:
+        type: boolean
+        description: If 'false' then skips the git operations entirely, e.g. action runs in demo mode
+        default: true
+      gitops-repo-user-name:
+        type: string
+        description: e.g. GitHub Actions Bot
+        default: GitHub Actions Bot
+      gitops-repo-user-email:
+        type: string
+        description: e.g. github-actions[bot]@users.noreply.github.com
+        default: github-actions[bot]@users.noreply.github.com
+      devcontainer-path: #Note: create new action for this
+        type: string
+        default: .devcontainer/devcontainer.json
+
+jobs:
+  gha-gitops-helm-update:
+    runs-on: ubuntu-latest
+    if: github.actor != 'dependabot[bot]'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          repository: ${{ inputs.gitops-repo }}
+          token: ${{ secrets.GH_PAT_GITOPS }}
+          persist-credentials: true
+          path: ${{ inputs.gitops-repo-path }}
+
+      - name: yaml manifest update
+        uses: f2calv/gha-gitops-manifest-update@v2
+        with:
+          manifest-paths: ${{ inputs.manifest-paths }}
+          tag: ${{ inputs.tag }}
+          tag-override: ${{ inputs.tag-override }}
+          namespace: ${{ inputs.namespace }}
+          image-registry: ${{ inputs.image-registry }}
+          image-repository: ${{ inputs.image-repository }}
+          chart-registry: ${{ inputs.chart-registry }}
+          chart-registry-username: ${{ inputs.chart-registry-username }}
+          #chart-registry-password: ${{ inputs.chart-registry-password }}
+          chart-registry-password: ${{ secrets.GITHUB_TOKEN }}
+          chart-repository: ${{ inputs.chart-repository }}
+          devcontainer-path: ${{ inputs.devcontainer-path }}
+          git-repo-update: ${{ inputs.gitops-repo-update }}
+          git-user-name: ${{ inputs.gitops-repo-user-name }}
+          git-user-email: ${{ inputs.gitops-repo-user-email }}
+          git-branch-name: ${{ inputs.gitops-repo-branch }}
+          git-working-directory: ${{ inputs.gitops-repo-path }}

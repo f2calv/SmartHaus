@@ -1,0 +1,29 @@
+### Shelly Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+@deviceId = YOUR_SHELLY_DEVICE_ID
+
+### Get snapshots for all Shelly devices
+GET {{baseUrl}}/api/v1/shelly
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get readings (default limit 100)
+GET {{baseUrl}}/api/v1/shelly/readings
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get readings with custom limit
+GET {{baseUrl}}/api/v1/shelly/readings?limit=50
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get device status
+GET {{baseUrl}}/api/v1/shelly/status/{{deviceId}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Turn relay on
+POST {{baseUrl}}/api/v1/shelly/relay/{{deviceId}}?on=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Turn relay off
+POST {{baseUrl}}/api/v1/shelly/relay/{{deviceId}}?on=false
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

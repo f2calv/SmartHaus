@@ -1,0 +1,15 @@
+global using Azure;
+global using Azure.Data.Tables;
+global using CasCap.Abstractions;
+global using CasCap.Common.Abstractions;
+global using CasCap.Common.Extensions;
+global using CasCap.Extensions;
+global using CasCap.Models;
+global using CasCap.Services;
+global using Microsoft.Extensions.Configuration;
+global using Microsoft.Extensions.DependencyInjection;
+global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Options;
+global using System.ComponentModel;
+global using System.Reflection;
+global using System.Runtime.CompilerServices;
