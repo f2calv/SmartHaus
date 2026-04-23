@@ -1,0 +1,143 @@
+name: deploy-all
+
+on:
+  workflow_dispatch:
+    inputs:
+      cascap-common-ref:
+        type: string
+        description: Branch/tag CasCap.Common (empty=Release build)
+        default:
+      cascap-api-azure-ref:
+        type: string
+        description: Branch/tag CasCap.Api.Azure (empty=Release build)
+        default:
+      push-nuget:
+        type: boolean
+        description: Push NuGet packages?
+        default: false
+
+jobs:
+  lint:
+    uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+
+  versioning:
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    with:
+      tag-prefix: ''
+      tag-and-release: false
+
+  build:
+    uses: f2calv/gha-workflows/.github/workflows/app-build-dotnet.yml@v1
+    needs: versioning
+    with:
+      version: ${{ needs.versioning.outputs.version }}
+      configuration: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'Debug' || 'Release' }}
+      solution-name: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'SmartHaus.Debug.slnx' || 'SmartHaus.Release.slnx' }}
+      extra-repos: |
+        [
+          ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"../CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
+          ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"../CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
+        ]
+
+  nuget:
+    runs-on: ubuntu-latest
+    needs: [versioning, build]
+    if: inputs.push-nuget
+    steps:
+      - uses: f2calv/gha-dotnet-nuget@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          version: ${{ needs.versioning.outputs.version }}
+          execute-tests: false
+
+  containerize:
+    uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
+    permissions:
+      packages: write #for pushing container image
+      contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
+    needs: [versioning]
+    if: github.event_name != 'pull_request'
+    with:
+      registry: ghcr.io/${{ github.repository_owner }}
+      tag: ${{ needs.versioning.outputs.version }}
+      tag-major: ${{ needs.versioning.outputs.major }}
+      tag-minor: ${{ needs.versioning.outputs.minor }}
+      dockerfile: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'Dockerfile.Debug' || 'Dockerfile' }}
+      args: --build-arg WORKLOAD=CasCap.App.Server ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && '--build-arg CONFIGURATION=Debug' || '' }}
+      push-image: ${{ github.actor != 'copilot[bot]' }}
+      extra-repos: |
+        [
+          ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"deps/CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
+          ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"deps/CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
+        ]
+
+  pkg-chart-workload:
+    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
+    permissions:
+      packages: write #for pushing helm artifact
+      contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
+    needs: [versioning, build, containerize]
+    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
+    with:
+      image-registry: ghcr.io
+      image-repository: ${{ github.repository_owner }}/smarthaus
+      chart-registry: ghcr.io
+      chart-registry-username: ${{ github.repository_owner }}
+      #chart-registry-password: ${{ secrets.GITHUB_TOKEN }} #Note: this doesnt work
+      chart-repository: ${{ github.repository_owner }}/charts/workload
+      chart-path: charts/workload
+      tag: ${{ needs.versioning.outputs.version }}
+      chart-testing-cli-command: skip #because helm charts not completed
+    secrets: inherit
+
+  pkg-chart-smarthaus:
+    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
+    permissions:
+      packages: write #for pushing helm artifact
+      contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
+    needs: [versioning, build, containerize, pkg-chart-workload]
+    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
+    with:
+      tag: ${{ needs.versioning.outputs.version }}
+      image-registry: ghcr.io
+      image-repository: ${{ github.repository_owner }}/smarthaus
+      chart-registry: ghcr.io
+      chart-registry-username: ${{ github.repository_owner }}
+      #chart-registry-password: ${{ secrets.GITHUB_TOKEN }} #Note: this doesnt work
+      chart-repository: ${{ github.repository_owner }}/charts/smarthaus
+      chart-path: charts/smarthaus
+      chart-testing-cli-command: skip #because helm charts not completed
+      chart-dependency-name: workload
+    secrets: inherit
+
+  gitops:
+    needs: [versioning, build, containerize, pkg-chart-workload, pkg-chart-smarthaus]
+    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
+    uses: ./.github/workflows/_gitops-helm-update.yml
+    with:
+      tag: ${{ needs.versioning.outputs.version }}
+      image-registry: ghcr.io
+      image-repository: ${{ github.repository_owner }}/smarthaus
+      chart-registry: ghcr.io/${{ github.repository_owner }} #Note: need to add this here for ArgoCD auth
+      chart-registry-username: ${{ github.repository_owner }}
+      #chart-registry-password: ${{ secrets.GITHUB_TOKEN }} #Note: this doesnt work
+      chart-repository: charts/smarthaus
+      gitops-repo: ${{ secrets.GITOPS_REPO }}
+      gitops-repo-update: true
+      manifest-paths: src/workloads/smarthaus.yaml
+      namespace: prd
+    secrets: inherit
+
+  release:
+    needs: [versioning, build, containerize, pkg-chart-workload, pkg-chart-smarthaus]
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    permissions:
+      contents: write
+    with:
+      semVer: ${{ needs.versioning.outputs.version }}
+      tag-prefix: ''
+      move-major-tag: false

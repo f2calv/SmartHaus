@@ -1,0 +1,19 @@
+name: ci
+
+on:
+  workflow_dispatch:
+  push:
+    paths-ignore:
+      - .github/copilot-instructions.md
+      - .github/dependabot.yml
+      - LICENSE
+      - README.md
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+permissions: {} #Note: deny all permissions at the workflow level; individual jobs declare only what they need (principle of least privilege)
+jobs:
+  release:
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    permissions:
+      contents: write
