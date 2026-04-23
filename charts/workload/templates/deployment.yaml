@@ -1,0 +1,117 @@
+{{- $replicas := int (toString (.Values.replicaCount)) -}}
+{{- if gt $replicas 0 }}
+apiVersion: apps/v1
+kind: {{ default "Deployment" .Values.kind }}
+metadata:
+  name: {{ include "workload.fullname" . }}
+  namespace: {{ include "workload.namespace" $ }}
+  labels:
+    {{- include "workload.labels" . | nindent 4 }}
+spec:
+  {{- if and (not .Values.autoscaling.enabled) (ne "DaemonSet" .Values.kind) }}
+  replicas: {{ $replicas }}
+  {{- end }}
+  revisionHistoryLimit: {{ default "3" .Values.revisionHistoryLimit }}
+  selector:
+    matchLabels:
+      {{- include "workload.selectorLabels" . | nindent 6 }}
+  {{- if and (hasKey .Values "serviceName") (.Values.serviceName) }}
+  serviceName: {{ .Values.serviceName }}
+  {{- end }}
+  {{- with .Values.strategy }}
+  strategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "workload.labels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      restartPolicy: {{ default "Always" .Values.restartPolicy }}
+      runtimeClassName: {{ default "" .Values.runtimeClassName }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if hasKey .Values "serviceAccountName" }}
+      serviceAccountName: {{ include "workload.serviceAccountName" . }}
+      {{- end }}
+      {{- if and (hasKey .Values "podSecurityContext") (.Values.podSecurityContext) }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          {{- if and (hasKey .Values "securityContext") (.Values.securityContext) }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default "IfNotPresent" .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          ports:
+            - name: {{ .Values.service.name }}
+              containerPort: {{ .Values.service.containerPort }}
+              protocol: {{ default "TCP" .Values.service.protocol }}
+          env:
+            {{- range $name, $fieldPath := $.Values.envFieldRef }}
+            - name: {{ $name }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: {{ $fieldPath }}
+            {{- end }}
+            {{- range $key, $value := $.Values.envVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $secret := $.Values.envSecrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ $key | quote }}
+            {{- end }}
+          {{- if and (hasKey .Values "envVarsFrom") (.Values.envVarsFrom) }}
+          envFrom:
+            {{- toYaml .Values.envVarsFrom | nindent 12 }}
+          {{- end }}
+          {{- include "workload.probes" . | trim | nindent 10 }}
+          {{- if and (hasKey .Values "resources") (.Values.resources) }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.volumes }}
+      volumes:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

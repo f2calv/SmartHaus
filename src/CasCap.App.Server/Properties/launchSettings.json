@@ -1,0 +1,40 @@
+{
+  "profiles": {
+    "CasCap.App.Server": {
+      "commandName": "Project",
+      "launchBrowser": true,
+      "launchUrl": "swagger",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        //"CasCap__FeatureConfig__EnabledFeatures": "0",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Comms"
+        //"CasCap__FeatureConfig__EnabledFeatures": "Wiz,Comms"
+        //"CasCap__FeatureConfig__EnabledFeatures": "SignalRHub",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Comms,Buderus,DoorBird,DDns,EdgeHardware,Fronius,Knx"
+        //"CasCap__FeatureConfig__EnabledFeatures": "Buderus",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Buderus,Comms"
+        //"CasCap__FeatureConfig__EnabledFeatures": "DDns",
+        //"CasCap__FeatureConfig__EnabledFeatures": "DDns,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "DoorBird",
+        //"CasCap__FeatureConfig__EnabledFeatures": "DoorBird,Comms"
+        //"CasCap__FeatureConfig__EnabledFeatures": "EdgeHardware",
+        //"CasCap__FeatureConfig__EnabledFeatures": "EdgeHardware,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Fronius",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Fronius,Comms",
+        "CasCap__FeatureConfig__EnabledFeatures": "Knx",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Knx,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Miele",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Miele,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Shelly",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Shelly,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Sicce",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Sicce,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Ubiquiti",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Ubiquiti,Comms",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Wiz",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Wiz,Comms",
+      },
+      "applicationUrl": "http://localhost:8080"
+    }
+  }
+}

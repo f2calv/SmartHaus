@@ -1,0 +1,42 @@
+### DoorBird LAN API (3rd party device)
+### Direct calls to the DoorBird D2101V intercom on the local network
+### See: https://www.doorbird.com/downloads/api_lan.pdf
+
+@baseUrl = {{$dotenv DOORBIRD_BASE_URL}}
+@auth = {{$dotenv DOORBIRD_AUTH}}
+
+### Get session (authentication check)
+GET {{baseUrl}}/bha-api/getsession.cgi
+Authorization: Basic {{auth}}
+
+### Get live image snapshot (JPEG)
+GET {{baseUrl}}/bha-api/image.cgi
+Authorization: Basic {{auth}}
+
+### Get live video stream URL
+GET {{baseUrl}}/bha-api/video.cgi
+Authorization: Basic {{auth}}
+
+### Unlock door (relay 1)
+GET {{baseUrl}}/bha-api/open-door.cgi
+Authorization: Basic {{auth}}
+
+### Unlock door (specific relay)
+GET {{baseUrl}}/bha-api/open-door.cgi?r=2
+Authorization: Basic {{auth}}
+
+### Turn on IR light
+GET {{baseUrl}}/bha-api/light-on.cgi
+Authorization: Basic {{auth}}
+
+### Get device info
+GET {{baseUrl}}/bha-api/info.cgi
+Authorization: Basic {{auth}}
+
+### Get SIP status
+GET {{baseUrl}}/bha-api/sip.cgi
+Authorization: Basic {{auth}}
+
+### Restart device
+GET {{baseUrl}}/bha-api/restart.cgi
+Authorization: Basic {{auth}}

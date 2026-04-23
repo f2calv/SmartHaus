@@ -1,0 +1,13 @@
+{
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
+  "recommendations": [
+    "ms-dotnettools.csharp",
+    "ms-vscode.powershell",
+    "ms-vscode.azurecli",
+    "ms-azuretools.vscode-docker",
+    "ms-vscode-remote.vscode-remote-extensionpack",
+    "mutantdino.resourcemonitor",
+    "usernamehw.errorlens",
+    "davidanson.vscode-markdownlint"
+  ]
+}

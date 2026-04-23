@@ -1,0 +1,73 @@
+### DoorBird Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get current snapshot
+GET {{baseUrl}}/api/v1/doorbird
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get real-time photo (JPEG)
+GET {{baseUrl}}/api/v1/doorbird/photo
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get video stream URL
+GET {{baseUrl}}/api/v1/doorbird/video
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Unlock front door relay
+POST {{baseUrl}}/api/v1/doorbird/relay
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Turn light on
+POST {{baseUrl}}/api/v1/doorbird/light
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get device info
+GET {{baseUrl}}/api/v1/doorbird/info
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Restart device
+POST {{baseUrl}}/api/v1/doorbird/restart
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get SIP status
+GET {{baseUrl}}/api/v1/doorbird/sip
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get active session
+GET {{baseUrl}}/api/v1/doorbird/session
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get favorites
+GET {{baseUrl}}/api/v1/doorbird/favorites
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get schedule
+GET {{baseUrl}}/api/v1/doorbird/schedule
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get history image (doorbell, index 1)
+GET {{baseUrl}}/api/v1/doorbird/history/image?index=1&eventType=Doorbell
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List notifications
+GET {{baseUrl}}/api/v1/doorbird/notifications
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Subscribe to notification
+POST {{baseUrl}}/api/v1/doorbird/notifications/subscribe?subscriberUrl=http://example.com/callback&eventType=doorbell
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Unsubscribe from notification
+POST {{baseUrl}}/api/v1/doorbird/notifications/unsubscribe?subscriberUrl=http://example.com/callback&eventType=doorbell
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Event callback - doorbell ring (no auth required)
+GET {{baseUrl}}/api/v1/doorbird/event/ring
+
+### Event callback - motion detected (no auth required)
+GET {{baseUrl}}/api/v1/doorbird/event/motion
+
+### Event callback - RFID (no auth required)
+GET {{baseUrl}}/api/v1/doorbird/event/rfid

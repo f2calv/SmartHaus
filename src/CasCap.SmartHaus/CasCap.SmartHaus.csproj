@@ -1,0 +1,76 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\SecurityAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\HeatingAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\EnergyAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\HomeControlAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\CommsAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\InfraAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\AudioAgent.instructions.md" />
+    <EmbeddedResource Include="Resources\AppliancesAgent.instructions.md" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Azure.Identity" />
+    <PackageReference Include="KoenZomers.UniFi.Api" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client.Core" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="Tiveria.Home.Knx" />
+    <PackageReference Include="Spectre.Console" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Auth\CasCap.Api.Azure.Auth.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Storage\CasCap.Api.Azure.Storage.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Azure.Auth" />
+    <PackageReference Include="CasCap.Api.Azure.Storage" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI\CasCap.Common.AI.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Logging\CasCap.Common.Logging.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Net\CasCap.Common.Net.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Serialization.Json\CasCap.Common.Serialization.Json.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Caching\CasCap.Common.Caching.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Services\CasCap.Common.Services.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.AI" />
+    <PackageReference Include="CasCap.Common.Extensions" />
+    <PackageReference Include="CasCap.Common.Logging" />
+    <PackageReference Include="CasCap.Common.Net" />
+    <PackageReference Include="CasCap.Common.Serialization.Json" />
+    <PackageReference Include="CasCap.Common.Caching" />
+    <PackageReference Include="CasCap.Common.Services" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.Api.DDns\CasCap.Api.DDns.csproj" />
+    <ProjectReference Include="..\CasCap.Api.SignalCli\CasCap.Api.SignalCli.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Buderus.Sinks\CasCap.Api.Buderus.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.DoorBird.Sinks\CasCap.Api.DoorBird.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Fronius.Sinks\CasCap.Api.Fronius.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Knx.Sinks\CasCap.Api.Knx.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Miele.Sinks\CasCap.Api.Miele.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.EdgeHardware.Sinks\CasCap.Api.EdgeHardware.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Shelly.Sinks\CasCap.Api.Shelly.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Sicce.Sinks\CasCap.Api.Sicce.Sinks.csproj" />
+    <ProjectReference Include="..\CasCap.Api.Wiz.Sinks\CasCap.Api.Wiz.Sinks.csproj" />
+	  <ProjectReference Include="..\CasCap.Api.Ubiquiti.Sinks\CasCap.Api.Ubiquiti.Sinks.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol.AspNetCore" />
+  </ItemGroup>
+
+</Project>

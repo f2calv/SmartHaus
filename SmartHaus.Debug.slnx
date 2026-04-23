@@ -1,0 +1,78 @@
+<Solution>
+  <Folder Name="/SmartHaus/Solution Items/">
+    <File Path=".dockerignore" />
+    <File Path=".editorconfig" />
+    <File Path=".github/copilot-instructions.md" />
+    <File Path="appsettings.Development.json" />
+    <File Path="appsettings.json" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="Dockerfile" />
+    <File Path="Dockerfile.Debug" />
+    <File Path="km200-datapoints.json" />
+
+    <File Path="docker-compose.yml" />
+    <File Path="README.md" />
+    <File Path="src/CasCap.App.Server/Properties/launchSettings.json" />
+  </Folder>
+  <Folder Name="/CasCap.Api.Azure/">
+    <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Auth/CasCap.Api.Azure.Auth.csproj" />
+    <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Storage/CasCap.Api.Azure.Storage.csproj" />
+  </Folder>
+  <Folder Name="/CasCap.Common/">
+    <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Caching.Tests/CasCap.Common.Caching.Tests.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Caching/CasCap.Common.Caching.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Configuration/CasCap.Common.Configuration.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Diagnostics.HealthChecks/CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Tests/CasCap.Common.Extensions.Tests.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Extensions/CasCap.Common.Extensions.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Logging.Serilog/CasCap.Common.Logging.Serilog.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Logging/CasCap.Common.Logging.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Net.Tests/CasCap.Common.Net.Tests.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Net/CasCap.Common.Net.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Json/CasCap.Common.Serialization.Json.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.MessagePack/CasCap.Common.Serialization.MessagePack.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Tests/CasCap.Common.Serialization.Tests.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Services/CasCap.Common.Services.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Testing/CasCap.Common.Testing.csproj" />
+  </Folder>
+  <Folder Name="/SmartHaus/libs/">
+    <Project Path="src/CasCap.Api.Buderus.Sinks/CasCap.Api.Buderus.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Buderus.Tests/CasCap.Api.Buderus.Tests.csproj" />
+    <Project Path="src/CasCap.Api.Buderus/CasCap.Api.Buderus.csproj" />
+    <Project Path="src/CasCap.Api.DDns/CasCap.Api.DDns.csproj" />
+    <Project Path="src/CasCap.Api.DoorBird.Sinks/CasCap.Api.DoorBird.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj" />
+    <Project Path="src/CasCap.Api.DoorBird/CasCap.Api.DoorBird.csproj" />
+    <Project Path="src/CasCap.Api.EdgeHardware.Sinks/CasCap.Api.EdgeHardware.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.EdgeHardware/CasCap.Api.EdgeHardware.csproj" />
+    <Project Path="src/CasCap.Api.Fronius.Sinks/CasCap.Api.Fronius.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj" />
+    <Project Path="src/CasCap.Api.Fronius/CasCap.Api.Fronius.csproj" />
+    <Project Path="src/CasCap.Api.Knx.Sinks/CasCap.Api.Knx.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj" />
+    <Project Path="src/CasCap.Api.Knx/CasCap.Api.Knx.csproj" />
+    <Project Path="src/CasCap.Api.Miele.Sinks/CasCap.Api.Miele.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Miele.Tests/CasCap.Api.Miele.Tests.csproj" />
+    <Project Path="src/CasCap.Api.Miele/CasCap.Api.Miele.csproj" />
+    <Project Path="src/CasCap.Api.Shelly.Sinks/CasCap.Api.Shelly.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Shelly/CasCap.Api.Shelly.csproj" />
+    <Project Path="src/CasCap.Api.Sicce.Sinks/CasCap.Api.Sicce.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Sicce/CasCap.Api.Sicce.csproj" />
+    <Project Path="src/CasCap.Api.SignalCli.Tests/CasCap.Api.SignalCli.Tests.csproj" />
+    <Project Path="src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
+    <Project Path="src/CasCap.Api.Ubiquiti.Sinks/CasCap.Api.Ubiquiti.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Ubiquiti/CasCap.Api.Ubiquiti.csproj" />
+    <Project Path="src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj" />
+    <Project Path="src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj" />
+  </Folder>
+  <Folder Name="/SmartHaus/">
+    <Project Path="src/CasCap.App.Console/CasCap.App.Console.csproj" />
+    <Project Path="src/CasCap.App.Server/CasCap.App.Server.csproj" />
+    <Project Path="src/CasCap.App.Tests/CasCap.App.Tests.csproj" />
+    <Project Path="src/CasCap.App/CasCap.App.csproj" />
+    <Project Path="src/CasCap.SmartHaus/CasCap.SmartHaus.csproj" />
+  </Folder>
+</Solution>

@@ -1,0 +1,8 @@
+### DDns Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get current external IP address
+GET {{baseUrl}}/api/v1/ddns/ip
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

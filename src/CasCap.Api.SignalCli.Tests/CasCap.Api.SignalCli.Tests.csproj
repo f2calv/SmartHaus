@@ -1,0 +1,51 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CasCap.Tests</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="Always" />
+    <Content Include="..\..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.json')" />
+    <Content Include="..\..\appsettings.Development.json" Link="appsettings.Development.json" CopyToOutputDirectory="Always" />
+    <Content Include="..\..\appsettings.Local.Development.json" Link="appsettings.Local.Development.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.Development.json')" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.Api.SignalCli\CasCap.Api.SignalCli.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Auth\CasCap.Api.Azure.Auth.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Logging\CasCap.Common.Logging.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Net\CasCap.Common.Net.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Testing\CasCap.Common.Testing.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Azure.Auth" />
+    <PackageReference Include="CasCap.Common.Configuration" />
+    <PackageReference Include="CasCap.Common.Extensions" />
+    <PackageReference Include="CasCap.Common.Logging" />
+    <PackageReference Include="CasCap.Common.Net" />
+    <PackageReference Include="CasCap.Common.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="coverlet.collector">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

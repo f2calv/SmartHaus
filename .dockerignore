@@ -1,0 +1,20 @@
+# first ignore everything
+**
+
+# explictly add exceptions for required files/paths
+!src/**/*.cs
+!**/*.csproj
+!**/appsettings.*
+!global.json
+!Directory.Build.props
+!Directory.Packages.props
+
+# custom
+!**/*.lua
+!**/*.instructions.md
+!wait-for-it.sh
+!ffmpeg-record.sh
+
+# dependency repos cloned into deps/ by CI
+!deps/CasCap.Common/**
+!deps/CasCap.Api.Azure/**

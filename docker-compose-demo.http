@@ -1,0 +1,44 @@
+### =============================================================================
+### SmartHaus — Ubiquiti Demo Requests
+### =============================================================================
+###
+### Test requests for the Ubiquiti UniFi Protect webhook endpoints running in
+### the demo Docker Compose stack (docker-compose.demo.yml).
+###
+### Usage:
+###   1. Start the demo: docker compose -f docker-compose.demo.yml up --build
+###   2. Wait for the smarthaus service to become healthy
+###   3. Run these requests from VS Code (REST Client extension)
+### =============================================================================
+
+@baseUrl = http://localhost:8080/api/v1.0/ubiquiti
+
+### ---------- Motion Detection ----------
+
+### Simulate a motion detection event from a front door camera
+POST {{baseUrl}}/event/motion?camera_id=abc123&camera_name=FrontDoor
+
+### ---------- Smart Detection ----------
+
+### Simulate a person detected at the front door (high confidence)
+POST {{baseUrl}}/event/smart?type=person&camera_id=abc123&camera_name=FrontDoor&score=0.95
+
+### Simulate a vehicle detected in the driveway
+POST {{baseUrl}}/event/smart?type=vehicle&camera_id=def456&camera_name=Driveway&score=0.88
+
+### Simulate an animal detected in the garden
+POST {{baseUrl}}/event/smart?type=animal&camera_id=ghi789&camera_name=Garden&score=0.72
+
+### Simulate a package detected at the front door
+POST {{baseUrl}}/event/smart?type=package&camera_id=abc123&camera_name=FrontDoor&score=0.91
+
+### ---------- Doorbell Ring ----------
+
+### Simulate a doorbell ring event
+POST {{baseUrl}}/event/ring?camera_id=abc123&camera_name=FrontDoor
+
+### ---------- Query ----------
+
+### Get the current Ubiquiti event snapshot (aggregated counts and timestamps).
+### Note: This endpoint requires authentication (Basic auth or configured scheme).
+GET {{baseUrl}}

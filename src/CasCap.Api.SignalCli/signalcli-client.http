@@ -1,0 +1,38 @@
+### signal-cli REST API
+### See https://bbernhard.github.io/signal-cli-rest-api/
+
+@baseUrl = {{$dotenv SIGNAL_CLI_BASE_URL}}
+@phoneNumber = {{$dotenv SIGNAL_CLI_PHONE_NUMBER}}
+
+### Send a message to self (mirrors SendMessage_ToSelf_ReturnsTimestamp)
+POST {{baseUrl}}/v2/send
+Content-Type: application/json
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}
+
+{
+  "message": "REST client test message",
+  "number": "{{phoneNumber}}",
+  "recipients": [
+    "{{phoneNumber}}"
+  ]
+}
+
+### Get version and build info (mirrors GetAbout_ReturnsVersionInfo)
+GET {{baseUrl}}/v1/about
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}
+
+### Get configuration (mirrors GetConfiguration_ReturnsConfiguration)
+GET {{baseUrl}}/v1/configuration
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}
+
+### Receive pending messages (mirrors ReceiveMessages_ReturnsMessages)
+GET {{baseUrl}}/v1/receive/{{phoneNumber}}
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}
+
+### List accounts (mirrors ListAccounts_ReturnsAccounts)
+GET {{baseUrl}}/v1/accounts
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}
+
+### Health check
+GET {{baseUrl}}/v1/health
+Authorization: Basic {{$dotenv SIGNAL_CLI_AUTH}}

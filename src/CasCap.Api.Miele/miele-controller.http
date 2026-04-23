@@ -1,0 +1,55 @@
+### Miele Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+@deviceId = YOUR_MIELE_DEVICE_ID
+
+### Get all devices
+GET {{baseUrl}}/api/v1/miele/devices
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get all devices (German)
+GET {{baseUrl}}/api/v1/miele/devices?language=de
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get short device list
+GET {{baseUrl}}/api/v1/miele/devices/short
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get a specific device
+GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get device identification
+GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/ident
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get device state
+GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/state
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get available device actions
+GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Execute device action (e.g. start)
+PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "processAction": 1
+}
+
+### Get available programs
+GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Start a program
+PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "programId": 1
+}

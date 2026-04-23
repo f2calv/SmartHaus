@@ -1,0 +1,16 @@
+### EdgeHardware Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+### Get latest snapshots for all edge nodes
+GET {{baseUrl}}/api/v1/edgehardware
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get recent events (default limit 100)
+GET {{baseUrl}}/api/v1/edgehardware/events
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get recent events with custom limit
+GET {{baseUrl}}/api/v1/edgehardware/events?limit=50
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

@@ -1,0 +1,8 @@
+### ipify REST API (3rd party IP discovery service)
+### See https://www.ipify.org/
+
+### Get current external IP as JSON
+GET https://api.ipify.org/?format=json
+
+### Get current external IP as plain text
+GET https://api.ipify.org/

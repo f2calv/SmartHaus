@@ -1,0 +1,36 @@
+### Wiz Controller (internal Web API)
+### Base URL is the Haus application server
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+@bulbIdentifier = YOUR_BULB_IP_OR_MAC
+
+### Get all discovered bulbs
+GET {{baseUrl}}/api/v1/wiz/bulbs
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Trigger bulb discovery
+POST {{baseUrl}}/api/v1/wiz/bulbs/discover
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get pilot state for a bulb
+GET {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/pilot
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set pilot state for a bulb
+PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/pilot
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "sceneId": 11,
+  "dimming": 80,
+  "speed": 50
+}
+
+### Turn bulb on
+PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/power?on=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Turn bulb off
+PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/power?on=false
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

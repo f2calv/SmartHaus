@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.SmartHaus\CasCap.SmartHaus.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions.Diagnostics.HealthChecks\CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.Configuration" />
+    <PackageReference Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" />
+  </ItemGroup>
+
+</Project>

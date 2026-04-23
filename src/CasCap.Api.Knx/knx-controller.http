@@ -1,0 +1,215 @@
+### KNX Controllers (internal Web API)
+### Base URL is the Haus application server
+### Covers: Bus, Hvac, Lights, PowerOutlets, Shutters
+
+@baseUrl = {{$dotenv HAUS_BASE_URL}}
+
+###
+### ── Bus Controller ──────────────────────────────────────────────────
+###
+
+### Get all group addresses
+GET {{baseUrl}}/api/v1/bus/addresses
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get group addresses (filtered)
+GET {{baseUrl}}/api/v1/bus/addresses?groupAddressFilter=Lights
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Filter group addresses by criteria
+GET {{baseUrl}}/api/v1/bus/addresses/filter?category=Lights&floor=EG
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get group addresses grouped
+GET {{baseUrl}}/api/v1/bus/addresses/grouped
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get raw group addresses
+GET {{baseUrl}}/api/v1/bus/addresses/raw
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List floors
+GET {{baseUrl}}/api/v1/bus/floors
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List rooms
+GET {{baseUrl}}/api/v1/bus/rooms
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get all KNX state
+GET {{baseUrl}}/api/v1/bus/state
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Validate a group address
+GET {{baseUrl}}/api/v1/bus/validate/address/1/1/1
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Validate a group name
+GET {{baseUrl}}/api/v1/bus/validate/group/EG_Wohnzimmer_Licht
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Send command to KNX bus
+POST {{baseUrl}}/api/v1/bus/state/send
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Licht",
+  "value": true
+}
+
+###
+### ── HVAC Controller ─────────────────────────────────────────────────
+###
+
+### List all HVAC zones
+GET {{baseUrl}}/api/v1/hvac
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List HVAC zones by room
+GET {{baseUrl}}/api/v1/hvac?room=Wohnzimmer
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get a specific HVAC zone
+GET {{baseUrl}}/api/v1/hvac/EG_Wohnzimmer_Heizung
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set HVAC state
+POST {{baseUrl}}/api/v1/hvac
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Heizung",
+  "desiredTemperature": 21.0
+}
+
+### Set HVAC state (dry run)
+POST {{baseUrl}}/api/v1/hvac?dryRun=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Heizung",
+  "desiredTemperature": 21.0
+}
+
+###
+### ── Lights Controller ───────────────────────────────────────────────
+###
+
+### List all lights
+GET {{baseUrl}}/api/v1/lights
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List lights by room
+GET {{baseUrl}}/api/v1/lights?room=Wohnzimmer
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get a specific light
+GET {{baseUrl}}/api/v1/lights/EG_Wohnzimmer_Licht
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set light state (on)
+POST {{baseUrl}}/api/v1/lights/state
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Licht",
+  "on": true
+}
+
+### Set light state (dry run)
+POST {{baseUrl}}/api/v1/lights/state?dryRun=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Licht",
+  "on": true
+}
+
+### Turn all lights off
+POST {{baseUrl}}/api/v1/lights/state/all-off
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+###
+### ── Power Outlets Controller ────────────────────────────────────────
+###
+
+### List all power outlets
+GET {{baseUrl}}/api/v1/poweroutlets
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List power outlets by room
+GET {{baseUrl}}/api/v1/poweroutlets?room=Wohnzimmer
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get a specific power outlet
+GET {{baseUrl}}/api/v1/poweroutlets/EG_Wohnzimmer_Steckdose
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set power outlet state
+POST {{baseUrl}}/api/v1/poweroutlets/state
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Steckdose",
+  "on": true
+}
+
+### Set power outlet state (dry run)
+POST {{baseUrl}}/api/v1/poweroutlets/state?dryRun=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Steckdose",
+  "on": true
+}
+
+###
+### ── Shutters Controller ─────────────────────────────────────────────
+###
+
+### List all shutters
+GET {{baseUrl}}/api/v1/shutters
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### List shutters by room
+GET {{baseUrl}}/api/v1/shutters?room=Wohnzimmer
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Get a specific shutter
+GET {{baseUrl}}/api/v1/shutters/EG_Wohnzimmer_Jalousie
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Set shutter state
+POST {{baseUrl}}/api/v1/shutters/state
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Jalousie",
+  "position": 50
+}
+
+### Set shutter state (dry run)
+POST {{baseUrl}}/api/v1/shutters/state?dryRun=true
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+Content-Type: application/json
+
+{
+  "groupName": "EG_Wohnzimmer_Jalousie",
+  "position": 50
+}
+
+### Close all shutters
+POST {{baseUrl}}/api/v1/shutters/state/all-close
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}
+
+### Open all shutters
+POST {{baseUrl}}/api/v1/shutters/state/all-open
+Authorization: Basic {{$dotenv HAUS_API_AUTH}}

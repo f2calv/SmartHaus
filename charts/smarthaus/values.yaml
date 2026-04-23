@@ -1,0 +1,143 @@
+# ── Shared defaults ──────────────────────────────────────────────────
+# Each alias key maps to a dependency in Chart.yaml. Values here serve
+# as defaults; ArgoCD valuesObject provides all envVars and overrides
+# only what differs per workload (extra volumes, etc.).
+#
+# Workloads with replicaCount: 0 are disabled by default and must be
+# enabled explicitly in the ArgoCD application manifest.
+# ─────────────────────────────────────────────────────────────────────
+
+_shared: &shared
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  # imagePullSecrets, volumes, volumeMounts, envSecrets and envVarsFrom
+  # are deployment-specific — configure via ArgoCD valuesObject or your
+  # own values file.
+  # imagePullSecrets:
+  #   - name: my-registry-pull-secret
+  # volumes:
+  #   - name: certs
+  #     secret:
+  #       secretName: my-cert-secret
+  # volumeMounts:
+  #   - name: certs
+  #     mountPath: /etc/certs
+  #     readOnly: true
+  # envSecrets:
+  #   MY_SECRET_VAR: my-k8s-secret-name
+  # envVarsFrom:
+  #   - configMapRef:
+  #       name: my-shared-config
+
+# ── Workload defaults ───────────────────────────────────────────────
+# Ingress is disabled by default in the workload subchart. To enable,
+# provide the full ingress block per workload via ArgoCD valuesObject
+# or your own values override file. Example:
+#
+# doorbird:
+#   ingress:
+#     enabled: true
+#     className: nginx
+#     annotations:
+#       cert-manager.io/cluster-issuer: my-issuer
+#     hosts:
+#       - host: smarthaus.example.com
+#         paths:
+#           - path: /api/v1/doorbird
+#             pathType: Prefix
+#     tls:
+#       - secretName: my-tls-secret
+#         hosts:
+#           - smarthaus.example.com
+
+doorbird:
+  <<: *shared
+
+buderus:
+  <<: *shared
+
+knx:
+  <<: *shared
+
+fronius:
+  <<: *shared
+
+edge-cpu:
+  <<: *shared
+  securityContext:
+    privileged: true
+  strategy:
+    type: Recreate
+  # Node affinity and anti-affinity are deployment-specific — configure
+  # via ArgoCD valuesObject with your real node hostnames.
+  # affinity:
+  #   nodeAffinity:
+  #     requiredDuringSchedulingIgnoredDuringExecution:
+  #       nodeSelectorTerms:
+  #         - matchExpressions:
+  #             - key: kubernetes.io/hostname
+  #               operator: In
+  #               values:
+  #                 - node-a
+  #                 - node-b
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchLabels:
+            app.kubernetes.io/name: edge-cpu
+        topologyKey: kubernetes.io/hostname
+
+edge-gpu:
+  <<: *shared
+  runtimeClassName: nvidia
+  securityContext:
+    privileged: true
+  # nodeSelector is deployment-specific — set via ArgoCD valuesObject.
+  # nodeSelector:
+  #   kubernetes.io/hostname: my-gpu-node
+
+signalrhub:
+  <<: *shared
+
+comms:
+  <<: *shared
+
+wiz:
+  <<: *shared
+
+shelly:
+  <<: *shared
+
+ubiquiti:
+  <<: *shared
+
+sicce:
+  <<: *shared
+
+# ── Disabled by default
+
+mcp:
+  replicaCount: 0
+
+ffmpeg:
+  replicaCount: 0
+
+cctv-nord-ost:
+  replicaCount: 0
+
+cctv-nord-west:
+  replicaCount: 0
+
+cctv-sud-ost:
+  replicaCount: 0
+
+cctv-sud-west:
+  replicaCount: 0
+
+cctv-doorbird:
+  replicaCount: 0

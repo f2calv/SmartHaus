@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <Description>Event sink implementations for Ubiquiti network device data.</Description>
+    <PackageTags>ubiquiti,event-sink,home-automation</PackageTags>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.Api.Ubiquiti\CasCap.Api.Ubiquiti.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Auth\CasCap.Api.Azure.Auth.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Storage\CasCap.Api.Azure.Storage.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Caching\CasCap.Common.Caching.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Azure.Auth" />
+    <PackageReference Include="CasCap.Api.Azure.Storage" />
+    <PackageReference Include="CasCap.Common.Caching" />
+  </ItemGroup>
+
+</Project>
