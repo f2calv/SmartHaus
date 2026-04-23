@@ -125,7 +125,7 @@ jobs:
       chart-registry-username: ${{ github.repository_owner }}
       #chart-registry-password: ${{ secrets.GITHUB_TOKEN }} #Note: this doesnt work
       chart-repository: charts/smarthaus
-      gitops-repo: ${{ secrets.GITOPS_REPO }}
+      gitops-repo: f2calv/KNX_K8S
       gitops-repo-update: true
       manifest-paths: src/workloads/smarthaus.yaml
       namespace: prd
