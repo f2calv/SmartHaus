@@ -95,7 +95,6 @@ Dynamic DNS library that monitors the public IP address and automatically update
 | `CasCap.Common.Serialization.Json` | JSON serialisation helpers |
 | `CasCap.Common.Services` | `HttpClientBase` |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

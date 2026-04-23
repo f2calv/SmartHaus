@@ -51,7 +51,6 @@ Sinks are enabled in `DoorBirdConfig.Sinks.AvailableSinks`. Example `appsettings
 | `CasCap.Api.Azure.Storage` | Azure Table/Blob Storage entity types and base services |
 | `CasCap.Common.Caching` | Redis caching abstractions |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

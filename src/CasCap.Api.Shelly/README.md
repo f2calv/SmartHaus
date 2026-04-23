@@ -50,7 +50,6 @@ Configuration is bound from `CasCap:ShellyConfig` in `appsettings.json`.
 | `CasCap.Common.Extensions.Diagnostics.HealthChecks` | Health check base classes |
 | `CasCap.Common.Serialization.Json` | JSON serialization |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

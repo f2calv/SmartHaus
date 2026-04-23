@@ -42,7 +42,6 @@ dotnet test src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj
 | `CasCap.Common.Net` | HTTP helpers |
 | `CasCap.Common.Testing` | `AddXUnitLogging` and test utilities |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

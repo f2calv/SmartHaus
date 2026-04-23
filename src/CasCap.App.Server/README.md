@@ -134,7 +134,6 @@ Key configuration sections:
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
 | `CasCap.Common.Logging.Serilog` | Serilog structured logging pipeline |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

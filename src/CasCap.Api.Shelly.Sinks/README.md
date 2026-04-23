@@ -24,7 +24,6 @@ Provides Redis and Azure Table Storage sinks for persisting Shelly smart plug ev
 | `CasCap.Api.Azure.Storage` | Azure Table Storage client extensions |
 | `CasCap.Common.Caching` | Redis remote cache abstraction |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

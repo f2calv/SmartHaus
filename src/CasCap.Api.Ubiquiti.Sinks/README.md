@@ -49,7 +49,6 @@ Sinks are enabled in `UbiquitiConfig.Sinks.AvailableSinks`. Example `appsettings
 | `CasCap.Api.Azure.Storage` | Azure Table Storage entity types and base services |
 | `CasCap.Common.Caching` | Redis caching abstractions |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

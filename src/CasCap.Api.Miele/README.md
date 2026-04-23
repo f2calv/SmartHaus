@@ -95,7 +95,6 @@ Registered via `IServiceCollection.AddMiele()`. Configuration section: `CasCap:M
 }
 ```
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
