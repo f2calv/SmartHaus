@@ -51,6 +51,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
           version: ${{ needs.versioning.outputs.version }}
           execute-tests: false
+          solution-name: SmartHaus.Release.slnx
 
   containerize:
     uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
