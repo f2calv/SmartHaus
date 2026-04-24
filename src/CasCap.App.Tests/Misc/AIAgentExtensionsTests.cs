@@ -12,7 +12,7 @@ namespace CasCap.Tests.Misc;
 /// </remarks>
 public class AIAgentExtensionsTests(ITestOutputHelper output) : TestBase(output)
 {
-    private const string DefaultProviderKey = "EdgeOllamaGpu";
+    private const string DefaultProviderKey = "EdgeGpu";
 
     private (ProviderConfig provider, AgentConfig agentConfig) CreateTestConfig(string? modelOverride = null)
     {

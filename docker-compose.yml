@@ -183,11 +183,11 @@ services:
       CasCap__WizConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
 
       # AI — all providers point at the single Ollama instance
-      CasCap__AIConfig__Providers__EdgeOllamaGpu__Endpoint: http://ollama:11434
-      CasCap__AIConfig__Providers__EdgeOllamaGpu__ModelName: qwen3.5:4b
-      CasCap__AIConfig__Providers__EdgeOllamaGpuVL__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeGpu__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeGpu__ModelName: qwen3.5:4b
+      CasCap__AIConfig__Providers__EdgeGpuVL__Endpoint: http://ollama:11434
       CasCap__AIConfig__Providers__EdgeOllamaCpuVLC__Endpoint: http://ollama:11434
-      CasCap__AIConfig__Providers__EdgeOllamaWhisper__Endpoint: http://ollama:11434
+      CasCap__AIConfig__Providers__EdgeCpuWhisper__Endpoint: http://ollama:11434
     depends_on:
       redis:
         condition: service_healthy

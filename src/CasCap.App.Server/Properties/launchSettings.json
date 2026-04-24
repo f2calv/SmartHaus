@@ -7,7 +7,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         //"CasCap__FeatureConfig__EnabledFeatures": "0",
-        //"CasCap__FeatureConfig__EnabledFeatures": "Comms"
+        "CasCap__FeatureConfig__EnabledFeatures": "Comms",
         //"CasCap__FeatureConfig__EnabledFeatures": "Wiz,Comms"
         //"CasCap__FeatureConfig__EnabledFeatures": "SignalRHub",
         //"CasCap__FeatureConfig__EnabledFeatures": "Comms,Buderus,DoorBird,DDns,EdgeHardware,Fronius,Knx"
@@ -21,7 +21,7 @@
         //"CasCap__FeatureConfig__EnabledFeatures": "EdgeHardware,Comms",
         //"CasCap__FeatureConfig__EnabledFeatures": "Fronius",
         //"CasCap__FeatureConfig__EnabledFeatures": "Fronius,Comms",
-        "CasCap__FeatureConfig__EnabledFeatures": "Knx",
+        //"CasCap__FeatureConfig__EnabledFeatures": "Knx",
         //"CasCap__FeatureConfig__EnabledFeatures": "Knx,Comms",
         //"CasCap__FeatureConfig__EnabledFeatures": "Miele",
         //"CasCap__FeatureConfig__EnabledFeatures": "Miele,Comms",
@@ -33,6 +33,14 @@
         //"CasCap__FeatureConfig__EnabledFeatures": "Ubiquiti,Comms",
         //"CasCap__FeatureConfig__EnabledFeatures": "Wiz",
         //"CasCap__FeatureConfig__EnabledFeatures": "Wiz,Comms",
+        // llama-cpp overrides (uncomment to switch from Ollama to llama-cpp)
+        "CasCap__AIConfig__Providers__EdgeGpu__Type": "OpenAI",
+        "CasCap__AIConfig__Providers__EdgeGpu__Endpoint": "https://llama-cpp.as34013.net",
+        "CasCap__AIConfig__Providers__EdgeGpu__ModelName": "unsloth/Qwen3.5-9B-GGUF:UD-Q4_K_XL",
+        "CasCap__AIConfig__Providers__EdgeGpu__ApiKey": "sk-no-key-required",
+        // Route all agents through EdgeGpu (uncomment to override)
+        "CasCap__AIConfig__Agents__HeatingAgent__Provider": "EdgeGpu",
+        "CasCap__AIConfig__Agents__EnergyAgent__Provider": "EdgeGpu",
       },
       "applicationUrl": "http://localhost:8080"
     }

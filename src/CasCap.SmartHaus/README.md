@@ -142,7 +142,7 @@ When a user sends an audio clip (e.g. a voice message) via Signal, `Communicatio
 
 1. **Download** — The attachment bytes and MIME type (`audio/aac`, `audio/ogg`, etc.) are downloaded from signal-cli.
 2. **Transcode** — If the audio is not already WAV, `AgentExtensions.TranscodeToWavAsync` pipes the bytes through `ffmpeg` (stdin → stdout, 16 kHz mono 16-bit PCM WAV) via `ShellExtensions.RunProcessWithStdinAsync`. This ensures Whisper receives a format it supports — Signal sends raw AAC streams which Whisper cannot decode directly.
-3. **Transcribe** — The WAV bytes are sent to `AudioAgent` (Whisper model on the edge Ollama instance via `EdgeOllamaWhisper` provider). The MIME type is overridden to `image/png` for OllamaSharp transport because `AbstractionMapper.ToOllamaSharpMessages` filters `DataContent` to `image/*` only — Ollama's images field is raw base64 and Whisper interprets the bytes as audio regardless.
+3. **Transcribe** — The WAV bytes are sent to `AudioAgent` (Whisper model on the edge Ollama instance via `EdgeCpuWhisper` provider). The MIME type is overridden to `image/png` for OllamaSharp transport because `AbstractionMapper.ToOllamaSharpMessages` filters `DataContent` to `image/*` only — Ollama's images field is raw base64 and Whisper interprets the bytes as audio regardless.
 4. **Inject** — The transcribed text replaces the binary attachment in the prompt: `[AUDIO TRANSCRIPTION] The user sent an audio clip. Transcribed text: "..."`. CommsAgent then processes the text normally.
 
 ```mermaid
@@ -362,7 +362,7 @@ flowchart TD
 
     subgraph AudioPipeline["Audio Transcription"]
         AUDIO_IN["audio/aac bytes"] --> FFMPEG["ffmpeg<br/>AAC → WAV<br/>(16kHz mono PCM)"]
-        FFMPEG --> WHISPER["EdgeOllamaWhisper<br/>karanchopda333/whisper"]
+        FFMPEG --> WHISPER["EdgeCpuWhisper<br/>karanchopda333/whisper"]
         WHISPER --> TRANSCRIPTION["transcribed text"]
     end
     Audio --> AudioPipeline
