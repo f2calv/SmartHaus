@@ -14,7 +14,7 @@ namespace CasCap.Tests.Misc;
 /// </remarks>
 public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
 {
-    private const string DefaultProviderKey = "EdgeOllamaGpu";
+    private const string DefaultProviderKey = "EdgeGpu";
 
     private readonly string _filePath = @"C:\temp\wine.png";
     private readonly string _fileMimeType = "image/png";

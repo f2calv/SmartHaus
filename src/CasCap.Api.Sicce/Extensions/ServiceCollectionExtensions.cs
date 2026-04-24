@@ -53,12 +53,12 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<SicceConnectionHealthCheck>();
+
             if (config.HealthCheck != KubernetesProbeTypes.None)
-            {
-                services.AddSingleton<SicceConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<SicceConnectionHealthCheck>(nameof(SicceConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-            }
+
             services.AddSingleton<IBgFeature, SicceBgService>();
         }
 

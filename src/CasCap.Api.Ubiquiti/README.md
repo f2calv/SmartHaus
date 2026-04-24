@@ -125,7 +125,6 @@ flowchart TD
 | `CasCap.Common.Extensions.Diagnostics.HealthChecks` | Kubernetes probe tag helpers |
 | `Microsoft.Extensions.Diagnostics.HealthChecks` | Health check abstractions |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

@@ -88,12 +88,12 @@ public class CommsDebugNotifier(
             };
             await notifier.SendAsync(debugMsg, cancellationToken);
             logger.LogDebug("{ClassName} stream event debug sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "{ClassName} failed to send stream event debug to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
     }
 
@@ -126,12 +126,12 @@ public class CommsDebugNotifier(
             };
             await notifier.SendAsync(debugMsg, cancellationToken);
             logger.LogDebug("{ClassName} compaction debug sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "{ClassName} failed to send compaction debug to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
     }
 
@@ -249,12 +249,12 @@ public class CommsDebugNotifier(
             };
             await notifier.SendAsync(debugMsg, cancellationToken);
             logger.LogDebug("{ClassName} debug stats sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
         catch (Exception ex)
         {
             logger.LogWarning(ex, "{ClassName} failed to send debug stats to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug);
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
     }
 

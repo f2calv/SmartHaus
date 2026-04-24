@@ -86,7 +86,6 @@ Uses the same `appsettings.json` / `appsettings.Development.json` as the server 
 | `CasCap.Api.Knx.Sinks` | KNX event sinks |
 | `CasCap.Api.DoorBird.Sinks` | DoorBird event sinks |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

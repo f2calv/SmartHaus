@@ -200,7 +200,6 @@ Raspberry Pi reads from `CasCap:EdgeHardwareConfig`:
 | Project | Purpose |
 | --- | --- |
 
-
 ## License
 
 This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

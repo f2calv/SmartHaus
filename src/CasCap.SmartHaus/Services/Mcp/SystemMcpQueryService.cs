@@ -51,7 +51,13 @@ public partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger
     {
         logger.LogDebug("{ClassName} {MethodName} invoked", nameof(SystemMcpQueryService), nameof(GetProviders));
 
+        var assignedProviders = aiConfig.Value.Agents.Values
+            .Select(a => a.Provider)
+            .Where(p => !string.IsNullOrWhiteSpace(p))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
         var providers = aiConfig.Value.Providers
+            .Where(kvp => assignedProviders.Contains(kvp.Key))
             .Select(kvp => new ProviderInfo
             {
                 Key = kvp.Key,

@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
+public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]
@@ -52,6 +52,23 @@ public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : Contro
         [FromQuery] string? camera_name = null,
         [FromQuery] double? score = null)
     {
+        string? body = null;
+        if (HttpContext.Request.ContentLength > 0)
+        {
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            body = await reader.ReadToEndAsync();
+        }
+
+        logger.LogDebug(
+            "{ClassName} smart detect webhook received Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, QueryString={QueryString}, Body={Body}",
+            nameof(UbiquitiController),
+            type,
+            camera_id,
+            camera_name,
+            score,
+            HttpContext.Request.QueryString.ToString(),
+            body);
+
         var eventType = type?.ToLowerInvariant() switch
         {
             "person" => UbiquitiEventType.SmartDetectPerson,
@@ -61,7 +78,16 @@ public class UbiquitiController(IUbiquitiQueryService ubiquitiQuerySvc) : Contro
             _ => (UbiquitiEventType?)null,
         };
         if (eventType is null)
+        {
+            logger.LogWarning(
+                "{ClassName} unknown smart detect type {Type} for {Method} {Path} with QueryString={QueryString}",
+                nameof(UbiquitiController),
+                type,
+                HttpContext.Request.Method,
+                HttpContext.Request.Path,
+                HttpContext.Request.QueryString.ToString());
             return BadRequest($"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.");
+        }
 
         await ubiquitiQuerySvc.SendAlert(eventType.Value, camera_id, camera_name, score);
         return Ok("ok");

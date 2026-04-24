@@ -218,6 +218,7 @@ diagram. This table provides a quick-reference of each agent's effective tool se
 | --- | --- | --- | --- |
 
 Where:
+
 - **Direct Tools** — count of tools directly assigned via `Service` entries (after
   applying `IncludeTools` / `ExcludeTools`).
 - **Via Delegation** — count of tools reachable through `{ "Agent": "..." }` delegation
@@ -240,6 +241,7 @@ Create or update the Mermaid diagram in `src/CasCap.Common.AI/README.md` as desc
 ### Part C output
 
 For each agent, report:
+
 - ✅ Compliant — no changes needed
 - ⚠️ Missing — what needs to be added (with the exact text)
 - 🔄 Overlap — tools that should be removed from a parent agent

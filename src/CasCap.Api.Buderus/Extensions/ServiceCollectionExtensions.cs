@@ -57,12 +57,11 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<BuderusKm200ConnectionHealthCheck>();
+
             if (config.HealthCheck != KubernetesProbeTypes.None)
-            {
-                services.AddSingleton<BuderusKm200ConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<BuderusKm200ConnectionHealthCheck>(nameof(BuderusKm200ConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-            }
 
             services.AddSingleton<IBgFeature, BuderusKm200MonitorBgService>();
         }

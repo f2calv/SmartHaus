@@ -40,14 +40,12 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<DoorBirdConnectionHealthCheck>();
             services.AddSingleton<IBgFeature, DoorBirdBgService>();
 
             if (config.HealthCheck != KubernetesProbeTypes.None)
-            {
-                services.AddSingleton<DoorBirdConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<DoorBirdConnectionHealthCheck>(nameof(DoorBirdConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-            }
         }
 
         services.AddSingleton<DoorBirdQueryService>();

@@ -20,7 +20,7 @@ The library parses KNX group address **names** (as exported from ETS) into stron
 
 ### Segment Pattern
 
-```
+```text
 [Floor]-Category-[Room[(Location)]]-[Orientation]-[HorizontalPos]-[VerticalPos]-[LightStyle]-Function-[Outdoor|Indoor]-[[Identifier]]
 ```
 
@@ -342,7 +342,6 @@ flowchart TD
   }
 }
 ```
-
 
 ## License
 
