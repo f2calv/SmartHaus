@@ -52,12 +52,12 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<ShellyCloudConnectionHealthCheck>();
+
             if (config.HealthCheck != KubernetesProbeTypes.None)
-            {
-                services.AddSingleton<ShellyCloudConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<ShellyCloudConnectionHealthCheck>(nameof(ShellyCloudConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-            }
+
             services.AddSingleton<IBgFeature, ShellyMonitorBgService>();
         }
 

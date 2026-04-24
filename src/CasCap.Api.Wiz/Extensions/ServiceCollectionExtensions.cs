@@ -17,11 +17,10 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<IWizQueryService>(sp => sp.GetRequiredService<WizQueryService>());
         services.AddSingleton<IBgFeature, WizDiscoveryBgService>();
 
+        services.AddSingleton<WizConnectionHealthCheck>();
+
         if (config.HealthCheck != KubernetesProbeTypes.None)
-        {
-            services.AddSingleton<WizConnectionHealthCheck>();
             services.AddHealthChecks()
                 .AddCheck<WizConnectionHealthCheck>(nameof(WizConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-        }
     }
 }

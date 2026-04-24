@@ -54,12 +54,12 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<FroniusSymoConnectionHealthCheck>();
+
             if (config.HealthCheck != KubernetesProbeTypes.None)
-            {
-                services.AddSingleton<FroniusSymoConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<FroniusSymoConnectionHealthCheck>(nameof(FroniusSymoConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-            }
+
             services.AddSingleton<IBgFeature, FroniusMonitorBgService>();
         }
 

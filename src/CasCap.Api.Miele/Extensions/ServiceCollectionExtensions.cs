@@ -25,12 +25,11 @@ public static class ServiceCollectionExtensions
         services.AddSingleton<MieleClientService>();
         services.AddSingleton<IBgFeature, MieleEventStreamBgService>();
 
+        services.AddSingleton<MieleConnectionHealthCheck>();
+
         if (config.HealthCheck != KubernetesProbeTypes.None)
-        {
-            services.AddSingleton<MieleConnectionHealthCheck>();
             services.AddHealthChecks()
                 .AddCheck<MieleConnectionHealthCheck>(nameof(MieleConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-        }
 
         services.AddSingleton<MieleQueryService>();
         services.AddSingleton<IMieleQueryService>(sp => sp.GetRequiredService<MieleQueryService>());

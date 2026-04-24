@@ -87,12 +87,13 @@ public static class ServiceCollectionExtensions
 
         if (!lite)
         {
+            services.AddSingleton<KnxConnectionHealthCheck>();
+
             if (config.HealthCheck != KubernetesProbeTypes.None)
             {
                 services.AddHealthChecks()
                     .AddCheck<KnxGroupAddressLookupHealthCheck>(nameof(KnxGroupAddressLookupHealthCheck), tags: config.HealthCheck.GetTags());
 
-                services.AddSingleton<KnxConnectionHealthCheck>();
                 services.AddHealthChecks()
                     .AddCheck<KnxConnectionHealthCheck>(nameof(KnxConnectionHealthCheck), tags: config.HealthCheck.GetTags());
             }

@@ -57,11 +57,10 @@ public static class ServiceCollectionExtensions
         else
             services.AddSingleton<INotifier, SignalCliRestClientService>();
 
+        services.AddSingleton<SignalCliConnectionHealthCheck>();
+
         if (config.HealthCheck != KubernetesProbeTypes.None)
-        {
-            services.AddSingleton<SignalCliConnectionHealthCheck>();
             services.AddHealthChecks()
                 .AddCheck<SignalCliConnectionHealthCheck>(nameof(SignalCliConnectionHealthCheck), tags: config.HealthCheck.GetTags());
-        }
     }
 }
