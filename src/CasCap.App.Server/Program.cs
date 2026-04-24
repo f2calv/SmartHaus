@@ -1,5 +1,6 @@
 using CasCap.Authentication;
 using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using StackExchange.Redis;
 
