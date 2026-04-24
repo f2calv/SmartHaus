@@ -192,6 +192,13 @@ public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConf
                         continue;
                     }
 
+                    if (promptLine.TrimStart().StartsWith('/'))
+                    {
+                        AnsiConsole.MarkupLine("[red]Command not recognised, try /help ?[/]");
+                        AnsiConsole.WriteLine();
+                        continue;
+                    }
+
                     lock (s_middlewareLog)
                         s_middlewareLog.Clear();
 

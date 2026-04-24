@@ -93,7 +93,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
                 _webSocket = await CreateAndConnectWebSocketAsync(cancellationToken);
 
                 _logger.LogInformation("{ClassName} WebSocket connected for {PhoneNumber}",
-                    nameof(SignalCliJsonRpcClientService), _config.PhoneNumber);
+                    nameof(SignalCliJsonRpcClientService), _config.PhoneNumber.MaskPhoneNumber());
 
                 _receiveLoopTask = Task.Run(() => ReceiveLoopWithReconnectAsync(_wsCts.Token), _wsCts.Token);
                 return;
@@ -108,7 +108,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
                 if (attempt > _maxReconnectAttempts)
                 {
                     _logger.LogError(ex, "{ClassName} exceeded {MaxAttempts} initial connection attempts for {PhoneNumber}",
-                        nameof(SignalCliJsonRpcClientService), _maxReconnectAttempts, _config.PhoneNumber);
+                        nameof(SignalCliJsonRpcClientService), _maxReconnectAttempts, _config.PhoneNumber.MaskPhoneNumber());
                     throw;
                 }
 
@@ -193,7 +193,8 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
     private async Task<ClientWebSocket> CreateAndConnectWebSocketAsync(CancellationToken cancellationToken)
     {
         var wsUri = BuildWebSocketUri(_config.BaseAddress, _config.PhoneNumber);
-        _logger.LogInformation("{ClassName} connecting to WebSocket at {Uri}", nameof(SignalCliJsonRpcClientService), wsUri);
+        _logger.LogInformation("{ClassName} connecting to WebSocket at {Uri}", nameof(SignalCliJsonRpcClientService),
+            BuildWebSocketUri(_config.BaseAddress, _config.PhoneNumber.MaskPhoneNumber()));
 
         var ws = new ClientWebSocket();
         _configureWebSocket?.Invoke(ws);

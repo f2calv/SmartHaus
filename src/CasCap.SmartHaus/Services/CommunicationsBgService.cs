@@ -128,8 +128,8 @@ public partial class CommunicationsBgService : IBgFeature
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         _logger.LogInformation("{ClassName} starting, transport={Transport}, phoneNumber={PhoneNumber}, phoneNumberDebug={PhoneNumberDebug}, groupName={GroupName}, agentProfile={AgentProfile}",
-            nameof(CommunicationsBgService), _signalCliConfig.TransportMode, _signalCliConfig.PhoneNumber,
-            _signalCliConfig.PhoneNumberDebug ?? "(disabled)", _commsAgentConfig.GroupName, AgentKeys.CommsAgent);
+            nameof(CommunicationsBgService), _signalCliConfig.TransportMode, _signalCliConfig.PhoneNumber.MaskPhoneNumber(),
+            _signalCliConfig.PhoneNumberDebug?.MaskPhoneNumber() ?? "(disabled)", _commsAgentConfig.GroupName, AgentKeys.CommsAgent);
         try
         {
             // Start consuming the comms stream immediately — this must not be gated behind
@@ -176,7 +176,7 @@ public partial class CommunicationsBgService : IBgFeature
                 }
             }
 
-            _logger.LogInformation("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber);
+            _logger.LogInformation("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber());
             INotificationGroup[]? groups = null;
             try
             {
@@ -216,7 +216,7 @@ public partial class CommunicationsBgService : IBgFeature
             var replyTask = DrainReplyQueueAsync(cancellationToken);
 
             _logger.LogInformation("{ClassName} polling for group messages on {PhoneNumber} via {Transport}",
-                nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber, _signalCliConfig.TransportMode);
+                nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber(), _signalCliConfig.TransportMode);
             var incomingTask = PollForMessagesAsync(cancellationToken);
 
             //await-await-WhenAny propagates the first faulted task immediately so the
