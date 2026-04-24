@@ -52,14 +52,22 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
         [FromQuery] string? camera_name = null,
         [FromQuery] double? score = null)
     {
+        string? body = null;
+        if (HttpContext.Request.ContentLength > 0)
+        {
+            using var reader = new StreamReader(HttpContext.Request.Body);
+            body = await reader.ReadToEndAsync();
+        }
+
         logger.LogDebug(
-            "{ClassName} smart detect webhook received with Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, QueryString={QueryString}",
+            "{ClassName} smart detect webhook received Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, QueryString={QueryString}, Body={Body}",
             nameof(UbiquitiController),
             type,
             camera_id,
             camera_name,
             score,
-            HttpContext.Request.QueryString.ToString());
+            HttpContext.Request.QueryString.ToString(),
+            body);
 
         var eventType = type?.ToLowerInvariant() switch
         {
