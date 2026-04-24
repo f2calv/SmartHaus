@@ -464,7 +464,7 @@ flowchart TD
 | AudioAgent | 0 | — | 0 |
 | CommsAgent | 8 | 98 | 106 |
 
-## Agent Instructions
+## Agent Instruction Files
 
 | Agent | Instruction file |
 | --- | --- |

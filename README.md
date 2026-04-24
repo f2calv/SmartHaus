@@ -18,14 +18,14 @@
 [cascap.api.knx.sinks-url]: https://nuget.org/packages/CasCap.Api.Knx.Sinks
 
 > **Early proof-of-concept / first public release.** This project is under active development — expect rough edges, breaking changes, and missing documentation. Bugs are expected and the project is **fully unsupported**. Contributions and feedback are welcome, but please set expectations accordingly.
-
+>
 > I started this IoT/home automation project in 2022 and for four years struggled to find the time to get it over the line. In the last two months I switched to agentic development using [GitHub Copilot](https://github.com/features/copilot) — and this is the end result!
 
 An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) IoT smart-home platform designed to run on the edge — from a Raspberry Pi to a full GPU-accelerated workstation. SmartHaus connects real-world devices (solar inverters, heating systems, lighting, security cameras, smart plugs, and more) into a single, event-driven application with AI-powered decision-making via the [Microsoft Agent Framework](https://github.com/microsoft/agents) and [Model Context Protocol (MCP)](https://modelcontextprotocol.io/).
 
 ![SmartHaus — Signal messenger conversation showing the CommsAgent orchestrating HeatingAgent, EnergyAgent, and SecurityAgent to provide a home status summary](docs/SmartHaus.png)
 
-### Highlights
+## Highlights
 
 - **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
 - **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent, AudioAgent) orchestrate decisions autonomously — see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
