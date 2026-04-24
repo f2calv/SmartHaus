@@ -439,4 +439,3 @@ FodyWeavers.xsd
 manifest*
 appsettings.Local.json
 appsettings.Local.*.json
-**/Properties/launchSettings.json
