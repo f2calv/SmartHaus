@@ -71,6 +71,7 @@
 
   <ItemGroup>
     <PackageReference Include="ModelContextProtocol.AspNetCore" />
+    <PackageReference Include="PdfPig" />
   </ItemGroup>
 
 </Project>

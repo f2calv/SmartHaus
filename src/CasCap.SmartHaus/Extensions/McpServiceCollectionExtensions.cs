@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.AI;
+
 namespace CasCap.Extensions;
 
 /// <summary>
@@ -103,5 +106,46 @@ public static class HausMcpServiceCollectionExtensions
             sp.GetRequiredService<IPollTracker>(),
             string.Empty,
             string.Empty));
+    }
+
+    /// <summary>
+    /// Registers <see cref="Services.RagMcpQueryService"/> and its dependencies
+    /// (<see cref="IDocumentVectorStore"/>, <see cref="IDocumentIngestionService"/>,
+    /// embedding generator, and configuration) for RAG document management tools.
+    /// </summary>
+    /// <param name="builder">The web application builder.</param>
+    public static void AddRag(this WebApplicationBuilder builder)
+    {
+        builder.Services.AddCasCapConfiguration<RagConfig>();
+        builder.Services.AddSingleton<IDocumentVectorStore, RedisDocumentVectorStore>();
+        builder.Services.AddSingleton<IDocumentIngestionService, PdfDocumentIngestionService>();
+
+        // Register IEmbeddingGenerator from the configured provider.
+        builder.Services.AddSingleton(sp =>
+        {
+            var ragCfg = sp.GetRequiredService<IOptions<RagConfig>>().Value;
+            var aiCfg = sp.GetRequiredService<IOptions<AIConfig>>().Value;
+
+            if (!aiCfg.Providers.TryGetValue(ragCfg.EmbeddingProvider, out var providerConfig))
+                throw new InvalidOperationException(
+                    $"Embedding provider '{ragCfg.EmbeddingProvider}' not found in AIConfig.Providers.");
+
+            HttpClient? httpClient = null;
+            if (providerConfig.Type is AgentType.Ollama && builder.Environment.IsDevelopment())
+            {
+                httpClient = new HttpClient
+                {
+                    BaseAddress = providerConfig.Endpoint,
+                    Timeout = Timeout.InfiniteTimeSpan,
+                };
+                var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
+                httpClient.SetBasicAuth(authOpts.Username, authOpts.Password);
+            }
+
+            return EmbeddingGeneratorFactory.CreateEmbeddingGenerator(providerConfig, httpClient);
+        });
+
+        builder.Services.AddSingleton<RagMcpQueryService>();
+        builder.Services.AddSingleton<IBgFeature, RagIngestionBgService>();
     }
 }

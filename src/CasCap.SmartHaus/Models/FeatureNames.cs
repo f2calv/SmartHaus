@@ -64,6 +64,9 @@ public static class FeatureNames
     /// <summary>Single-instance communications and media analysis service — consumes key events and binary media from Redis Streams, routes media to domain agents, and relays notifications via Signal messenger.</summary>
     public const string Comms = nameof(Comms);
 
+    /// <summary>RAG (Retrieval-Augmented Generation) document ingestion and vector search.</summary>
+    public const string Rag = nameof(Rag);
+
     /// <summary>Lightweight feature name used by integration tests to boot the application without activating any hardware features.</summary>
     public const string Test = nameof(Test);
 }
