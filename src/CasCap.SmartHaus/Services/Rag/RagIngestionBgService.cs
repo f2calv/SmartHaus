@@ -15,20 +15,15 @@ public class RagIngestionBgService(
     public string FeatureName => FeatureNames.Rag;
 
     /// <inheritdoc/>
-    public Task StartAsync(CancellationToken cancellationToken) =>
-        ExecuteAsync(cancellationToken);
-
-    /// <inheritdoc/>
-    public Task StopAsync(CancellationToken cancellationToken) =>
-        Task.CompletedTask;
-
-    private async Task ExecuteAsync(CancellationToken cancellationToken)
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         var config = ragConfig.Value;
 
         if (!config.AutoIngestOnStartup)
         {
-            logger.LogInformation("{ClassName} auto-ingestion disabled", nameof(RagIngestionBgService));
+            logger.LogInformation("{ClassName} auto-ingestion disabled, idling", nameof(RagIngestionBgService));
+            try { await Task.Delay(Timeout.Infinite, cancellationToken); }
+            catch (OperationCanceledException) { }
             return;
         }
 
@@ -36,6 +31,8 @@ public class RagIngestionBgService(
         {
             logger.LogWarning("{ClassName} documents directory {Path} does not exist, skipping auto-ingestion",
                 nameof(RagIngestionBgService), config.DocumentsPath);
+            try { await Task.Delay(Timeout.Infinite, cancellationToken); }
+            catch (OperationCanceledException) { }
             return;
         }
 
@@ -55,5 +52,11 @@ public class RagIngestionBgService(
         {
             logger.LogError(ex, "{ClassName} auto-ingestion failed", nameof(RagIngestionBgService));
         }
+
+        // Idle after ingestion.
+        try { await Task.Delay(Timeout.Infinite, cancellationToken); }
+        catch (OperationCanceledException) { }
+
+        logger.LogInformation("{ClassName} exiting", nameof(RagIngestionBgService));
     }
 }

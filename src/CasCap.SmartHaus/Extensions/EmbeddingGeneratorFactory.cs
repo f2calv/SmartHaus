@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using OllamaSharp;
+using System.ClientModel;
 
 namespace CasCap.Extensions;
 
@@ -32,16 +33,18 @@ public static class EmbeddingGeneratorFactory
     private static IEmbeddingGenerator<string, Embedding<float>> CreateOllamaEmbeddingGenerator(ProviderConfig provider, HttpClient? httpClient)
     {
         var uri = provider.Endpoint ?? new Uri("http://localhost:11434");
-        var client = httpClient is not null
-            ? new OllamaApiClient(httpClient, provider.ModelName)
-            : new OllamaApiClient(uri, provider.ModelName);
-        return client.AsEmbeddingGenerator();
+
+        // OllamaApiClient directly implements IEmbeddingGenerator<string, Embedding<float>>.
+        if (httpClient is not null)
+            return new OllamaApiClient(httpClient, provider.ModelName);
+
+        return new OllamaApiClient(uri, provider.ModelName);
     }
 
     private static IEmbeddingGenerator<string, Embedding<float>> CreateOpenAIEmbeddingGenerator(ProviderConfig provider)
     {
         var apiKey = provider.ApiKey ?? throw new InvalidOperationException("OpenAI embedding provider requires an ApiKey.");
-        var client = new OpenAI.OpenAIClient(apiKey);
+        var client = new OpenAI.OpenAIClient(new ApiKeyCredential(apiKey));
         return client.GetEmbeddingClient(provider.ModelName).AsIEmbeddingGenerator();
     }
 
@@ -49,7 +52,7 @@ public static class EmbeddingGeneratorFactory
     {
         var endpoint = provider.Endpoint ?? throw new InvalidOperationException("AzureOpenAI embedding provider requires an Endpoint.");
         var apiKey = provider.ApiKey ?? throw new InvalidOperationException("AzureOpenAI embedding provider requires an ApiKey.");
-        var client = new Azure.AI.OpenAI.AzureOpenAIClient(endpoint, new Azure.AzureKeyCredential(apiKey));
+        var client = new Azure.AI.OpenAI.AzureOpenAIClient(endpoint, new AzureKeyCredential(apiKey));
         return client.GetEmbeddingClient(provider.ModelName).AsIEmbeddingGenerator();
     }
 }
