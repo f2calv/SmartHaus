@@ -44,8 +44,8 @@ services:
   # ---------- Infrastructure (always started) ----------
 
   redis:
-    image: redis
-    command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
+    image: redis/redis-stack-server
+    command: [ "redis-server", "/usr/local/etc/redis/redis.conf", "--loadmodule", "/opt/redis-stack/lib/redisearch.so" ]
     ports:
       - 6379:6379
     volumes:
@@ -121,7 +121,7 @@ services:
         condition: service_healthy
     environment:
       OLLAMA_HOST: http://ollama:11434
-    entrypoint: [ "sh", "-c", "ollama pull qwen3.5:4b" ]
+    entrypoint: [ "sh", "-c", "ollama pull qwen3.5:4b && ollama pull nomic-embed-text" ]
     restart: "no"
 
   # ---------- Demo profile: signal-cli ----------
@@ -188,6 +188,11 @@ services:
       CasCap__AIConfig__Providers__EdgeGpuVL__Endpoint: http://ollama:11434
       CasCap__AIConfig__Providers__EdgeOllamaCpuVLC__Endpoint: http://ollama:11434
       CasCap__AIConfig__Providers__EdgeCpuWhisper__Endpoint: http://ollama:11434
+
+      # RAG — embedding model and document path
+      CasCap__AIConfig__Providers__EdgeEmbedding__Endpoint: http://ollama:11434
+      CasCap__RagConfig__DocumentsPath: /data/rag-documents
+      CasCap__RagConfig__EmbeddingProvider: EdgeEmbedding
     depends_on:
       redis:
         condition: service_healthy
