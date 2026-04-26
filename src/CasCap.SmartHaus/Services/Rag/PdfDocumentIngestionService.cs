@@ -135,8 +135,15 @@ public class PdfDocumentIngestionService(
     }
 
     /// <summary>
-    /// Splits extracted pages into chunks using a simple character-based approximation
-    /// (4 characters ≈ 1 token). Chunks overlap by <paramref name="overlapTokens"/> tokens.
+    /// Approximate number of characters per token for chunk size estimation.
+    /// Standard English text averages roughly 4 characters per token with most tokenizers.
+    /// </summary>
+    private const int CharsPerTokenApprox = 4;
+
+    /// <summary>
+    /// Splits extracted pages into chunks using a character-based approximation
+    /// (<see cref="CharsPerTokenApprox"/> characters ≈ 1 token). Chunks overlap by
+    /// <paramref name="overlapTokens"/> tokens.
     /// </summary>
     private static List<DocumentChunk> ChunkPages(
         List<(int PageNumber, string Text)> pages,
@@ -148,9 +155,13 @@ public class PdfDocumentIngestionService(
         var chunks = new List<DocumentChunk>();
         var chunkIndex = 0;
 
-        // Approximate token-to-char ratio.
-        var chunkSizeChars = chunkSizeTokens * 4;
-        var overlapChars = overlapTokens * 4;
+        var chunkSizeChars = chunkSizeTokens * CharsPerTokenApprox;
+        var overlapChars = overlapTokens * CharsPerTokenApprox;
+        var stride = chunkSizeChars - overlapChars;
+
+        if (stride <= 0)
+            throw new ArgumentException(
+                $"ChunkOverlapTokens ({overlapTokens}) must be less than ChunkSizeTokens ({chunkSizeTokens}).");
 
         foreach (var (pageNumber, text) in pages)
         {
@@ -174,9 +185,7 @@ public class PdfDocumentIngestionService(
                     chunkIndex++;
                 }
 
-                position += chunkSizeChars - overlapChars;
-                if (chunkSizeChars - overlapChars <= 0)
-                    break;
+                position += stride;
             }
         }
 

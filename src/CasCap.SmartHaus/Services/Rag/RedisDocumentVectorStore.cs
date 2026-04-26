@@ -23,6 +23,10 @@ public class RedisDocumentVectorStore(
 
     private IDatabase Db => connectionMultiplexer.GetDatabase();
 
+    private IServer Server =>
+        connectionMultiplexer.GetServers().FirstOrDefault()
+            ?? throw new InvalidOperationException("No Redis server available in the connection multiplexer.");
+
     private static string ChunkKey(string collectionName, string chunkId) =>
         $"{KeyPrefix}:{collectionName}:{chunkId}";
 
@@ -142,7 +146,7 @@ public class RedisDocumentVectorStore(
     public async Task RemoveDocumentAsync(string collectionName, string documentId, CancellationToken cancellationToken = default)
     {
         var db = Db;
-        var server = connectionMultiplexer.GetServers().First();
+        var server = Server;
 
         // Find and delete all chunk keys belonging to this document.
         var keyPattern = $"{KeyPrefix}:{collectionName}:{documentId}:*";
@@ -166,7 +170,7 @@ public class RedisDocumentVectorStore(
     public async Task DeleteCollectionAsync(string collectionName, CancellationToken cancellationToken = default)
     {
         var db = Db;
-        var server = connectionMultiplexer.GetServers().First();
+        var server = Server;
         var idxName = IndexName(collectionName);
 
         // Drop the index (DD = delete associated docs).
@@ -190,7 +194,7 @@ public class RedisDocumentVectorStore(
     public async Task<List<DocumentInfo>> ListDocumentsAsync(string collectionName, CancellationToken cancellationToken = default)
     {
         var db = Db;
-        var server = connectionMultiplexer.GetServers().First();
+        var server = Server;
         var documents = new List<DocumentInfo>();
 
         await foreach (var key in server.KeysAsync(pattern: $"{MetaPrefix}:{collectionName}:*"))

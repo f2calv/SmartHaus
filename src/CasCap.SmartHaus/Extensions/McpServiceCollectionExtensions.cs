@@ -142,7 +142,7 @@ public static class HausMcpServiceCollectionExtensions
                 httpClient.SetBasicAuth(authOpts.Username, authOpts.Password);
             }
 
-            return EmbeddingGeneratorFactory.Create(providerConfig, httpClient);
+            return EmbeddingGeneratorFactory.CreateEmbeddingGenerator(providerConfig, httpClient);
         });
 
         builder.Services.AddSingleton<RagMcpQueryService>();

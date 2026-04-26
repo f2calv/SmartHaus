@@ -21,7 +21,7 @@ public static class EmbeddingGeneratorFactory
     /// <param name="provider">The provider configuration containing endpoint, model, and type.</param>
     /// <param name="httpClient">Optional pre-configured HTTP client (e.g. with basic auth for dev Ollama).</param>
     /// <returns>An embedding generator for the configured provider.</returns>
-    public static IEmbeddingGenerator<string, Embedding<float>> Create(ProviderConfig provider, HttpClient? httpClient = null) =>
+    public static IEmbeddingGenerator<string, Embedding<float>> CreateEmbeddingGenerator(ProviderConfig provider, HttpClient? httpClient = null) =>
         provider.Type switch
         {
             AgentType.Ollama => CreateOllamaEmbeddingGenerator(provider, httpClient),
