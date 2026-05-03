@@ -24,6 +24,7 @@ public partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorBirdQuer
     /// <inheritdoc cref="IDoorBirdQueryService.UnlockFrontDoor()"/>
     [McpServerTool]
     [Description("Unlocks the front door by triggering the electric door release.")]
+    [RequiresApproval(Reason = "Physical security action — unlocks the front door.")]
     public Task<bool> UnlockHouseDoor() => doorBirdQuerySvc.UnlockFrontDoor();
 
     /// <inheritdoc cref="IDoorBirdQueryService.LightOn"/>

@@ -37,6 +37,7 @@ public partial class SmartLightingMcpQueryService(
     /// <inheritdoc cref="IKnxQueryService.TurnAllLightsOff"/>
     [McpServerTool]
     [Description("Turns off every light that is currently on in the house. Requires KNX feature.")]
+    [RequiresApproval(Reason = "Bulk state change — turns off all lights in the house.")]
     public Task<string[]> SwitchOffAllHouseLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
             ? knxQuerySvc.TurnAllLightsOff(cancellationToken)

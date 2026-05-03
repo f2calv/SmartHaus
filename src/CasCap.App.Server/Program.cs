@@ -32,6 +32,9 @@ try
     // SystemMcpQueryService is referenced by all agents — register unconditionally.
     builder.Services.AddSystemMcp();
 
+    // Register MCP audit middleware and configuration.
+    builder.Services.AddMcpAudit();
+
     // Register SignalR services unconditionally so IHubContext<> is always resolvable for
     // HausHub sinks discovered during assembly scanning (e.g. HausHubSinkBuderusService).
     // The hub endpoint mapping and Redis backplane are configured later when SignalRHub is enabled.
