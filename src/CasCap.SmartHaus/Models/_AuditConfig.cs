@@ -36,14 +36,21 @@ public record AuditConfig : IAppConfig
     public int ApprovalTimeoutMs { get; init; } = 60_000;
 
     /// <summary>
-    /// Tool names (snake_case) that always require approval regardless of the <see cref="CasCap.Attributes.RequiresApprovalAttribute"/>.
+    /// Tool names that always require approval regardless of the <see cref="CasCap.Attributes.RequiresApprovalAttribute"/>.
     /// </summary>
-    /// <remarks>Config-driven override for operational control without redeployment.</remarks>
+    /// <remarks>
+    /// Matching is case-insensitive — use either PascalCase method names (e.g. <c>UnlockHouseDoor</c>)
+    /// or snake_case registry names (e.g. <c>unlock_house_door</c>).
+    /// Config-driven override for operational control without redeployment.
+    /// </remarks>
     public string[] AlwaysRequireApproval { get; init; } = [];
 
     /// <summary>
-    /// Tool names (snake_case) that are exempt from approval even if decorated with <see cref="CasCap.Attributes.RequiresApprovalAttribute"/>.
+    /// Tool names that are exempt from approval even if decorated with <see cref="CasCap.Attributes.RequiresApprovalAttribute"/>.
     /// </summary>
-    /// <remarks>Useful for development environments or trusted automation scenarios.</remarks>
+    /// <remarks>
+    /// Matching is case-insensitive — use either PascalCase method names or snake_case registry names.
+    /// Useful for development environments or trusted automation scenarios.
+    /// </remarks>
     public string[] NeverRequireApproval { get; init; } = [];
 }
