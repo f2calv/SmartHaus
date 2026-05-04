@@ -14,7 +14,7 @@ try
     var logger = builder.InitializeSerilog();
     var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
         ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
-    builder.InitializeOpenTelemetry(appConfig, connectionStrings, connectionMultiplexer, gitMetadata);
+    builder.InitializeOpenTelemetry(appConfig, connectionMultiplexer, gitMetadata);
 
     if (enabledFeatures.Count == 0)
         throw new GenericException($"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");

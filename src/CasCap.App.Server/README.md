@@ -122,7 +122,6 @@ Key configuration sections:
 | [AspNetCore.HealthChecks.Azure.Data.Tables](https://www.nuget.org/packages/aspnetcore.healthchecks.azure.data.tables) | Azure Tables health check |
 | [AspNetCore.HealthChecks.Azure.Storage.Blobs](https://www.nuget.org/packages/aspnetcore.healthchecks.azure.storage.blobs) | Azure Blob health check |
 | [AspNetCore.HealthChecks.UI](https://www.nuget.org/packages/aspnetcore.healthchecks.ui).* | Health check dashboard UI |
-| [OpenTelemetry](https://www.nuget.org/packages/opentelemetry).* | Metrics, traces, and log exporters |
 | [Microsoft.AspNetCore.SignalR.StackExchangeRedis](https://www.nuget.org/packages/microsoft.aspnetcore.signalr.stackexchangeredis) | SignalR Redis backplane |
 | [Swashbuckle.AspNetCore](https://www.nuget.org/packages/swashbuckle.aspnetcore) | Swagger/OpenAPI documentation |
 | [Azure.Extensions.AspNetCore.Configuration.Secrets](https://www.nuget.org/packages/azure.extensions.aspnetcore.configuration.secrets) | Azure Key Vault configuration |
@@ -133,6 +132,7 @@ Key configuration sections:
 | --- | --- |
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
 | `CasCap.Common.Logging.Serilog` | Serilog structured logging pipeline |
+| `CasCap.Common.OpenTelemetry` | Reusable OpenTelemetry metrics, traces, and log exporters |
 
 ## License
 

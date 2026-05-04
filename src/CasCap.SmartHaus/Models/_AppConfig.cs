@@ -73,6 +73,9 @@ public record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, IMetrics
     [Required]
     public string OtelServiceName { get; init; } = "CasCap.App";
 
+    /// <inheritdoc/>
+    public Uri? OtlpExporterEndpoint { get; init; }
+
     #region Kubernetes specific
     /// <inheritdoc/>
     public string? NodeName { get; init; }
