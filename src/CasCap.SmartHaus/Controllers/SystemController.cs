@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace CasCap.Controllers;
 
@@ -10,9 +11,10 @@ public class SystemController(ILogger<SystemController> logger, GitMetadata gitM
     /// <summary>Returns git build information.</summary>
     [Authorize]
     [HttpGet]
-    public GitMetadata Get()
+    [ProducesResponseType<GitMetadata>(StatusCodes.Status200OK)]
+    public Ok<GitMetadata> Get()
     {
         logger.LogDebug("{ClassName} returning git info", nameof(SystemController));
-        return gitMetadata;
+        return TypedResults.Ok(gitMetadata);
     }
 }

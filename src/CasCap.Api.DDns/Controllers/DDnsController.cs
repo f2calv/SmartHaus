@@ -13,6 +13,6 @@ public class DDnsController(IDDnsQueryService dDnsQuerySvc) : ControllerBase
     /// <inheritdoc cref="DDnsQueryService.GetCurrentIp"/>
     [HttpGet("ip")]
     [ProducesResponseType<string>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetCurrentIp(CancellationToken cancellationToken)
-        => Ok(await dDnsQuerySvc.GetCurrentIp(cancellationToken));
+    public async Task<Ok<string>> GetCurrentIp(CancellationToken cancellationToken)
+        => TypedResults.Ok((await dDnsQuerySvc.GetCurrentIp(cancellationToken))?.ToString());
 }

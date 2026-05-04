@@ -13,34 +13,34 @@ public class ShuttersController(IKnxQueryService knxQuerySvc) : ControllerBase
     /// <inheritdoc cref="KnxQueryService.ListShutters"/>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListShutters([FromQuery] string? room = null, CancellationToken cancellationToken = default)
-        => Ok(await knxQuerySvc.ListShutters(room, cancellationToken));
+    public async Task<Ok<List<KnxShutter>>> ListShutters([FromQuery] string? room = null, CancellationToken cancellationToken = default)
+        => TypedResults.Ok(await knxQuerySvc.ListShutters(room, cancellationToken));
 
     /// <inheritdoc cref="KnxQueryService.GetShutter"/>
     [HttpGet("{groupName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetShutter(string groupName, CancellationToken cancellationToken = default)
+    public async Task<Results<Ok<KnxShutter>, NotFound>> GetShutter(string groupName, CancellationToken cancellationToken = default)
     {
         var result = await knxQuerySvc.GetShutter(groupName, cancellationToken);
-        return result is not null ? Ok(result) : NotFound();
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
 
     /// <inheritdoc cref="KnxQueryService.SetShutterState"/>
     [HttpPost("state")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> SetShutterState([FromBody] KnxShutterStateChangeRequest request, [FromQuery] bool dryRun = false, CancellationToken cancellationToken = default)
-        => Accepted(await knxQuerySvc.SetShutterState(request, dryRun, cancellationToken));
+    public async Task<Accepted<KnxStateChangeResponse>> SetShutterState([FromBody] KnxShutterStateChangeRequest request, [FromQuery] bool dryRun = false, CancellationToken cancellationToken = default)
+        => TypedResults.Accepted((string?)null, await knxQuerySvc.SetShutterState(request, dryRun, cancellationToken));
 
     /// <inheritdoc cref="KnxQueryService.CloseAllShutters"/>
     [HttpPost("state/all-close")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> CloseAllShutters(CancellationToken cancellationToken = default)
-        => Accepted(await knxQuerySvc.CloseAllShutters(cancellationToken));
+    public async Task<Accepted<string[]>> CloseAllShutters(CancellationToken cancellationToken = default)
+        => TypedResults.Accepted((string?)null, await knxQuerySvc.CloseAllShutters(cancellationToken));
 
     /// <inheritdoc cref="KnxQueryService.OpenAllShutters"/>
     [HttpPost("state/all-open")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> OpenAllShutters(CancellationToken cancellationToken = default)
-        => Accepted(await knxQuerySvc.OpenAllShutters(cancellationToken));
+    public async Task<Accepted<string[]>> OpenAllShutters(CancellationToken cancellationToken = default)
+        => TypedResults.Accepted((string?)null, await knxQuerySvc.OpenAllShutters(cancellationToken));
 }

@@ -13,18 +13,18 @@ public class SicceController(ISicceQueryService sicceQuerySvc) : ControllerBase
     /// <inheritdoc cref="SicceQueryService.GetSnapshot"/>
     [HttpGet]
     [ProducesResponseType<SicceSnapshot>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSnapshot()
-        => Ok(await sicceQuerySvc.GetSnapshot());
+    public async Task<Ok<SicceSnapshot>> GetSnapshot()
+        => TypedResults.Ok(await sicceQuerySvc.GetSnapshot());
 
     /// <inheritdoc cref="SicceQueryService.GetReadings"/>
     [HttpGet("readings")]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetReadings(int limit = 100)
-        => Ok(sicceQuerySvc.GetReadings(limit));
+    public Ok<IAsyncEnumerable<SicceEvent>> GetReadings(int limit = 100)
+        => TypedResults.Ok(sicceQuerySvc.GetReadings(limit));
 
     /// <inheritdoc cref="SicceQueryService.GetDeviceInfo"/>
     [HttpGet("device")]
     [ProducesResponseType<DeviceInfo>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeviceInfo()
-        => Ok(await sicceQuerySvc.GetDeviceInfo());
+    public async Task<Ok<DeviceInfo>> GetDeviceInfo()
+        => TypedResults.Ok(await sicceQuerySvc.GetDeviceInfo());
 }

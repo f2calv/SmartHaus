@@ -13,22 +13,22 @@ public class PowerOutletsController(IKnxQueryService knxQuerySvc) : ControllerBa
     /// <inheritdoc cref="KnxQueryService.ListPowerOutlets"/>
     [HttpGet]
     [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> ListPowerOutlets([FromQuery] string? room = null, CancellationToken cancellationToken = default)
-        => Ok(await knxQuerySvc.ListPowerOutlets(room, cancellationToken));
+    public async Task<Ok<List<KnxPowerOutlet>>> ListPowerOutlets([FromQuery] string? room = null, CancellationToken cancellationToken = default)
+        => TypedResults.Ok(await knxQuerySvc.ListPowerOutlets(room, cancellationToken));
 
     /// <inheritdoc cref="KnxQueryService.GetPowerOutlet"/>
     [HttpGet("{groupName}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetPowerOutlet(string groupName, CancellationToken cancellationToken = default)
+    public async Task<Results<Ok<KnxPowerOutlet>, NotFound>> GetPowerOutlet(string groupName, CancellationToken cancellationToken = default)
     {
         var result = await knxQuerySvc.GetPowerOutlet(groupName, cancellationToken);
-        return result is not null ? Ok(result) : NotFound();
+        return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
 
     /// <inheritdoc cref="KnxQueryService.SetPowerOutletState"/>
     [HttpPost("state")]
     [ProducesResponseType(StatusCodes.Status202Accepted)]
-    public async Task<IActionResult> SetPowerOutletState([FromBody] KnxPowerOutletStateChangeRequest request, [FromQuery] bool dryRun = false, CancellationToken cancellationToken = default)
-        => Accepted(await knxQuerySvc.SetPowerOutletState(request, dryRun, cancellationToken));
+    public async Task<Accepted<KnxStateChangeResponse>> SetPowerOutletState([FromBody] KnxPowerOutletStateChangeRequest request, [FromQuery] bool dryRun = false, CancellationToken cancellationToken = default)
+        => TypedResults.Accepted((string?)null, await knxQuerySvc.SetPowerOutletState(request, dryRun, cancellationToken));
 }
