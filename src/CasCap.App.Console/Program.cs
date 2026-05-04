@@ -14,7 +14,7 @@ try
     var builder = Host.CreateApplicationBuilder();
     builder.Logging.ClearProviders();
     builder.Logging.AddSerilog(Log.Logger);
-    var (_, _, _, _, enabledFeatures, _) = builder.InitializeConfiguration(typeof(Program).Assembly);
+    var (_, _, _, enabledFeatures, _) = builder.InitializeConfiguration(typeof(Program).Assembly);
 
     if (enabledFeatures.Count == 0)
         throw new InvalidOperationException($"{nameof(enabledFeatures)} is empty — set CasCap:FeatureConfig:EnabledFeatures in appsettings or environment variables.");

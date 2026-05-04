@@ -10,7 +10,7 @@ var result = 0;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    var (appConfig, connectionStrings, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
+    var (appConfig, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
     var logger = builder.InitializeSerilog();
     var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
         ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
@@ -387,8 +387,7 @@ try
     }
 
     //app.MapMetrics();
-    if (app.Environment.IsDevelopment()
-        && connectionStrings.OtlpExporter is not null && connectionStrings.OtlpExporter != default)
+    if (app.Environment.IsDevelopment() && appConfig.OtlpExporterEndpoint is not null)
         app.UseOpenTelemetryPrometheusScrapingEndpoint();
     //app.UseOpenTelemetryPrometheusScrapingEndpoint(context => context.Request.Path == "/metrics"
     //    && context.Connection.LocalPort == networkOptions.metrics_healthcheck);

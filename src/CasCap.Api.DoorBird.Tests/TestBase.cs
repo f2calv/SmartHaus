@@ -27,10 +27,9 @@ public abstract class TestBase : IAsyncDisposable
             .AddXUnitLogging(output);
 
         _config = configuration.GetCasCapConfiguration<DoorBirdConfig>();
-        var connectionStrings = configuration.GetCasCapConfiguration<ConnectionStrings>();
 
         //add services
-        //services.AddDoorBird(configuration, appConfig, connectionStrings);
+        //services.AddDoorBird(configuration, appConfig);
 
         //named HttpClient is shared between the client and the healthcheck
         services.AddHttpClient(nameof(DoorBirdConnectionHealthCheck), (s, client) =>
