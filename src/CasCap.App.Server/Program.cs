@@ -4,17 +4,31 @@ using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using StackExchange.Redis;
 
-MonitoringExtensions.GetBootstrapLogger();
+SerilogExtensions.GetBootstrapLogger();
 
 var result = 0;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
     var (appConfig, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
-    var logger = builder.InitializeSerilog();
+    var logger = SerilogWebApplicationBuilderExtensions.InitializeSerilog(builder);
     var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
         ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
-    builder.InitializeOpenTelemetry(appConfig, connectionMultiplexer, gitMetadata);
+    builder.InitializeOpenTelemetry(
+        (IMetricsConfig)appConfig,
+        gitMetadata,
+        connectionMultiplexer,
+        configureMetrics: metricsBuilder =>
+        {
+            metricsBuilder.AddView($"{appConfig.MetricNamePrefix}.test_processing.time", new ExplicitBucketHistogramConfiguration
+            {
+                Boundaries = [5, 10, 15, 20]
+            });
+        },
+        configureTracing: tracingBuilder =>
+        {
+            tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
+        });
 
     if (enabledFeatures.Count == 0)
         throw new GenericException($"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");
