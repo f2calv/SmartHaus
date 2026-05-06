@@ -12,9 +12,8 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
 {
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]
-    [ProducesResponseType<UbiquitiSnapshot>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSnapshot()
-        => Ok(await ubiquitiQuerySvc.GetSnapshot());
+    public async Task<Ok<UbiquitiSnapshot>> GetSnapshot()
+        => TypedResults.Ok(await ubiquitiQuerySvc.GetSnapshot());
 
     #region Webhook callbacks
 
@@ -27,11 +26,10 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/motion")]
     [HttpPost("event/motion")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> MotionDetected([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
+    public async Task<Ok<string>> MotionDetected([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
     {
         await ubiquitiQuerySvc.SendAlert(UbiquitiEventType.Motion, camera_id, camera_name);
-        return Ok("ok");
+        return TypedResults.Ok("ok");
     }
 
     /// <summary>
@@ -44,9 +42,7 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/smart")]
     [HttpPost("event/smart")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SmartDetect(
+    public async Task<Results<Ok<string>, BadRequest<string>>> SmartDetect(
         [FromQuery] string type,
         [FromQuery] string? camera_id = null,
         [FromQuery] string? camera_name = null,
@@ -86,11 +82,11 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
                 HttpContext.Request.Method,
                 HttpContext.Request.Path,
                 HttpContext.Request.QueryString.ToString());
-            return BadRequest($"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.");
+            return TypedResults.BadRequest($"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.");
         }
 
         await ubiquitiQuerySvc.SendAlert(eventType.Value, camera_id, camera_name, score);
-        return Ok("ok");
+        return TypedResults.Ok("ok");
     }
 
     /// <summary>
@@ -101,11 +97,10 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/ring")]
     [HttpPost("event/ring")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> Ring([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
+    public async Task<Ok<string>> Ring([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
     {
         await ubiquitiQuerySvc.SendAlert(UbiquitiEventType.Ring, camera_id, camera_name);
-        return Ok("ok");
+        return TypedResults.Ok("ok");
     }
 
     #endregion
