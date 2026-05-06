@@ -10,7 +10,6 @@ public class SystemController(ILogger<SystemController> logger, GitMetadata gitM
     /// <summary>Returns git build information.</summary>
     [Authorize]
     [HttpGet]
-    [ProducesResponseType<GitMetadata>(StatusCodes.Status200OK)]
     public Ok<GitMetadata> Get()
     {
         logger.LogDebug("{ClassName} returning git info", nameof(SystemController));

@@ -12,26 +12,21 @@ public class BuderusController(IBuderusQueryService buderusQuerySvc) : Controlle
 {
     /// <inheritdoc cref="BuderusQueryService.GetSnapshot"/>
     [HttpGet]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<Ok<BuderusSnapshot>> GetSnapshot()
         => TypedResults.Ok(await buderusQuerySvc.GetSnapshot());
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("values")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public Ok<IAsyncEnumerable<BuderusEvent>> Get()
         => TypedResults.Ok(buderusQuerySvc.GetEvents());
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public Ok<IAsyncEnumerable<BuderusEvent>> GetById(string id)
         => TypedResults.Ok(buderusQuerySvc.GetEvents(id));
 
     /// <inheritdoc cref="BuderusQueryService.SetDataPoint"/>
     [HttpPut("{*id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<Results<Ok, BadRequest<string>>> SetDataPoint(string id, [FromBody] SetDataPointRequest request, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(id))

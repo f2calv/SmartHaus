@@ -12,13 +12,11 @@ public class EdgeHardwareController(IEdgeHardwareQueryService edgeHardwareQueryS
 {
     /// <inheritdoc cref="EdgeHardwareQueryService.GetLatestSnapshots"/>
     [HttpGet]
-    [ProducesResponseType<List<EdgeHardwareSnapshot>>(StatusCodes.Status200OK)]
     public async Task<Ok<List<EdgeHardwareSnapshot>>> GetLatestSnapshots()
         => TypedResults.Ok(await edgeHardwareQuerySvc.GetLatestSnapshots());
 
     /// <inheritdoc cref="EdgeHardwareQueryService.GetEvents"/>
     [HttpGet("events")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public Ok<IAsyncEnumerable<EdgeHardwareEvent>> GetEvents(int limit = 100)
         => TypedResults.Ok(edgeHardwareQuerySvc.GetEvents(limit));
 

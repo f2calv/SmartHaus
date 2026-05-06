@@ -12,7 +12,6 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
 {
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]
-    [ProducesResponseType<UbiquitiSnapshot>(StatusCodes.Status200OK)]
     public async Task<Ok<UbiquitiSnapshot>> GetSnapshot()
         => TypedResults.Ok(await ubiquitiQuerySvc.GetSnapshot());
 
@@ -27,7 +26,6 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/motion")]
     [HttpPost("event/motion")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<Ok<string>> MotionDetected([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
     {
         await ubiquitiQuerySvc.SendAlert(UbiquitiEventType.Motion, camera_id, camera_name);
@@ -44,8 +42,6 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/smart")]
     [HttpPost("event/smart")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<Results<Ok<string>, BadRequest<string>>> SmartDetect(
         [FromQuery] string type,
         [FromQuery] string? camera_id = null,
@@ -101,7 +97,6 @@ public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQue
     [AllowAnonymous]
     [HttpGet("event/ring")]
     [HttpPost("event/ring")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<Ok<string>> Ring([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
     {
         await ubiquitiQuerySvc.SendAlert(UbiquitiEventType.Ring, camera_id, camera_name);
