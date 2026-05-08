@@ -1,9 +1,7 @@
-using CasCap.Authentication;
+using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 
 namespace CasCap.Tests.Infrastructure;
 

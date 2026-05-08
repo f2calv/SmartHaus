@@ -1,3 +1,4 @@
+using CasCap.Common.Authentication;
 using CasCap.Tests.Infrastructure;
 using System.Net;
 using System.Net.Http.Headers;
@@ -140,7 +141,7 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
                 services.AddAuthorizationBuilder()
                     .SetDefaultPolicy(
                         new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-                            .AddAuthenticationSchemes(Authentication.BasicAuthenticationHandler.SchemeName)
+                            .AddAuthenticationSchemes(BasicAuthenticationHandler.SchemeName)
                             .RequireAuthenticatedUser()
                             .Build());
             });
