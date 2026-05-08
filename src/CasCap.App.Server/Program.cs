@@ -1,4 +1,4 @@
-using CasCap.Authentication;
+using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
