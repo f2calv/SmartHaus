@@ -2,6 +2,12 @@
 
 A .NET library that integrates with a [Buderus](https://www.buderus.com) KM200 heat-pump controller via its encrypted HTTPS local API, polls temperature datapoints every 60 seconds, and fans each reading out to a configurable set of sinks for persistence, streaming, and observability.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.Buderus
+```
+
 ## Purpose
 
 The library is built around one background service that forms the core pipeline:

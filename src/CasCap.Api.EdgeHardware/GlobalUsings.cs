@@ -1,9 +1,7 @@
-﻿global using Asp.Versioning;
+global using Asp.Versioning;
 global using CasCap.Abstractions;
 global using CasCap.Common.Abstractions;
-global using CasCap.Common.Exceptions;
 global using CasCap.Common.Extensions;
-global using CasCap.Extensions;
 global using CasCap.Models;
 global using CasCap.Services;
 global using Microsoft.AspNetCore.Authorization;
@@ -17,7 +15,5 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using System.ComponentModel;
 global using System.ComponentModel.DataAnnotations;
-global using System.Diagnostics;
 global using System.Diagnostics.Metrics;
-global using System.Reflection;
 global using System.Runtime.CompilerServices;

@@ -2,6 +2,12 @@
 
 Pluggable event sink implementations for the DoorBird door station integration library ([CasCap.Api.DoorBird](../CasCap.Api.DoorBird)). Sinks persist `DoorBirdEvent` instances to external storage backends and are loaded based on the feature's `SinkConfig`.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.DoorBird.Sinks
+```
+
 ## Purpose
 
 This project provides additional `IEventSink<DoorBirdEvent>` implementations beyond the default in-memory and Console sinks that ship with `CasCap.Api.DoorBird`. The sink assembly is scanned by `AddDoorBirdWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `DoorBirdConfig.Sinks` are registered.

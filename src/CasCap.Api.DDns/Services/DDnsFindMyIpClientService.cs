@@ -7,18 +7,12 @@ public class DDnsFindMyIpClientService : HttpClientBase
 {
     /// <summary>Initializes a new instance of the <see cref="DDnsFindMyIpClientService"/> class.</summary>
     /// <param name="logger">Logger instance.</param>
-    /// <param name="config">Dynamic DNS configuration.</param>
     /// <param name="httpClientFactory">HTTP client factory.</param>
-    /// <param name="env">Host environment.</param>
     public DDnsFindMyIpClientService(ILogger<DDnsFindMyIpClientService> logger,
-        IOptions<DDnsConfig> config,
-        IHttpClientFactory httpClientFactory,
-        IHostEnvironment env)
+        IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         Client = httpClientFactory.CreateClient(nameof(DDnsFindMyIpClientService));
-        if (env.IsDevelopment() && config.Value.JsonDebugEnabled && !string.IsNullOrWhiteSpace(config.Value.JsonDebugPath))
-            JsonDebugPath = config.Value.JsonDebugPath;
     }
 
     /// <summary>Gets the current external IP address.</summary>

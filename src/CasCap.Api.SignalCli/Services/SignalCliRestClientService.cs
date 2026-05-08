@@ -116,13 +116,8 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         var requestUri = $"v1/receive/{Esc(number)}";
         try
         {
-            //TODO: remove raw response logging once receive deserialization is confirmed working.
-            using var request = new HttpRequestMessage(HttpMethod.Get, $"{Client.BaseAddress}{requestUri}");
-            using var response = await Client.SendAsync(request, HttpCompletionOption.ResponseContentRead, cancellationToken);
-            var rawJson = await response.Content.ReadAsStringAsync(cancellationToken);
-            _logger.LogDebug("{ClassName} raw receive response ({StatusCode}, {Length} chars): {RawJson}",
-                nameof(SignalCliRestClientService), response.StatusCode, rawJson.Length, rawJson);
-            var messages = rawJson.FromJson<SignalReceivedMessage[]>();
+            var tpl = await base.GetAsync<SignalReceivedMessage[], object>(requestUri);
+            var messages = tpl.result;
             if (messages is not null)
                 _logger.LogDebug("{ClassName} received {Count} message(s) for {Number}",
                     nameof(SignalCliRestClientService), messages.Length, number);

@@ -164,8 +164,6 @@ services:
       CasCap__FeatureConfig__EnabledFeatures: EdgeHardware,Ubiquiti,Comms
 
       # Container hostname overrides (Development.json uses localhost, compose uses container names)
-      ConnectionStrings__Redis: redis:6379,allowAdmin=true,abortConnect=false
-      ConnectionStrings__OtlpExporter: http://otelcol:4317/
       CasCap__CachingConfig__RemoteCacheConnectionString: redis:6379,allowAdmin=true,abortConnect=false
       CasCap__SignalRHubConfig__SignalRHub: http://smarthaus:8080
       CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080

@@ -9,14 +9,6 @@ public record DDnsConfig : IAppConfig
     /// <summary>Well-known feature name for the Dynamic DNS workload.</summary>
     public const string FeatureName = "DDns";
 
-    /// <summary>Whether JSON debug output is enabled.</summary>
-    /// <remarks>Defaults to <see langword="false"/>.</remarks>
-    [Required]
-    public required bool JsonDebugEnabled { get; init; } = false;
-
-    /// <summary>File path for JSON debug output.</summary>
-    public string? JsonDebugPath { get; init; }
-
     /// <summary>The base address of the IP discovery service (e.g. <c>"https://api.ipify.org/"</c>).</summary>
     /// <remarks>Defaults to <c>"https://api.ipify.org/"</c>.</remarks>
     [Required, Url]

@@ -15,14 +15,10 @@ public class DoorBirdClientService : HttpClientBase
     /// Initializes a new instance of the <see cref="DoorBirdClientService"/> class.
     /// </summary>
     public DoorBirdClientService(ILogger<DoorBirdClientService> logger,
-        IOptions<DoorBirdConfig> config,
-        IHttpClientFactory httpClientFactory,
-        IHostEnvironment env)
+        IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         Client = httpClientFactory.CreateClient(nameof(DoorBirdConnectionHealthCheck));
-        if (env.IsDevelopment() && config.Value.JsonDebugEnabled && !string.IsNullOrWhiteSpace(config.Value.JsonDebugPath))
-            JsonDebugPath = config.Value.JsonDebugPath;
     }
 
     #region Session

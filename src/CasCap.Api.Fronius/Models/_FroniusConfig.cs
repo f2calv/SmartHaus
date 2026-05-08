@@ -8,16 +8,6 @@ public record FroniusConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageCon
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(FroniusConfig)}";
 
-    /// <summary>Whether JSON debug output is enabled.</summary>
-    /// <remarks>Defaults to <see langword="false"/>.</remarks>
-    [Required]
-    public required bool JsonDebugEnabled { get; init; } = false;
-
-    /// <summary>
-    /// Path for JSON debug output files.
-    /// </summary>
-    public string? JsonDebugPath { get; init; }
-
     /// <summary>
     /// The base address of the Fronius Symo inverter (e.g. "http://192.168.1.248").
     /// </summary>

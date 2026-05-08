@@ -15,14 +15,10 @@ public class FroniusClientService : HttpClientBase
     /// Initializes a new instance of the <see cref="FroniusClientService"/> class.
     /// </summary>
     public FroniusClientService(ILogger<FroniusClientService> logger,
-        IOptions<FroniusConfig> config,
-        IHttpClientFactory httpClientFactory,
-        IHostEnvironment env)
+        IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         Client = httpClientFactory.CreateClient(nameof(FroniusSymoConnectionHealthCheck));
-        if (env.IsDevelopment() && config.Value.JsonDebugEnabled && !string.IsNullOrWhiteSpace(config.Value.JsonDebugPath))
-            JsonDebugPath = config.Value.JsonDebugPath;
     }
 
     #region Inverter

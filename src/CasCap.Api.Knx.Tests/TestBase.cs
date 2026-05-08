@@ -27,8 +27,6 @@ public abstract class TestBase : IAsyncDisposable
             .AddSingleton<IConfiguration>(configuration)
             .AddXUnitLogging(output);
 
-        services.AddCasCapConfiguration<ConnectionStrings>();
-
         var appConfigSection = configuration.GetSection(AppConfig.ConfigurationSectionName);
         var appConfig = appConfigSection.Exists() ? appConfigSection.Get<AppConfig>() : null;
         if (appConfig is not null)

@@ -1,20 +1,34 @@
-using CasCap.Authentication;
+using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Serilog;
 using StackExchange.Redis;
 
-MonitoringExtensions.GetBootstrapLogger();
+SerilogExtensions.GetBootstrapLogger();
 
 var result = 0;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    var (appConfig, connectionStrings, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
-    var logger = builder.InitializeSerilog();
+    var (appConfig, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
+    var logger = SerilogWebApplicationBuilderExtensions.InitializeSerilog(builder);
     var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
         ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
-    builder.InitializeOpenTelemetry(appConfig, connectionStrings, connectionMultiplexer, gitMetadata);
+    builder.InitializeOpenTelemetry(
+        (IMetricsConfig)appConfig,
+        gitMetadata,
+        connectionMultiplexer,
+        configureMetrics: metricsBuilder =>
+        {
+            metricsBuilder.AddView($"{appConfig.MetricNamePrefix}.test_processing.time", new ExplicitBucketHistogramConfiguration
+            {
+                Boundaries = [5, 10, 15, 20]
+            });
+        },
+        configureTracing: tracingBuilder =>
+        {
+            tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
+        });
 
     if (enabledFeatures.Count == 0)
         throw new GenericException($"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");
@@ -391,8 +405,7 @@ try
     }
 
     //app.MapMetrics();
-    if (app.Environment.IsDevelopment()
-        && connectionStrings.OtlpExporter is not null && connectionStrings.OtlpExporter != default)
+    if (app.Environment.IsDevelopment() && appConfig.OtlpExporterEndpoint is not null)
         app.UseOpenTelemetryPrometheusScrapingEndpoint();
     //app.UseOpenTelemetryPrometheusScrapingEndpoint(context => context.Request.Path == "/metrics"
     //    && context.Connection.LocalPort == networkOptions.metrics_healthcheck);

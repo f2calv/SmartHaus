@@ -1,10 +1,10 @@
-﻿global using Asp.Versioning;
+global using Asp.Versioning;
 global using CasCap.Abstractions;
 global using CasCap.Common.Abstractions;
 global using CasCap.Common.Diagnostics.HealthChecks.Abstractions;
 global using CasCap.Common.Exceptions;
 global using CasCap.Common.Extensions;
-global using CasCap.Common.Models;
+global using CasCap.Common.Services;
 global using CasCap.HealthChecks;
 global using CasCap.Models;
 global using CasCap.Services;
@@ -24,5 +24,4 @@ global using System.ComponentModel.DataAnnotations;
 global using System.Diagnostics.CodeAnalysis;
 global using System.Diagnostics.Metrics;
 global using System.Runtime.CompilerServices;
-global using System.Runtime.Serialization;
 global using System.Text.Json.Serialization;

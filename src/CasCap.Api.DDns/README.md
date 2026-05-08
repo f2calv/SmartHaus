@@ -36,8 +36,6 @@ Dynamic DNS library that monitors the public IP address and automatically update
 | `DnsZoneName` | `string` | — | Azure DNS zone name |
 | `DnsMetaDataKey` | `string` | — | DNS metadata key for tracking updates |
 | `RefreshDelayMs` | `int` | `10000` | Delay in milliseconds between DNS refresh cycles |
-| `JsonDebugEnabled` | `bool` | `false` | Whether JSON debug output is enabled |
-| `JsonDebugPath` | `string?` | `null` | File path for JSON debug output |
 
 ## Configuration Examples
 
@@ -66,8 +64,7 @@ Dynamic DNS library that monitors the public IP address and automatically update
       "DnsZoneName": "example.net",
       "DnsResourceGroupName": "some-rg",
       "DnsMetaDataKey": "dyndns",
-      "RefreshDelayMs": 10000,
-      "JsonDebugEnabled": false
+      "RefreshDelayMs": 10000
     }
   }
 }
