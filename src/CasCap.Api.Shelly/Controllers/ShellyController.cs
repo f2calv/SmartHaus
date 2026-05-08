@@ -12,21 +12,18 @@ public class ShellyController(IShellyQueryService shellyQuerySvc) : ControllerBa
 {
     /// <inheritdoc cref="ShellyQueryService.GetSnapshots"/>
     [HttpGet]
-    [ProducesResponseType<List<ShellySnapshot>>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSnapshots()
-        => Ok(await shellyQuerySvc.GetSnapshots());
+    public async Task<Ok<List<ShellySnapshot>>> GetSnapshots()
+        => TypedResults.Ok(await shellyQuerySvc.GetSnapshots());
 
     /// <inheritdoc cref="ShellyQueryService.GetReadings"/>
     [HttpGet("readings")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public IActionResult GetReadings(int limit = 100)
-        => Ok(shellyQuerySvc.GetReadings(limit));
+    public Ok<IAsyncEnumerable<ShellyEvent>> GetReadings(int limit = 100)
+        => TypedResults.Ok(shellyQuerySvc.GetReadings(limit));
 
     /// <inheritdoc cref="ShellyQueryService.GetDeviceStatus"/>
     [HttpGet("status/{deviceId}")]
-    [ProducesResponseType<ShellyDeviceStatusResponse>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetDeviceStatus(string deviceId)
-        => Ok(await shellyQuerySvc.GetDeviceStatus(deviceId));
+    public async Task<Ok<ShellyDeviceStatusResponse>> GetDeviceStatus(string deviceId)
+        => TypedResults.Ok(await shellyQuerySvc.GetDeviceStatus(deviceId));
 
     /// <summary>
     /// Turns the smart plug relay on or off.
@@ -34,7 +31,6 @@ public class ShellyController(IShellyQueryService shellyQuerySvc) : ControllerBa
     /// <param name="deviceId">The Shelly device ID to control.</param>
     /// <param name="on">When <see langword="true"/>, turns the relay on; when <see langword="false"/>, turns it off.</param>
     [HttpPost("relay/{deviceId}")]
-    [ProducesResponseType<ShellyRelayControlResponse>(StatusCodes.Status200OK)]
-    public async Task<IActionResult> SetRelayState(string deviceId, [FromQuery] bool on)
-        => Ok(await shellyQuerySvc.SetRelayState(deviceId, on));
+    public async Task<Ok<ShellyRelayControlResponse>> SetRelayState(string deviceId, [FromQuery] bool on)
+        => TypedResults.Ok(await shellyQuerySvc.SetRelayState(deviceId, on));
 }
