@@ -329,11 +329,15 @@ try
     //builder.WebHost.UseStaticWebAssets();
     #endregion
 
+    builder.Services.AddProblemDetails();
+
     var app = builder.Build();
 
     logger.LogInformation("{ClassName} starting", nameof(Program));
 
     #region route mapping
+    app.UseExceptionHandler();
+    app.UseStatusCodePages();
     app.UseStaticFiles();
     app.UseRouting();
     app.UseAuthentication();
