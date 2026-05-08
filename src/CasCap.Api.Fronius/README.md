@@ -2,6 +2,12 @@
 
 A .NET library that integrates with a [Fronius](https://www.fronius.com) solar inverter (Symo Gen24) via its local Solar API v1, samples power-flow data every second, and fans each reading out to a configurable set of sinks for persistence, streaming, and observability.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.Fronius
+```
+
 ## Purpose
 
 The library is built around one background service that forms the core pipeline:

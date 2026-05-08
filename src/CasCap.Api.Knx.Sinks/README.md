@@ -2,6 +2,12 @@
 
 Pluggable event sink implementations for the KNX building automation integration library ([CasCap.Api.Knx](../CasCap.Api.Knx)). Sinks persist `KnxEvent` instances to external storage backends and are loaded based on the feature's `SinkConfig`.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.Knx.Sinks
+```
+
 ## Purpose
 
 This project provides additional `IEventSink<KnxEvent>` implementations beyond the default in-memory, Console, Redis, Channel, OpenTelemetry, and gRPC sinks that ship with `CasCap.Api.Knx`. The sink assembly is scanned by `AddKnxWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `KnxConfig.Sinks` are registered.

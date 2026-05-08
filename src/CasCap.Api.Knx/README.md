@@ -2,6 +2,12 @@
 
 A .NET library that connects to a [KNX](https://www.knx.org) bus via KNXnet/IP tunnelling or routing (multicast), monitors all group-address telegrams, and fans them out to a configurable set of sinks for persistence, alerting and streaming.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.Knx
+```
+
 ## Purpose
 
 The library is built around three background services that together form a pipeline:

@@ -2,6 +2,12 @@
 
 Pluggable event sink implementations for the Fronius solar inverter integration library ([CasCap.Api.Fronius](../CasCap.Api.Fronius)). Sinks persist `FroniusEvent` instances to external storage backends and are loaded based on the feature's `SinkConfig`.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.Fronius.Sinks
+```
+
 ## Purpose
 
 This project provides additional `IEventSink<FroniusEvent>` implementations beyond the default in-memory and Console sinks that ship with `CasCap.Api.Fronius`. The sink assembly is scanned by `AddFroniusWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `FroniusConfig.Sinks` are registered.

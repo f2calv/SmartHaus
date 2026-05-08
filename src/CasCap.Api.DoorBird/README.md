@@ -2,6 +2,12 @@
 
 A .NET library that integrates with a [DoorBird](https://www.doorbird.com) IP door station via its local LAN API, captures door events (doorbell, motion, RFID), and fans them out to a configurable set of sinks for storage and streaming.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.DoorBird
+```
+
 ## Purpose
 
 The library is built around one background service that forms the core pipeline:

@@ -2,6 +2,12 @@
 
 A .NET library that wraps the [signal-cli REST API](https://bbernhard.github.io/signal-cli-rest-api/) (generated against **v0.98**), providing a typed `SignalCliRestClientService` for sending and managing [Signal](https://signal.org) encrypted messages, together with a health check and DI registration.
 
+## Installation
+
+```bash
+dotnet add package CasCap.Api.SignalCli
+```
+
 ## Transport Modes
 
 The library supports two transport modes, controlled by the `TransportMode` configuration setting:

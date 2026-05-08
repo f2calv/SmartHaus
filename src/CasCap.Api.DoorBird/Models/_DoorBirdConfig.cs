@@ -9,17 +9,6 @@ public record DoorBirdConfig : IAppConfig, IHealthCheckConfig, IAzBlobStorageCon
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(DoorBirdConfig)}";
 
     /// <summary>
-    /// Whether JSON debug output is enabled. Defaults to <see langword="false"/>.
-    /// </summary>
-    [Required]
-    public required bool JsonDebugEnabled { get; init; } = false;
-
-    /// <summary>
-    /// Path for JSON debug output files.
-    /// </summary>
-    public string? JsonDebugPath { get; init; }
-
-    /// <summary>
     /// The health check endpoint path on the DoorBird device. Defaults to <c>"bha-api/info.cgi"</c>.
     /// </summary>
     [Required]
