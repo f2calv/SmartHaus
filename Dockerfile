@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # check=skip=CopyIgnoredFile
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
@@ -30,10 +31,12 @@ COPY ["src/CasCap.Api.Ubiquiti.Sinks/CasCap.Api.Ubiquiti.Sinks.csproj", "src/Cas
 COPY ["src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj", "src/CasCap.Api.Wiz/"]
 COPY ["src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj", "src/CasCap.Api.Wiz.Sinks/"]
 COPY ["src/CasCap.SmartHaus/CasCap.SmartHaus.csproj", "src/CasCap.SmartHaus/"]
-RUN dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
-COPY . .
 ARG TARGETPLATFORM
-RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
+RUN --mount=type=cache,id=nuget-${TARGETPLATFORM},target=/root/.nuget/packages \
+    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
+COPY . .
+RUN --mount=type=cache,id=nuget-${TARGETPLATFORM},target=/root/.nuget/packages \
+    if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
     RID=linux-x64 ; \
     elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
     RID=linux-arm64 ; \
