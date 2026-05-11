@@ -89,11 +89,10 @@ spec:
                   name: {{ $secret }}
                   key: {{ $key | quote }}
             {{- end }}
+          {{- if and (hasKey .Values "envVarsFrom") (.Values.envVarsFrom) }}
           envFrom:
-            - configMapRef:
-                name: environment-config
-            - configMapRef:
-                name: connectionstrings-config
+            {{- toYaml .Values.envVarsFrom | nindent 12 }}
+          {{- end }}
 {{- if and (hasKey .Values "resources") (.Values.resources) }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

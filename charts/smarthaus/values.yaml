@@ -32,7 +32,7 @@ _shared: &shared
   #   MY_SECRET_VAR: my-k8s-secret-name
   # envVarsFrom:
   #   - configMapRef:
-  #       name: my-shared-config
+  #       name: default-app-config
 
 # ── Workload defaults ───────────────────────────────────────────────
 # Ingress is disabled by default in the workload subchart. To enable,
