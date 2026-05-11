@@ -13,6 +13,12 @@ spec:
       targetPort: {{ .Values.service.containerPort }}
       protocol: {{ default "TCP" .Values.service.protocol }}
       name: {{ .Values.service.name }}
+    {{- range .Values.extraPorts }}
+    - port: {{ .port }}
+      targetPort: {{ .containerPort }}
+      protocol: {{ default "TCP" .protocol }}
+      name: {{ .name }}
+    {{- end }}
   selector:
     {{- include "workload.selectorLabels" $ | nindent 4 }}
 {{- end }}

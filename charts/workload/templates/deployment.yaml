@@ -67,6 +67,11 @@ spec:
             - name: {{ .Values.service.name }}
               containerPort: {{ .Values.service.containerPort }}
               protocol: {{ default "TCP" .Values.service.protocol }}
+            {{- range .Values.extraPorts }}
+            - name: {{ .name }}
+              containerPort: {{ .containerPort }}
+              protocol: {{ default "TCP" .protocol }}
+            {{- end }}
           env:
             {{- range $name, $fieldPath := $.Values.envFieldRef }}
             - name: {{ $name }}

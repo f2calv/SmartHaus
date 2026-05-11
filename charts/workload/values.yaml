@@ -58,6 +58,15 @@ service:
   port: 80
   containerPort: 8080
 
+# Additional container/service ports beyond the primary service port.
+extraPorts: []
+  # - name: queue
+  #   port: 10001
+  #   containerPort: 10001
+  # - name: table
+  #   port: 10002
+  #   containerPort: 10002
+
 ingress:
   enabled: false
   className: ""
