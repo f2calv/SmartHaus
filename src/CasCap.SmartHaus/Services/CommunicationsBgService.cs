@@ -204,10 +204,8 @@ public partial class CommunicationsBgService : IBgFeature
             }
             else
             {
-                _logger.LogError("{ClassName} group {GroupName} not found among {AvailableGroups} and no GroupId fallback configured, exiting",
-                    nameof(CommunicationsBgService), _commsAgentConfig.GroupName,
-                    groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)");
-                return;
+                throw new GenericException(
+                    $"group '{_commsAgentConfig.GroupName}' not found among [{(groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)")}] and no GroupId fallback configured");
             }
 
             _logger.LogInformation("{ClassName} starting background tasks (notifier={NotifierType})",
