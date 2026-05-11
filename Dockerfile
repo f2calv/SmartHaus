@@ -33,7 +33,7 @@ COPY ["src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj", "src/CasCap.Api.Wi
 COPY ["src/CasCap.SmartHaus/CasCap.SmartHaus.csproj", "src/CasCap.SmartHaus/"]
 ARG TARGETPLATFORM
 RUN --mount=type=cache,id=nuget-${TARGETPLATFORM},target=/root/.nuget/packages \
-    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
+    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj" --no-http-cache
 COPY . .
 RUN --mount=type=cache,id=nuget-${TARGETPLATFORM},target=/root/.nuget/packages \
     if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \

@@ -13,7 +13,7 @@ COPY deps/CasCap.Common /CasCap.Common
 COPY deps/CasCap.Api.Azure /CasCap.Api.Azure
 
 COPY . .
-RUN dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
+RUN dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj" --no-http-cache
 ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
     RID=linux-x64 ; \
