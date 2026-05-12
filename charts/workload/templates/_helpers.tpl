@@ -91,6 +91,10 @@ periodSeconds: 10
 initialDelaySeconds: 60
 failureThreshold: 10
 {{- end -}}
+
+{{/*
+Default liveness probe configuration.
+*/}}
 {{- define "workload.defaultLivenessProbe" -}}
 httpGet:
   path: /healthz/live
