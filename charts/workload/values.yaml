@@ -127,6 +127,13 @@ persistentVolumeClaims: []
   #     - ReadWriteMany
   #   storage: 512Mi
 
+# ConfigMap resources created alongside the Deployment.
+configMaps: []
+  # - name: my-config
+  #   data:
+  #     config.json: |
+  #       {"key": "value"}
+
 nodeSelector: {}
 
 tolerations: []
