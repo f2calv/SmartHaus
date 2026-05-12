@@ -1,5 +1,5 @@
 {{- define "workload.cronjob" -}}
-apiVersion: batch/v1beta1
+apiVersion: batch/v1
 kind: CronJob
 metadata:
   name: {{ include "workload.fullname" . }}
@@ -7,8 +7,8 @@ metadata:
   labels:
     {{- include "workload.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cronJob.schedule }}
-  concurrencyPolicy: Replace
+  schedule: {{ .Values.cronJob.schedule | quote }}
+  concurrencyPolicy: {{ default "Replace" .Values.cronJob.concurrencyPolicy }}
   jobTemplate:
     spec:
       template:
@@ -19,18 +19,17 @@ spec:
           {{- end }}
           labels:
             {{- include "workload.labels" . | nindent 12 }}
-{{- range $key, $val := .Values.labels }}
-            {{ $key }}: {{ $val | quote }}
-{{- end}}
             {{- with .Values.podLabels }}
             {{- toYaml . | nindent 12 }}
             {{- end }}
         spec:
           restartPolicy: {{ default "Never" .Values.restartPolicy }}
-          runtimeClassName: {{ default "" .Values.runtimeClassName }}
+          {{- with .Values.runtimeClassName }}
+          runtimeClassName: {{ . }}
+          {{- end }}
           {{- with .Values.imagePullSecrets }}
           imagePullSecrets:
-            {{- toYaml . | nindent 8 }}
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           {{- if .Values.serviceAccount }}
           serviceAccountName: {{ .Values.serviceAccount.name | quote }}
@@ -55,28 +54,13 @@ spec:
             args:
               {{- toYaml . | nindent 14 }}
             {{- end }}
-            {{- include "workload.probes" . | trim | nindent 12 }}
             env:
-              - name: AppConfig__NodeName
+              {{- range $name, $fieldPath := $.Values.envFieldRef }}
+              - name: {{ $name }}
                 valueFrom:
                   fieldRef:
-                    fieldPath: spec.nodeName
-              - name: AppConfig__PodName
-                valueFrom:
-                  fieldRef:
-                    fieldPath: metadata.name
-              - name: AppConfig__Namespace
-                valueFrom:
-                  fieldRef:
-                    fieldPath: metadata.namespace
-              - name: AppConfig__PodIp
-                valueFrom:
-                  fieldRef:
-                    fieldPath: status.podIP
-              - name: AppConfig__ServiceAccountName
-                valueFrom:
-                  fieldRef:
-                    fieldPath: spec.serviceAccountName
+                    fieldPath: {{ $fieldPath }}
+              {{- end }}
               {{- range $key, $value := $.Values.envVars }}
               - name: {{ $key }}
                 value: {{ $value | quote }}
@@ -88,11 +72,11 @@ spec:
                     name: {{ $secret }}
                     key: {{ $key | quote }}
               {{- end }}
-          {{- if and (hasKey .Values "envVarsFrom") (.Values.envVarsFrom) }}
-          envFrom:
-            {{- toYaml .Values.envVarsFrom | nindent 14 }}
-          {{- end }}
-{{- if and (hasKey .Values "resources") (.Values.resources) }}
+            {{- if and (hasKey .Values "envVarsFrom") (.Values.envVarsFrom) }}
+            envFrom:
+              {{- toYaml .Values.envVarsFrom | nindent 14 }}
+            {{- end }}
+            {{- if and (hasKey .Values "resources") (.Values.resources) }}
             resources:
               {{- toYaml .Values.resources | nindent 14 }}
             {{- end }}
