@@ -6,6 +6,10 @@ metadata:
   namespace: {{ include "workload.namespace" $ }}
   labels:
     {{- include "workload.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
 spec:
   type: {{ default "ClusterIP" .Values.service.type }}
   ports:
