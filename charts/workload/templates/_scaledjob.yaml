@@ -6,15 +6,12 @@ metadata:
   namespace: {{ include "workload.namespace" $ }}
   labels:
     {{- include "workload.labels" . | nindent 4 }}
-{{- range $key, $val := .Values.labels }}
-    {{ $key }}: {{ $val | quote }}
-{{- end}}
 spec:
   jobTargetRef:
-    parallelism: 1                            # [max number of desired pods](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/#controlling-parallelism)
-    completions: 1                            # [desired number of successfully finished pods](https://kubernetes.io/docs/concepts/workloads/controllers/jobs-run-to-completion/#controlling-parallelism)
-    activeDeadlineSeconds: 600                #  Specifies the duration in seconds relative to the startTime that the job may be active before the system tries to terminate it; value must be positive integer
-    backoffLimit: 6                           # Specifies the number of retries before marking this job failed. Defaults to 6
+    parallelism: 1
+    completions: 1
+    activeDeadlineSeconds: 600
+    backoffLimit: 6
     template:
       metadata:
         {{- with .Values.podAnnotations }}
@@ -28,7 +25,9 @@ spec:
           {{- end }}
       spec:
         restartPolicy: {{ default "Never" .Values.restartPolicy }}
-        runtimeClassName: {{ default "" .Values.runtimeClassName }}
+        {{- with .Values.runtimeClassName }}
+        runtimeClassName: {{ . }}
+        {{- end }}
         {{- with .Values.imagePullSecrets }}
         imagePullSecrets:
           {{- toYaml . | nindent 10 }}
@@ -56,28 +55,13 @@ spec:
           args:
             {{- toYaml . | nindent 12 }}
           {{- end }}
-          {{- include "workload.probes" . | trim | nindent 10 }}
           env:
-            - name: AppConfig__NodeName
+            {{- range $name, $fieldPath := $.Values.envFieldRef }}
+            - name: {{ $name }}
               valueFrom:
                 fieldRef:
-                  fieldPath: spec.nodeName
-            - name: AppConfig__PodName
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.name
-            - name: AppConfig__Namespace
-              valueFrom:
-                fieldRef:
-                  fieldPath: metadata.namespace
-            - name: AppConfig__PodIp
-              valueFrom:
-                fieldRef:
-                  fieldPath: status.podIP
-            - name: AppConfig__ServiceAccountName
-              valueFrom:
-                fieldRef:
-                  fieldPath: spec.serviceAccountName
+                  fieldPath: {{ $fieldPath }}
+            {{- end }}
             {{- range $key, $value := $.Values.envVars }}
             - name: {{ $key }}
               value: {{ $value | quote }}
@@ -93,7 +77,7 @@ spec:
           envFrom:
             {{- toYaml .Values.envVarsFrom | nindent 12 }}
           {{- end }}
-{{- if and (hasKey .Values "resources") (.Values.resources) }}
+          {{- if and (hasKey .Values "resources") (.Values.resources) }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           {{- end }}
@@ -117,31 +101,18 @@ spec:
         tolerations:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-    backoffLimit: 4
-  pollingInterval: 10                         # Optional. Default: 30 seconds
-  successfulJobsHistoryLimit: 5               # Optional. Default: 100. How many completed jobs should be kept.
-  failedJobsHistoryLimit: 5                   # Optional. Default: 100. How many failed jobs should be kept.
-  #envSourceContainerName: {container-name}    # Optional. Default: .spec.JobTargetRef.template.spec.containers[0]
-  maxReplicaCount: 100                        # Optional. Default: 100
-  rolloutStrategy: gradual                    # Optional. Default: default. Which Rollout Strategy KEDA will use.
-  # scalingStrategy:
-  #   strategy: "custom"                        # Optional. Default: default. Which Scaling Strategy to use. 
-  #   customScalingQueueLengthDeduction: 1      # Optional. A parameter to optimize custom ScalingStrategy.
-  #   customScalingRunningJobPercentage: "0.5"  # Optional. A parameter to optimize custom ScalingStrategy.
-  #   pendingPodConditions:                     # Optional. A parameter to calculate pending job count per the specified pod conditions
-  #     - "Ready"
-  #     - "PodScheduled"
-  #     - "AnyOtherCustomPodCondition"
-  #   multipleScalersCalculation : "max" # Optional. Default: max. Specifies how to calculate the target metrics when multiple scalers are defined.
+  pollingInterval: 10
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  maxReplicaCount: 100
+  rolloutStrategy: gradual
   triggers:
   - type: azure-queue
     metadata:
       queueName: app{{ .Chart.Name }}
-      queueLength: '5' # Optional. Queue length target for HPA. Default: 5 messages
-    # Required: connection OR authenticationRef that defines connection or authenticationRef as defined below
-    # connection: STORAGE_CONNECTIONSTRING_ENV_NAME # Default: AzureWebJobsStorage. Reference to a connection string in deployment
+      queueLength: '5'
     authenticationRef:
-      name: {{ include "workload.fullname" . }}-queue-auth # authenticationRef would need either podIdentity or define a connection parameter
+      name: {{ include "workload.fullname" . }}-queue-auth
 ---
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication

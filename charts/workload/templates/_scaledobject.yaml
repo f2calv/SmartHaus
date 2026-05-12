@@ -6,9 +6,6 @@ metadata:
   namespace: {{ include "workload.namespace" $ }}
   labels:
     {{- include "workload.labels" . | nindent 4 }}
-{{- range $key, $val := .Values.labels }}
-    {{ $key }}: {{ $val | quote }}
-{{- end}}
 spec:
   scaleTargetRef:
     #apiVersion:    {api-version-of-target-resource} # Optional. Default: apps/v1
