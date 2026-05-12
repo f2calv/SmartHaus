@@ -1,4 +1,5 @@
-{{- if .Values.ingress.enabled -}}
+{{- $kind := default "Deployment" .Values.kind -}}
+{{- if and (has $kind (list "Deployment" "DaemonSet" "StatefulSet" "ScaledObject")) .Values.ingress.enabled -}}
 {{- $fullName := include "workload.fullname" . -}}
 {{- $svcPort := .Values.service.port -}}
 {{- if and .Values.ingress.className (not (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion)) }}

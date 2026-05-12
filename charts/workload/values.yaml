@@ -4,11 +4,29 @@
 
 replicaCount: 0
 
-# Workload kind: Deployment (default), DaemonSet, or StatefulSet.
-# kind: Deployment
+# Workload kind — determines the primary resource rendered.
+# Supported values: Deployment (default), DaemonSet, StatefulSet, ScaledJob, ScaledObject, CronJob.
+kind: Deployment
 
-# For StatefulSet workloads, set serviceName to match the headless Service name.
-# serviceName: ""
+# StatefulSet serviceName (defaults to fullname). Only used when kind: StatefulSet.
+serviceName: ""
+
+# Update strategy for DaemonSet / StatefulSet (ignored for Deployment — use strategy instead).
+updateStrategy: {}
+  # type: RollingUpdate
+
+# Volume claim templates for StatefulSet (ignored for other kinds).
+volumeClaimTemplates: []
+  # - metadata:
+  #     name: data
+  #   spec:
+  #     accessModes: ["ReadWriteOnce"]
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
+
+# CronJob schedule (only used when kind: CronJob).
+cronJobSchedule: ""
 
 image:
   repository: nginx
@@ -32,28 +50,6 @@ args: []
 
 nameOverride: ""
 fullnameOverride: ""
-# namespaceOverride: ""
-
-# Deployment strategy (e.g. Recreate, RollingUpdate).
-# strategy: {}
-
-# Number of old ReplicaSets to retain. Default: 3.
-# revisionHistoryLimit: 3
-
-# Pod restart policy. Default: Always.
-# restartPolicy: Always
-
-# Runtime class for specialised node runtimes (e.g. nvidia).
-# runtimeClassName: nvidia
-
-# Enable host networking for the pod.
-# hostNetwork: false
-
-# DNS policy override (e.g. ClusterFirstWithHostNet when hostNetwork is true).
-# dnsPolicy: ClusterFirst
-
-# Seconds the pod needs to terminate gracefully.
-# terminationGracePeriodSeconds: 30
 
 serviceAccount:
   # Specifies whether a service account should be created
@@ -202,6 +198,49 @@ envVars: {}
 #  MY_ENV_VAR: some-value
 envSecrets: {}
 #  MY_SECRET_KEY: my-secret-name
-envVarsFrom: []
-  # - configMapRef:
-  #     name: default-app-config
+envVarsFrom: {}
+  # configMapRef:
+  #   name: default-app-config
+
+# KEDA settings — used when kind is ScaledObject or ScaledJob.
+keda:
+  pollingInterval: 10
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  # ScaledJob-only settings.
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  rolloutStrategy: gradual
+  # Triggers — list of KEDA trigger definitions.
+  triggers: []
+  # - type: redis
+  #   metadata:
+  #     address: redis-master.redis.svc.cluster.local:6379
+  #     listName: my-list
+  #     listLength: "5"
+  #   authenticationRef:
+  #     name: my-redis-auth
+  #
+  # - type: azure-queue
+  #   metadata:
+  #     queueName: myqueue
+  #     queueLength: "5"
+  #   authenticationRef:
+  #     name: my-queue-auth
+  #
+  # TriggerAuthentication resources rendered alongside the ScaledObject/ScaledJob.
+  triggerAuthentications: []
+  # - name: my-redis-auth
+  #   spec:
+  #     secretTargetRef:
+  #       - parameter: password
+  #         name: redis-secret
+  #         key: REDIS_PASSWORD
+  #
+  # - name: my-queue-auth
+  #   spec:
+  #     secretTargetRef:
+  #       - parameter: connection
+  #         name: storage-secret
+  #         key: CONNECTION_STRING

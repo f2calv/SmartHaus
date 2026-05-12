@@ -1,4 +1,4 @@
-{{- define "workload.cronjob" -}}
+{{- if eq (default "Deployment" .Values.kind) "CronJob" }}
 apiVersion: batch/v1
 kind: CronJob
 metadata:
@@ -7,8 +7,8 @@ metadata:
   labels:
     {{- include "workload.labels" . | nindent 4 }}
 spec:
-  schedule: {{ .Values.cronJob.schedule | quote }}
-  concurrencyPolicy: {{ default "Replace" .Values.cronJob.concurrencyPolicy }}
+  schedule: {{ .Values.cronJobSchedule | quote }}
+  concurrencyPolicy: {{ default "Replace" .Values.cronJobConcurrencyPolicy }}
   jobTemplate:
     spec:
       template:
@@ -37,6 +37,10 @@ spec:
           {{- if and (hasKey .Values "podSecurityContext") (.Values.podSecurityContext) }}
           securityContext:
             {{- toYaml .Values.podSecurityContext | nindent 12 }}
+          {{- end }}
+          {{- with .Values.initContainers }}
+          initContainers:
+            {{- toYaml . | nindent 12 }}
           {{- end }}
           containers:
           - name: {{ .Chart.Name }}

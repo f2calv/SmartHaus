@@ -1,4 +1,4 @@
-{{- define "workload.scaledjob" -}}
+{{- if eq (default "Deployment" .Values.kind) "ScaledJob" }}
 apiVersion: keda.sh/v1alpha1
 kind: ScaledJob
 metadata:
@@ -38,6 +38,10 @@ spec:
         {{- if and (hasKey .Values "podSecurityContext") (.Values.podSecurityContext) }}
         securityContext:
           {{- toYaml .Values.podSecurityContext | nindent 10 }}
+        {{- end }}
+        {{- with .Values.initContainers }}
+        initContainers:
+          {{- toYaml . | nindent 10 }}
         {{- end }}
         containers:
         - name: {{ .Chart.Name }}
@@ -101,29 +105,31 @@ spec:
         tolerations:
           {{- toYaml . | nindent 10 }}
         {{- end }}
-  pollingInterval: 10
-  successfulJobsHistoryLimit: 5
-  failedJobsHistoryLimit: 5
-  maxReplicaCount: 100
-  rolloutStrategy: gradual
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  successfulJobsHistoryLimit: {{ .Values.keda.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.keda.failedJobsHistoryLimit }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  rolloutStrategy: {{ .Values.keda.rolloutStrategy }}
   triggers:
-  - type: azure-queue
+  {{- range .Values.keda.triggers }}
+  - type: {{ .type }}
     metadata:
-      queueName: app{{ .Chart.Name }}
-      queueLength: '5'
+      {{- toYaml .metadata | nindent 6 }}
+    {{- if .authenticationRef }}
     authenticationRef:
-      name: {{ include "workload.fullname" . }}-queue-auth
+      name: {{ .authenticationRef.name }}
+    {{- end }}
+  {{- end }}
+{{- range .Values.keda.triggerAuthentications }}
 ---
 apiVersion: keda.sh/v1alpha1
 kind: TriggerAuthentication
 metadata:
-  name: {{ include "workload.fullname" . }}-queue-auth
+  name: {{ .name }}
   namespace: {{ include "workload.namespace" $ }}
   labels:
-    {{- include "workload.labels" . | nindent 4 }}
+    {{- include "workload.labels" $ | nindent 4 }}
 spec:
-  secretTargetRef:
-  - parameter: connection
-    name: cc-storage-app-{{ .Chart.Name }}-secret
-    key: CONNECTIONSTRINGS__APP{{ upper .Chart.Name }}
+  {{- toYaml .spec | nindent 2 }}
+{{- end }}
 {{- end }}
