@@ -4,6 +4,30 @@
 
 replicaCount: 0
 
+# Workload kind — determines the primary resource rendered.
+# Supported values: Deployment (default), DaemonSet, StatefulSet, ScaledJob, ScaledObject, CronJob.
+kind: Deployment
+
+# StatefulSet serviceName (defaults to fullname). Only used when kind: StatefulSet.
+serviceName: ""
+
+# Update strategy for DaemonSet / StatefulSet (ignored for Deployment — use strategy instead).
+updateStrategy: {}
+  # type: RollingUpdate
+
+# Volume claim templates for StatefulSet (ignored for other kinds).
+volumeClaimTemplates: []
+  # - metadata:
+  #     name: data
+  #   spec:
+  #     accessModes: ["ReadWriteOnce"]
+  #     resources:
+  #       requests:
+  #         storage: 1Gi
+
+# CronJob schedule (only used when kind: CronJob).
+cronJobSchedule: ""
+
 image:
   repository: nginx
   pullPolicy: IfNotPresent
@@ -57,6 +81,7 @@ service:
   type: ClusterIP
   port: 80
   containerPort: 8080
+  # annotations: {}
 
 # Additional container/service ports beyond the primary service port.
 extraPorts: []
@@ -84,10 +109,6 @@ ingress:
   #      - chart-example.local
 
 resources: {}
-  # We usually recommend not to specify default resources and to leave this as a conscious
-  # choice for the user. This also increases chances charts run on environments with little
-  # resources, such as Minikube. If you do want to specify resources, uncomment the following
-  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
   # limits:
   #   cpu: 100m
   #   memory: 128Mi
@@ -103,8 +124,25 @@ resources: {}
 # readinessProbe: false  # disables the default probe
 # livenessProbe: false   # disables the default probe
 
+# Container lifecycle hooks (preStop, postStart).
+# lifecycle: {}
+
 autoscaling:
   enabled: false
+
+# Init containers run before the main container starts.
+initContainers: []
+  # - name: init-db
+  #   image: busybox
+  #   command: ["sh", "-c", "echo initialising"]
+
+# Additional sidecar containers alongside the main container.
+extraContainers: []
+  # - name: log-shipper
+  #   image: fluent/fluent-bit
+  #   volumeMounts:
+  #     - name: logs
+  #       mountPath: /var/log
 
 # Additional volumes on the output Deployment definition.
 volumes: []
@@ -127,12 +165,28 @@ persistentVolumeClaims: []
   #     - ReadWriteMany
   #   storage: 512Mi
 
+# ConfigMap resources created alongside the Deployment.
+configMaps: []
+  # - name: my-config
+  #   data:
+  #     config.json: |
+  #       {"key": "value"}
+
 nodeSelector: {}
 
 tolerations: []
 
 affinity: {}
 
+topologySpreadConstraints: []
+  # - maxSkew: 1
+  #   topologyKey: kubernetes.io/hostname
+  #   whenUnsatisfiable: DoNotSchedule
+  #   labelSelector:
+  #     matchLabels: {}
+
+# Downward API environment variables. Set to null to disable for non-.NET apps.
+# Note: envFieldRef: {} does NOT clear defaults due to Helm deep merge — use null.
 envFieldRef:
   AppConfig__NodeName: spec.nodeName
   AppConfig__PodName: metadata.name
@@ -147,3 +201,46 @@ envSecrets: {}
 envVarsFrom: {}
   # configMapRef:
   #   name: default-app-config
+
+# KEDA settings — used when kind is ScaledObject or ScaledJob.
+keda:
+  pollingInterval: 10
+  cooldownPeriod: 300
+  minReplicaCount: 1
+  maxReplicaCount: 2
+  # ScaledJob-only settings.
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  rolloutStrategy: gradual
+  # Triggers — list of KEDA trigger definitions.
+  triggers: []
+  # - type: redis
+  #   metadata:
+  #     address: redis-master.redis.svc.cluster.local:6379
+  #     listName: my-list
+  #     listLength: "5"
+  #   authenticationRef:
+  #     name: my-redis-auth
+  #
+  # - type: azure-queue
+  #   metadata:
+  #     queueName: myqueue
+  #     queueLength: "5"
+  #   authenticationRef:
+  #     name: my-queue-auth
+  #
+  # TriggerAuthentication resources rendered alongside the ScaledObject/ScaledJob.
+  triggerAuthentications: []
+  # - name: my-redis-auth
+  #   spec:
+  #     secretTargetRef:
+  #       - parameter: password
+  #         name: redis-secret
+  #         key: REDIS_PASSWORD
+  #
+  # - name: my-queue-auth
+  #   spec:
+  #     secretTargetRef:
+  #       - parameter: connection
+  #         name: storage-secret
+  #         key: CONNECTION_STRING

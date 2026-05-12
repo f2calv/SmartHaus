@@ -1,0 +1,38 @@
+{{- if eq (default "Deployment" .Values.kind) "ScaledObject" }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: {{ include "workload.fullname" . }}
+  namespace: {{ include "workload.namespace" $ }}
+  labels:
+    {{- include "workload.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    name: {{ include "workload.fullname" . }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  cooldownPeriod: {{ .Values.keda.cooldownPeriod }}
+  minReplicaCount: {{ .Values.keda.minReplicaCount }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  triggers:
+  {{- range .Values.keda.triggers }}
+  - type: {{ .type }}
+    metadata:
+      {{- toYaml .metadata | nindent 6 }}
+    {{- if .authenticationRef }}
+    authenticationRef:
+      name: {{ .authenticationRef.name }}
+    {{- end }}
+  {{- end }}
+{{- range .Values.keda.triggerAuthentications }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ .name }}
+  namespace: {{ include "workload.namespace" $ }}
+  labels:
+    {{- include "workload.labels" $ | nindent 4 }}
+spec:
+  {{- toYaml .spec | nindent 2 }}
+{{- end }}
+{{- end }}

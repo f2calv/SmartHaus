@@ -1,0 +1,135 @@
+{{- if eq (default "Deployment" .Values.kind) "ScaledJob" }}
+apiVersion: keda.sh/v1alpha1
+kind: ScaledJob
+metadata:
+  name: {{ include "workload.fullname" . }}
+  namespace: {{ include "workload.namespace" $ }}
+  labels:
+    {{- include "workload.labels" . | nindent 4 }}
+spec:
+  jobTargetRef:
+    parallelism: 1
+    completions: 1
+    activeDeadlineSeconds: 600
+    backoffLimit: 6
+    template:
+      metadata:
+        {{- with .Values.podAnnotations }}
+        annotations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        labels:
+          {{- include "workload.labels" . | nindent 10 }}
+          {{- with .Values.podLabels }}
+          {{- toYaml . | nindent 10 }}
+          {{- end }}
+      spec:
+        restartPolicy: {{ default "Never" .Values.restartPolicy }}
+        {{- with .Values.runtimeClassName }}
+        runtimeClassName: {{ . }}
+        {{- end }}
+        {{- with .Values.imagePullSecrets }}
+        imagePullSecrets:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- if .Values.serviceAccount }}
+        serviceAccountName: {{ .Values.serviceAccount.name | quote }}
+        {{- end }}
+        {{- if and (hasKey .Values "podSecurityContext") (.Values.podSecurityContext) }}
+        securityContext:
+          {{- toYaml .Values.podSecurityContext | nindent 10 }}
+        {{- end }}
+        {{- with .Values.initContainers }}
+        initContainers:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        containers:
+        - name: {{ .Chart.Name }}
+          {{- if and (hasKey .Values "securityContext") (.Values.securityContext) }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- end }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ default "IfNotPresent" .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          env:
+            {{- range $name, $fieldPath := $.Values.envFieldRef }}
+            - name: {{ $name }}
+              valueFrom:
+                fieldRef:
+                  fieldPath: {{ $fieldPath }}
+            {{- end }}
+            {{- range $key, $value := $.Values.envVars }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+            {{- range $key, $secret := $.Values.envSecrets }}
+            - name: {{ $key }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $secret }}
+                  key: {{ $key | quote }}
+            {{- end }}
+          {{- if and (hasKey .Values "envVarsFrom") (.Values.envVarsFrom) }}
+          envFrom:
+            {{- toYaml .Values.envVarsFrom | nindent 12 }}
+          {{- end }}
+          {{- if and (hasKey .Values "resources") (.Values.resources) }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+          {{- with .Values.volumeMounts }}
+          volumeMounts:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+        {{- with .Values.volumes }}
+        volumes:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.nodeSelector }}
+        nodeSelector:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.affinity }}
+        affinity:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+        {{- with .Values.tolerations }}
+        tolerations:
+          {{- toYaml . | nindent 10 }}
+        {{- end }}
+  pollingInterval: {{ .Values.keda.pollingInterval }}
+  successfulJobsHistoryLimit: {{ .Values.keda.successfulJobsHistoryLimit }}
+  failedJobsHistoryLimit: {{ .Values.keda.failedJobsHistoryLimit }}
+  maxReplicaCount: {{ .Values.keda.maxReplicaCount }}
+  rolloutStrategy: {{ .Values.keda.rolloutStrategy }}
+  triggers:
+  {{- range .Values.keda.triggers }}
+  - type: {{ .type }}
+    metadata:
+      {{- toYaml .metadata | nindent 6 }}
+    {{- if .authenticationRef }}
+    authenticationRef:
+      name: {{ .authenticationRef.name }}
+    {{- end }}
+  {{- end }}
+{{- range .Values.keda.triggerAuthentications }}
+---
+apiVersion: keda.sh/v1alpha1
+kind: TriggerAuthentication
+metadata:
+  name: {{ .name }}
+  namespace: {{ include "workload.namespace" $ }}
+  labels:
+    {{- include "workload.labels" $ | nindent 4 }}
+spec:
+  {{- toYaml .spec | nindent 2 }}
+{{- end }}
+{{- end }}

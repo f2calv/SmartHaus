@@ -18,19 +18,19 @@
     <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.4.7" />
     <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.4.7" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.10.1" />
-    <PackageVersion Include="CasCap.Common.AI" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Services" Version="4.11.0" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.0" />
+    <PackageVersion Include="CasCap.Common.AI" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Services" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.2" />
     <PackageVersion Include="ILGPU" Version="1.5.3" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
     <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.6" />

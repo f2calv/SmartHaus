@@ -1,26 +1,36 @@
+{{- $kind := default "Deployment" .Values.kind -}}
+{{- $k8sKind := ternary "Deployment" $kind (eq $kind "ScaledObject") -}}
+{{- if has $kind (list "Deployment" "DaemonSet" "StatefulSet" "ScaledObject") }}
 {{- $replicas := int (toString (.Values.replicaCount)) -}}
 {{- if gt $replicas 0 }}
 apiVersion: apps/v1
-kind: {{ default "Deployment" .Values.kind }}
+kind: {{ $k8sKind }}
 metadata:
   name: {{ include "workload.fullname" . }}
   namespace: {{ include "workload.namespace" $ }}
   labels:
     {{- include "workload.labels" . | nindent 4 }}
 spec:
-  {{- if and (not .Values.autoscaling.enabled) (ne "DaemonSet" .Values.kind) }}
+  {{- if and (not .Values.autoscaling.enabled) (has $k8sKind (list "Deployment" "StatefulSet")) }}
   replicas: {{ $replicas }}
   {{- end }}
   revisionHistoryLimit: {{ default "3" .Values.revisionHistoryLimit }}
   selector:
     matchLabels:
       {{- include "workload.selectorLabels" . | nindent 6 }}
-  {{- if and (hasKey .Values "serviceName") (.Values.serviceName) }}
-  serviceName: {{ .Values.serviceName }}
+  {{- if eq $k8sKind "StatefulSet" }}
+  serviceName: {{ default (include "workload.fullname" .) .Values.serviceName }}
   {{- end }}
+  {{- if eq $k8sKind "Deployment" }}
   {{- with .Values.strategy }}
   strategy:
     {{- toYaml . | nindent 4 }}
+  {{- end }}
+  {{- else }}
+  {{- with .Values.updateStrategy }}
+  updateStrategy:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
   {{- end }}
   template:
     metadata:
@@ -35,7 +45,18 @@ spec:
         {{- end }}
     spec:
       restartPolicy: {{ default "Always" .Values.restartPolicy }}
-      runtimeClassName: {{ default "" .Values.runtimeClassName }}
+      {{- with .Values.runtimeClassName }}
+      runtimeClassName: {{ . }}
+      {{- end }}
+      {{- if .Values.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
+      {{- with .Values.dnsPolicy }}
+      dnsPolicy: {{ . }}
+      {{- end }}
+      {{- with .Values.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ . }}
+      {{- end }}
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -46,6 +67,10 @@ spec:
       {{- if and (hasKey .Values "podSecurityContext") (.Values.podSecurityContext) }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- with .Values.initContainers }}
+      initContainers:
+        {{- toYaml . | nindent 8 }}
       {{- end }}
       containers:
         - name: {{ .Chart.Name }}
@@ -103,6 +128,13 @@ spec:
           volumeMounts:
             {{- toYaml . | nindent 12 }}
           {{- end }}
+          {{- with .Values.lifecycle }}
+          lifecycle:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+      {{- with .Values.extraContainers }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       {{- with .Values.volumes }}
       volumes:
         {{- toYaml . | nindent 8 }}
@@ -119,4 +151,13 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      {{- with .Values.topologySpreadConstraints }}
+      topologySpreadConstraints:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+  {{- with .Values.volumeClaimTemplates }}
+  volumeClaimTemplates:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}
 {{- end }}
