@@ -24,10 +24,8 @@ public class RedisKnxTelegramBroker<T>(
     int streamExpiryDays
     ) : IKnxTelegramBroker<T> where T : class
 {
-    private const int MaxConsumerNameLength = 24;
-
     private readonly IDatabase _db = remoteCache.Db;
-    private readonly string _consumerName = $"{Environment.MachineName}-{Guid.NewGuid():N}"[..MaxConsumerNameLength];
+    private readonly string _consumerName = $"{Environment.MachineName}-{AppDomain.CurrentDomain.FriendlyName}";
 
     // Track which date-partitioned stream keys have had their consumer group created
     private readonly HashSet<string> _groupCreatedKeys = [];

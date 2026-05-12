@@ -60,9 +60,9 @@ public record CommsAgentConfig : IAppConfig
     public string ConsumerGroup { get; init; } = "comms:agents";
 
     /// <summary>Consumer name identifying this instance within the consumer group.</summary>
-    /// <remarks>Defaults to <c>"comms-0"</c>. Used by <see cref="CasCap.Services.CommunicationsBgService"/>.</remarks>
+    /// <remarks>Defaults to <c>{MachineName}-{AppName}</c> for automatic per-pod uniqueness in Kubernetes.</remarks>
     [Required, MinLength(1)]
-    public string ConsumerName { get; init; } = "comms-0";
+    public string ConsumerName { get; init; } = $"{Environment.MachineName}-{AppDomain.CurrentDomain.FriendlyName}";
 
     /// <summary>Starting ID used when creating the consumer group for the first time.</summary>
     /// <remarks>Defaults to <c>"0"</c> (read from the beginning). Used by <see cref="CasCap.Services.CommunicationsBgService"/>.</remarks>
