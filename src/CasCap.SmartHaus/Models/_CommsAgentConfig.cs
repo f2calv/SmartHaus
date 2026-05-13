@@ -109,15 +109,4 @@ public record CommsAgentConfig : IAppConfig
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int FlushTimeoutMs { get; init; } = 5_000;
-
-    /// <summary>
-    /// Delay in milliseconds between polls when waiting for the Signal group to be resolved
-    /// before delivering a stream event.
-    /// </summary>
-    /// <remarks>
-    /// Defaults to <c>1000</c> ms (1 second).
-    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
-    /// </remarks>
-    [Range(1, int.MaxValue)]
-    public int GroupResolutionPollingDelayMs { get; init; } = 1_000;
 }

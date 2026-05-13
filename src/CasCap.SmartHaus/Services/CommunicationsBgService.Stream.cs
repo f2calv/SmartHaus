@@ -77,13 +77,7 @@ public partial class CommunicationsBgService
         await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
 
         // Wait until Signal group resolution completes before attempting delivery.
-        if (_groupId is null)
-        {
-            _logger.LogInformation("{ClassName} Signal group not yet resolved, waiting before delivering stream event",
-                nameof(CommunicationsBgService));
-            while (_groupId is null && !cancellationToken.IsCancellationRequested)
-                await Task.Delay(_commsAgentConfig.GroupResolutionPollingDelayMs, cancellationToken);
-        }
+        await _groupResolved.Task.WaitAsync(cancellationToken);
 
         if (_agent is null || _commsAgent is null || _provider is null)
         {
