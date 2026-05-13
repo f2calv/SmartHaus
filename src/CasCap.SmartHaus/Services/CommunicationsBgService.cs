@@ -182,7 +182,9 @@ public partial class CommunicationsBgService : IBgFeature
             try
             {
                 groups = await _notifier.ListGroupsAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                _logger.LogInformation("{ClassName} found {GroupCount} group(s)", nameof(CommunicationsBgService), groups?.Length ?? 0);
+                _logger.LogInformation("{ClassName} found {GroupCount} group(s): {GroupNames}",
+                    nameof(CommunicationsBgService), groups?.Length ?? 0,
+                    groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)");
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
