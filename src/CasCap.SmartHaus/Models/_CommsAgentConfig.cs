@@ -60,9 +60,9 @@ public record CommsAgentConfig : IAppConfig
     public string ConsumerGroup { get; init; } = "comms:agents";
 
     /// <summary>Consumer name identifying this instance within the consumer group.</summary>
-    /// <remarks>Defaults to <c>"comms-0"</c>. Used by <see cref="CasCap.Services.CommunicationsBgService"/>.</remarks>
+    /// <remarks>Defaults to <c>{MachineName}-{AppName}</c> for automatic per-pod uniqueness in Kubernetes.</remarks>
     [Required, MinLength(1)]
-    public string ConsumerName { get; init; } = "comms-0";
+    public string ConsumerName { get; init; } = $"{Environment.MachineName}-{AppDomain.CurrentDomain.FriendlyName}";
 
     /// <summary>Starting ID used when creating the consumer group for the first time.</summary>
     /// <remarks>Defaults to <c>"0"</c> (read from the beginning). Used by <see cref="CasCap.Services.CommunicationsBgService"/>.</remarks>
@@ -109,15 +109,4 @@ public record CommsAgentConfig : IAppConfig
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int FlushTimeoutMs { get; init; } = 5_000;
-
-    /// <summary>
-    /// Delay in milliseconds between polls when waiting for the Signal group to be resolved
-    /// before delivering a stream event.
-    /// </summary>
-    /// <remarks>
-    /// Defaults to <c>1000</c> ms (1 second).
-    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
-    /// </remarks>
-    [Range(1, int.MaxValue)]
-    public int GroupResolutionPollingDelayMs { get; init; } = 1_000;
 }

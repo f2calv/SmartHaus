@@ -52,6 +52,7 @@ public partial class CommunicationsBgService : IBgFeature
     private readonly AgentConfig? _audioAgentConfig;
 
     private string? _groupId;
+    private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
     private readonly ConcurrentQueue<ReplyRequest> _replyQueue = new();
     private readonly SemaphoreSlim _replySignal = new(0);
@@ -181,7 +182,9 @@ public partial class CommunicationsBgService : IBgFeature
             try
             {
                 groups = await _notifier.ListGroupsAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                _logger.LogInformation("{ClassName} found {GroupCount} group(s)", nameof(CommunicationsBgService), groups?.Length ?? 0);
+                _logger.LogInformation("{ClassName} found {GroupCount} group(s): {GroupNames}",
+                    nameof(CommunicationsBgService), groups?.Length ?? 0,
+                    groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)");
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
@@ -207,6 +210,8 @@ public partial class CommunicationsBgService : IBgFeature
                 throw new GenericException(
                     $"group '{_commsAgentConfig.GroupName}' not found among [{(groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)")}] and no GroupId fallback configured");
             }
+
+            _groupResolved.TrySetResult();
 
             _logger.LogInformation("{ClassName} starting background tasks (notifier={NotifierType})",
                 nameof(CommunicationsBgService), _notifier.GetType().Name);

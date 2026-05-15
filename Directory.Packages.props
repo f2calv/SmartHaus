@@ -15,46 +15,46 @@
     <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.1" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.ResourceManager.Dns" Version="1.1.1" />
-    <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.4.7" />
-    <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.4.7" />
+    <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.4.8" />
+    <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.4.8" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.10.1" />
-    <PackageVersion Include="CasCap.Common.AI" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Services" Version="4.11.2" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.2" />
+    <PackageVersion Include="CasCap.Common.AI" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Services" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.3" />
     <PackageVersion Include="ILGPU" Version="1.5.3" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
     <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.6" />
     <PackageVersion Include="Knx.Falcon.Sdk" Version="6.4.8671" />
     <PackageVersion Include="KoenZomers.UniFi.Api" Version="2.3.1" />
     <PackageVersion Include="Microsoft.Agents.AI" Version="1.2.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.9" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Core" Version="2.3.10" />
     <PackageVersion Include="Microsoft.Extensions.AI" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.AI.Abstractions" Version="10.5.0" />
     <PackageVersion Include="Microsoft.Extensions.AI.OpenAI" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
     <PackageVersion Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" Version="2.0.0" />
     <PackageVersion Include="MMALSharp" Version="0.6.0" />
     <PackageVersion Include="MMALSharp.FFmpeg" Version="0.6.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.9" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.7" />
-    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.5.0" />
-    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.7" />
+    <PackageVersion Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.3.10" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Client.Core" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.AspNetCore.SignalR.StackExchangeRedis" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http" Version="10.0.8" />
+    <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.6.0" />
+    <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.8" />
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.5.1" />
     <!--<PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />-->
     <PackageVersion Include="ModelContextProtocol" Version="1.2.0" />

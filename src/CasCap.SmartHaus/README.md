@@ -81,7 +81,6 @@ These sinks are registered in the feature pods and forward domain events to the 
 | `PollingIntervalMs` | `int` | `5000` | Polling interval for comms stream and REST message retrieval |
 | `HealthCheckProbeDelayMs` | `int` | `2000` | Delay in milliseconds between signal-cli readiness probes at startup |
 | `FlushTimeoutMs` | `int` | `5000` | Timeout in milliseconds for flushing pending envelopes at startup |
-| `GroupResolutionPollingDelayMs` | `int` | `1000` | Delay in milliseconds between polls when waiting for Signal group resolution |
 
 ### `MediaConfig` (`CasCap:MediaConfig`)
 
