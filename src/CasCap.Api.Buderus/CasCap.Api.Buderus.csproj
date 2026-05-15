@@ -35,6 +35,7 @@
     <PackageReference Include="CasCap.Common.Logging" />
     <PackageReference Include="CasCap.Common.Net" />
     <PackageReference Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" />
+  <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
   </ItemGroup>
 
 </Project>
