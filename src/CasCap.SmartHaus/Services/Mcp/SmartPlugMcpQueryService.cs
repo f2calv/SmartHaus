@@ -21,6 +21,7 @@ public partial class SmartPlugMcpQueryService(IShellyQueryService shellyQuerySvc
     /// <inheritdoc cref="IShellyQueryService.SetRelayState"/>
     [McpServerTool]
     [Description("Turn a smart plug relay on or off.")]
+    [RequiresApproval(Reason = "Controls physical appliance power state.")]
     public Task<ShellyRelayControlResponse?> SetSmartPlugPower(
         [Description("Device ID to control.")]
         string deviceId,
