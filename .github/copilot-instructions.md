@@ -66,6 +66,29 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 - **`[LoggerMessage]` on hot paths**: Code inside tight loops, `Channel` readers, stream consumers, tick processors, and sink iterators must use `[LoggerMessage]`-attributed source-generated logging to eliminate allocations from `params object[]` boxing and interpolation. Declare `private static partial void` methods at the bottom of the partial class (or in a `{ClassName}.Logging.cs` file for larger services). Use `ILogger logger` as the first parameter (not `this ILogger` — that requires a top-level static class). Call sites use the static form: `LogXxx(logger, ...)` / `LogXxx(_logger, ...)`. For services with a primary constructor `ILogger<T> logger` parameter, pass `logger` directly; for traditional constructors, pass the `_logger` field. Leave dynamic-level calls (`logger.Log(level, ...)`) unconverted — `[LoggerMessage]` requires a compile-time constant level.
 - **Logging belongs in services, not controllers**: Domain-specific logging (`LogInformation` with request-specific fields) must live in the service method, not the controller. Controllers should not inject `ILogger` unless they perform work that cannot be delegated (e.g. SSE streaming loops with `LogTrace`).
 
+### Performance
+
+#### Span-Based Parsing
+
+- **`ReadOnlySpan<byte>` for raw byte streams**: When data arrives as UTF-8 bytes (`PipeReader`, Redis buffers, network streams), parse directly from `ReadOnlySpan<byte>` — do not materialise a `string` first. This avoids allocation and encoding conversion on the hot path.
+- **`ReadOnlySpan<char>` for API convenience only**: The `ReadOnlySpan<char>` overload of a parsing method exists so callers who already hold a span (e.g. from `string.AsSpan()` slicing) do not need to call `.ToString()`. It does **not** offer meaningful speed improvement over the `string` overload for already-materialised strings — the loop logic is identical.
+- **Extension method deduplication**: When providing both `string` and `ReadOnlySpan<char>` overloads, the span version holds the implementation and the string version is a thin wrapper delegating via `.AsSpan()`:
+
+```csharp
+public static int Decimal2Int(this string input, int exp = 0)
+    => input.AsSpan().Decimal2Int(exp);
+```
+
+#### Hot-Path Conventions
+
+- **`[MethodImpl(MethodImplOptions.AggressiveInlining)]`**: Apply to leaf-level parsing and conversion methods called in tight loops (e.g. `Decimal2Int`, `Decimal2Long`, `TryReadLine`). Do not apply to methods with complex control flow or large method bodies — the JIT already inlines small methods and forcing it on large ones hurts instruction-cache performance.
+- **Avoid allocations in tight loops**: In `Channel` readers, `PipeReader` loops, stream consumers, and tick processors:
+  - Use `stackalloc` or `ArrayPool<T>` for temporary buffers instead of `new byte[]`.
+  - Prefer `ReadOnlySequence<byte>` slicing over `.ToArray()`.
+  - Use source-generated `[LoggerMessage]` to eliminate `params object[]` boxing (see Logging section).
+- **Async pass-through on wrappers**: Dropping `async`/`await` on thin single-call wrappers avoids state-machine allocation (see Style section for the full convention).
+- **`PipeReader` for line-oriented binary streams**: When reading line-delimited data (CSV tick files, Redis bulk replies), use `PipeReader` with `TryReadLine` to process data in-place from the pipe's buffer without copying to intermediate `string` objects.
+
 ### Controllers / Web API
 
 - **Thin controllers**: Controllers must be pure pass-through — no business logic, no LINQ projections, no dictionary lookups, no logging. All domain logic and structured logging belongs in the service layer. A controller method should delegate to a single service call, map the result to an HTTP response type, and nothing else.
