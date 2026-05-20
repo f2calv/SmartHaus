@@ -81,7 +81,7 @@ public partial class CommunicationsBgService
             _logger.LogWarning(
                 "{ClassName} received content-only message with no text or attachments from {Sender}, extension data keys: [{ExtensionKeys}], raw: {RawData}",
                 nameof(CommunicationsBgService), notification.Sender, extensionKeys,
-                dm.ExtensionData is not null ? JsonSerializer.Serialize(dm.ExtensionData) : "(empty)");
+                dm.ExtensionData is not null ? dm.ExtensionData.ToJson() : "(empty)");
             return;
         }
 

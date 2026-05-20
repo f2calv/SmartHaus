@@ -55,7 +55,7 @@ public class WizClientService(
             {
                 var result = await udpClient.ReceiveAsync(cts.Token);
                 var json = Encoding.UTF8.GetString(result.Buffer);
-                var response = JsonSerializer.Deserialize<WizResponse<WizPilotState>>(json, s_jsonOptions);
+                var response = json.FromJson<WizResponse<WizPilotState>>(s_jsonOptions);
                 var ip = result.RemoteEndPoint.Address.ToString();
 
                 if (response?.Result is not null)
@@ -147,7 +147,7 @@ public class WizClientService(
         {
             var result = await udpClient.ReceiveAsync(cts.Token);
             var json = Encoding.UTF8.GetString(result.Buffer);
-            return JsonSerializer.Deserialize<WizResponse<T>>(json, s_jsonOptions);
+            return json.FromJson<WizResponse<T>>(s_jsonOptions);
         }
         catch (OperationCanceledException)
         {

@@ -62,7 +62,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
             }
             """;
 
-        var notification = System.Text.Json.JsonSerializer.Deserialize<SignalCliJsonRpcNotification>(json);
+        var notification = json.FromJson<SignalCliJsonRpcNotification>();
 
         Assert.NotNull(notification);
         Assert.Equal("2.0", notification.JsonRpc);
@@ -80,7 +80,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
     {
         const string json = """{"jsonrpc":"2.0","method":"receive"}""";
 
-        var notification = System.Text.Json.JsonSerializer.Deserialize<SignalCliJsonRpcNotification>(json);
+        var notification = json.FromJson<SignalCliJsonRpcNotification>();
 
         Assert.NotNull(notification);
         Assert.Null(notification.Params);

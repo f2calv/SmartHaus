@@ -64,6 +64,25 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 - **No magic strings in log messages**: When a log message references an enum value, class name, or other identifiable symbol, pass it via `nameof()` as a template argument rather than embedding it as a literal string in the message template.
 - **Avoid `nameof()` as label-only template parameters**: Do not use `nameof()` to inject property/type names as separate structured log parameters just to avoid a literal label — this clutters structured log output (Grafana, Loki, OpenTelemetry) with useless fields. Instead, use the property name as plain text in the message template and reserve `{Braces}` for actual values. E.g. `"{ClassName} ServiceFamily={ServiceFamily}"` with args `nameof(MyService), config.Value.ServiceFamily` — not `"{ClassName} {ServiceFamily}={ServiceFamilyValue}"` with args `nameof(MyService), nameof(MyConfig.ServiceFamily), config.Value.ServiceFamily`.
 - **`[LoggerMessage]` on hot paths**: Code inside tight loops, `Channel` readers, stream consumers, tick processors, and sink iterators must use `[LoggerMessage]`-attributed source-generated logging to eliminate allocations from `params object[]` boxing and interpolation. Declare `private static partial void` methods at the bottom of the partial class (or in a `{ClassName}.Logging.cs` file for larger services). Use `ILogger logger` as the first parameter (not `this ILogger` — that requires a top-level static class). Call sites use the static form: `LogXxx(logger, ...)` / `LogXxx(_logger, ...)`. For services with a primary constructor `ILogger<T> logger` parameter, pass `logger` directly; for traditional constructors, pass the `_logger` field. Leave dynamic-level calls (`logger.Log(level, ...)`) unconverted — `[LoggerMessage]` requires a compile-time constant level.
+- **Logging belongs in services, not controllers**: Domain-specific logging (`LogInformation` with request-specific fields) must live in the service method, not the controller. Controllers should not inject `ILogger` unless they perform work that cannot be delegated (e.g. SSE streaming loops with `LogTrace`).
+
+### Controllers / Web API
+
+- **Thin controllers**: Controllers must be pure pass-through — no business logic, no LINQ projections, no dictionary lookups, no logging. All domain logic and structured logging belongs in the service layer. A controller method should delegate to a single service call, map the result to an HTTP response type, and nothing else.
+- **No `ILogger` in pass-through controllers**: If every method in a controller simply delegates to a service, remove the `ILogger` injection entirely. The service layer owns observability.
+- **Expression-bodied methods**: Thin pass-through methods that are a single expression (or a single `await` + return) should use expression bodies (`=>`). For methods that branch on a nullable result (NotFound vs Ok), use a ternary with pattern matching.
+- **`<inheritdoc cref="..."/>` on controller methods**: When a controller method is a thin pass-through, use `/// <inheritdoc cref="ServiceType.Method(ParamTypes)"/>` referencing the service method's XML docs. Do not duplicate documentation between the controller and the service.
+- **Typed service methods over generic**: Controllers must not call generic base-class methods (e.g. `GetEntities<T>(tableName, ...)`, `Enqueue<T>(obj, ...)`) directly. Instead, add typed methods to the service interface that encapsulate domain knowledge (table names, queue keys) and include domain-specific logging. This keeps controllers ignorant of infrastructure details.
+- **Nullable returns for NotFound patterns**: Service methods consumed by controllers that may return HTTP 404 should use nullable return types (e.g. `PAFPlot<int>?`) rather than throwing exceptions. The controller uses pattern matching to map the result:
+
+```csharp
+public Results<Ok<PAFPlot<int>>, NotFound> GetPlot(Symbol symbol, string name)
+    => pafSvc.TryGetPlot(symbol, name) is { } plot
+        ? TypedResults.Ok(plot)
+        : TypedResults.NotFound();
+```
+
+- **`<example>` tags on DTOs**: All public properties on Web API request/response DTOs should have `/// <example>value</example>` XML doc tags. Swashbuckle uses these to populate example values in the Swagger UI, improving API discoverability.
 
 ### Disposable Resources
 
