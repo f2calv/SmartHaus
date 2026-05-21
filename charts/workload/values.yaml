@@ -208,6 +208,8 @@ keda:
   cooldownPeriod: 300
   minReplicaCount: 1
   maxReplicaCount: 2
+  # Redis database index injected into all redis-type triggers (default "" = Redis DB 0).
+  databaseIndex: ""
   # ScaledJob-only settings.
   successfulJobsHistoryLimit: 5
   failedJobsHistoryLimit: 5
