@@ -62,7 +62,7 @@ public class EdgeHardwareSinkRedisService(
 
         var snapshots = new List<EdgeHardwareSnapshot>();
         var pattern = $"{_snapshotValues}:*";
-        await foreach (var key in remoteCache.Server.KeysAsync(pattern: pattern))
+        await foreach (var key in remoteCache.Server.KeysAsync(database: remoteCache.Db.Database, pattern: pattern))
         {
             var entries = await remoteCache.Db.HashGetAllAsync(key);
             if (entries.Length == 0)

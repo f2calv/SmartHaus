@@ -57,7 +57,7 @@ public class ShellySinkRedisService(
 
         var snapshots = new List<ShellySnapshot>();
         var pattern = $"{_summaryValues}:*";
-        await foreach (var key in remoteCache.Server.KeysAsync(pattern: pattern))
+        await foreach (var key in remoteCache.Server.KeysAsync(database: remoteCache.Db.Database, pattern: pattern))
         {
             var entries = await remoteCache.Db.HashGetAllAsync(key);
             if (entries.Length == 0)
