@@ -35,7 +35,7 @@ public class PiCameraDeviceService : ICameraDevice, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!dtStamp.HasValue) dtStamp = DateTime.UtcNow;
-        var fullPath = Path.Combine(_edgeHardwareConfig.LocalPath!, $"{dtStamp.Value.ToString(format)}.jpg");
+        var fullPath = _edgeHardwareConfig.LocalPath!.Extend($"{dtStamp.Value.ToString(format)}.jpg");
         using (var handler = new ImageStreamCaptureHandler(fullPath))
         {
             await _camera.TakePicture(handler, MMALEncoding.JPEG, MMALEncoding.I420);
@@ -48,7 +48,7 @@ public class PiCameraDeviceService : ICameraDevice, IDisposable
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
         if (!timestampUtc.HasValue) timestampUtc = DateTime.UtcNow;
-        var fullPath = Path.Combine(_edgeHardwareConfig.LocalPath!, $"{timestampUtc.Value.ToString(format)}.avi");
+        var fullPath = _edgeHardwareConfig.LocalPath!.Extend($"{timestampUtc.Value.ToString(format)}.avi");
         using (var handler = new VideoStreamCaptureHandler(fullPath))
         {
             var cts = new CancellationTokenSource(duration);

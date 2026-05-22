@@ -100,7 +100,7 @@ public class BuderusKm200MonitorBgService(
     {
         List<Km200DatapointObject> dataPoints;
         var path = "km200-datapoints.json";
-        var fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+        var fullPath = AppDomain.CurrentDomain.BaseDirectory.Extend(path);
         if (File.Exists(fullPath))
         {
             var json = await File.ReadAllTextAsync(fullPath, cancellationToken);
