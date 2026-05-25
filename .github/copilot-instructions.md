@@ -19,6 +19,7 @@
 - **C# Language Version**: 14.0
 - **Braces**: Allman style (`csharp_new_line_before_open_brace = all`). For `if`, `else`, `foreach`, `for`, `while`, and `using` statements whose body is a single statement, omit the curly braces to reduce vertical verbosity.
 - **Expression-bodied members**: Preferred for accessors, properties, indexers, lambdas; **not** for constructors, operators, or local functions. For methods, use an expression body (`=>`) when the method contains a single expression. If the combined method signature and expression would cause horizontal scrolling on smaller editor windows, place the `=>` and expression on the next line, indented.
+- **Explicit interface implementations**: Every explicit interface property must have an accessor block (`{ get => …; }` or `{ get => …; set => …; }`), never an expression body (`=>`). This ensures a consistent shape for all property members and satisfies IDE analysers. Each implementation must also carry `/// <inheritdoc/>` XML documentation.
 - **Async pass-through**: When a method is a thin wrapper that only returns another async call (no `using`, `try`/`catch`, or additional `await`s), drop `async`/`await` and return the `Task`/`ValueTask` directly to avoid unnecessary state-machine overhead.
 - **Async/Await**: Always await async method calls.
 - **Pattern matching**: Preferred (`is`, `not`, switch expressions)
@@ -96,12 +97,12 @@ public static int Decimal2Int(this string input, int exp = 0)
 - **Expression-bodied methods**: Thin pass-through methods that are a single expression (or a single `await` + return) should use expression bodies (`=>`). For methods that branch on a nullable result (NotFound vs Ok), use a ternary with pattern matching.
 - **`<inheritdoc cref="..."/>` on controller methods**: When a controller method is a thin pass-through, use `/// <inheritdoc cref="ServiceType.Method(ParamTypes)"/>` referencing the service method's XML docs. Do not duplicate documentation between the controller and the service.
 - **Typed service methods over generic**: Controllers must not call generic base-class methods (e.g. `GetEntities<T>(tableName, ...)`, `Enqueue<T>(obj, ...)`) directly. Instead, add typed methods to the service interface that encapsulate domain knowledge (table names, queue keys) and include domain-specific logging. This keeps controllers ignorant of infrastructure details.
-- **Nullable returns for NotFound patterns**: Service methods consumed by controllers that may return HTTP 404 should use nullable return types (e.g. `PAFPlot<int>?`) rather than throwing exceptions. The controller uses pattern matching to map the result:
+- **Nullable returns for NotFound patterns**: Service methods consumed by controllers that may return HTTP 404 should use nullable return types (e.g. `ItemDetail?`) rather than throwing exceptions. The controller uses pattern matching to map the result:
 
 ```csharp
-public Results<Ok<PAFPlot<int>>, NotFound> GetPlot(Symbol symbol, string name)
-    => pafSvc.TryGetPlot(symbol, name) is { } plot
-        ? TypedResults.Ok(plot)
+public Results<Ok<ItemDetail>, NotFound> GetItem(int id)
+    => itemSvc.TryGetItem(id) is { } item
+        ? TypedResults.Ok(item)
         : TypedResults.NotFound();
 ```
 
@@ -112,6 +113,75 @@ public Results<Ok<PAFPlot<int>>, NotFound> GetPlot(Symbol symbol, string name)
 - `ServiceProvider` instances built in tests must be disposed via `using`/`await using`.
 - Test helper classes should be `static` when they have no instance state.
 - Avoid shared mutable static state in test fixtures — each test should be independently repeatable.
+
+### Testing
+
+#### Folder Structure
+
+Every `*.Tests` project organises tests into subfolders by type:
+
+```text
+Tests/
+├── Unit/           # Self-contained unit tests (no DI, no external services)
+├── Integration/    # Tests requiring DI, configuration, or external services
+│   └── TestBase.cs # Shared base class for integration tests
+└── Gfx/            # Graphics/rendering tests (optional, project-specific)
+```
+
+#### Integration Tests
+
+- Must carry `[Trait("Category", "Integration")]`.
+- Must live in the `Tests/Integration/` subfolder.
+- Must inherit from `TestBase(output)` — this wires up `ILoggerFactory` (Serilog → xUnit output), `IConfiguration` (appsettings loading), and optionally DI services.
+- `TestBase` lives in `Tests/Integration/TestBase.cs`. It exposes `protected` fields for commonly-used services resolved from the DI container. When a new service is needed by multiple integration test classes, add a `protected` field to `TestBase` resolved from the service provider — do not duplicate service resolution in each test class.
+- `TestBase` exposes a `protected ITestOutputHelper _output` field. Subclasses should use `_output` directly rather than capturing the constructor parameter separately.
+- Exception: lightweight integration tests that only need `HttpClient` (no DI container) may take `ITestOutputHelper` directly without `TestBase`.
+
+#### Unit Tests
+
+- Live in the `Tests/Unit/` subfolder.
+- Do **not** inherit from `TestBase` — they are self-contained with no DI container.
+- May take `ITestOutputHelper` directly for diagnostic output.
+- Use domain-specific trait categories (e.g. `"Parsing"`, `"String Manipulation"`) — not `"Unit"`.
+
+#### Theory Parameterisation
+
+- When multiple `[Fact]` tests differ only by input values, consolidate into a single `[Theory]` with `[InlineData]`. This reduces code duplication while expanding coverage.
+- Use `[Theory]` when testing the same logic across different parameter combinations (e.g. input sizes, threshold values, format types).
+- Keep `[Fact]` for tests with complex setup/assertion logic that doesn't parameterise cleanly.
+
+#### Test Method Naming
+
+- Name test methods after the method or feature being tested (e.g. `GetColumnCells`, `CreateOrUpdateItem`, `DetectsThresholdBreach`).
+- Do **not** use verbose BDD-style sentence names (e.g. avoid `Should_Return_Column_When_Given_Valid_Input`).
+- For lifecycle tests, use `_` separated phases (e.g. `ItemLifecycle_CreateGetUpdateDelete`).
+
+#### Assertions
+
+- Every test must have meaningful assertions. Never use `Assert.True(true)` or other placeholder assertions.
+- Prefer specific assertions (`Assert.Equal`, `Assert.Contains`, `Assert.Null`) over generic `Assert.True(condition)`.
+- Tests that only measure performance (timing loops, `Stopwatch`, `Debug.WriteLine` of elapsed time) without asserting correctness are **not valid tests** — delete them and migrate the benchmark to a BenchmarkDotNet project if the measurement is still needed.
+
+#### Dead Code in Test Projects
+
+- Commented-out test methods, unreachable code behind `return;`, and `[Skip]`-annotated tests with no plan to re-enable should be deleted rather than left to rot.
+- When removing a test method that was the last consumer of a helper/field, remove the helper/field in the same commit.
+- `using` directives that become unused after test removal must be cleaned up in the same commit.
+
+#### Shared Test Data
+
+- Shared test data generators and fixtures live in dedicated `*TestData.cs` files at the `Tests/` root.
+- Hardcoded reference data for regression tests lives in `*Patterns.cs` files.
+- Static helper methods for building test objects should be in `static` helper classes.
+
+#### Test Project README
+
+Every `*.Tests` project README must include:
+
+- A tests table with **method count** and **test case count** (Theories expand to multiple cases via `[InlineData]`).
+- All trait categories used in the project.
+- A skipped tests section listing each skip reason and count.
+- A file structure diagram showing the `Tests/` layout.
 
 ### Multi-Targeting
 
