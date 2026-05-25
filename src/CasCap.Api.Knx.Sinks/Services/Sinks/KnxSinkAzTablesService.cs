@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained in a separate table.
 /// </summary>
 [SinkType("AzureTables")]
-public class KnxSinkAzTablesService : IEventSink<KnxEvent>
+public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
@@ -39,7 +39,7 @@ public class KnxSinkAzTablesService : IEventSink<KnxEvent>
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@KnxTelegram}", nameof(KnxSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(KnxSinkAzTablesService), @event.Kga.Name);
 
         await EnsureSnapshotInitializedAsync(cancellationToken);
 
@@ -59,7 +59,7 @@ public class KnxSinkAzTablesService : IEventSink<KnxEvent>
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(KnxSinkAzTablesService), nameof(WriteEvent));
+            LogWriteEventError(_logger, ex, nameof(KnxSinkAzTablesService));
         }
     }
 
@@ -120,4 +120,10 @@ public class KnxSinkAzTablesService : IEventSink<KnxEvent>
             _initLock.Release();
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing {GroupAddressName} to Azure Tables")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string groupAddressName);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} WriteEvent failure")]
+    private static partial void LogWriteEventError(ILogger logger, Exception ex, string className);
 }

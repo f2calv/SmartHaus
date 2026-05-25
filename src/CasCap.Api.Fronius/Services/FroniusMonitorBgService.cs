@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for polling the Fronius Symo inverter and publishing events to sinks.</summary>
-public class FroniusMonitorBgService(
+public partial class FroniusMonitorBgService(
     ILogger<FroniusMonitorBgService> logger,
     IOptions<FroniusConfig> froniusConfig,
     FroniusSymoConnectionHealthCheck froniusSymoConnectionHealthCheck,
@@ -56,7 +56,7 @@ public class FroniusMonitorBgService(
             if (response is not null)
             {
                 var froniusEvent = new FroniusEvent(response);
-                logger.LogTrace("{ClassName} logged datapoint {@Data}", nameof(FroniusMonitorBgService), froniusEvent);
+                LogDatapointRecorded(logger, nameof(FroniusMonitorBgService));
 
                 var tasks = new List<Task>(eventSinks.Count());
                 foreach (var eventSink in eventSinks)
@@ -67,4 +67,7 @@ public class FroniusMonitorBgService(
                 logger.LogWarning("{ClassName} get solar readings returns a null object", nameof(FroniusMonitorBgService));
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} logged datapoint")]
+    private static partial void LogDatapointRecorded(ILogger logger, string className);
 }

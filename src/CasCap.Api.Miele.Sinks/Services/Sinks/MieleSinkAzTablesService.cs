@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQuery
+public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQuery
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
@@ -28,7 +28,7 @@ public class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQuery
     /// <inheritdoc/>
     public async Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@MieleEvent}", nameof(MieleSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(MieleSinkAzTablesService), @event.DeviceId);
 
         var lineItemEntity = new MieleReadingEntity(@event).GetEntity();
         var snapshotEntity = new MieleSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -79,4 +79,7 @@ public class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQuery
             };
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

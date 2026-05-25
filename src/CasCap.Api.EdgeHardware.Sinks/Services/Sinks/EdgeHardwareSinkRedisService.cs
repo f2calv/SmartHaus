@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="EdgeHardwareEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public class EdgeHardwareSinkRedisService(
+public partial class EdgeHardwareSinkRedisService(
     ILogger<EdgeHardwareSinkRedisService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
     TimeProvider timeProvider,
@@ -19,10 +19,10 @@ public class EdgeHardwareSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Data}", nameof(EdgeHardwareSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(EdgeHardwareSinkRedisService), @event.NodeName);
         if (string.IsNullOrWhiteSpace(_snapshotValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(EdgeHardwareSinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(EdgeHardwareSinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -134,4 +134,10 @@ public class EdgeHardwareSinkRedisService(
         => double.TryParse(value, out var result) ? result : null;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for node {NodeName} to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

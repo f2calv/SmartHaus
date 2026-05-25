@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a per-device snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
+public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -38,7 +38,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// <inheritdoc/>
     public async Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} [{DeviceId}] {@ShellyEvent}", nameof(ShellySinkAzTablesService), @event.DeviceId, @event);
+        LogWriteEvent(_logger, nameof(ShellySinkAzTablesService), @event.DeviceId);
 
         var lineItemEntity = new ShellyReadingEntity(@event).GetEntity();
         var snapshotEntity = new ShellySnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -110,4 +110,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
             ).ToListAsync();
         return entities.OrderByDescending(p => p.RowKey).Take(Math.Min(limit, 1000));
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

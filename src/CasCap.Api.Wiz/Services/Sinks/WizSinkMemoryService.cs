@@ -8,14 +8,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class WizSinkMemoryService(ILogger<WizSinkMemoryService> logger) : IEventSink<WizEvent>, IWizQuery
+public partial class WizSinkMemoryService(ILogger<WizSinkMemoryService> logger) : IEventSink<WizEvent>, IWizQuery
 {
     private readonly ConcurrentDictionary<string, WizEvent> _latestByBulb = [];
 
     /// <inheritdoc/>
     public Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@WizEvent}", nameof(WizSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(WizSinkMemoryService), @event.DeviceId);
         _latestByBulb[@event.DeviceId] = @event;
         return Task.CompletedTask;
     }
@@ -46,4 +46,7 @@ public class WizSinkMemoryService(ILogger<WizSinkMemoryService> logger) : IEvent
         foreach (var evt in _latestByBulb.Values.Take(limit))
             yield return evt;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

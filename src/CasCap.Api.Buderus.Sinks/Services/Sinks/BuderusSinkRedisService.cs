@@ -5,7 +5,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Redis")]
-public class BuderusSinkRedisService(
+public partial class BuderusSinkRedisService(
     ILogger<BuderusSinkRedisService> logger,
     IOptions<BuderusConfig> buderusConfig,
     TimeProvider timeProvider,
@@ -19,10 +19,10 @@ public class BuderusSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@BuderusEvent}", nameof(BuderusSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(BuderusSinkRedisService), @event.Id);
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(BuderusSinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(BuderusSinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -76,4 +76,10 @@ public class BuderusSinkRedisService(
                 yield return new BuderusEvent(id, entry.Element!, new DateTime((long)entry.Score, DateTimeKind.Utc));
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing datapoint {DatapointId} to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string datapointId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

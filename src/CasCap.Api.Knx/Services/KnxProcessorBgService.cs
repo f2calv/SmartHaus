@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <see cref="IEventSink{KnxEvent}"/> instances for processing (e.g. writing to Redis,
 /// sending alerts, etc).
 /// </summary>
-public class KnxProcessorBgService(
+public partial class KnxProcessorBgService(
     ILogger<KnxProcessorBgService> logger,
     IEnumerable<IEventSink<KnxEvent>> eventSinks,
     KnxConnectionHealthCheck knxConnectionHealthCheck,
@@ -33,20 +33,25 @@ public class KnxProcessorBgService(
         {
             if (knxEvent.Kga is null)
             {
-                logger.LogError("knxEvent.Kga is null?");
+                LogKgaNull(logger, nameof(KnxProcessorBgService));
                 continue;
             }
             else if (knxEvent.Kga.Category == GroupAddressCategory.Unknown)
             {
-                logger.LogWarning("{ClassName} GA '{Name} {Address}' does not conform to GA naming convention, we will ignore this GA...",
-                    nameof(KnxProcessorBgService), knxEvent.Kga.Name, knxEvent.Kga.GroupAddress);
+                LogUnknownGroupAddress(logger, nameof(KnxProcessorBgService), knxEvent.Kga.Name, knxEvent.Kga.GroupAddress);
                 continue;
             }
 
             foreach (var eventSink in eventSinks)
                 sinkTasks.Add(eventSink.WriteEvent(knxEvent, cancellationToken));
-            //Parallel.ForEach(_eventSinks, eventSink => { eventSink.WriteTelegram(telegram, cancellationToken); });
-            await Task.WhenAll(sinkTasks.ToArray());
+            await Task.WhenAll(sinkTasks);
+            sinkTasks.Clear();
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} knxEvent.Kga is null?")]
+    private static partial void LogKgaNull(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} GA '{Name} {Address}' does not conform to GA naming convention, we will ignore this GA...")]
+    private static partial void LogUnknownGroupAddress(ILogger logger, string className, string name, string address);
 }

@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Redis (per-appliance snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
+public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     IOptions<MieleConfig> mieleConfig,
     IRemoteCache remoteCache) : IEventSink<MieleEvent>, IMieleQuery
 {
@@ -16,7 +16,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     /// <inheritdoc/>
     public async Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@MieleEvent}", nameof(MieleSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(MieleSinkRedisService), @event.DeviceId);
         var db = remoteCache.Db;
 
         if (_snapshotValues is not null)
@@ -100,4 +100,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
         dict.TryGetValue(key, out var v) && int.TryParse((string?)v, out var i) ? i : null;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

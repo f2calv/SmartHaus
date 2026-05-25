@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuery
+public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuery
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -39,7 +39,7 @@ public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuer
     /// <inheritdoc/>
     public async Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@FroniusEvent}", nameof(FroniusSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(FroniusSinkAzTablesService));
 
         var lineItemEntity = new FroniusReadingEntity(@event).GetEntity();
         var snapshotEntity = new FroniusSnapshotEntity(SnapshotPartitionKey, SnapshotRowKey, @event).GetEntity();
@@ -112,4 +112,7 @@ public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuer
             ).ToListAsync();
         return entities.OrderByDescending(p => p.RowKey).Take(Math.Min(limit, 1000));
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event to Azure Tables")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

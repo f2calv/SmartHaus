@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained via merge-upsert — each datapoint becomes a column.
 /// </summary>
 [SinkType("AzureTables")]
-public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
+public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -40,7 +40,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// <inheritdoc/>
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@BuderusEvent}", nameof(BuderusSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(BuderusSinkAzTablesService), @event.Id);
 
         var lineItemEntity = new BuderusReadingEntity(@event).GetEntity();
         var lineItemTask = _lineItemTableClient.UpsertEntityAsync(lineItemEntity, cancellationToken: cancellationToken);
@@ -101,4 +101,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
             SnapshotPartitionKey, SnapshotRowKey, cancellationToken: cancellationToken);
         return BuderusSnapshotExtensions.FromTableEntity(response.HasValue ? response.Value : null);
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for datapoint {DatapointId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string datapointId);
 }

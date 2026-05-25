@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Redis (per-bulb snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
+public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     IOptions<WizConfig> wizConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery
@@ -17,7 +17,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@WizEvent}", nameof(WizSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(WizSinkRedisService), @event.DeviceId);
         var db = remoteCache.Db;
 
         // Snapshot: per-bulb hash
@@ -110,4 +110,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
         dict.TryGetValue(key, out var v) && int.TryParse((string?)v, out var i) ? i : null;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

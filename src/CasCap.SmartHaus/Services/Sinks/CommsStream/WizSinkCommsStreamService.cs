@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// to the comms Redis Stream via <see cref="IEventSink{T}"/>.
 /// </summary>
 [SinkType("CommsStream")]
-public class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger,
+public partial class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<WizEvent>
 {
     private readonly ConcurrentDictionary<string, bool> _previousStates = [];
@@ -15,7 +15,7 @@ public class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger
     /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@WizEvent}", nameof(WizSinkCommsStreamService), @event);
+        LogWriteEvent(logger, nameof(WizSinkCommsStreamService), @event.DeviceId);
 
         _previousStates.TryGetValue(@event.DeviceId, out var previous);
         var isFirstSeen = !_previousStates.ContainsKey(@event.DeviceId);
@@ -42,4 +42,7 @@ public class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger
     /// <inheritdoc/>
     public IAsyncEnumerable<WizEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

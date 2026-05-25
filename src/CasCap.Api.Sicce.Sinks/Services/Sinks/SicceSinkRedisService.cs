@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="SicceEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public class SicceSinkRedisService(
+public partial class SicceSinkRedisService(
     ILogger<SicceSinkRedisService> logger,
     IOptions<SicceConfig> sicceConfig,
     IRemoteCache remoteCache
@@ -19,7 +19,7 @@ public class SicceSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Data}", nameof(SicceSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(SicceSinkRedisService));
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
             logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(SicceSinkRedisService), SinkSettingKeys.SnapshotValues);
@@ -97,4 +97,7 @@ public class SicceSinkRedisService(
         => dict.TryGetValue(key, out var raw) && bool.TryParse(raw, out var result) && result;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing pump event to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

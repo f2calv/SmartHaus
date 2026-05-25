@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -48,7 +48,7 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@DoorBirdEvent}", nameof(DoorBirdSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(DoorBirdSinkAzTablesService), @event.DoorBirdEventType.ToString());
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -203,4 +203,7 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event of type {EventType}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
 }

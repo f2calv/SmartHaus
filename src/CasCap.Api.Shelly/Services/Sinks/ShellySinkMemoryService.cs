@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : IEventSink<ShellyEvent>, IShellyQuery
+public partial class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : IEventSink<ShellyEvent>, IShellyQuery
 {
     private readonly Dictionary<string, ShellyEvent> _latestByDevice = [];
 
     /// <inheritdoc/>
     public Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@ShellyEvent}", nameof(ShellySinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(ShellySinkMemoryService), @event.DeviceId);
         _latestByDevice[@event.DeviceId] = @event;
         return Task.CompletedTask;
     }
@@ -41,4 +41,7 @@ public class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : 
         foreach (var e in _latestByDevice.Values)
             yield return e;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Event sink that queues <see cref="DoorBirdEvent"/> images for upload to Azure Blob Storage.
 /// </summary>
 [SinkType("AzBlob")]
-public class DoorBirdSinkAzBlobStorageService(ILogger<DoorBirdSinkAzBlobStorageService> logger) : IEventSink<DoorBirdEvent>
+public partial class DoorBirdSinkAzBlobStorageService(ILogger<DoorBirdSinkAzBlobStorageService> logger) : IEventSink<DoorBirdEvent>
 {
 
     /// <inheritdoc/>
@@ -14,11 +14,14 @@ public class DoorBirdSinkAzBlobStorageService(ILogger<DoorBirdSinkAzBlobStorageS
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Dbe}", nameof(DoorBirdSinkAzBlobStorageService), @event);
+        LogWriteEvent(logger, nameof(DoorBirdSinkAzBlobStorageService), @event.DoorBirdEventType.ToString());
         if (@event.bytes is not null)
         {
             var blob = new MyBlob(@event.bytes, @event.FileName ?? string.Empty, @event.DateCreatedUtc);
             await BlobStatics.UploadQueue.Writer.WriteAsync(blob);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing {EventType} blob upload")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
 }

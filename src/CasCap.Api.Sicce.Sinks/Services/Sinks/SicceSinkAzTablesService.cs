@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQuery
+public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQuery
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
@@ -36,7 +36,7 @@ public class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQuery
     /// <inheritdoc/>
     public async Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@SicceEvent}", nameof(SicceSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(SicceSinkAzTablesService));
 
         var lineItemEntity = new SicceReadingEntity(@event).GetEntity();
         var snapshotEntity = new SicceSnapshotEntity(SnapshotPartitionKey, SnapshotRowKey, @event).GetEntity();
@@ -108,4 +108,7 @@ public class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQuery
             ).ToListAsync();
         return entities.OrderByDescending(p => p.RowKey).Take(Math.Min(limit, 1000));
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing pump event to Azure Tables")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

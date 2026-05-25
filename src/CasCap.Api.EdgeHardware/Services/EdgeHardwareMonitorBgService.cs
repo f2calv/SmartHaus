@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// so that <c>FeatureFlagService</c> always starts it once registered.
 /// Consumers query metrics via <see cref="IEdgeHardwareQueryService"/> rather than this service directly.
 /// </remarks>
-public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
+public partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
     TimeProvider timeProvider,
     IKubeAppConfig kubeAppConfig,
@@ -115,7 +115,7 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
                 return null;
             }
 
-            logger.LogTrace("{ClassName} logged datapoint {@Data}", nameof(EdgeHardwareMonitorBgService), snapshot);
+            LogDatapointRecorded(logger, nameof(EdgeHardwareMonitorBgService));
 
             return snapshot;
         }
@@ -143,4 +143,7 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
     internal static string? RunNvidiaSmi() =>
         ShellExtensions.RunProcess("nvidia-smi",
             "--query-gpu=power.draw,temperature.gpu,utilization.gpu,utilization.memory,memory.used,memory.total --format=csv,noheader,nounits");
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} logged datapoint")]
+    private static partial void LogDatapointRecorded(ILogger logger, string className);
 }

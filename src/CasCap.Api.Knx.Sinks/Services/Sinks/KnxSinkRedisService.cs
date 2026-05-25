@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and supports retrieval of the latest snapshot per group address.
 /// </summary>
 [SinkType("Redis")]
-public class KnxSinkRedisService(
+public partial class KnxSinkRedisService(
     ILogger<KnxSinkRedisService> logger,
     IOptions<KnxConfig> knxConfig,
     IRemoteCache remoteCache,
@@ -19,7 +19,7 @@ public class KnxSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} starting send to redis {@Telegram}", nameof(KnxSinkRedisService), @event);
+        LogWriteEventStart(logger, nameof(KnxSinkRedisService), @event.Kga.Name);
         await knxState.SetKnxState(@event.Kga.Name, @event.TimestampUtc, @event.ValueAsString, @event.ValueLabel);
 
         // Store line item in sorted set per day per group address
@@ -30,9 +30,9 @@ public class KnxSinkRedisService(
             await remoteCache.Db.KeyExpireAsync(lineItemKey, TimeSpan.FromDays(knxConfig.Value.RedisSeriesExpiryDays), flags: CommandFlags.FireAndForget);
         }
         else
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(KnxSinkRedisService), SinkSettingKeys.SeriesValues);
+            LogSettingNotSet(logger, nameof(KnxSinkRedisService), SinkSettingKeys.SeriesValues);
 
-        logger.LogTrace("{ClassName} finished send to redis", nameof(KnxSinkRedisService));
+        LogWriteEventEnd(logger, nameof(KnxSinkRedisService));
     }
 
     /// <inheritdoc/>
@@ -61,4 +61,13 @@ public class KnxSinkRedisService(
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} starting send to redis for {GroupAddressName}")]
+    private static partial void LogWriteEventStart(ILogger logger, string className, string groupAddressName);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} finished send to redis")]
+    private static partial void LogWriteEventEnd(ILogger logger, string className);
 }

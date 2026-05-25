@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService> logger) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
+public partial class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService> logger) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
     private EdgeHardwareEvent? _latest;
 
     /// <inheritdoc/>
     public Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Data}", nameof(EdgeHardwareSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(EdgeHardwareSinkMemoryService), @event.NodeName);
         _latest = @event;
         return Task.CompletedTask;
     }
@@ -48,4 +48,7 @@ public class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService
         if (_latest is not null)
             yield return _latest;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for node {NodeName}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);
 }

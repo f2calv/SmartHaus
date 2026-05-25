@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxEvent"/>.
 /// When a line connection drops, it is automatically re-established without affecting other lines.
 /// </summary>
-public class KnxMonitorBgService(
+public partial class KnxMonitorBgService(
     ILogger<KnxMonitorBgService> logger,
     IOptions<RedlockConfig> redlockConfig,
     IOptions<KnxConfig> config,
@@ -353,8 +353,8 @@ public class KnxMonitorBgService(
         bus.GroupMessageReceived += Bus_GroupMessageReceived;
         bus.ConnectionStateChanged += Bus_ConnectionStateChanged;
 
-        logger.LogTrace("{ClassName} InterfaceFeatures {@InterfaceFeatures}", nameof(KnxMonitorBgService), bus.InterfaceFeatures);
-        logger.LogTrace("{ClassName} InterfaceConfiguration {@InterfaceConfiguration}", nameof(KnxMonitorBgService), bus.InterfaceConfiguration);
+        LogInterfaceFeatures(logger, nameof(KnxMonitorBgService), bus.InterfaceFeatures?.ToString() ?? string.Empty);
+        LogInterfaceConfiguration(logger, nameof(KnxMonitorBgService), bus.InterfaceConfiguration?.ToString() ?? string.Empty);
 
         return bus;
     }
@@ -532,8 +532,7 @@ public class KnxMonitorBgService(
     {
         if (sender is null) return;
         var bus = (KnxBus)sender;
-        logger.LogInformation("{ClassName} ConnectionStateChanged, ConnectionState={@ConnectionState}",
-            nameof(KnxMonitorBgService), bus.ConnectionState);
+        LogConnectionStateChanged(logger, nameof(KnxMonitorBgService), bus.ConnectionState.ToString());
 
         if (bus.ConnectionState is BusConnectionState.Connected)
             return;
@@ -556,5 +555,17 @@ public class KnxMonitorBgService(
     }
 
     private void Bus_InterfaceConfigurationChanged(object? sender, EventArgs e)
-        => logger.LogInformation("{ClassName} InterfaceConfigurationChanged={@EventArgs}", nameof(KnxMonitorBgService), e);
+        => LogInterfaceConfigurationChanged(logger, nameof(KnxMonitorBgService));
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} InterfaceFeatures {InterfaceFeatures}")]
+    private static partial void LogInterfaceFeatures(ILogger logger, string className, string interfaceFeatures);
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} InterfaceConfiguration {InterfaceConfiguration}")]
+    private static partial void LogInterfaceConfiguration(ILogger logger, string className, string interfaceConfiguration);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} ConnectionStateChanged, ConnectionState={ConnectionState}")]
+    private static partial void LogConnectionStateChanged(ILogger logger, string className, string connectionState);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} InterfaceConfigurationChanged")]
+    private static partial void LogInterfaceConfigurationChanged(ILogger logger, string className);
 }

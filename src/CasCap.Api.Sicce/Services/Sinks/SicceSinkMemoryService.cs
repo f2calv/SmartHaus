@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IEventSink<SicceEvent>, ISicceQuery
+public partial class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IEventSink<SicceEvent>, ISicceQuery
 {
     private SicceEvent? _latest;
 
     /// <inheritdoc/>
     public Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@SicceEvent}", nameof(SicceSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(SicceSinkMemoryService));
         _latest = @event;
         return Task.CompletedTask;
     }
@@ -41,4 +41,7 @@ public class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IE
         if (_latest is not null)
             yield return _latest;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing pump event")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

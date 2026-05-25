@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
@@ -47,7 +47,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@UbiquitiEvent}", nameof(UbiquitiSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(UbiquitiSinkAzTablesService), @event.CameraId ?? "unknown");
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -194,4 +194,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for camera {CameraId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string cameraId);
 }

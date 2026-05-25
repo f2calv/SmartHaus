@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public class DoorBirdSinkRedisService(
+public partial class DoorBirdSinkRedisService(
     ILogger<DoorBirdSinkRedisService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
     TimeProvider timeProvider,
@@ -23,10 +23,10 @@ public class DoorBirdSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@DoorBirdEvent}", nameof(DoorBirdSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(DoorBirdSinkRedisService), @event.DoorBirdEventType.ToString());
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(DoorBirdSinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -56,7 +56,7 @@ public class DoorBirdSinkRedisService(
             await remoteCache.Db.KeyExpireAsync(lineItemKey, TimeSpan.FromDays(doorBirdConfig.Value.RedisSeriesExpiryDays), flags: CommandFlags.FireAndForget);
         }
         else
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(DoorBirdSinkRedisService), SinkSettingKeys.SeriesValues);
+            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SeriesValues);
     }
 
     /// <summary>
@@ -127,4 +127,10 @@ public class DoorBirdSinkRedisService(
         => dict.TryGetValue(key, out var raw) && int.TryParse(raw, out var result) ? result : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing {EventType} event to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

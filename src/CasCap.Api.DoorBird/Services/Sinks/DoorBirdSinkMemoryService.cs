@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// per <see cref="DoorBirdEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     private readonly ConcurrentDictionary<DoorBirdEventType, (DateTime LastUtc, int Count)> _state = new();
 
     /// <inheritdoc/>
     public Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@DoorBirdEvent}", nameof(DoorBirdSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(DoorBirdSinkMemoryService), @event.DoorBirdEventType.ToString());
         _state.AddOrUpdate(
             @event.DoorBirdEventType,
             (@event.DateCreatedUtc, 1),
@@ -49,4 +49,7 @@ public class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger
         => _state.TryGetValue(eventType, out var s) ? s.Count : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event of type {EventType}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
 }

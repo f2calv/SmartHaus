@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
+public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
@@ -38,7 +38,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     /// <inheritdoc/>
     public async Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@Data}", nameof(EdgeHardwareSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(EdgeHardwareSinkAzTablesService), @event.NodeName);
 
         var lineItemEntity = new EdgeHardwareReadingEntity(@event).GetEntity();
         var snapshotEntity = new EdgeHardwareSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -108,4 +108,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
             };
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for node {NodeName}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);
 }

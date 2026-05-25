@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
+public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
@@ -28,7 +28,7 @@ public class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
     /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@WizEvent}", nameof(WizSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(WizSinkAzTablesService), @event.DeviceId);
 
         var lineItemEntity = new WizReadingEntity(@event).GetEntity();
         var snapshotEntity = new WizSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -96,4 +96,7 @@ public class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

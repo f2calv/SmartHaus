@@ -2,12 +2,12 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
+public partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
     public Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Telegram}", nameof(KnxSinkConsoleService), @event);
+        LogWriteEvent(logger, nameof(KnxSinkConsoleService), @event.Kga.Name);
         //TODO: merge below into ToString() of KnxTelegram?
         var logLevel = string.IsNullOrEmpty(config.Value.BusLoggingGroupAddressFilter)
             || @event.Kga.Name.Contains(config.Value.BusLoggingGroupAddressFilter, StringComparison.OrdinalIgnoreCase)
@@ -26,4 +26,7 @@ public class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptio
         throw new NotSupportedException();
         yield return null;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing telegram for {GroupAddressName}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string groupAddressName);
 }
