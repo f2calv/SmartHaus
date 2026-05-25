@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// per <see cref="UbiquitiEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     private readonly ConcurrentDictionary<UbiquitiEventType, (DateTime LastUtc, int Count)> _state = new();
 
@@ -24,7 +24,7 @@ public class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger
     public Task<UbiquitiSnapshot> GetSnapshot()
         => Task.FromResult(new UbiquitiSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime,
             LastMotionUtc = GetLastUtc(UbiquitiEventType.Motion),
             LastSmartDetectPersonUtc = GetLastUtc(UbiquitiEventType.SmartDetectPerson),
             LastSmartDetectVehicleUtc = GetLastUtc(UbiquitiEventType.SmartDetectVehicle),

@@ -8,7 +8,8 @@ namespace CasCap.Services;
 /// </summary>
 public class WizClientService(
     ILogger<WizClientService> logger,
-    IOptions<WizConfig> config)
+    IOptions<WizConfig> config,
+    TimeProvider timeProvider)
 {
     const string DiscoveryPhoneMac = "AAAAAAAAAAAA";
     const string DiscoveryPhoneIp = "1.2.3.4";
@@ -71,7 +72,7 @@ public class WizClientService(
                         DeviceName = deviceName,
                         PilotState = pilotState ?? response.Result,
                         SystemConfig = systemConfig,
-                        LastSeen = DateTime.UtcNow,
+                        LastSeen = timeProvider.GetUtcNow().UtcDateTime,
                     };
                     _discoveredBulbs.AddOrUpdate(ip, bulb, (_, _) => bulb);
                     logger.LogDebug("{ClassName} discovered bulb at {IpAddress} (MAC: {Mac})",

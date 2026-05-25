@@ -4,6 +4,7 @@ namespace CasCap.Services;
 public class DoorBirdQueryService(
     ILogger<DoorBirdQueryService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
+    TimeProvider timeProvider,
     DoorBirdClientService doorBirdClientSvc,
     IEnumerable<IEventSink<DoorBirdEvent>> eventSinks,
     IDoorBirdQuery? doorBirdQuery = null
@@ -13,7 +14,7 @@ public class DoorBirdQueryService(
     public async Task<DoorBirdSnapshot> GetSnapshot()
     {
         if (doorBirdQuery is null)
-            return new DoorBirdSnapshot { SnapshotUtc = DateTime.UtcNow };
+            return new DoorBirdSnapshot { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         return await doorBirdQuery.GetSnapshot();
     }
@@ -108,7 +109,7 @@ public class DoorBirdQueryService(
         var doorBirdEvent = new DoorBirdEvent
         {
             DoorBirdEventType = type,
-            DateCreatedUtc = DateTime.UtcNow,
+            DateCreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
             bytes = bytes
         };
 

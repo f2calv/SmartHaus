@@ -6,6 +6,7 @@ namespace CasCap.Services;
 [SinkType("Redis")]
 public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     IOptions<WizConfig> wizConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery
 {
     private readonly string? _snapshotValues = wizConfig.Value.Sinks.AvailableSinks
@@ -83,7 +84,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     {
         if (_seriesValues is null) yield break;
 
-        var dayKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var dayKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByRankAsync(dayKey, 0, limit - 1, Order.Descending);
         foreach (var entry in entries)
         {
@@ -98,7 +99,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
                 SceneId = int.TryParse(parts[4], out var sc) ? sc : null,
                 Temp = int.TryParse(parts[5], out var t) ? t : null,
                 Rssi = int.TryParse(parts[6], out var r) ? r : null,
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
         }
     }

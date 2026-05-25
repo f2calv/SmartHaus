@@ -3,6 +3,7 @@ namespace CasCap.Services;
 /// <inheritdoc/>
 public class UbiquitiQueryService(
     ILogger<UbiquitiQueryService> logger,
+    TimeProvider timeProvider,
     IEnumerable<IEventSink<UbiquitiEvent>> eventSinks,
     IUbiquitiQuery? ubiquitiQuery = null
     ) : IUbiquitiQueryService
@@ -11,7 +12,7 @@ public class UbiquitiQueryService(
     public async Task<UbiquitiSnapshot> GetSnapshot()
     {
         if (ubiquitiQuery is null)
-            return new UbiquitiSnapshot { SnapshotUtc = DateTime.UtcNow };
+            return new UbiquitiSnapshot { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         return await ubiquitiQuery.GetSnapshot();
     }
@@ -25,7 +26,7 @@ public class UbiquitiQueryService(
         var ubiquitiEvent = new UbiquitiEvent
         {
             UbiquitiEventType = type,
-            DateCreatedUtc = DateTime.UtcNow,
+            DateCreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
             CameraId = cameraId,
             CameraName = cameraName,
             Score = score,
