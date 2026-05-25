@@ -14,6 +14,7 @@ public class DDnsBgService(
     IOptions<RedlockConfig> redlockConfig,
     IOptions<AzureAuthConfig> azureAuthConfig,
     IOptions<DDnsConfig> dDnsConfig,
+    TimeProvider timeProvider,
     DDnsFindMyIpClientService findMyIpClientSvc,
     IDistributedLockFactory lockFactory,
     IEventSink<CommsEvent> commsSink
@@ -128,7 +129,7 @@ public class DDnsBgService(
             {
                 Source = nameof(DDnsBgService),
                 Message = $"DNS updated {updatedRecords.Count} A record(s) from {priorIp} to {newIp}: {recordList}",
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
             await commsSink.WriteEvent(commsEvent, cancellationToken);
         }

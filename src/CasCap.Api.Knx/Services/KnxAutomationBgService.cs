@@ -20,6 +20,7 @@ namespace CasCap.Services;
 public class KnxAutomationBgService(
     ILogger<KnxAutomationBgService> logger,
     IOptions<KnxConfig> knxConfig,
+    TimeProvider timeProvider,
     KnxGroupAddressLookupService knxGroupAddressLookupSvc,
     KnxConnectionHealthCheck knxConnectionHealthCheck,
     IStateChangeQueue stateChangeQueue,
@@ -159,7 +160,7 @@ public class KnxAutomationBgService(
             if (kga is null)
                 return;
 
-            var localTime = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+            var localTime = TimeZoneInfo.ConvertTimeFromUtc(timeProvider.GetUtcNow().UtcDateTime, tz);
             var solarTimes = new SolarTimes(localTime, knxConfig.Value.DayNightLatitude, knxConfig.Value.DayNightLongitude);
             var sunrise = TimeZoneInfo.ConvertTimeFromUtc(solarTimes.Sunrise.ToUniversalTime(), tz);
             var sunset = TimeZoneInfo.ConvertTimeFromUtc(solarTimes.Sunset.ToUniversalTime(), tz);

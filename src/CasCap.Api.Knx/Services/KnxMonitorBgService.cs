@@ -14,6 +14,7 @@ public class KnxMonitorBgService(
     ILogger<KnxMonitorBgService> logger,
     IOptions<RedlockConfig> redlockConfig,
     IOptions<KnxConfig> config,
+    TimeProvider timeProvider,
     KnxGroupAddressLookupService knxGroupAddressLookupSvc,
     KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck,
     KnxConnectionHealthCheck knxConnectionHealthCheck,
@@ -271,7 +272,7 @@ public class KnxMonitorBgService(
                 {
                     AreaLine = areaLine,
                     Connected = true,
-                    TimestampUtc = DateTime.UtcNow,
+                    TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                 });
             }
         }
@@ -522,7 +523,7 @@ public class KnxMonitorBgService(
         var tpl = e.Value.DecodeValue(kga, logger);
         if (tpl.ValueDecoded is not null)
         {
-            var knxEvent = new KnxEvent(DateTime.UtcNow, e.ToKnxGroupEvent(), kga, e.Value, tpl.ValueDecoded, tpl.ValueLabelDecoded);
+            var knxEvent = new KnxEvent(timeProvider.GetUtcNow().UtcDateTime, e.ToKnxGroupEvent(), kga, e.Value, tpl.ValueDecoded, tpl.ValueLabelDecoded);
             await incomingBroker.PublishAsync(knxEvent);
         }
     }
@@ -548,7 +549,7 @@ public class KnxMonitorBgService(
             {
                 AreaLine = areaLine,
                 Connected = false,
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             });
             _reconnectChannel.Writer.TryWrite(areaLine);
         }

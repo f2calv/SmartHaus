@@ -24,6 +24,7 @@ namespace CasCap.Services;
 public class MediaBgService(ILogger<MediaBgService> logger,
     IOptions<MediaConfig> mediaConfig,
     IOptions<AIConfig> aiConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache,
     IEventSink<CommsEvent> commsSink,
     AgentCommandHandler commandHandler,
@@ -192,7 +193,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
                 {
                     Source = nameof(MediaBgService),
                     Message = $"{mediaEvent.Source} {mediaEvent.MediaType} analysis ({mediaEvent.EventType}): {result.OutputText}",
-                    TimestampUtc = DateTime.UtcNow,
+                    TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                     JsonPayload = mediaPayload.ToJson(),
                 };
                 await commsSink.WriteEvent(findingsEvent, cancellationToken);

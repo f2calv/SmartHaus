@@ -14,6 +14,7 @@ namespace CasCap.Services;
 /// </remarks>
 public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+    TimeProvider timeProvider,
     IKubeAppConfig kubeAppConfig,
     IEnumerable<IEventSink<EdgeHardwareEvent>> eventSinks,
     ICpuTemperatureProvider? cpuTemperatureSvc = null) : IBgFeature
@@ -67,12 +68,12 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
 
         _latestSnapshot = gpuSnapshot is not null
             ? gpuSnapshot with { CpuTemperatureC = cpuTemp, NodeName = _nodeName }
-            : new EdgeHardwareSnapshot { CpuTemperatureC = cpuTemp, NodeName = _nodeName, Timestamp = DateTimeOffset.UtcNow };
+            : new EdgeHardwareSnapshot { CpuTemperatureC = cpuTemp, NodeName = _nodeName, Timestamp = timeProvider.GetUtcNow() };
 
         return new EdgeHardwareEvent
         {
             NodeName = _nodeName,
-            TimestampUtc = DateTime.UtcNow,
+            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             GpuPowerDrawW = _latestSnapshot.GpuPowerDrawW,
             GpuTemperatureC = _latestSnapshot.GpuTemperatureC,
             GpuUtilizationPercent = _latestSnapshot.GpuUtilizationPercent,

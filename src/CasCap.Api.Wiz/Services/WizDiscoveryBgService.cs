@@ -7,6 +7,7 @@ namespace CasCap.Services;
 public class WizDiscoveryBgService(
     ILogger<WizDiscoveryBgService> logger,
     IOptions<WizConfig> wizConfig,
+    TimeProvider timeProvider,
     WizClientService wizClientSvc,
     IEnumerable<IEventSink<WizEvent>> eventSinks) : IBgFeature
 {
@@ -64,7 +65,7 @@ public class WizDiscoveryBgService(
                             C = pilot.C,
                             W = pilot.W,
                             Rssi = pilot.Rssi,
-                            TimestampUtc = DateTime.UtcNow,
+                            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                         };
 
                         var tasks = new List<Task>(eventSinks.Count());
