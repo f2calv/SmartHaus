@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config) : IEventSink<BuderusEvent>, IBuderusQuery
+public class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config, TimeProvider timeProvider) : IEventSink<BuderusEvent>, IBuderusQuery
 {
     private readonly ConcurrentDictionary<string, string> _values = new();
 
@@ -37,7 +37,7 @@ public class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, 
         if (id is null)
         {
             foreach (var (key, value) in _values)
-                yield return new BuderusEvent(key, value, DateTime.UtcNow);
+                yield return new BuderusEvent(key, value, timeProvider.GetUtcNow().UtcDateTime);
         }
     }
 }

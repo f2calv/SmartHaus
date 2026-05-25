@@ -9,6 +9,7 @@ namespace CasCap.Services;
 public class EdgeHardwareSinkRedisService(
     ILogger<EdgeHardwareSinkRedisService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
@@ -94,7 +95,7 @@ public class EdgeHardwareSinkRedisService(
         if (string.IsNullOrWhiteSpace(_snapshotValues))
             yield break;
 
-        var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 
         foreach (var entry in entries)

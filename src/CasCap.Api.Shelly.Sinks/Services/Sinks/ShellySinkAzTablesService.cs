@@ -8,6 +8,7 @@ namespace CasCap.Services;
 public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -18,9 +19,11 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// </summary>
     public ShellySinkAzTablesService(ILogger<ShellySinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<ShellyConfig> config)
+        IOptions<ShellyConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -57,7 +60,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         var entities = _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
             ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
 
@@ -99,7 +102,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// <param name="limit">Maximum number of records to return. Default 100, maximum 1000.</param>
     public async Task<IEnumerable<ShellyReadingEntity>> GetReadings(int limit = 100)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
             nameof(ShellySinkAzTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<ShellyReadingEntity>(

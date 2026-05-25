@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// per <see cref="DoorBirdEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     private readonly ConcurrentDictionary<DoorBirdEventType, (DateTime LastUtc, int Count)> _state = new();
 
@@ -24,7 +24,7 @@ public class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger
     public Task<DoorBirdSnapshot> GetSnapshot()
         => Task.FromResult(new DoorBirdSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime,
             LastDoorbellUtc = GetLastUtc(DoorBirdEventType.Doorbell),
             LastMotionUtc = GetLastUtc(DoorBirdEventType.MotionSensor),
             LastRfidUtc = GetLastUtc(DoorBirdEventType.Rfid),

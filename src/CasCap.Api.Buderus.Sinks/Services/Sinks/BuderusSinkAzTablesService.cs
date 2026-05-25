@@ -9,6 +9,7 @@ namespace CasCap.Services;
 public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
     private readonly Dictionary<string, DatapointMapping> _datapointMappings;
@@ -20,9 +21,10 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// Initializes a new instance of the <see cref="BuderusSinkAzTablesService"/> class.
     /// </summary>
     public BuderusSinkAzTablesService(ILogger<BuderusSinkAzTablesService> logger, IOptions<BuderusConfig> config,
-        IOptions<AzureAuthConfig> azureAuthConfig)
+        IOptions<AzureAuthConfig> azureAuthConfig, TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -69,7 +71,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// <inheritdoc/>
     public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         AsyncPageable<BuderusReadingEntity> entities;
         if (id is null)
             entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);

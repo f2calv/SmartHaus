@@ -8,6 +8,7 @@ namespace CasCap.Services;
 public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -19,9 +20,11 @@ public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuer
     /// </summary>
     public FroniusSinkAzTablesService(ILogger<FroniusSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<FroniusConfig> config)
+        IOptions<FroniusConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -58,7 +61,7 @@ public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuer
     public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         var entities = _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
             ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
 
@@ -101,7 +104,7 @@ public class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuer
     /// <param name="limit">Maximum number of records to return. Default 100, maximum 1000.</param>
     public async Task<IEnumerable<FroniusReadingEntity>> GetReadings(int limit = 100)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
             nameof(FroniusSinkAzTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<FroniusReadingEntity>(

@@ -13,6 +13,7 @@ namespace CasCap.Services;
 public class DoorBirdSinkRedisService(
     ILogger<DoorBirdSinkRedisService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
@@ -64,14 +65,14 @@ public class DoorBirdSinkRedisService(
     public async Task<DoorBirdSnapshot> GetSnapshot()
     {
         if (string.IsNullOrWhiteSpace(_summaryValues))
-            return new() { SnapshotUtc = DateTime.UtcNow };
+            return new() { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         var entries = await remoteCache.Db.HashGetAllAsync(_summaryValues);
         var dict = entries.ToDictionary(e => e.Name.ToString(), e => e.Value.ToString());
 
         return new DoorBirdSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime,
             LastDoorbellUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastDoorbellUtc)),
             LastMotionUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastMotionUtc)),
             LastRfidUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastRfidUtc)),
@@ -94,7 +95,7 @@ public class DoorBirdSinkRedisService(
             // Yield today's events across all event types
             foreach (var eventType in Enum.GetValues<DoorBirdEventType>())
             {
-                var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{eventType}";
+                var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{eventType}";
                 var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
                 foreach (var entry in entries)
                     yield return new DoorBirdEvent
@@ -106,7 +107,7 @@ public class DoorBirdSinkRedisService(
         }
         else if (Enum.TryParse<DoorBirdEventType>(id, ignoreCase: true, out var parsedType))
         {
-            var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{parsedType}";
+            var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{parsedType}";
             var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
             foreach (var entry in entries)
                 yield return new DoorBirdEvent

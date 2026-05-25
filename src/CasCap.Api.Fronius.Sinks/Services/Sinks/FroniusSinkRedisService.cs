@@ -10,6 +10,7 @@ namespace CasCap.Services;
 public class FroniusSinkRedisService(
     ILogger<FroniusSinkRedisService> logger,
     IOptions<FroniusConfig> froniusConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<FroniusEvent>, IFroniusQuery
 {
@@ -74,7 +75,7 @@ public class FroniusSinkRedisService(
         if (string.IsNullOrWhiteSpace(_summaryValues))
             yield break;
 
-        var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 
         foreach (var entry in entries)

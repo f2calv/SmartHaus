@@ -10,6 +10,7 @@ namespace CasCap.Services;
 public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -28,9 +29,11 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
     /// </summary>
     public DoorBirdSinkAzTablesService(ILogger<DoorBirdSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<DoorBirdConfig> config)
+        IOptions<DoorBirdConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -72,7 +75,7 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
     public async IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         AsyncPageable<DoorBirdReadingEntity> entities;
         if (id is null)
             entities = _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
@@ -98,7 +101,7 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
         var entity = await GetSnapshotEntity();
         return new DoorBirdSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = _timeProvider.GetUtcNow().UtcDateTime,
             LastDoorbellUtc = entity.LastDoorbellUtc?.UtcDateTime,
             LastMotionUtc = entity.LastMotionUtc?.UtcDateTime,
             LastRfidUtc = entity.LastRfidUtc?.UtcDateTime,
@@ -127,7 +130,7 @@ public class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQ
     /// <param name="limit">Maximum number of records to return. Default 100, maximum 1000.</param>
     public async Task<IEnumerable<DoorBirdReadingEntity>> GetReadings(int limit = 100)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
             nameof(DoorBirdSinkAzTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(

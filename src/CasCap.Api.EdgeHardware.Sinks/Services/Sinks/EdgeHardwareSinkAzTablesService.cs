@@ -8,6 +8,7 @@ namespace CasCap.Services;
 public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -18,9 +19,11 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     /// </summary>
     public EdgeHardwareSinkAzTablesService(ILogger<EdgeHardwareSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<EdgeHardwareConfig> config)
+        IOptions<EdgeHardwareConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -82,7 +85,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     public async IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} getting data from table storage for partitionKey {PartitionKey}",
             nameof(EdgeHardwareSinkAzTablesService), partitionKey);
 
