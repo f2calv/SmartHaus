@@ -36,8 +36,6 @@ try
         logger.LogInformation("{ClassName} {AppName} running on {NodeName} with features {@Flags}",
             nameof(Program), appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName, appConfig.NodeName ?? Environment.MachineName, enabledFeatures);
 
-    builder.Services.AddSingleton(TimeProvider.System);
-
     #region standard services + feature flags
 
     var mcpBuilder = builder.Services.AddMcpServer()
