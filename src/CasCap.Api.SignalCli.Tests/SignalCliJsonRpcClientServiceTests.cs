@@ -97,7 +97,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddXUnitLogging(_output);
-        services.AddSignalCli(configuration, isDevelopment: false);
+        services.AddSignalCli(configuration);
 
         using var sp = services.BuildServiceProvider();
         var notifier = sp.GetRequiredService<INotifier>();
@@ -112,7 +112,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddXUnitLogging(_output);
-        services.AddSignalCli(configuration, isDevelopment: false);
+        services.AddSignalCli(configuration);
 
         using var sp = services.BuildServiceProvider();
         var notifier = sp.GetRequiredService<INotifier>();
@@ -127,7 +127,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
             .AddXUnitLogging(_output);
-        services.AddSignalCli(configuration, isDevelopment: false);
+        services.AddSignalCli(configuration);
 
         using var sp = services.BuildServiceProvider();
         var restClient = sp.GetRequiredService<SignalCliRestClientService>();

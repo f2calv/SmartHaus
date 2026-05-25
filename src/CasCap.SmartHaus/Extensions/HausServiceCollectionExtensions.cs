@@ -41,7 +41,7 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddCasCapConfiguration<CommsAgentConfig>();
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
         builder.Services.AddMediaStreamSink();
-        builder.Services.AddSignalCli(builder.Configuration, builder.Environment.IsDevelopment());
+        builder.Services.AddSignalCli(builder.Configuration);
         builder.Services.AddMessagingMcp(
             builder.Configuration[$"{SignalCliConfig.ConfigurationSectionName}:{nameof(SignalCliConfig.PhoneNumber)}"]!,
             builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.GroupName)}"]!);

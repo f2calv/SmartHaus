@@ -95,4 +95,12 @@ public record SignalCliConfig : IAppConfig, IHealthCheckConfig
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int MaxReconnectDelayMs { get; init; } = 120_000;
+
+    /// <summary>Whether to attach HTTP Basic credentials from <see cref="ApiAuthConfig"/> to outgoing requests.</summary>
+    /// <remarks>
+    /// Defaults to <see langword="false"/>. Set to <see langword="true"/> when the signal-cli REST API is
+    /// exposed behind a reverse proxy with Basic authentication (e.g. cross-cluster access via an ingress).
+    /// Used by <see cref="CasCap.Extensions.ServiceCollectionExtensions"/>.
+    /// </remarks>
+    public bool BasicAuthEnabled { get; init; }
 }
