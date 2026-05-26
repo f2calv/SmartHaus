@@ -15,22 +15,22 @@
     <PackageVersion Include="Azure.Extensions.AspNetCore.Configuration.Secrets" Version="1.5.1" />
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.ResourceManager.Dns" Version="1.1.1" />
-    <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.4.8" />
-    <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.4.8" />
+    <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.4.11" />
+    <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.4.11" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.10.1" />
-    <PackageVersion Include="CasCap.Common.AI" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Net" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Services" Version="4.11.3" />
-    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.3" />
+    <PackageVersion Include="CasCap.Common.AI" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Caching" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Configuration" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Extensions" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Logging" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Net" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Services" Version="4.11.6" />
+    <PackageVersion Include="CasCap.Common.Testing" Version="4.11.6" />
     <PackageVersion Include="ILGPU" Version="1.5.3" />
     <PackageVersion Include="Iot.Device.Bindings" Version="4.2.0" />
     <PackageVersion Include="LibreHardwareMonitorLib" Version="0.9.6" />
@@ -81,8 +81,8 @@
     <PackageVersion Include="Swashbuckle.AspNetCore" Version="10.1.7" />
     <PackageVersion Include="Tiveria.Home.Knx" Version="2.0.81" />
     <!--<PackageVersion Include="UnifiApi" Version="1.0.0.17" />-->
-    <PackageVersion Include="coverlet.collector" Version="10.0.0" />
-    <PackageVersion Include="coverlet.msbuild" Version="10.0.0" />
+    <PackageVersion Include="coverlet.collector" Version="10.0.1" />
+    <PackageVersion Include="coverlet.msbuild" Version="10.0.1" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
   </ItemGroup>

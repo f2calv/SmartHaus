@@ -8,9 +8,10 @@ namespace CasCap.Services;
 /// Snapshot hashes are keyed per device. Line items include the device ID.
 /// </summary>
 [SinkType("Redis")]
-public class ShellySinkRedisService(
+public partial class ShellySinkRedisService(
     ILogger<ShellySinkRedisService> logger,
     IOptions<ShellyConfig> shellyConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<ShellyEvent>, IShellyQuery
 {
@@ -20,10 +21,10 @@ public class ShellySinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} [{DeviceId}] {@Data}", nameof(ShellySinkRedisService), @event.DeviceId, @event);
+        LogWriteEvent(logger, nameof(ShellySinkRedisService), @event.DeviceId);
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(ShellySinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(ShellySinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -57,7 +58,7 @@ public class ShellySinkRedisService(
 
         var snapshots = new List<ShellySnapshot>();
         var pattern = $"{_summaryValues}:*";
-        await foreach (var key in remoteCache.Server.KeysAsync(pattern: pattern))
+        await foreach (var key in remoteCache.Server.KeysAsync(database: remoteCache.Db.Database, pattern: pattern))
         {
             var entries = await remoteCache.Db.HashGetAllAsync(key);
             if (entries.Length == 0)
@@ -86,7 +87,7 @@ public class ShellySinkRedisService(
         if (string.IsNullOrWhiteSpace(_summaryValues))
             yield break;
 
-        var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 
         foreach (var entry in entries)
@@ -110,4 +111,10 @@ public class ShellySinkRedisService(
         => dict.TryGetValue(key, out var raw) && double.TryParse(raw, out var result) ? result : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId} to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

@@ -7,13 +7,13 @@ namespace CasCap.Services;
 /// AI vision analysis before writing to the comms stream.
 /// </summary>
 [SinkType("CommsStream")]
-public class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamService> logger,
+public partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@DoorBirdEvent}", nameof(DoorBirdSinkCommsStreamService), @event);
+        LogWriteEvent(logger, nameof(DoorBirdSinkCommsStreamService), @event.DoorBirdEventType.ToString());
 
         // Image events go through MediaStream → AI vision analysis → CommsStream; skip here to avoid duplicates.
         if (@event.bytes is not null)
@@ -31,4 +31,7 @@ public class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamServi
     /// <inheritdoc/>
     public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing {EventType} event")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
 }

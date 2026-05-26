@@ -207,7 +207,7 @@ public class RaspberryHostedService : IHostedService
         await Task.Delay(0);
         var path = Path.GetDirectoryName(jpgFullPath);
         var webpFileName = Path.GetFileNameWithoutExtension(jpgFullPath);
-        var webpFullPath = Path.Combine(path!, webpFileName) + ".webp";
+        var webpFullPath = path!.Extend(webpFileName + ".webp");
         var cmd = $"cwebp {jpgFullPath} -o {webpFullPath} -metadata all";
         //var cmd = $"convert {jpgFullPath} -quality 50 -define webp:lossless=true {webpFullPath}.webp";//imagemagick 6.9
 

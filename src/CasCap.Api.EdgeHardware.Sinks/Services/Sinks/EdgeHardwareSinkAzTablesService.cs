@@ -5,9 +5,10 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
+public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -18,9 +19,11 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     /// </summary>
     public EdgeHardwareSinkAzTablesService(ILogger<EdgeHardwareSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<EdgeHardwareConfig> config)
+        IOptions<EdgeHardwareConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -35,7 +38,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     /// <inheritdoc/>
     public async Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@Data}", nameof(EdgeHardwareSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(EdgeHardwareSinkAzTablesService), @event.NodeName);
 
         var lineItemEntity = new EdgeHardwareReadingEntity(@event).GetEntity();
         var snapshotEntity = new EdgeHardwareSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -82,7 +85,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
     public async IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} getting data from table storage for partitionKey {PartitionKey}",
             nameof(EdgeHardwareSinkAzTablesService), partitionKey);
 
@@ -105,4 +108,7 @@ public class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IE
             };
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for node {NodeName}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);
 }

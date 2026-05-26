@@ -8,14 +8,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IEventSink<MieleEvent>, IMieleQuery
+public partial class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IEventSink<MieleEvent>, IMieleQuery
 {
     private readonly ConcurrentDictionary<string, MieleEvent> _latestByDevice = [];
 
     /// <inheritdoc/>
     public Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@MieleEvent}", nameof(MieleSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(MieleSinkMemoryService), @event.DeviceId);
         _latestByDevice[@event.DeviceId] = @event;
         return Task.CompletedTask;
     }
@@ -43,4 +43,5 @@ public class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IE
         foreach (var evt in _latestByDevice.Values.Take(limit))
             yield return evt;
     }
-}
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);}

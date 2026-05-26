@@ -8,7 +8,8 @@ namespace CasCap.Services;
 /// </summary>
 public class WizClientService(
     ILogger<WizClientService> logger,
-    IOptions<WizConfig> config)
+    IOptions<WizConfig> config,
+    TimeProvider timeProvider)
 {
     const string DiscoveryPhoneMac = "AAAAAAAAAAAA";
     const string DiscoveryPhoneIp = "1.2.3.4";
@@ -55,7 +56,7 @@ public class WizClientService(
             {
                 var result = await udpClient.ReceiveAsync(cts.Token);
                 var json = Encoding.UTF8.GetString(result.Buffer);
-                var response = JsonSerializer.Deserialize<WizResponse<WizPilotState>>(json, s_jsonOptions);
+                var response = json.FromJson<WizResponse<WizPilotState>>(s_jsonOptions);
                 var ip = result.RemoteEndPoint.Address.ToString();
 
                 if (response?.Result is not null)
@@ -71,7 +72,7 @@ public class WizClientService(
                         DeviceName = deviceName,
                         PilotState = pilotState ?? response.Result,
                         SystemConfig = systemConfig,
-                        LastSeen = DateTime.UtcNow,
+                        LastSeen = timeProvider.GetUtcNow().UtcDateTime,
                     };
                     _discoveredBulbs.AddOrUpdate(ip, bulb, (_, _) => bulb);
                     logger.LogDebug("{ClassName} discovered bulb at {IpAddress} (MAC: {Mac})",
@@ -147,7 +148,7 @@ public class WizClientService(
         {
             var result = await udpClient.ReceiveAsync(cts.Token);
             var json = Encoding.UTF8.GetString(result.Buffer);
-            return JsonSerializer.Deserialize<WizResponse<T>>(json, s_jsonOptions);
+            return json.FromJson<WizResponse<T>>(s_jsonOptions);
         }
         catch (OperationCanceledException)
         {

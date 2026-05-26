@@ -13,7 +13,7 @@ namespace CasCap.Services;
 /// all sharing the same partition key.
 /// </remarks>
 [SinkType("AzureTablesCemi")]
-public class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
+public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
 {
     private readonly ILogger _logger;
     private readonly TableClient _cemiTableClient;
@@ -63,8 +63,7 @@ public class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} serialising CEMI for '{GroupAddressName}'",
-            nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
+        LogSerialisingCemi(_logger, nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
 
         var cemiHex = @event.Args.ToCemiHex();
         var entity = new KnxCemiReadingEntity(CemiPartitionKey, @event, cemiHex).GetEntity();
@@ -81,8 +80,7 @@ public class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ClassName} failed to write CEMI data for '{GroupAddressName}'",
-                    nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
+                LogWriteCemiFailed(_logger, ex, nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
             }
         }
     }
@@ -166,13 +164,12 @@ public class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     {
         try
         {
-            _logger.LogDebug("{ClassName} flushing {Count} CEMI entities", nameof(KnxSinkCemiAzTablesService), batch.Count);
+            LogFlushingBatch(_logger, nameof(KnxSinkCemiAzTablesService), batch.Count);
             await _cemiTableClient.SubmitTransactionAsync(batch, cancellationToken);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} failed to submit batch of {Count} CEMI entities",
-                nameof(KnxSinkCemiAzTablesService), batch.Count);
+            LogFlushBatchFailed(_logger, ex, nameof(KnxSinkCemiAzTablesService), batch.Count);
         }
         finally
         {
@@ -181,4 +178,16 @@ public class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} serialising CEMI for {GroupAddressName}")]
+    private static partial void LogSerialisingCemi(ILogger logger, string className, string groupAddressName);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} failed to write CEMI data for {GroupAddressName}")]
+    private static partial void LogWriteCemiFailed(ILogger logger, Exception ex, string className, string groupAddressName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} flushing {Count} CEMI entities")]
+    private static partial void LogFlushingBatch(ILogger logger, string className, int count);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} failed to submit batch of {Count} CEMI entities")]
+    private static partial void LogFlushBatchFailed(ILogger logger, Exception ex, string className, int count);
 }

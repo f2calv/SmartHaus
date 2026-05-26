@@ -7,11 +7,12 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
+    private readonly TimeProvider _timeProvider;
 
     private const string SnapshotPartitionKey = "summary";
     private const string SnapshotRowKey = "latest";
@@ -30,9 +31,11 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     /// </summary>
     public UbiquitiSinkAzTablesService(ILogger<UbiquitiSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<UbiquitiConfig> config)
+        IOptions<UbiquitiConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -47,7 +50,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@UbiquitiEvent}", nameof(UbiquitiSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(UbiquitiSinkAzTablesService), @event.CameraId ?? "unknown");
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -74,7 +77,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         AsyncPageable<UbiquitiReadingEntity> entities;
         if (id is null)
             entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
@@ -102,7 +105,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
         var entity = await GetSnapshotEntity();
         return new UbiquitiSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = _timeProvider.GetUtcNow().UtcDateTime,
             LastMotionUtc = entity.LastMotionUtc?.UtcDateTime,
             LastSmartDetectPersonUtc = entity.LastSmartDetectPersonUtc?.UtcDateTime,
             LastSmartDetectVehicleUtc = entity.LastSmartDetectVehicleUtc?.UtcDateTime,
@@ -194,4 +197,7 @@ public class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQ
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for camera {CameraId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string cameraId);
 }

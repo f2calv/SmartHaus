@@ -24,7 +24,7 @@ public record MediaEvent
     public required MediaType MediaType { get; init; }
 
     /// <summary>UTC timestamp when the event was produced by the source.</summary>
-    public DateTime TimestampUtc { get; init; } = DateTime.UtcNow;
+    public required DateTime TimestampUtc { get; init; }
 
     /// <summary>Optional source-specific JSON metadata (e.g. serialized <c>DoorBirdEvent</c>).</summary>
     public string? Metadata { get; init; }

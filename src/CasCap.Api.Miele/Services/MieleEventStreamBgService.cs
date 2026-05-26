@@ -4,6 +4,7 @@ namespace CasCap.Services;
 public class MieleEventStreamBgService(
     ILogger<MieleEventStreamBgService> logger,
     IOptions<MieleConfig> mieleConfig,
+    TimeProvider timeProvider,
     MieleConnectionHealthCheck mieleConnectionHealthCheck,
     IHttpClientFactory httpClientFactory,
     IEnumerable<IEventSink<MieleEvent>> sinks
@@ -69,7 +70,7 @@ public class MieleEventStreamBgService(
                             DeviceId = "unknown",
                             EventType = MieleEventType.StatusUpdate,
                             RawJson = json,
-                            TimestampUtc = DateTime.UtcNow,
+                            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                         };
                         foreach (var sink in sinks)
                             await sink.WriteEvent(evt, cancellationToken);

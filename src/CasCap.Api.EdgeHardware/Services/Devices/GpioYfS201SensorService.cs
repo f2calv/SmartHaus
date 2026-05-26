@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <summary>
 /// YF-S201 is a flow sensor.
 /// </summary>
-public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IKubeAppConfig kubeAppConfig)
+public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IKubeAppConfig kubeAppConfig, TimeProvider timeProvider)
 {
     private readonly GpioController _controller = new();
 
@@ -66,7 +66,7 @@ public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IK
         {
             //reset variables
             pulseCount = 0;
-            monitorStartDateUtc = DateTime.UtcNow;
+            monitorStartDateUtc = timeProvider.GetUtcNow().UtcDateTime;
 
             //get some data
             logger.LogDebug("{ClassName} recording pulses for next {SamplingPeriodInSeconds} second(s)",
@@ -74,7 +74,7 @@ public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IK
             await Task.Delay(samplingPeriodInSeconds * 1000, cancellationToken);
 
             //calculate the frequency (i.e. pulses per second)
-            var avgPulsesPerSecond = pulseCount / (DateTime.UtcNow - monitorStartDateUtc).TotalSeconds;
+            var avgPulsesPerSecond = pulseCount / (timeProvider.GetUtcNow().UtcDateTime - monitorStartDateUtc).TotalSeconds;
             //calculate the volume flow in litres per second
             var VolumeFlowLitersPerSecond = avgPulsesPerSecond / PulsesPerLiterConstant;
             var VolumeFlowLitersPerMinute = VolumeFlowLitersPerSecond * 60;
@@ -87,7 +87,7 @@ public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IK
 
     private readonly int samplingPeriodInSeconds = 15;
 
-    private DateTime monitorStartDateUtc = DateTime.UtcNow;
+    private DateTime monitorStartDateUtc;
 
     private void PinValueChangedEvent(object sender, PinValueChangedEventArgs args)
     {

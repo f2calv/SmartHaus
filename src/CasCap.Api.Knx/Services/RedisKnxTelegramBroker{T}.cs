@@ -12,9 +12,10 @@ namespace CasCap.Services;
 /// automatically evicted. Consumers read via a consumer group ensuring at-least-once delivery.
 /// </summary>
 /// <typeparam name="T">The telegram type being transported.</typeparam>
-public class RedisKnxTelegramBroker<T>(
+public partial class RedisKnxTelegramBroker<T>(
     ILogger<RedisKnxTelegramBroker<T>> logger,
     IRemoteCache remoteCache,
+    TimeProvider timeProvider,
     string baseStreamKey,
     string consumerGroup,
     string consumerGroupStartId,
@@ -33,24 +34,24 @@ public class RedisKnxTelegramBroker<T>(
     /// <inheritdoc/>
     public async ValueTask PublishAsync(T item, CancellationToken cancellationToken = default)
     {
-        var streamKey = $"{baseStreamKey}:{DateTime.UtcNow:yyMMdd}";
+        var streamKey = $"{baseStreamKey}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var json = item.ToJson();
         await _db.StreamAddAsync(streamKey, [new NameValueEntry("data", json)]);
         await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays), flags: CommandFlags.FireAndForget);
-        logger.LogTrace("{ClassName} published {Type} to {StreamKey}", nameof(RedisKnxTelegramBroker<T>), typeof(T).Name, streamKey);
+        LogPublished(logger, typeof(T).Name, streamKey);
     }
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<T> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var currentDate = DateTime.UtcNow.Date;
+        var currentDate = timeProvider.GetUtcNow().UtcDateTime.Date;
         var streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
         await EnsureConsumerGroupAsync(streamKey);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             // Detect date rollover and switch to the new day's stream
-            var nowDate = DateTime.UtcNow.Date;
+            var nowDate = timeProvider.GetUtcNow().UtcDateTime.Date;
             if (nowDate != currentDate)
             {
                 logger.LogInformation("{ClassName} date rollover detected, switching from {OldKey} to {NewKey}",
@@ -93,8 +94,7 @@ public class RedisKnxTelegramBroker<T>(
                 }
                 catch (System.Text.Json.JsonException ex)
                 {
-                    logger.LogError(ex, "{ClassName} failed to deserialize entry {EntryId} from {StreamKey}",
-                        nameof(RedisKnxTelegramBroker<T>), entry.Id, streamKey);
+                    LogDeserializationFailed(logger, ex, entry.Id.ToString(), streamKey);
                     await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id);
                     continue;
                 }
@@ -130,4 +130,10 @@ public class RedisKnxTelegramBroker<T>(
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "RedisKnxTelegramBroker published {TypeName} to {StreamKey}")]
+    private static partial void LogPublished(ILogger logger, string typeName, string streamKey);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "RedisKnxTelegramBroker failed to deserialize entry {EntryId} from {StreamKey}")]
+    private static partial void LogDeserializationFailed(ILogger logger, Exception ex, string entryId, string streamKey);
 }

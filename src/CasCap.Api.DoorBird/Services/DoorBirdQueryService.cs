@@ -4,6 +4,7 @@ namespace CasCap.Services;
 public class DoorBirdQueryService(
     ILogger<DoorBirdQueryService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
+    TimeProvider timeProvider,
     DoorBirdClientService doorBirdClientSvc,
     IEnumerable<IEventSink<DoorBirdEvent>> eventSinks,
     IDoorBirdQuery? doorBirdQuery = null
@@ -13,7 +14,7 @@ public class DoorBirdQueryService(
     public async Task<DoorBirdSnapshot> GetSnapshot()
     {
         if (doorBirdQuery is null)
-            return new DoorBirdSnapshot { SnapshotUtc = DateTime.UtcNow };
+            return new DoorBirdSnapshot { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         return await doorBirdQuery.GetSnapshot();
     }
@@ -22,14 +23,14 @@ public class DoorBirdQueryService(
     public async Task<MyBlob> GetRealTimePhoto()
     {
         var bytes = await doorBirdClientSvc.GetImage();
-        return new MyBlob(bytes ?? [], nameof(GetRealTimePhoto));
+        return new MyBlob(bytes ?? [], nameof(GetRealTimePhoto), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>
     public async Task<MyBlob> GetRealTimePhotoMetaDataOnly()
     {
         var bytes = await doorBirdClientSvc.GetImage();
-        return new MyBlob(bytes ?? [], nameof(GetRealTimePhotoMetaDataOnly));
+        return new MyBlob(bytes ?? [], nameof(GetRealTimePhotoMetaDataOnly), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>
@@ -79,7 +80,7 @@ public class DoorBirdQueryService(
         DoorBirdEventType? doorBirdEventType = null)
     {
         var bytes = await doorBirdClientSvc.GetHistoryImage(index, doorBirdEventType);
-        return new MyBlob(bytes ?? [], nameof(GetHistoryImageSummary));
+        return new MyBlob(bytes ?? [], nameof(GetHistoryImageSummary), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>
@@ -108,7 +109,7 @@ public class DoorBirdQueryService(
         var doorBirdEvent = new DoorBirdEvent
         {
             DoorBirdEventType = type,
-            DateCreatedUtc = DateTime.UtcNow,
+            DateCreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
             bytes = bytes
         };
 

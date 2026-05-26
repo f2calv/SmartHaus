@@ -6,6 +6,7 @@ namespace CasCap.Services;
 public class BuderusKm200MonitorBgService(
     ILogger<BuderusKm200MonitorBgService> logger,
     IOptions<BuderusConfig> buderusConfig,
+    TimeProvider timeProvider,
     BuderusKm200ConnectionHealthCheck km200ConnectionHealthCheck,
     BuderusKm200ClientService buderusKm200ClientSvc,
     IEnumerable<IEventSink<BuderusEvent>> eventSinks
@@ -77,7 +78,7 @@ public class BuderusKm200MonitorBgService(
                 var dp = await buderusKm200ClientSvc.GetDataPoint(datapointId);
                 if (dp is not null && dp.Value is not null)
                 {
-                    var buderusEvent = new BuderusEvent(datapointId, dp.Value, DateTime.UtcNow);
+                    var buderusEvent = new BuderusEvent(datapointId, dp.Value, timeProvider.GetUtcNow().UtcDateTime);
 
                     var tasks = new List<Task>(eventSinks.Count());
                     foreach (var eventSink in eventSinks)
@@ -100,7 +101,7 @@ public class BuderusKm200MonitorBgService(
     {
         List<Km200DatapointObject> dataPoints;
         var path = "km200-datapoints.json";
-        var fullPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, path);
+        var fullPath = AppDomain.CurrentDomain.BaseDirectory.Extend(path);
         if (File.Exists(fullPath))
         {
             var json = await File.ReadAllTextAsync(fullPath, cancellationToken);

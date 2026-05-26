@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config) : IEventSink<BuderusEvent>, IBuderusQuery
+public partial class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config, TimeProvider timeProvider) : IEventSink<BuderusEvent>, IBuderusQuery
 {
     private readonly ConcurrentDictionary<string, string> _values = new();
 
     /// <inheritdoc/>
     public Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@BuderusEvent}", nameof(BuderusSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(BuderusSinkMemoryService), @event.Id);
         _values[@event.Id] = @event.Value;
         return Task.CompletedTask;
     }
@@ -37,7 +37,10 @@ public class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, 
         if (id is null)
         {
             foreach (var (key, value) in _values)
-                yield return new BuderusEvent(key, value, DateTime.UtcNow);
+                yield return new BuderusEvent(key, value, timeProvider.GetUtcNow().UtcDateTime);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for datapoint {DatapointId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string datapointId);
 }

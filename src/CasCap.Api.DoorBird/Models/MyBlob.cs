@@ -16,17 +16,6 @@ public record MyBlob : IMyBlob
         this.DateCreatedUtc = dt;
     }
 
-    /// <summary>
-    /// Initializes a new instance of the <see cref="MyBlob"/> record using <see cref="DateTime.UtcNow"/> as the creation date.
-    /// </summary>
-    [SetsRequiredMembers]
-    public MyBlob(byte[] bytes, string blobName)
-    {
-        this.bytes = bytes;
-        BlobName = blobName;
-        this.DateCreatedUtc = DateTime.UtcNow;
-    }
-
     /// <inheritdoc/>
     [Description("Raw image bytes.")]
     public required byte[] bytes { get; init; }

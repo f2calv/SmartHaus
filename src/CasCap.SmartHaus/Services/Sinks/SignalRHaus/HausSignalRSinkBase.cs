@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// initialization, automatic reconnection and back-off retry.
 /// </summary>
 /// <typeparam name="T">The event type handled by this sink.</typeparam>
-public abstract class HausSignalRSinkBase<T> : IEventSink<T> where T : class
+public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : class
 {
     private readonly ILogger _logger;
     private readonly SignalRHubConfig _signalRHubConfig;
@@ -55,10 +55,10 @@ public abstract class HausSignalRSinkBase<T> : IEventSink<T> where T : class
     /// <inheritdoc/>
     public async Task WriteEvent(T data, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@Data}", GetType().Name, data);
+        LogWriteEvent(_logger, GetType().Name);
         if (_connection?.State != HubConnectionState.Connected)
         {
-            _logger.LogWarning("{ClassName} hub not connected, skipping event", GetType().Name);
+            LogHubNotConnected(_logger, GetType().Name);
             return;
         }
         try
@@ -67,7 +67,7 @@ public abstract class HausSignalRSinkBase<T> : IEventSink<T> where T : class
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} error sending event via SignalR", GetType().Name);
+            LogSendError(_logger, ex, GetType().Name);
         }
     }
 
@@ -126,4 +126,13 @@ public abstract class HausSignalRSinkBase<T> : IEventSink<T> where T : class
     }
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} sending event to SignalR hub")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} hub not connected, skipping event")]
+    private static partial void LogHubNotConnected(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} error sending event via SignalR")]
+    private static partial void LogSendError(ILogger logger, Exception ex, string className);
 }

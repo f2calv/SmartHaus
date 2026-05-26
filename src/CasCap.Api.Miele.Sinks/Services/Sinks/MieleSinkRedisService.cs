@@ -4,8 +4,9 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Redis (per-appliance snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
+public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     IOptions<MieleConfig> mieleConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MieleEvent>, IMieleQuery
 {
     private readonly string? _snapshotValues = mieleConfig.Value.Sinks.AvailableSinks
@@ -16,7 +17,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     /// <inheritdoc/>
     public async Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@MieleEvent}", nameof(MieleSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(MieleSinkRedisService), @event.DeviceId);
         var db = remoteCache.Db;
 
         if (_snapshotValues is not null)
@@ -76,7 +77,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     {
         if (_seriesValues is null) yield break;
 
-        var dayKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var dayKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByRankAsync(dayKey, 0, limit - 1, Order.Descending);
         foreach (var entry in entries)
         {
@@ -89,7 +90,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
                 StatusCode = int.TryParse(parts[2], out var sc) ? sc : null,
                 ProgramId = int.TryParse(parts[3], out var pid) ? pid : null,
                 ErrorCode = int.TryParse(parts[4], out var ec) ? ec : null,
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
         }
     }
@@ -100,4 +101,7 @@ public class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
         dict.TryGetValue(key, out var v) && int.TryParse((string?)v, out var i) ? i : null;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

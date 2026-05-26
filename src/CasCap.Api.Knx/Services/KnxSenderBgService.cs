@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// This service handles sending outbound telegrams to the KNX bus, these outbound telegrams are
 /// dequeued from the <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxOutgoingTelegram"/>.
 /// </summary>
-public class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
+public partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "Knx";
@@ -37,8 +37,7 @@ public class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<Knx
                 var bus = busConnection.Value;
                 if (bus is null || bus.ConnectionState != BusConnectionState.Connected)
                 {
-                    logger.LogError("{ClassName} unable to send to {GroupAddress} as bus connection {Bus} broken!",
-                        nameof(KnxSenderBgService), msg.Kga.Name, busConnection.Key);
+                    LogBusConnectionBroken(logger, nameof(KnxSenderBgService), msg.Kga.Name, busConnection.Key.ToString());
                     continue;
                 }
                 if (config.Value.BusSenderLoggingEnabled
@@ -56,8 +55,13 @@ public class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<Knx
 
             // Only log if we sent to at least one bus, otherwise the error logs above should be sufficient
             if (busAddresses.Count > 0)
-                logger.LogInformation("{ClassName} sending telegram from {@BusAddresses} to {GroupAddressName} with value {GroupValueData}",
-                    nameof(KnxSenderBgService), busAddresses, msg.Kga.Name, msg.GroupValueData);
+                LogTelegramSent(logger, nameof(KnxSenderBgService), busAddresses.Count, msg.Kga.Name);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} unable to send to {GroupAddress} as bus connection {Bus} broken!")]
+    private static partial void LogBusConnectionBroken(ILogger logger, string className, string groupAddress, string bus);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} sending telegram from {BusCount} bus(es) to {GroupAddressName}")]
+    private static partial void LogTelegramSent(ILogger logger, string className, int busCount, string groupAddressName);
 }

@@ -115,6 +115,9 @@ spec:
   - type: {{ .type }}
     metadata:
       {{- toYaml .metadata | nindent 6 }}
+      {{- if and (hasPrefix "redis" .type) $.Values.keda.databaseIndex }}
+      databaseIndex: {{ $.Values.keda.databaseIndex | quote }}
+      {{- end }}
     {{- if .authenticationRef }}
     authenticationRef:
       name: {{ .authenticationRef.name }}

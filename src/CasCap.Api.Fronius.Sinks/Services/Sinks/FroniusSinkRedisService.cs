@@ -7,9 +7,10 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="FroniusEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public class FroniusSinkRedisService(
+public partial class FroniusSinkRedisService(
     ILogger<FroniusSinkRedisService> logger,
     IOptions<FroniusConfig> froniusConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<FroniusEvent>, IFroniusQuery
 {
@@ -19,10 +20,10 @@ public class FroniusSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@Data}", nameof(FroniusSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(FroniusSinkRedisService));
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(FroniusSinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(FroniusSinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -74,7 +75,7 @@ public class FroniusSinkRedisService(
         if (string.IsNullOrWhiteSpace(_summaryValues))
             yield break;
 
-        var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 
         foreach (var entry in entries)
@@ -97,4 +98,10 @@ public class FroniusSinkRedisService(
         => dict.TryGetValue(key, out var raw) && double.TryParse(raw, out var result) ? result : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing Fronius event to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

@@ -5,9 +5,10 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a per-device snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
+public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
 
@@ -18,9 +19,11 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// </summary>
     public ShellySinkAzTablesService(ILogger<ShellySinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<ShellyConfig> config)
+        IOptions<ShellyConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -35,7 +38,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// <inheritdoc/>
     public async Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} [{DeviceId}] {@ShellyEvent}", nameof(ShellySinkAzTablesService), @event.DeviceId, @event);
+        LogWriteEvent(_logger, nameof(ShellySinkAzTablesService), @event.DeviceId);
 
         var lineItemEntity = new ShellyReadingEntity(@event).GetEntity();
         var snapshotEntity = new ShellySnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -57,7 +60,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         var entities = _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
             ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
 
@@ -99,7 +102,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
     /// <param name="limit">Maximum number of records to return. Default 100, maximum 1000.</param>
     public async Task<IEnumerable<ShellyReadingEntity>> GetReadings(int limit = 100)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
             nameof(ShellySinkAzTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
@@ -107,4 +110,7 @@ public class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
             ).ToListAsync();
         return entities.OrderByDescending(p => p.RowKey).Take(Math.Min(limit, 1000));
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

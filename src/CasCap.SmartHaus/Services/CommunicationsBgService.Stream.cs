@@ -45,6 +45,18 @@ public partial class CommunicationsBgService
                     foreach (var entry in entries)
                     {
                         var commsEvent = DeserializeStreamEntry(entry);
+                        if (_commsAgentConfig.AllowedSources.Count > 0
+                            && !_commsAgentConfig.AllowedSources.Contains(commsEvent.Source))
+                        {
+                            _logger.Log(_env.IsDevelopment() ? LogLevel.Error : LogLevel.Debug,
+                                "{ClassName} skipping event from unrecognised source {Source}",
+                                nameof(CommunicationsBgService), commsEvent.Source);
+                            await _db.StreamAcknowledgeAsync(
+                                _commsAgentConfig.StreamKey,
+                                _commsAgentConfig.ConsumerGroup,
+                                entry.Id);
+                            continue;
+                        }
                         await ProcessCommsEventAsync(commsEvent, cancellationToken);
                         await _db.StreamAcknowledgeAsync(
                             _commsAgentConfig.StreamKey,
@@ -131,7 +143,7 @@ public partial class CommunicationsBgService
         EnqueueReply(prompt, extraBase64Attachments: extraAttachments);
     }
 
-    private static CommsEvent DeserializeStreamEntry(StreamEntry entry)
+    private CommsEvent DeserializeStreamEntry(StreamEntry entry)
     {
         var dict = entry.Values.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
         return new CommsEvent
@@ -140,7 +152,7 @@ public partial class CommunicationsBgService
             Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                 ? ts
-                : DateTime.UtcNow,
+                : _timeProvider.GetUtcNow().UtcDateTime,
             JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),
         };
     }

@@ -5,9 +5,10 @@ public record SicceEvent
 {
     /// <summary>Initializes a new instance from a <see cref="DeviceInfo"/> API response.</summary>
     /// <param name="deviceInfo">Device information from the Sicce cloud API.</param>
-    public SicceEvent(DeviceInfo deviceInfo)
+    /// <param name="timestampUtc">UTC timestamp of the reading.</param>
+    public SicceEvent(DeviceInfo deviceInfo, DateTime timestampUtc)
     {
-        TimestampUtc = DateTime.UtcNow;
+        TimestampUtc = timestampUtc;
         Temperature = deviceInfo.Temperature;
         Power = deviceInfo.Power / 100.0;
         IsOnline = deviceInfo.IsOnline;

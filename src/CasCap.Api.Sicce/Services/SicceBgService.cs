@@ -5,6 +5,7 @@ public class SicceBgService(
     ILogger<SicceBgService> logger,
     IOptions<SicceConfig> sicceConfig,
     IHostEnvironment env,
+    TimeProvider timeProvider,
     SicceConnectionHealthCheck sicceConnectionHealthCheck,
     SicceClientService sicceClientSvc,
     IEnumerable<IEventSink<SicceEvent>> eventSinks
@@ -55,7 +56,7 @@ public class SicceBgService(
             var deviceInfo = await sicceClientSvc.GetDeviceInfo();
             if (deviceInfo is not null)
             {
-                var sicceEvent = new SicceEvent(deviceInfo);
+                var sicceEvent = new SicceEvent(deviceInfo, timeProvider.GetUtcNow().UtcDateTime);
 
                 var tasks = new List<Task>(eventSinks.Count());
                 foreach (var eventSink in eventSinks)

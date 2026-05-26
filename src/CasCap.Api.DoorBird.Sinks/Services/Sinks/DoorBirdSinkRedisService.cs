@@ -10,9 +10,10 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public class DoorBirdSinkRedisService(
+public partial class DoorBirdSinkRedisService(
     ILogger<DoorBirdSinkRedisService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
@@ -22,10 +23,10 @@ public class DoorBirdSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@DoorBirdEvent}", nameof(DoorBirdSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(DoorBirdSinkRedisService), @event.DoorBirdEventType.ToString());
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(DoorBirdSinkRedisService), SinkSettingKeys.SnapshotValues);
+            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -55,7 +56,7 @@ public class DoorBirdSinkRedisService(
             await remoteCache.Db.KeyExpireAsync(lineItemKey, TimeSpan.FromDays(doorBirdConfig.Value.RedisSeriesExpiryDays), flags: CommandFlags.FireAndForget);
         }
         else
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(DoorBirdSinkRedisService), SinkSettingKeys.SeriesValues);
+            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SeriesValues);
     }
 
     /// <summary>
@@ -64,14 +65,14 @@ public class DoorBirdSinkRedisService(
     public async Task<DoorBirdSnapshot> GetSnapshot()
     {
         if (string.IsNullOrWhiteSpace(_summaryValues))
-            return new() { SnapshotUtc = DateTime.UtcNow };
+            return new() { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         var entries = await remoteCache.Db.HashGetAllAsync(_summaryValues);
         var dict = entries.ToDictionary(e => e.Name.ToString(), e => e.Value.ToString());
 
         return new DoorBirdSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime,
             LastDoorbellUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastDoorbellUtc)),
             LastMotionUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastMotionUtc)),
             LastRfidUtc = TryGetDateTimeFromTicks(dict, nameof(DoorBirdSnapshotEntity.LastRfidUtc)),
@@ -94,7 +95,7 @@ public class DoorBirdSinkRedisService(
             // Yield today's events across all event types
             foreach (var eventType in Enum.GetValues<DoorBirdEventType>())
             {
-                var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{eventType}";
+                var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{eventType}";
                 var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
                 foreach (var entry in entries)
                     yield return new DoorBirdEvent
@@ -106,7 +107,7 @@ public class DoorBirdSinkRedisService(
         }
         else if (Enum.TryParse<DoorBirdEventType>(id, ignoreCase: true, out var parsedType))
         {
-            var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{parsedType}";
+            var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{parsedType}";
             var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
             foreach (var entry in entries)
                 yield return new DoorBirdEvent
@@ -126,4 +127,10 @@ public class DoorBirdSinkRedisService(
         => dict.TryGetValue(key, out var raw) && int.TryParse(raw, out var result) ? result : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing {EventType} event to Redis")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

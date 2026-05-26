@@ -102,7 +102,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     /// <returns>A list of all <see cref="KnxGroupAddressXml"/> entries including placeholders.</returns>
     public static async Task<List<KnxGroupAddressXml>> DeserializeGroupAddressesFromFile(string? path = null, CancellationToken cancellationToken = default)
     {
-        var fullPath = path ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "knxgroupaddresses.xml");
+        var fullPath = path ?? AppDomain.CurrentDomain.BaseDirectory.Extend("knxgroupaddresses.xml");
         var xml = await File.ReadAllTextAsync(fullPath, cancellationToken);
         var gae = xml.FromXml<KnxGroupAddressXmlExport>();
         return (gae ?? throw new InvalidOperationException("Failed to deserialize group address XML.")).GroupRange
@@ -152,7 +152,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
         var sw = Stopwatch.StartNew();
         KnxGroupAddressXmlExport? gae = null;
         var fullPath = environment.IsDevelopment()
-            ? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, config.Value.GroupAddressXmlFilePath)
+            ? AppDomain.CurrentDomain.BaseDirectory.Extend(config.Value.GroupAddressXmlFilePath)
             : config.Value.GroupAddressXmlFilePath;
 
         if (File.Exists(fullPath))

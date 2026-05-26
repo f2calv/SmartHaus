@@ -9,9 +9,10 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public class UbiquitiSinkRedisService(
+public partial class UbiquitiSinkRedisService(
     ILogger<UbiquitiSinkRedisService> logger,
     IOptions<UbiquitiConfig> ubiquitiConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
@@ -21,7 +22,7 @@ public class UbiquitiSinkRedisService(
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@UbiquitiEvent}", nameof(UbiquitiSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(UbiquitiSinkRedisService), @event.CameraId ?? "unknown");
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
             logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(UbiquitiSinkRedisService), SinkSettingKeys.SnapshotValues);
@@ -65,14 +66,14 @@ public class UbiquitiSinkRedisService(
     public async Task<UbiquitiSnapshot> GetSnapshot()
     {
         if (string.IsNullOrWhiteSpace(_summaryValues))
-            return new() { SnapshotUtc = DateTime.UtcNow };
+            return new() { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
         var entries = await remoteCache.Db.HashGetAllAsync(_summaryValues);
         var dict = entries.ToDictionary(e => e.Name.ToString(), e => e.Value.ToString());
 
         return new UbiquitiSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime,
             LastMotionUtc = TryGetDateTimeFromTicks(dict, nameof(UbiquitiSnapshotEntity.LastMotionUtc)),
             LastSmartDetectPersonUtc = TryGetDateTimeFromTicks(dict, nameof(UbiquitiSnapshotEntity.LastSmartDetectPersonUtc)),
             LastSmartDetectVehicleUtc = TryGetDateTimeFromTicks(dict, nameof(UbiquitiSnapshotEntity.LastSmartDetectVehicleUtc)),
@@ -98,7 +99,7 @@ public class UbiquitiSinkRedisService(
         {
             foreach (var eventType in Enum.GetValues<UbiquitiEventType>())
             {
-                var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{eventType}";
+                var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{eventType}";
                 var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
                 foreach (var entry in entries)
                     yield return new UbiquitiEvent
@@ -110,7 +111,7 @@ public class UbiquitiSinkRedisService(
         }
         else if (Enum.TryParse<UbiquitiEventType>(id, ignoreCase: true, out var parsedType))
         {
-            var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}:{parsedType}";
+            var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{parsedType}";
             var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
             foreach (var entry in entries)
                 yield return new UbiquitiEvent
@@ -130,4 +131,7 @@ public class UbiquitiSinkRedisService(
         => dict.TryGetValue(key, out var raw) && int.TryParse(raw, out var result) ? result : 0;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for camera {CameraId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string cameraId);
 }

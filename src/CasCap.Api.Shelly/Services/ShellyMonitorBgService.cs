@@ -7,6 +7,7 @@ public class ShellyMonitorBgService(
     ShellyCloudConnectionHealthCheck shellyCloudConnectionHealthCheck,
     ShellyCloudClientService shellyCloudClientSvc,
     IHostEnvironment env,
+    TimeProvider timeProvider,
     IEnumerable<IEventSink<ShellyEvent>> eventSinks
     ) : IBgFeature
 {
@@ -83,7 +84,7 @@ public class ShellyMonitorBgService(
                 var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId);
                 if (response is not null && response.IsOk)
                 {
-                    var shellyEvent = new ShellyEvent(device, response);
+                    var shellyEvent = new ShellyEvent(device, response, timeProvider.GetUtcNow().UtcDateTime);
 
                     var tasks = new List<Task>(eventSinks.Count());
                     foreach (var eventSink in eventSinks)

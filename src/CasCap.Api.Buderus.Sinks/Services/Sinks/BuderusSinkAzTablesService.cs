@@ -6,9 +6,10 @@ namespace CasCap.Services;
 /// is maintained via merge-upsert — each datapoint becomes a column.
 /// </summary>
 [SinkType("AzureTables")]
-public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
+public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
     private readonly Dictionary<string, DatapointMapping> _datapointMappings;
@@ -20,9 +21,10 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// Initializes a new instance of the <see cref="BuderusSinkAzTablesService"/> class.
     /// </summary>
     public BuderusSinkAzTablesService(ILogger<BuderusSinkAzTablesService> logger, IOptions<BuderusConfig> config,
-        IOptions<AzureAuthConfig> azureAuthConfig)
+        IOptions<AzureAuthConfig> azureAuthConfig, TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -38,7 +40,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// <inheritdoc/>
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@BuderusEvent}", nameof(BuderusSinkAzTablesService), @event);
+        LogWriteEvent(_logger, nameof(BuderusSinkAzTablesService), @event.Id);
 
         var lineItemEntity = new BuderusReadingEntity(@event).GetEntity();
         var lineItemTask = _lineItemTableClient.UpsertEntityAsync(lineItemEntity, cancellationToken: cancellationToken);
@@ -69,7 +71,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
     /// <inheritdoc/>
     public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         AsyncPageable<BuderusReadingEntity> entities;
         if (id is null)
             entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
@@ -99,4 +101,7 @@ public class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuer
             SnapshotPartitionKey, SnapshotRowKey, cancellationToken: cancellationToken);
         return BuderusSnapshotExtensions.FromTableEntity(response.HasValue ? response.Value : null);
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for datapoint {DatapointId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string datapointId);
 }

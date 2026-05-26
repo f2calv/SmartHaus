@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// and writes alerts to the comms Redis Stream via <see cref="IEventSink{T}"/>.
 /// </summary>
 [SinkType("CommsStream")]
-public class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> logger,
+public partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<SicceEvent>
 {
     private bool? _lastIsOnline;
@@ -14,7 +14,7 @@ public class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> lo
     /// <inheritdoc/>
     public async Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@SicceEvent}", nameof(SicceSinkCommsStreamService), @event);
+        LogWriteEvent(logger, nameof(SicceSinkCommsStreamService));
 
         if (_lastIsOnline is not null && _lastIsOnline.Value && !@event.IsOnline)
         {
@@ -56,4 +56,7 @@ public class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> lo
     /// <inheritdoc/>
     public IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing pump event")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

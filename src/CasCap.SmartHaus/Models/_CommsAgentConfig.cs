@@ -109,4 +109,14 @@ public record CommsAgentConfig : IAppConfig
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int FlushTimeoutMs { get; init; } = 5_000;
+
+    /// <summary>
+    /// Optional set of <see cref="CommsEvent.Source"/> values this instance will process.
+    /// </summary>
+    /// <remarks>
+    /// When non-empty, stream entries whose <c>Source</c> is not in this set are acknowledged
+    /// but silently skipped. This provides defense-in-depth isolation when multiple services
+    /// share the same Redis database. When empty (default), all sources are processed.
+    /// </remarks>
+    public HashSet<string> AllowedSources { get; init; } = [];
 }

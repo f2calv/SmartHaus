@@ -11,7 +11,7 @@ namespace CasCap.Services;
 /// bus connection dropped/reconnected events to the comms stream.
 /// </remarks>
 [SinkType("CommsStream")]
-public class KnxSinkCommsStreamService : IEventSink<KnxEvent>
+public partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
 {
     private readonly ILogger _logger;
     private readonly KnxConfig _config;
@@ -40,7 +40,7 @@ public class KnxSinkCommsStreamService : IEventSink<KnxEvent>
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        _logger.LogTrace("{ClassName} {@Telegram}", nameof(KnxSinkCommsStreamService), @event);
+        LogWriteEvent(_logger, nameof(KnxSinkCommsStreamService), @event.Kga.Name);
 
         if (FirstRun)
         {
@@ -140,4 +140,7 @@ public class KnxSinkCommsStreamService : IEventSink<KnxEvent>
             //expected during shutdown
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for {GroupAddressName}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string groupAddressName);
 }

@@ -23,6 +23,7 @@ public class HausHubSinkConsoleService : IEventSink<HubEvent>
     private const string SuppressAfterInactivityMinutes = nameof(SuppressAfterInactivityMinutes);
 
     private readonly ILogger _logger;
+    private readonly TimeProvider _timeProvider;
     private readonly TimeSpan _suppressAfter;
 
     // Counts accumulated since the last log output, keyed by EventType
@@ -34,9 +35,11 @@ public class HausHubSinkConsoleService : IEventSink<HubEvent>
     /// Initializes a new instance of the <see cref="HausHubSinkConsoleService"/> class.
     /// </summary>
     public HausHubSinkConsoleService(ILogger<HausHubSinkConsoleService> logger,
-        IOptions<SignalRHubConfig> config)
+        IOptions<SignalRHubConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var sinkParams = config.Value.Sinks.AvailableSinks.GetValueOrDefault("Console");
         var minutes = 5;
@@ -86,7 +89,7 @@ public class HausHubSinkConsoleService : IEventSink<HubEvent>
                 break;
             }
 
-            var now = DateTimeOffset.UtcNow;
+            var now = _timeProvider.GetUtcNow();
             var idle = now - _lastEventAt;
 
             if (idle >= _suppressAfter)

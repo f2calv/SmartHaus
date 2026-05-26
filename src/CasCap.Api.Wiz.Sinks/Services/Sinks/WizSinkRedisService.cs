@@ -4,8 +4,9 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Redis (per-bulb snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
+public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     IOptions<WizConfig> wizConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery
 {
     private readonly string? _snapshotValues = wizConfig.Value.Sinks.AvailableSinks
@@ -16,7 +17,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@WizEvent}", nameof(WizSinkRedisService), @event);
+        LogWriteEvent(logger, nameof(WizSinkRedisService), @event.DeviceId);
         var db = remoteCache.Db;
 
         // Snapshot: per-bulb hash
@@ -83,7 +84,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     {
         if (_seriesValues is null) yield break;
 
-        var dayKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var dayKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByRankAsync(dayKey, 0, limit - 1, Order.Descending);
         foreach (var entry in entries)
         {
@@ -98,7 +99,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
                 SceneId = int.TryParse(parts[4], out var sc) ? sc : null,
                 Temp = int.TryParse(parts[5], out var t) ? t : null,
                 Rssi = int.TryParse(parts[6], out var r) ? r : null,
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
         }
     }
@@ -109,4 +110,7 @@ public class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
         dict.TryGetValue(key, out var v) && int.TryParse((string?)v, out var i) ? i : null;
 
     #endregion
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId}")]
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
 }

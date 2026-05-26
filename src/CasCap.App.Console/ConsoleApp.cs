@@ -842,7 +842,7 @@ public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConf
             null => "null",
             string s when IsValidJson(s) => s,
             _ when result.ToString() is { } raw && IsValidJson(raw) => raw,
-            _ => JsonSerializer.Serialize(result, s_jsonOptions),
+            _ => result.ToJson(s_jsonOptions),
         };
 
         // Detect base64-encoded image bytes in the result and render as a CanvasImage renderable
@@ -923,7 +923,7 @@ public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConf
             }).ToList(),
         }).ToList();
 
-        var json = JsonSerializer.Serialize(payload, s_jsonOptions);
+        var json = payload.ToJson(s_jsonOptions);
         LogMiddleware(new Panel(new JsonText(json))
             .Header($"[blue]{Markup.Escape(middlewareName)}[/] [grey]({messageList.Count} messages)[/]")
             .Border(BoxBorder.Rounded)
@@ -957,7 +957,7 @@ public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConf
 
             if (filtered.Count > 0)
             {
-                var optionsJson = JsonSerializer.Serialize(filtered, s_jsonOptions);
+                var optionsJson = filtered.ToJson(s_jsonOptions);
                 LogMiddleware(new Panel(new JsonText(optionsJson))
                     .Header($"[blue]{Markup.Escape(middlewareName)}[/] [grey](ChatOptions)[/]")
                     .Border(BoxBorder.Rounded)
@@ -1038,7 +1038,7 @@ public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConf
                 }
                 filtered[prop.Name] = prop.Value.Clone();
             }
-            return JsonSerializer.Serialize(filtered, s_jsonOptions);
+            return filtered.ToJson(s_jsonOptions);
         }
         catch
         {

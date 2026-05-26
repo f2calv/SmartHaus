@@ -5,14 +5,14 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) : IEventSink<FroniusEvent>, IFroniusQuery
+public partial class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) : IEventSink<FroniusEvent>, IFroniusQuery
 {
     private FroniusEvent? _latest;
 
     /// <inheritdoc/>
     public Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogTrace("{ClassName} {@FroniusEvent}", nameof(FroniusSinkMemoryService), @event);
+        LogWriteEvent(logger, nameof(FroniusSinkMemoryService));
         _latest = @event;
         return Task.CompletedTask;
     }
@@ -42,4 +42,7 @@ public class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) 
         if (_latest is not null)
             yield return _latest;
     }
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing inverter event")]
+    private static partial void LogWriteEvent(ILogger logger, string className);
 }

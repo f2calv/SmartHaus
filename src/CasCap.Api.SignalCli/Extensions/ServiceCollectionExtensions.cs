@@ -14,10 +14,8 @@ public static class ServiceCollectionExtensions
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
-    /// <param name="isDevelopment">Whether the application is running in development mode.</param>
     /// <param name="configure">Optional delegate to programmatically override configuration values.</param>
     public static void AddSignalCli(this IServiceCollection services, IConfiguration configuration,
-        bool isDevelopment,
         Action<SignalCliConfig>? configure = null)
     {
         var config = services.AddAndGetCasCapConfiguration<SignalCliConfig>(configuration, configure);
@@ -26,7 +24,7 @@ public static class ServiceCollectionExtensions
         {
             var opts = sp.GetRequiredService<IOptions<SignalCliConfig>>().Value;
             client.BaseAddress = new Uri(opts.BaseAddress);
-            if (isDevelopment)
+            if (opts.BasicAuthEnabled)
             {
                 var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
                 client.SetBasicAuth(authOpts.Username, authOpts.Password);
@@ -42,7 +40,7 @@ public static class ServiceCollectionExtensions
             services.AddSingleton<INotifier>(sp =>
             {
                 Action<System.Net.WebSockets.ClientWebSocket>? configureWebSocket = null;
-                if (isDevelopment)
+                if (config.BasicAuthEnabled)
                 {
                     var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
                     configureWebSocket = ws => ws.SetBasicAuth(authOpts.Username, authOpts.Password);

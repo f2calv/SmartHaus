@@ -24,6 +24,7 @@ namespace CasCap.Services;
 public class MediaBgService(ILogger<MediaBgService> logger,
     IOptions<MediaConfig> mediaConfig,
     IOptions<AIConfig> aiConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache,
     IEventSink<CommsEvent> commsSink,
     AgentCommandHandler commandHandler,
@@ -192,7 +193,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
                 {
                     Source = nameof(MediaBgService),
                     Message = $"{mediaEvent.Source} {mediaEvent.MediaType} analysis ({mediaEvent.EventType}): {result.OutputText}",
-                    TimestampUtc = DateTime.UtcNow,
+                    TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                     JsonPayload = mediaPayload.ToJson(),
                 };
                 await commsSink.WriteEvent(findingsEvent, cancellationToken);
@@ -224,7 +225,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
         return $"[Document received, {documentBytes.Length} bytes — PDF text extraction not yet implemented]";
     }
 
-    private static MediaEvent DeserializeStreamEntry(StreamEntry entry)
+    private MediaEvent DeserializeStreamEntry(StreamEntry entry)
     {
         var dict = entry.Values.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
         return new MediaEvent
@@ -241,7 +242,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
                 : MediaType.Image,
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(MediaEvent.TimestampUtc)), out var ts)
                 ? ts
-                : DateTime.UtcNow,
+                : timeProvider.GetUtcNow().UtcDateTime,
             Metadata = dict.GetValueOrDefault(nameof(MediaEvent.Metadata)),
         };
     }

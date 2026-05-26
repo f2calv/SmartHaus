@@ -12,8 +12,9 @@ namespace CasCap.Services;
 /// so that <c>FeatureFlagService</c> always starts it once registered.
 /// Consumers query metrics via <see cref="IEdgeHardwareQueryService"/> rather than this service directly.
 /// </remarks>
-public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
+public partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+    TimeProvider timeProvider,
     IKubeAppConfig kubeAppConfig,
     IEnumerable<IEventSink<EdgeHardwareEvent>> eventSinks,
     ICpuTemperatureProvider? cpuTemperatureSvc = null) : IBgFeature
@@ -67,12 +68,12 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
 
         _latestSnapshot = gpuSnapshot is not null
             ? gpuSnapshot with { CpuTemperatureC = cpuTemp, NodeName = _nodeName }
-            : new EdgeHardwareSnapshot { CpuTemperatureC = cpuTemp, NodeName = _nodeName, Timestamp = DateTimeOffset.UtcNow };
+            : new EdgeHardwareSnapshot { CpuTemperatureC = cpuTemp, NodeName = _nodeName, Timestamp = timeProvider.GetUtcNow() };
 
         return new EdgeHardwareEvent
         {
             NodeName = _nodeName,
-            TimestampUtc = DateTime.UtcNow,
+            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             GpuPowerDrawW = _latestSnapshot.GpuPowerDrawW,
             GpuTemperatureC = _latestSnapshot.GpuTemperatureC,
             GpuUtilizationPercent = _latestSnapshot.GpuUtilizationPercent,
@@ -106,7 +107,7 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
                 return null;
             }
 
-            var snapshot = EdgeHardwareSnapshot.ParseGpuCsv(csv);
+            var snapshot = EdgeHardwareSnapshot.ParseGpuCsv(csv, timeProvider.GetUtcNow());
             if (snapshot is null)
             {
                 logger.LogWarning("{ClassName} failed to parse nvidia-smi output {Output}",
@@ -114,7 +115,7 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
                 return null;
             }
 
-            logger.LogTrace("{ClassName} logged datapoint {@Data}", nameof(EdgeHardwareMonitorBgService), snapshot);
+            LogDatapointRecorded(logger, nameof(EdgeHardwareMonitorBgService));
 
             return snapshot;
         }
@@ -142,4 +143,7 @@ public class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> 
     internal static string? RunNvidiaSmi() =>
         ShellExtensions.RunProcess("nvidia-smi",
             "--query-gpu=power.draw,temperature.gpu,utilization.gpu,utilization.memory,memory.used,memory.total --format=csv,noheader,nounits");
+
+    [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} logged datapoint")]
+    private static partial void LogDatapointRecorded(ILogger logger, string className);
 }
