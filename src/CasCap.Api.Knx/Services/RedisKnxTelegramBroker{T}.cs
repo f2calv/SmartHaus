@@ -15,6 +15,7 @@ namespace CasCap.Services;
 public partial class RedisKnxTelegramBroker<T>(
     ILogger<RedisKnxTelegramBroker<T>> logger,
     IRemoteCache remoteCache,
+    TimeProvider timeProvider,
     string baseStreamKey,
     string consumerGroup,
     string consumerGroupStartId,
@@ -33,7 +34,7 @@ public partial class RedisKnxTelegramBroker<T>(
     /// <inheritdoc/>
     public async ValueTask PublishAsync(T item, CancellationToken cancellationToken = default)
     {
-        var streamKey = $"{baseStreamKey}:{DateTime.UtcNow:yyMMdd}";
+        var streamKey = $"{baseStreamKey}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var json = item.ToJson();
         await _db.StreamAddAsync(streamKey, [new NameValueEntry("data", json)]);
         await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays), flags: CommandFlags.FireAndForget);
@@ -43,14 +44,14 @@ public partial class RedisKnxTelegramBroker<T>(
     /// <inheritdoc/>
     public async IAsyncEnumerable<T> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var currentDate = DateTime.UtcNow.Date;
+        var currentDate = timeProvider.GetUtcNow().UtcDateTime.Date;
         var streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
         await EnsureConsumerGroupAsync(streamKey);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             // Detect date rollover and switch to the new day's stream
-            var nowDate = DateTime.UtcNow.Date;
+            var nowDate = timeProvider.GetUtcNow().UtcDateTime.Date;
             if (nowDate != currentDate)
             {
                 logger.LogInformation("{ClassName} date rollover detected, switching from {OldKey} to {NewKey}",

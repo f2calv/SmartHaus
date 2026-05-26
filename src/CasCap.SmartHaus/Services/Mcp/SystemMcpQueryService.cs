@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP tools providing general system information available to all agents.
 /// </summary>
 [McpServerToolType]
-public partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger, IOptions<AIConfig> aiConfig)
+public partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger, IOptions<AIConfig> aiConfig, TimeProvider timeProvider)
 {
     /// <summary>
     /// Returns the current date, time and UTC offset for the configured house time zone.
@@ -27,7 +27,7 @@ public partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger
             tz = TimeZoneInfo.Utc;
         }
 
-        var now = TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, tz);
+        var now = TimeZoneInfo.ConvertTimeFromUtc(timeProvider.GetUtcNow().UtcDateTime, tz);
         var result = new DateTimeState
         {
             LocalTime = now,

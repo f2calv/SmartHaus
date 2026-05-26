@@ -63,7 +63,7 @@ public record EdgeHardwareSnapshot
     /// CPU temperature is not included in the nvidia-smi output; callers should set
     /// <see cref="CpuTemperatureC"/> separately.
     /// </remarks>
-    public static EdgeHardwareSnapshot? ParseGpuCsv(string csv)
+    public static EdgeHardwareSnapshot? ParseGpuCsv(string csv, DateTimeOffset timestamp)
     {
         // nvidia-smi outputs "75.23, 62, 85, 44, 4096, 8192" (spaces after commas)
         var parts = csv.Split(',', StringSplitOptions.TrimEntries);
@@ -86,7 +86,7 @@ public record EdgeHardwareSnapshot
             GpuMemoryUtilizationPercent = memTotal > 0 ? Math.Round(memUsed / memTotal * 100, 1) : 0,
             GpuMemoryUsedMiB = memUsed,
             GpuMemoryTotalMiB = memTotal,
-            Timestamp = DateTimeOffset.UtcNow,
+            Timestamp = timestamp,
         };
     }
 }

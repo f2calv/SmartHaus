@@ -44,6 +44,7 @@ public partial class CommunicationsBgService : IBgFeature
     private readonly CommsDebugNotifier _debugNotifier;
     private readonly IEdgeHardwareQueryService? _edgeHardwareQuerySvc;
     private readonly EdgeHardwareConfig _edgeHardwareConfig;
+    private readonly TimeProvider _timeProvider;
     private readonly AIAgent? _agent;
     private readonly ProviderConfig? _provider;
     private readonly AgentConfig? _commsAgent;
@@ -65,6 +66,7 @@ public partial class CommunicationsBgService : IBgFeature
         IOptions<CommsAgentConfig> commsAgentConfig,
         IOptions<AIConfig> aiConfig,
         IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+        TimeProvider timeProvider,
         IHostEnvironment env,
         CommsDebugNotifier debugNotifier,
         INotifier notifier,
@@ -77,6 +79,7 @@ public partial class CommunicationsBgService : IBgFeature
         IEdgeHardwareQueryService? edgeHardwareQuerySvc = null)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
         _signalCliConfig = signalCliConfig.Value;
         _commsAgentConfig = commsAgentConfig.Value;
         _aiConfig = aiConfig.Value;

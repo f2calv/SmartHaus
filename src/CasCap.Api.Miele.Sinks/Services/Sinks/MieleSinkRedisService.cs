@@ -6,6 +6,7 @@ namespace CasCap.Services;
 [SinkType("Redis")]
 public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     IOptions<MieleConfig> mieleConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MieleEvent>, IMieleQuery
 {
     private readonly string? _snapshotValues = mieleConfig.Value.Sinks.AvailableSinks
@@ -76,7 +77,7 @@ public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger
     {
         if (_seriesValues is null) yield break;
 
-        var dayKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var dayKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByRankAsync(dayKey, 0, limit - 1, Order.Descending);
         foreach (var entry in entries)
         {
@@ -89,7 +90,7 @@ public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger
                 StatusCode = int.TryParse(parts[2], out var sc) ? sc : null,
                 ProgramId = int.TryParse(parts[3], out var pid) ? pid : null,
                 ErrorCode = int.TryParse(parts[4], out var ec) ? ec : null,
-                TimestampUtc = DateTime.UtcNow,
+                TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
         }
     }

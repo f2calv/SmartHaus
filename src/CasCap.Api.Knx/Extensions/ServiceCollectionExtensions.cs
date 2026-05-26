@@ -57,6 +57,7 @@ public static class ServiceCollectionExtensions
                 return new RedisKnxTelegramBroker<KnxEvent>(
                     sp.GetRequiredService<ILogger<RedisKnxTelegramBroker<KnxEvent>>>(),
                     sp.GetRequiredService<IRemoteCache>(),
+                    sp.GetRequiredService<TimeProvider>(),
                     knxOpts.TelegramStreamKeyIncoming,
                     knxOpts.TelegramConsumerGroup,
                     knxOpts.TelegramConsumerGroupStartId,
@@ -71,6 +72,7 @@ public static class ServiceCollectionExtensions
                 return new RedisKnxTelegramBroker<KnxOutgoingTelegram>(
                     sp.GetRequiredService<ILogger<RedisKnxTelegramBroker<KnxOutgoingTelegram>>>(),
                     sp.GetRequiredService<IRemoteCache>(),
+                    sp.GetRequiredService<TimeProvider>(),
                     knxOpts.TelegramStreamKeyOutgoing,
                     knxOpts.TelegramConsumerGroup,
                     knxOpts.TelegramConsumerGroupStartId,

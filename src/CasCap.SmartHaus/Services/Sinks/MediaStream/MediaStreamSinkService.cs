@@ -9,6 +9,7 @@ namespace CasCap.Services;
 /// </summary>
 public class MediaStreamSinkService(ILogger<MediaStreamSinkService> logger,
     IOptions<MediaConfig> mediaConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MediaEvent>
 {
     private readonly IDatabase _db = remoteCache.Db;
@@ -59,7 +60,7 @@ public class MediaStreamSinkService(ILogger<MediaStreamSinkService> logger,
                     : MediaType.Image,
                 TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(MediaEvent.TimestampUtc)), out var ts)
                     ? ts
-                    : DateTime.UtcNow,
+                    : timeProvider.GetUtcNow().UtcDateTime,
                 Metadata = dict.GetValueOrDefault(nameof(MediaEvent.Metadata)),
             };
         }

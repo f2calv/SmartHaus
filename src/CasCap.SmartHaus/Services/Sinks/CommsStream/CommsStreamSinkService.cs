@@ -14,6 +14,7 @@ namespace CasCap.Services;
 /// </remarks>
 public class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
     IOptions<CommsAgentConfig> commsAgentConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<CommsEvent>
 {
     private readonly IDatabase _db = remoteCache.Db;
@@ -51,7 +52,7 @@ public class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
                 Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
                 TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                     ? ts
-                    : DateTime.UtcNow,
+                    : timeProvider.GetUtcNow().UtcDateTime,
                 JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),
             };
         }

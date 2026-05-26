@@ -225,7 +225,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
         return $"[Document received, {documentBytes.Length} bytes — PDF text extraction not yet implemented]";
     }
 
-    private static MediaEvent DeserializeStreamEntry(StreamEntry entry)
+    private MediaEvent DeserializeStreamEntry(StreamEntry entry)
     {
         var dict = entry.Values.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
         return new MediaEvent
@@ -242,7 +242,7 @@ public class MediaBgService(ILogger<MediaBgService> logger,
                 : MediaType.Image,
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(MediaEvent.TimestampUtc)), out var ts)
                 ? ts
-                : DateTime.UtcNow,
+                : timeProvider.GetUtcNow().UtcDateTime,
             Metadata = dict.GetValueOrDefault(nameof(MediaEvent.Metadata)),
         };
     }

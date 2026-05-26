@@ -23,14 +23,14 @@ public class DoorBirdQueryService(
     public async Task<MyBlob> GetRealTimePhoto()
     {
         var bytes = await doorBirdClientSvc.GetImage();
-        return new MyBlob(bytes ?? [], nameof(GetRealTimePhoto));
+        return new MyBlob(bytes ?? [], nameof(GetRealTimePhoto), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>
     public async Task<MyBlob> GetRealTimePhotoMetaDataOnly()
     {
         var bytes = await doorBirdClientSvc.GetImage();
-        return new MyBlob(bytes ?? [], nameof(GetRealTimePhotoMetaDataOnly));
+        return new MyBlob(bytes ?? [], nameof(GetRealTimePhotoMetaDataOnly), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>
@@ -80,7 +80,7 @@ public class DoorBirdQueryService(
         DoorBirdEventType? doorBirdEventType = null)
     {
         var bytes = await doorBirdClientSvc.GetHistoryImage(index, doorBirdEventType);
-        return new MyBlob(bytes ?? [], nameof(GetHistoryImageSummary));
+        return new MyBlob(bytes ?? [], nameof(GetHistoryImageSummary), timeProvider.GetUtcNow().UtcDateTime);
     }
 
     /// <inheritdoc/>

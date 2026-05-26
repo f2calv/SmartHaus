@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Manages a SignalR client connection to the Fronius Symo hub, with automatic reconnect and retry logic.
 /// </summary>
-public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientService> logger, AppConfig appConfig) : ISignalRClientService
+public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientService> logger, AppConfig appConfig, TimeProvider timeProvider) : ISignalRClientService
 {
     /// <inheritdoc/>
     public bool IsConnected { get; set; } = false;
@@ -57,7 +57,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
         if (IsConnected)
         {
             var msg = $"{appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName} now connected to hub @ {url}";
-            await connection.SendAsync(nameof(IHausServerHub.SendMessage), appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName, $"{msg}", DateTime.UtcNow);
+            await connection.SendAsync(nameof(IHausServerHub.SendMessage), appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName, $"{msg}", timeProvider.GetUtcNow().UtcDateTime);
         }
 
         async Task<bool> ConnectWithRetryAsync(CancellationToken cancellationToken = default)

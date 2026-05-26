@@ -12,16 +12,19 @@ public class KnxRedisStateService : IKnxState
     private readonly IEventSink<KnxEvent> _azTablesSink;
     private readonly SinkConfigParams _redisConfig;
     private readonly KnxGroupAddressLookupService _knxGroupAddressLookupSvc;
+    private readonly TimeProvider _timeProvider;
 
     /// <summary>Initialises a new instance of the <see cref="KnxRedisStateService"/> class.</summary>
     public KnxRedisStateService(ILogger<KnxRedisStateService> logger,
         IOptions<KnxConfig> config,
+        TimeProvider timeProvider,
         [FromKeyedServices("AzureTables")] IEventSink<KnxEvent> azTablesSink,
         KnxGroupAddressLookupService knxGroupAddressLookupSvc,
         IRemoteCache remoteCache
     )
     {
         _logger = logger;
+        _timeProvider = timeProvider;
         _redisConfig = config.Value.Sinks.AvailableSinks["Redis"];
         _remoteCache = remoteCache;
         _azTablesSink = azTablesSink;
@@ -69,7 +72,7 @@ public class KnxRedisStateService : IKnxState
             valueValueLabel = (RedisKey)valueLabelDecoded,
 
             //Observability: per-day call counter aligned with CasCap.Common.Caching pattern
-            trackKey = (RedisValue)$"stats:knx:{DateTime.UtcNow:yyMMdd}",
+            trackKey = (RedisValue)$"stats:knx:{_timeProvider.GetUtcNow().UtcDateTime:yyMMdd}",
             trackCaller = (RedisValue)nameof(SetKnxState)
         }, flags: CommandFlags.FireAndForget);
     }
@@ -114,7 +117,7 @@ public class KnxRedisStateService : IKnxState
             keyGroupAddress = (RedisKey)groupAddressName,
 
             //Observability: per-day call counter aligned with CasCap.Common.Caching pattern
-            trackKey = (RedisValue)$"stats:knx:{DateTime.UtcNow:yyMMdd}",
+            trackKey = (RedisValue)$"stats:knx:{_timeProvider.GetUtcNow().UtcDateTime:yyMMdd}",
             trackCaller = (RedisValue)nameof(GetKnxState)
         });
 

@@ -9,6 +9,7 @@ namespace CasCap.Hubs;
 /// </summary>
 [Authorize]
 public class HausHub(ILogger<HausHub> logger, IOptions<AppConfig> appConfig,
+    TimeProvider timeProvider,
     IEnumerable<IEventSink<HubEvent>> hubSinks) : Hub<IHausClientHub>, IHausServerHub
 {
 
@@ -46,14 +47,14 @@ public class HausHub(ILogger<HausHub> logger, IOptions<AppConfig> appConfig,
 
     /// <inheritdoc/>
     public Task Broadcast(string message)
-        => Clients.All.ReceiveMessage(appConfig.Value.PodName ?? AppDomain.CurrentDomain.FriendlyName, message, DateTime.UtcNow);
+        => Clients.All.ReceiveMessage(appConfig.Value.PodName ?? AppDomain.CurrentDomain.FriendlyName, message, timeProvider.GetUtcNow().UtcDateTime);
 
     /// <inheritdoc/>
     public override async Task OnConnectedAsync()
     {
         await Groups.AddToGroupAsync(Context.ConnectionId, "SignalR Users");
         logger.LogInformation("{ClassName} client {ConnectionId} joined the hub", nameof(HausHub), Context.ConnectionId);
-        await Clients.All.ReceiveMessage(appConfig.Value.PodName ?? AppDomain.CurrentDomain.FriendlyName, $"{Context.ConnectionId} connected to the hub", DateTime.UtcNow);
+        await Clients.All.ReceiveMessage(appConfig.Value.PodName ?? AppDomain.CurrentDomain.FriendlyName, $"{Context.ConnectionId} connected to the hub", timeProvider.GetUtcNow().UtcDateTime);
         await base.OnConnectedAsync();
     }
 
@@ -61,7 +62,7 @@ public class HausHub(ILogger<HausHub> logger, IOptions<AppConfig> appConfig,
 
     private Task WriteHubEventAsync(string eventType)
     {
-        var hubEvent = new HubEvent(eventType, DateTimeOffset.UtcNow);
+        var hubEvent = new HubEvent(eventType, timeProvider.GetUtcNow());
         return Task.WhenAll(hubSinks.Select(s => s.WriteEvent(hubEvent)));
     }
 

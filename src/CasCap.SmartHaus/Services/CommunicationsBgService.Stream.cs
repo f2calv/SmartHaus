@@ -143,7 +143,7 @@ public partial class CommunicationsBgService
         EnqueueReply(prompt, extraBase64Attachments: extraAttachments);
     }
 
-    private static CommsEvent DeserializeStreamEntry(StreamEntry entry)
+    private CommsEvent DeserializeStreamEntry(StreamEntry entry)
     {
         var dict = entry.Values.ToDictionary(v => v.Name.ToString(), v => v.Value.ToString());
         return new CommsEvent
@@ -152,7 +152,7 @@ public partial class CommunicationsBgService
             Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                 ? ts
-                : DateTime.UtcNow,
+                : _timeProvider.GetUtcNow().UtcDateTime,
             JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),
         };
     }

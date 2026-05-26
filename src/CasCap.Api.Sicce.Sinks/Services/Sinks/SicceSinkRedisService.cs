@@ -10,6 +10,7 @@ namespace CasCap.Services;
 public partial class SicceSinkRedisService(
     ILogger<SicceSinkRedisService> logger,
     IOptions<SicceConfig> sicceConfig,
+    TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<SicceEvent>, ISicceQuery
 {
@@ -72,7 +73,7 @@ public partial class SicceSinkRedisService(
         if (string.IsNullOrWhiteSpace(_summaryValues))
             yield break;
 
-        var lineItemKey = $"{_seriesValues}:{DateTime.UtcNow:yyMMdd}";
+        var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 
         foreach (var entry in entries)

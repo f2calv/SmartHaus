@@ -12,6 +12,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
+    private readonly TimeProvider _timeProvider;
 
     private const string SnapshotPartitionKey = "summary";
     private const string SnapshotRowKey = "latest";
@@ -30,9 +31,11 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     /// </summary>
     public UbiquitiSinkAzTablesService(ILogger<UbiquitiSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<UbiquitiConfig> config)
+        IOptions<UbiquitiConfig> config,
+        TimeProvider timeProvider)
     {
         _logger = logger;
+        _timeProvider = timeProvider;
 
         var azConfig = config.Value.Sinks.AvailableSinks["AzureTables"];
         var connectionString = config.Value.AzureTableStorageConnectionString;
@@ -74,7 +77,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         AsyncPageable<UbiquitiReadingEntity> entities;
         if (id is null)
             entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
@@ -102,7 +105,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
         var entity = await GetSnapshotEntity();
         return new UbiquitiSnapshot
         {
-            SnapshotUtc = DateTime.UtcNow,
+            SnapshotUtc = _timeProvider.GetUtcNow().UtcDateTime,
             LastMotionUtc = entity.LastMotionUtc?.UtcDateTime,
             LastSmartDetectPersonUtc = entity.LastSmartDetectPersonUtc?.UtcDateTime,
             LastSmartDetectVehicleUtc = entity.LastSmartDetectVehicleUtc?.UtcDateTime,

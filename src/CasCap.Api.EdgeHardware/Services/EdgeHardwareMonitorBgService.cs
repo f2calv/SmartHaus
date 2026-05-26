@@ -107,7 +107,7 @@ public partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgS
                 return null;
             }
 
-            var snapshot = EdgeHardwareSnapshot.ParseGpuCsv(csv);
+            var snapshot = EdgeHardwareSnapshot.ParseGpuCsv(csv, timeProvider.GetUtcNow());
             if (snapshot is null)
             {
                 logger.LogWarning("{ClassName} failed to parse nvidia-smi output {Output}",

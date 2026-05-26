@@ -6,11 +6,12 @@ public record ShellyEvent
     /// <summary>Initializes a new instance from a Cloud API device status response.</summary>
     /// <param name="device">The device configuration that produced this event.</param>
     /// <param name="response">The device status response from the Shelly Cloud API.</param>
-    public ShellyEvent(ShellyDevice device, ShellyDeviceStatusResponse response)
+    /// <param name="timestampUtc">UTC timestamp of the reading.</param>
+    public ShellyEvent(ShellyDevice device, ShellyDeviceStatusResponse response, DateTime timestampUtc)
     {
         DeviceId = device.DeviceId;
         DeviceName = device.DeviceName;
-        TimestampUtc = DateTime.UtcNow;
+        TimestampUtc = timestampUtc;
         var relay = response.Data?.DeviceStatus?.Relays?.FirstOrDefault();
         var meter = response.Data?.DeviceStatus?.Meters?.FirstOrDefault();
         RelayState = relay?.IsOn == true ? 1 : 0;

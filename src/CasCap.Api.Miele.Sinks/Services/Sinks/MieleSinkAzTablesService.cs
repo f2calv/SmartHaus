@@ -9,11 +9,15 @@ public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQu
     private readonly TableClient _snapshotTableClient;
     private const string SnapshotPartitionKey = "summary";
 
+    private readonly TimeProvider _timeProvider;
+
     /// <summary>Initializes a new instance.</summary>
     public MieleSinkAzTablesService(ILogger<MieleSinkAzTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<MieleConfig> mieleConfig)
+        IOptions<MieleConfig> mieleConfig,
+        TimeProvider timeProvider)
     {
+        _timeProvider = timeProvider;
         _logger = logger;
         var config = mieleConfig.Value;
         var sinkSettings = config.Sinks.AvailableSinks["AzureTables"];
@@ -62,7 +66,7 @@ public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQu
     public async IAsyncEnumerable<MieleEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var partitionKey = DateTime.UtcNow.ToString("yyMMdd");
+        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         var count = 0;
         await foreach (var entity in _lineItemTableClient.QueryAsync<MieleReadingEntity>(
             e => e.PartitionKey == partitionKey, cancellationToken: cancellationToken))
