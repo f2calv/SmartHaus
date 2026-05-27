@@ -8,6 +8,9 @@ namespace CasCap.Services;
 public partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<SicceEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private bool? _lastIsOnline;
     private bool? _lastPowerSwitch;
 

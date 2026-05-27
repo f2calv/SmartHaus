@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<DoorBirdEventType, (DateTime LastUtc, int Count)> _state = new();
 
     /// <inheritdoc/>

@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) : IEventSink<FroniusEvent>, IFroniusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private FroniusEvent? _latest;
 
     /// <inheritdoc/>

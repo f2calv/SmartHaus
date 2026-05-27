@@ -13,6 +13,9 @@ public partial class EdgeHardwareSinkRedisService(
     IRemoteCache remoteCache
     ) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _snapshotValues = edgeHardwareConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = edgeHardwareConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 

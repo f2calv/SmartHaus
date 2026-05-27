@@ -8,6 +8,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class BuderusSinkMetricsService : IEventSink<BuderusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<string, Dictionary<string, Measurement<double>>> _measurementsByMetric = [];
     private readonly Dictionary<string, string> _datapointToMetricKey = [];

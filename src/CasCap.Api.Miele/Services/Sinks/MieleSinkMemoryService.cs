@@ -10,6 +10,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IEventSink<MieleEvent>, IMieleQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<string, MieleEvent> _latestByDevice = [];
 
     /// <inheritdoc/>

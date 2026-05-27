@@ -16,6 +16,9 @@ namespace CasCap.Services;
 [SinkType("CommsStream")]
 public class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly double _hysteresis = heatingAgentConfig.Value.Dhw1AlertHysteresis;
     private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(heatingAgentConfig.Value.Dhw1AlertCooldownMs);
 

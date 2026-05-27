@@ -8,6 +8,9 @@ namespace CasCap.Services;
 public class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleService> logger) : IEventSink<EdgeHardwareEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug(

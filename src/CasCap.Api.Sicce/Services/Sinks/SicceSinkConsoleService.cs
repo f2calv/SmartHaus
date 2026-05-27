@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public class SicceSinkConsoleService(ILogger<SicceSinkConsoleService> logger) : IEventSink<SicceEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} Temp: {Temperature}°C, Power: {Power:P0}, Online: {IsOnline}, Switch: {PowerSwitch}",

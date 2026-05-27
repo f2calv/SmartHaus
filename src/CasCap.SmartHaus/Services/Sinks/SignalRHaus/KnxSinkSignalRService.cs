@@ -10,5 +10,8 @@ public class KnxSinkSignalRService(ILogger<KnxSinkSignalRService> logger,
     : HausSignalRSinkBase<KnxEvent>(logger, signalRHubConfig, apiAuthConfig)
 {
     /// <inheritdoc/>
+    public override string SinkType => "SignalR";
+
+    /// <inheritdoc/>
     protected override string HubMethodName => nameof(IHausServerHub.SendKnxTelegram);
 }

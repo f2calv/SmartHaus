@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger) : IEventSink<FroniusEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} PV: {PvW}W, Grid: {GridW}W, Load: {LoadW}W, Battery: {AkkuW}W, SOC: {Soc:P0}",

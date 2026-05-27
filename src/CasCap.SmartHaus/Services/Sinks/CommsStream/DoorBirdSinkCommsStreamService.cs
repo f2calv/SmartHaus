@@ -11,6 +11,9 @@ public partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStr
     IEventSink<CommsEvent> commsSink) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
+    /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
         LogWriteEvent(logger, nameof(DoorBirdSinkCommsStreamService), @event.DoorBirdEventType.ToString());

@@ -13,6 +13,9 @@ namespace CasCap.Services;
 [SinkType("CommsStream")]
 public partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly ILogger _logger;
     private readonly KnxConfig _config;
     private readonly IKnxState _knxState;

@@ -10,6 +10,9 @@ public class HausHubSinkBuderusService(
     ILogger<HausHubSinkBuderusService> logger,
     IHubContext<HausHub, IHausClientHub> hubContext) : IEventSink<BuderusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "SignalR";
+
     /// <inheritdoc />
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {

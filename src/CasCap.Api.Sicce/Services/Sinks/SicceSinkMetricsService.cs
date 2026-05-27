@@ -11,6 +11,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class SicceSinkMetricsService : IEventSink<SicceEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<string, Measurement<double>> _measurements = [];
     private readonly Dictionary<string, Func<SicceEvent, double>> _propertyAccessors = [];

@@ -10,6 +10,9 @@ public class HausHubSinkKnxService(
     ILogger<HausHubSinkKnxService> logger,
     IHubContext<HausHub, IHausClientHub> hubContext) : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "SignalR";
+
     /// <inheritdoc />
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {

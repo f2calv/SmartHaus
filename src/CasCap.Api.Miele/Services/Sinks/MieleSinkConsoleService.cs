@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : IEventSink<MieleEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} [{DeviceId}] {DeviceName} {EventType}, Status: {StatusCode}, Program: {ProgramName}, Error: {ErrorCode}",

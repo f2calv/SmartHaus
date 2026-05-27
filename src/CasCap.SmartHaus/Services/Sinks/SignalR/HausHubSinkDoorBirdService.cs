@@ -11,6 +11,9 @@ public class HausHubSinkDoorBirdService(
     ILogger<HausHubSinkDoorBirdService> logger,
     IHubContext<HausHub, IHausClientHub> hubContext) : IEventSink<DoorBirdEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "SignalR";
+
     /// <inheritdoc />
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {

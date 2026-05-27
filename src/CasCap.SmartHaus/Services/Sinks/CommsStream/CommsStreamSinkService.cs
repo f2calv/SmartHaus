@@ -17,6 +17,9 @@ public class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<CommsEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly IDatabase _db = remoteCache.Db;
 
     /// <inheritdoc/>

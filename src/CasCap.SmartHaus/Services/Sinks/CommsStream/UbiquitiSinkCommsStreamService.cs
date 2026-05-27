@@ -9,6 +9,9 @@ public class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamServi
     IEventSink<CommsEvent> commsSink) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
+    /// <inheritdoc/>
     public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 

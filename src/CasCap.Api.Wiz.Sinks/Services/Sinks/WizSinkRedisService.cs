@@ -9,6 +9,9 @@ public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _snapshotValues = wizConfig.Value.Sinks.AvailableSinks
         .GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = wizConfig.Value.Sinks.AvailableSinks

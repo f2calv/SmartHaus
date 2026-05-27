@@ -10,5 +10,8 @@ public class BuderusSinkSignalRService(ILogger<BuderusSinkSignalRService> logger
     : HausSignalRSinkBase<BuderusEvent>(logger, signalRHubConfig, apiAuthConfig)
 {
     /// <inheritdoc/>
+    public override string SinkType => "SignalR";
+
+    /// <inheritdoc/>
     protected override string HubMethodName => nameof(IHausServerHub.SendBuderusEvent);
 }

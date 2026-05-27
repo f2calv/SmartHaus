@@ -17,6 +17,9 @@ public partial class DoorBirdSinkRedisService(
     IRemoteCache remoteCache
     ) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = doorBirdConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = doorBirdConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 

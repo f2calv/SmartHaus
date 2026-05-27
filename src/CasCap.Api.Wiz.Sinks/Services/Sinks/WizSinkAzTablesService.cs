@@ -4,6 +4,9 @@ namespace CasCap.Services;
 [SinkType("AzureTables")]
 public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;

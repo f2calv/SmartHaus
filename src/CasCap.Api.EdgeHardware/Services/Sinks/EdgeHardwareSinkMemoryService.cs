@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService> logger) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private EdgeHardwareEvent? _latest;
 
     /// <inheritdoc/>

@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public class ShellySinkConsoleService(ILogger<ShellySinkConsoleService> logger) : IEventSink<ShellyEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} [{DeviceId}] {DeviceName} Power: {Power}W, Relay: {RelayState}, Temp: {Temperature}°C",

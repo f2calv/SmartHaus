@@ -10,5 +10,8 @@ public class DoorBirdSinkSignalRService(ILogger<DoorBirdSinkSignalRService> logg
     : HausSignalRSinkBase<DoorBirdEvent>(logger, signalRHubConfig, apiAuthConfig)
 {
     /// <inheritdoc/>
+    public override string SinkType => "SignalR";
+
+    /// <inheritdoc/>
     protected override string HubMethodName => nameof(IHausServerHub.SendDoorBirdEvent);
 }

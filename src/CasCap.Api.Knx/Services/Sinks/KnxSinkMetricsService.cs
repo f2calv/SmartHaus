@@ -14,6 +14,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class KnxSinkMetricsService : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Meter _meter;
     private readonly string _metricNamePrefix;

@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger) : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} Id={DatapointId}, Value={Value}, Type={GaugeType}",

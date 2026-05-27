@@ -13,6 +13,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class HausHubSinkMetricsService : IEventSink<HubEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private const string MetricName = "signalrhub.events";
 
     private readonly ILogger _logger;

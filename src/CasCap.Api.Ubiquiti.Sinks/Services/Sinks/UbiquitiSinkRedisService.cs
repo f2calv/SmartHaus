@@ -16,6 +16,9 @@ public partial class UbiquitiSinkRedisService(
     IRemoteCache remoteCache
     ) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = ubiquitiConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = ubiquitiConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 

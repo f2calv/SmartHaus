@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IEventSink<SicceEvent>, ISicceQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private SicceEvent? _latest;
 
     /// <inheritdoc/>

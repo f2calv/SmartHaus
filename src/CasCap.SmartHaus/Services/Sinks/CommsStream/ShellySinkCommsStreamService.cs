@@ -9,6 +9,9 @@ namespace CasCap.Services;
 [SinkType("CommsStream")]
 public class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly ConcurrentDictionary<string, bool> _alertFiredByDevice = [];
 
     /// <inheritdoc/>

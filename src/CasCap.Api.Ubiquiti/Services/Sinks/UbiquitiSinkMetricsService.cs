@@ -10,6 +10,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<UbiquitiEventType, Measurement<double>> _measurements = [];
 

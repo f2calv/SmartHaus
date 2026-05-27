@@ -15,6 +15,9 @@ namespace CasCap.Services;
 [SinkType("AzureTablesCemi")]
 public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTablesCemi";
+
     private readonly ILogger _logger;
     private readonly TableClient _cemiTableClient;
     private readonly bool _batchingEnabled;

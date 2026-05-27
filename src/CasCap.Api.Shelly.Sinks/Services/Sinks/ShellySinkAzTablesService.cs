@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("AzureTables")]
 public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;

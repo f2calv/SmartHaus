@@ -8,6 +8,9 @@ namespace CasCap.Services;
 [SinkType("AzureTables")]
 public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;

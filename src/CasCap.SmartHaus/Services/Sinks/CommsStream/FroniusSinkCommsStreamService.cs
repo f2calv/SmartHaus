@@ -11,6 +11,9 @@ namespace CasCap.Services;
 [SinkType("CommsStream")]
 public class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService> logger, IOptions<FroniusConfig> config, IEventSink<CommsEvent> commsSink) : IEventSink<FroniusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly double _socAlertThreshold = config.Value.SocAlertThreshold;
     private readonly double _socRearmThreshold = config.Value.SocAlertThreshold - config.Value.SocAlertHysteresis;
     private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(config.Value.SocAlertCooldownMs);

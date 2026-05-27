@@ -12,6 +12,9 @@ public class MediaStreamSinkService(ILogger<MediaStreamSinkService> logger,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MediaEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "MediaStream";
+
     private readonly IDatabase _db = remoteCache.Db;
 
     /// <inheritdoc/>

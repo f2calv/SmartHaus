@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config, TimeProvider timeProvider) : IEventSink<BuderusEvent>, IBuderusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<string, string> _values = new();
 
     /// <inheritdoc/>

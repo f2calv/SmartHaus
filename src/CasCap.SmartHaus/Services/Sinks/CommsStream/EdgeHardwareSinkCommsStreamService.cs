@@ -15,6 +15,9 @@ public partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSink
     IOptions<EdgeHardwareConfig> config,
     IEventSink<CommsEvent> commsSink) : IEventSink<EdgeHardwareEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly double _gpuAlertThreshold = config.Value.GpuAlertThresholdC;
     private readonly double _gpuRearmThreshold = config.Value.GpuAlertThresholdC - config.Value.GpuAlertHysteresis;
     private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(config.Value.GpuAlertCooldownMs);

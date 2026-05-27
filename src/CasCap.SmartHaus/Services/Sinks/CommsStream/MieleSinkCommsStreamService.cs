@@ -9,6 +9,9 @@ public partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsStreamSer
     IEventSink<CommsEvent> commsSink) : IEventSink<MieleEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
+    /// <inheritdoc/>
     public async Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
         LogWriteEvent(logger, nameof(MieleSinkCommsStreamService), @event.DeviceId);

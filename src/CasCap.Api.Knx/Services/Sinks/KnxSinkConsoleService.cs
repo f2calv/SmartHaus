@@ -5,6 +5,9 @@ namespace CasCap.Services;
 public partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "Console";
+
+    /// <inheritdoc/>
     public Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
         LogWriteEvent(logger, nameof(KnxSinkConsoleService), @event.Kga.Name);

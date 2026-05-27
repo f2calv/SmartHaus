@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : IEventSink<ShellyEvent>, IShellyQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly Dictionary<string, ShellyEvent> _latestByDevice = [];
 
     /// <inheritdoc/>

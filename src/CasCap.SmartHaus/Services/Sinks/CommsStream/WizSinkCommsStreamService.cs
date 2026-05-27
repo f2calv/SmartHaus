@@ -10,6 +10,9 @@ namespace CasCap.Services;
 public partial class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<WizEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly ConcurrentDictionary<string, bool> _previousStates = [];
 
     /// <inheritdoc/>

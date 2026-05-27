@@ -28,6 +28,9 @@ public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : c
         _apiAuthConfig = apiAuthConfig.Value;
     }
 
+    /// <inheritdoc/>
+    public abstract string SinkType { get; }
+
     /// <summary>
     /// The name of the hub method to invoke when forwarding an event (e.g. <c>SendBuderusEvent</c>).
     /// </summary>

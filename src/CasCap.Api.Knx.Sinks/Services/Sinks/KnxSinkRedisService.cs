@@ -14,6 +14,9 @@ public partial class KnxSinkRedisService(
     IKnxState knxState
     ) : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _seriesValues = knxConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
     /// <inheritdoc/>

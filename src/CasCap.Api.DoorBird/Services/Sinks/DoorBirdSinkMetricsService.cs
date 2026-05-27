@@ -10,6 +10,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 public class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<DoorBirdEventType, Measurement<double>> _measurements = [];
 

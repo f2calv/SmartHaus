@@ -8,6 +8,9 @@ namespace CasCap.Services;
 [SinkType("Metrics")]
 internal class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private Measurement<double> _gpuPower;
     private Measurement<double> _gpuTemp;

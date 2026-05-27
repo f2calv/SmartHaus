@@ -10,5 +10,8 @@ public class FroniusSinkSignalRService(ILogger<FroniusSinkSignalRService> logger
     : HausSignalRSinkBase<FroniusEvent>(logger, signalRHubConfig, apiAuthConfig)
 {
     /// <inheritdoc/>
+    public override string SinkType => "SignalR";
+
+    /// <inheritdoc/>
     protected override string HubMethodName => nameof(IHausServerHub.SendFroniusEvent);
 }

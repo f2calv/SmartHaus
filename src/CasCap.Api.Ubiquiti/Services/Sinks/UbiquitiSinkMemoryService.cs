@@ -7,6 +7,9 @@ namespace CasCap.Services;
 [SinkType("Memory")]
 public partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<UbiquitiEventType, (DateTime LastUtc, int Count)> _state = new();
 
     /// <inheritdoc/>

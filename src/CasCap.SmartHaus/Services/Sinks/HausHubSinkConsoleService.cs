@@ -20,6 +20,9 @@ namespace CasCap.Services;
 [SinkType("Console")]
 public class HausHubSinkConsoleService : IEventSink<HubEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     private const string SuppressAfterInactivityMinutes = nameof(SuppressAfterInactivityMinutes);
 
     private readonly ILogger _logger;

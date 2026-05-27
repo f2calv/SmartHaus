@@ -12,6 +12,9 @@ public class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStreamServi
     IRemoteCache remoteCache) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
+    public string SinkType => "MediaStream";
+
+    /// <inheritdoc/>
     public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
         => throw new NotSupportedException();
 

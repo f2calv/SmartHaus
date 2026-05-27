@@ -10,6 +10,9 @@ public class HausHubSinkFroniusService(
     ILogger<HausHubSinkFroniusService> logger,
     IHubContext<HausHub, IHausClientHub> hubContext) : IEventSink<FroniusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "SignalR";
+
     /// <inheritdoc />
     public async Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {

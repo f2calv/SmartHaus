@@ -9,6 +9,9 @@ public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MieleEvent>, IMieleQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _snapshotValues = mieleConfig.Value.Sinks.AvailableSinks
         .GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = mieleConfig.Value.Sinks.AvailableSinks

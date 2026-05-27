@@ -6,6 +6,9 @@ namespace CasCap.Services;
 [SinkType("AzBlob")]
 public partial class DoorBirdSinkAzBlobStorageService(ILogger<DoorBirdSinkAzBlobStorageService> logger) : IEventSink<DoorBirdEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzBlob";
+
 
     /// <inheritdoc/>
     public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)

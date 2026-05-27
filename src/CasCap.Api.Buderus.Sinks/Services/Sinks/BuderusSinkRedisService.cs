@@ -12,6 +12,9 @@ public partial class BuderusSinkRedisService(
     IRemoteCache remoteCache
     ) : IEventSink<BuderusEvent>, IBuderusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = buderusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = buderusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
     private readonly Dictionary<string, DatapointMapping> _datapointMappings = buderusConfig.Value.DatapointMappings;
