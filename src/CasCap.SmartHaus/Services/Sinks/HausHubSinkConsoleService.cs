@@ -71,9 +71,6 @@ public class HausHubSinkConsoleService : IEventSink<HubEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<HubEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     #region private helpers
 

@@ -16,6 +16,4 @@ public class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

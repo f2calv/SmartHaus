@@ -15,6 +15,4 @@ public class UbiquitiSinkConsoleService(ILogger<UbiquitiSinkConsoleService> logg
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

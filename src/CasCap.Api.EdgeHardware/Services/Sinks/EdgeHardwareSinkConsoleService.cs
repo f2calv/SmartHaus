@@ -23,7 +23,4 @@ public class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleServi
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

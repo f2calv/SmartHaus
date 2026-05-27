@@ -73,7 +73,4 @@ internal class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

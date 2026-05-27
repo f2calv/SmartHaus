@@ -15,6 +15,4 @@ public class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    IAsyncEnumerable<BuderusEvent> IEventSink<BuderusEvent>.GetEvents(string? id, int limit, CancellationToken cancellationToken) => throw new NotImplementedException();
 }

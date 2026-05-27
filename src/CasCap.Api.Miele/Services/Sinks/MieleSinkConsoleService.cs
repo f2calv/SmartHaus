@@ -16,7 +16,4 @@ public class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : 
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<MieleEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 }

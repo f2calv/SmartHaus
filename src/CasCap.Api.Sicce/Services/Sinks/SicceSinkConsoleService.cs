@@ -16,6 +16,4 @@ public class SicceSinkConsoleService(ILogger<SicceSinkConsoleService> logger) : 
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }
