@@ -23,6 +23,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
 
     /// <summary>Collected middleware diagnostic renderables for the current prompt cycle.</summary>
     private static readonly List<IRenderable> s_middlewareLog = [];
+    private static readonly Lock s_middlewareLock = new();
 
     /// <summary>
     /// Runs the main application loop. Pressing Escape clears the console and returns to the
@@ -199,7 +200,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
                         continue;
                     }
 
-                    lock (s_middlewareLog)
+                    lock (s_middlewareLock)
                         s_middlewareLog.Clear();
 
                     var message = AgentExtensions.BuildChatMessage(promptLine);
@@ -649,7 +650,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
 
         // ── Middleware panel ────────────────────────────────────────────
         IRenderable middlewareContent;
-        lock (s_middlewareLog)
+        lock (s_middlewareLock)
         {
             middlewareContent = s_middlewareLog.Count > 0
                 ? new Rows(s_middlewareLog.ToArray())
@@ -900,7 +901,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
     /// </summary>
     private static void LogMiddleware(IRenderable renderable)
     {
-        lock (s_middlewareLog)
+        lock (s_middlewareLock)
             s_middlewareLog.Add(renderable);
     }
 
