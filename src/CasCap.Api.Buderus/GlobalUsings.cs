@@ -19,6 +19,7 @@ global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
 global using PeterPuff.BuderusKm200Reader;
 global using System.Collections.Concurrent;
+global using System.Collections.Frozen;
 global using System.ComponentModel;
 global using System.ComponentModel.DataAnnotations;
 global using System.Diagnostics.CodeAnalysis;

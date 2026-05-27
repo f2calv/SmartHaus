@@ -13,7 +13,7 @@ public sealed class BuderusSinkMetricsService : IEventSink<BuderusEvent>
 
     private readonly ILogger _logger;
     private readonly Dictionary<string, Dictionary<string, Measurement<double>>> _measurementsByMetric = [];
-    private readonly Dictionary<string, string> _datapointToMetricKey = [];
+    private readonly FrozenDictionary<string, string> _datapointToMetricKey;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="BuderusSinkMetricsService"/> class.
@@ -24,13 +24,14 @@ public sealed class BuderusSinkMetricsService : IEventSink<BuderusEvent>
     {
         _logger = logger;
         var meter = meterFactory.Create(config.Value.MetricNamePrefix);
+        var datapointToMetricKey = new Dictionary<string, string>();
 
         foreach (var (datapointId, mapping) in config.Value.DatapointMappings)
         {
             if (mapping.MetricName is null)
                 continue;
 
-            _datapointToMetricKey[datapointId] = mapping.MetricName;
+            datapointToMetricKey[datapointId] = mapping.MetricName;
 
             if (!_measurementsByMetric.ContainsKey(mapping.MetricName))
             {
@@ -49,6 +50,8 @@ public sealed class BuderusSinkMetricsService : IEventSink<BuderusEvent>
             _logger.LogInformation("{ClassName} tracking {DatapointId} under gauge {MetricName}",
                 nameof(BuderusSinkMetricsService), datapointId, mapping.MetricName);
         }
+
+        _datapointToMetricKey = datapointToMetricKey.ToFrozenDictionary();
     }
 
     /// <inheritdoc/>

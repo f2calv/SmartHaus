@@ -16,7 +16,7 @@ public sealed class SicceSinkMetricsService : IEventSink<SicceEvent>
 
     private readonly ILogger _logger;
     private readonly Dictionary<string, Measurement<double>> _measurements = [];
-    private readonly Dictionary<string, Func<SicceEvent, double>> _propertyAccessors = [];
+    private readonly FrozenDictionary<string, Func<SicceEvent, double>> _propertyAccessors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SicceSinkMetricsService"/> class.
@@ -28,6 +28,7 @@ public sealed class SicceSinkMetricsService : IEventSink<SicceEvent>
         _logger = logger;
         var metricNamePrefix = sicceConfig.Value.MetricNamePrefix;
         var meter = meterFactory.Create(metricNamePrefix);
+        var propertyAccessors = new Dictionary<string, Func<SicceEvent, double>>();
 
         foreach (var function in Enum.GetValues<SicceFunction>())
         {
@@ -42,7 +43,7 @@ public sealed class SicceSinkMetricsService : IEventSink<SicceEvent>
                 continue;
 
             _measurements[propName] = default;
-            _propertyAccessors[propName] = CreateAccessor(prop);
+            propertyAccessors[propName] = CreateAccessor(prop);
 
             var metricName = $"{metricNamePrefix}.{metricAttr.Name}";
             meter.CreateObservableGauge(
@@ -54,6 +55,8 @@ public sealed class SicceSinkMetricsService : IEventSink<SicceEvent>
             _logger.LogInformation("{ClassName} registered gauge {MetricName} for {Property}",
                 nameof(SicceSinkMetricsService), metricName, propName);
         }
+
+        _propertyAccessors = propertyAccessors.ToFrozenDictionary();
     }
 
     /// <inheritdoc/>

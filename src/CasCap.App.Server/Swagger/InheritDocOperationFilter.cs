@@ -10,7 +10,7 @@ namespace CasCap.Swagger;
 /// </summary>
 public sealed class InheritDocOperationFilter : IOperationFilter
 {
-    private readonly Dictionary<string, XPathNavigator> _memberCache;
+    private readonly FrozenDictionary<string, XPathNavigator> _memberCache;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="InheritDocOperationFilter"/> class
@@ -18,7 +18,7 @@ public sealed class InheritDocOperationFilter : IOperationFilter
     /// </summary>
     public InheritDocOperationFilter()
     {
-        _memberCache = [];
+        var memberCache = new Dictionary<string, XPathNavigator>();
 
         foreach (var xmlFile in Directory.GetFiles(AppContext.BaseDirectory, "*.xml", SearchOption.TopDirectoryOnly))
         {
@@ -31,7 +31,7 @@ public sealed class InheritDocOperationFilter : IOperationFilter
                 {
                     var name = members.Current?.GetAttribute("name", string.Empty);
                     if (!string.IsNullOrEmpty(name))
-                        _memberCache.TryAdd(name, members.Current!.Clone());
+                        memberCache.TryAdd(name, members.Current!.Clone());
                 }
             }
             catch
@@ -39,6 +39,8 @@ public sealed class InheritDocOperationFilter : IOperationFilter
                 // Skip non-documentation XML files (e.g. KNX group address exports)
             }
         }
+
+        _memberCache = memberCache.ToFrozenDictionary();
     }
 
     /// <inheritdoc/>
