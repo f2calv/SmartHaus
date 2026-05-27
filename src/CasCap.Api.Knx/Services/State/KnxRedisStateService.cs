@@ -50,7 +50,7 @@ public sealed class KnxRedisStateService : IKnxState
     }
 
     /// <inheritdoc/>
-    public async Task SetKnxState(string groupAddressName, DateTime timestampUtc, string valueDecoded, string? valueLabelDecoded)
+    public async ValueTask SetKnxState(string groupAddressName, DateTime timestampUtc, string valueDecoded, string? valueLabelDecoded)
     {
         if (groupAddressName is null)
             throw new ArgumentException($"{groupAddressName} param should not be null", nameof(groupAddressName));
@@ -102,7 +102,7 @@ public sealed class KnxRedisStateService : IKnxState
     }
 
     /// <inheritdoc/>
-    public async Task<State?> GetKnxState(string groupAddressName, CancellationToken cancellationToken = default)
+    public async ValueTask<State?> GetKnxState(string groupAddressName, CancellationToken cancellationToken = default)
     {
         await EnsureStateSynced(cancellationToken).ConfigureAwait(false);
 
@@ -167,7 +167,7 @@ public sealed class KnxRedisStateService : IKnxState
     /// Builds a dictionary of all <see cref="State"/> objects from the snapshot values, strings and timestamps hashes.
     /// </summary>
     /// <inheritdoc/>
-    public async Task<Dictionary<string, State>> GetAllState(CancellationToken cancellationToken = default)
+    public async ValueTask<Dictionary<string, State>> GetAllState(CancellationToken cancellationToken = default)
     {
         await EnsureStateSynced(cancellationToken).ConfigureAwait(false);
         return await GetAllRedisState().ConfigureAwait(false);

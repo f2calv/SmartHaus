@@ -18,19 +18,23 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     /// <summary>
     /// Populates and returns the dictionary of parsed group addresses keyed by address.
     /// </summary>
-    public async Task<Dictionary<string, KnxGroupAddressParsed>> GetLookup(CancellationToken cancellationToken = default)
+    public ValueTask<Dictionary<string, KnxGroupAddressParsed>> GetLookup(CancellationToken cancellationToken = default)
     {
-        if (dLookupByAddress.Count == 0)
-        {
-            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
-            if (dLookupByAddress.Count > 0) return dLookupByAddress;
-            await PopulateLookup(cancellationToken).ConfigureAwait(false);
-            if (dLookupByAddress.Count > 0)
-                knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
-            else
-                logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
-            semaphoreSlim.Release();
-        }
+        if (dLookupByAddress.Count > 0)
+            return ValueTask.FromResult(dLookupByAddress);
+        return PopulateAndReturnLookupAsync(cancellationToken);
+    }
+
+    private async ValueTask<Dictionary<string, KnxGroupAddressParsed>> PopulateAndReturnLookupAsync(CancellationToken cancellationToken)
+    {
+        await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (dLookupByAddress.Count > 0) { semaphoreSlim.Release(); return dLookupByAddress; }
+        await PopulateLookup(cancellationToken).ConfigureAwait(false);
+        if (dLookupByAddress.Count > 0)
+            knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
+        else
+            logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
+        semaphoreSlim.Release();
         return dLookupByAddress;
     }
 
