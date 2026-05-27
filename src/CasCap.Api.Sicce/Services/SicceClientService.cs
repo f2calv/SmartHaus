@@ -39,7 +39,7 @@ public sealed class SicceClientService : HttpClientBase
         (ResponseWrapper<DeviceInfo>? result, string? error) tpl = default;
         try
         {
-            tpl = await base.GetAsync<ResponseWrapper<DeviceInfo>, string>(requestUri);
+            tpl = await base.GetAsync<ResponseWrapper<DeviceInfo>, string>(requestUri).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -76,7 +76,7 @@ public sealed class SicceClientService : HttpClientBase
         (Response? result, string? error) tpl = default;
         try
         {
-            tpl = await base.PostJsonAsync<Response, string>(requestUri, req);
+            tpl = await base.PostJsonAsync<Response, string>(requestUri, req).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

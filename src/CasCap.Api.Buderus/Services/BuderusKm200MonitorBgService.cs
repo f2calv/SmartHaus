@@ -24,7 +24,7 @@ public sealed class BuderusKm200MonitorBgService(
         try
         {
             logger.LogInformation("{ClassName} endpoint is '{Endpoint}'", nameof(BuderusKm200MonitorBgService), buderusKm200ClientSvc.Client.BaseAddress);
-            await RunServiceAsync(cancellationToken);
+            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(BuderusKm200MonitorBgService));
@@ -50,15 +50,15 @@ public sealed class BuderusKm200MonitorBgService(
             logger.LogInformation("{ClassName} configured datapoint {DatapointId} -> {ColumnName}", nameof(BuderusKm200MonitorBgService), id, column);
 
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
             if (km200ConnectionHealthCheck.ConnectionActive)
             {
-                await RecordDataPoints();
-                await Task.Delay(buderusConfig.Value.PollingIntervalMs, cancellationToken);
+                await RecordDataPoints().ConfigureAwait(false);
+                await Task.Delay(buderusConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
             else
@@ -66,7 +66,7 @@ public sealed class BuderusKm200MonitorBgService(
                 logger.Log(attempt % buderusConfig.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                     "{ClassName} readiness probe not yet healthy, attempt {Attempt}, retry in {RetryMs}ms...",
                     nameof(BuderusKm200MonitorBgService), attempt, buderusConfig.Value.ConnectionPollingDelayMs);
-                await Task.Delay(buderusConfig.Value.ConnectionPollingDelayMs, cancellationToken);
+                await Task.Delay(buderusConfig.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
             }
         }
@@ -75,7 +75,7 @@ public sealed class BuderusKm200MonitorBgService(
         {
             foreach (var datapointId in buderusConfig.Value.DatapointMappings.Keys)
             {
-                var dp = await buderusKm200ClientSvc.GetDataPoint(datapointId);
+                var dp = await buderusKm200ClientSvc.GetDataPoint(datapointId).ConfigureAwait(false);
                 if (dp is not null && dp.Value is not null)
                 {
                     var buderusEvent = new BuderusEvent(datapointId, dp.Value, timeProvider.GetUtcNow().UtcDateTime);
@@ -83,7 +83,7 @@ public sealed class BuderusKm200MonitorBgService(
                     var tasks = new List<Task>(eventSinks.Count());
                     foreach (var eventSink in eventSinks)
                         tasks.Add(eventSink.WriteEvent(buderusEvent, cancellationToken));
-                    await Task.WhenAll(tasks.ToArray());
+                    await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
                     logger.LogDebug("{ClassName} logged datapoint {@BuderusEvent}", nameof(BuderusKm200MonitorBgService), buderusEvent);
                 }
                 else
@@ -91,7 +91,7 @@ public sealed class BuderusKm200MonitorBgService(
                     logger.LogWarning("{ClassName} datapoint id {Id} returns a null object", nameof(BuderusKm200MonitorBgService), datapointId);
                 }
                 //TODO: investigate how low DatapointDelayMs can be reduced without overwhelming the KM200 gateway
-                await Task.Delay(buderusConfig.Value.DatapointDelayMs, cancellationToken);
+                await Task.Delay(buderusConfig.Value.DatapointDelayMs, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -104,18 +104,18 @@ public sealed class BuderusKm200MonitorBgService(
         var fullPath = AppDomain.CurrentDomain.BaseDirectory.Extend(path);
         if (File.Exists(fullPath))
         {
-            var json = await File.ReadAllTextAsync(fullPath, cancellationToken);
+            var json = await File.ReadAllTextAsync(fullPath, cancellationToken).ConfigureAwait(false);
             dataPoints = json.FromJson<List<Km200DatapointObject>>()!;
             logger.LogInformation("existing KM200 datapoint file '{Path}' contains '{Count}' datapoints",
                 path, dataPoints.Count);
         }
         else
         {
-            dataPoints = await buderusKm200ClientSvc.GetAllDataPoints(cancellationToken);
+            dataPoints = await buderusKm200ClientSvc.GetAllDataPoints(cancellationToken).ConfigureAwait(false);
             if (dataPoints is not null)
             {
                 logger.LogInformation("existing KM200 datapoint file '{Path}' not found, now creating...", path);
-                await File.WriteAllTextAsync(fullPath, dataPoints.ToJson(), cancellationToken);
+                await File.WriteAllTextAsync(fullPath, dataPoints.ToJson(), cancellationToken).ConfigureAwait(false);
             }
             else
                 throw new GenericException("no datapoints returned!");

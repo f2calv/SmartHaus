@@ -17,7 +17,7 @@ public sealed class UbiquitiBgService(ILogger<UbiquitiBgService> logger) : IBgFe
         logger.LogInformation("{ClassName} started (webhook-only, idling)", nameof(UbiquitiBgService));
         try
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         logger.LogInformation("{ClassName} exiting", nameof(UbiquitiBgService));

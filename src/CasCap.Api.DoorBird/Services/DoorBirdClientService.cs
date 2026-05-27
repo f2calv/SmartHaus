@@ -31,7 +31,7 @@ public sealed class DoorBirdClientService : HttpClientBase
         var requestUri = "bha-api/getsession.cgi";
         try
         {
-            var tpl = await base.GetAsync<SessionResponse, object>(requestUri);
+            var tpl = await base.GetAsync<SessionResponse, object>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -50,7 +50,7 @@ public sealed class DoorBirdClientService : HttpClientBase
         var requestUri = $"bha-api/getsession.cgi?invalidate={sessionId}";
         try
         {
-            var tpl = await base.GetAsync<SessionResponse, object>(requestUri);
+            var tpl = await base.GetAsync<SessionResponse, object>(requestUri).ConfigureAwait(false);
             _logger.LogInformation("{ClassName} session '{SessionId}' invalidated", nameof(DoorBirdClientService), sessionId);
             return tpl.result;
         }

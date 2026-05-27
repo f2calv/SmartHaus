@@ -17,7 +17,7 @@ public sealed class DoorBirdBgService(ILogger<DoorBirdBgService> logger) : IBgFe
         logger.LogInformation("{ClassName} started (webhook-only, idling)", nameof(DoorBirdBgService));
         try
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         logger.LogInformation("{ClassName} exiting", nameof(DoorBirdBgService));

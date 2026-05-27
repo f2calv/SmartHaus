@@ -16,13 +16,13 @@ public sealed class SicceQueryService(
     public async Task<DeviceInfo?> GetDeviceInfo()
     {
         logger.LogDebug("{ClassName} retrieving device info", nameof(SicceQueryService));
-        return await clientSvc.GetDeviceInfo();
+        return await clientSvc.GetDeviceInfo().ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
     public async Task<SicceSnapshot> GetSnapshot()
     {
-        return await sicceQuery.GetSnapshot();
+        return await sicceQuery.GetSnapshot().ConfigureAwait(false);
     }
 
     /// <inheritdoc/>

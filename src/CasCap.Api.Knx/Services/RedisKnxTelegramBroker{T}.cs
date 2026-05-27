@@ -36,8 +36,8 @@ public sealed partial class RedisKnxTelegramBroker<T>(
     {
         var streamKey = $"{baseStreamKey}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var json = item.ToJson();
-        await _db.StreamAddAsync(streamKey, [new NameValueEntry("data", json)]);
-        await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays), flags: CommandFlags.FireAndForget);
+        await _db.StreamAddAsync(streamKey, [new NameValueEntry("data", json)]).ConfigureAwait(false);
+        await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays), flags: CommandFlags.FireAndForget).ConfigureAwait(false);
         LogPublished(logger, typeof(T).Name, streamKey);
     }
 
@@ -46,7 +46,7 @@ public sealed partial class RedisKnxTelegramBroker<T>(
     {
         var currentDate = timeProvider.GetUtcNow().UtcDateTime.Date;
         var streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
-        await EnsureConsumerGroupAsync(streamKey);
+        await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -60,24 +60,24 @@ public sealed partial class RedisKnxTelegramBroker<T>(
                     $"{baseStreamKey}:{nowDate:yyMMdd}");
                 currentDate = nowDate;
                 streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
-                await EnsureConsumerGroupAsync(streamKey);
+                await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
             }
 
             StreamEntry[] entries;
             try
             {
-                entries = await _db.StreamReadGroupAsync(streamKey, consumerGroup, _consumerName, readPosition, count: readCount);
+                entries = await _db.StreamReadGroupAsync(streamKey, consumerGroup, _consumerName, readPosition, count: readCount).ConfigureAwait(false);
             }
             catch (RedisServerException ex) when (ex.Message.Contains("NOGROUP"))
             {
                 _groupCreatedKeys.Remove(streamKey);
-                await EnsureConsumerGroupAsync(streamKey);
+                await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
                 continue;
             }
 
             if (entries.Length == 0)
             {
-                await Task.Delay(pollingDelayMs, cancellationToken);
+                await Task.Delay(pollingDelayMs, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
@@ -95,14 +95,14 @@ public sealed partial class RedisKnxTelegramBroker<T>(
                 catch (System.Text.Json.JsonException ex)
                 {
                     LogDeserializationFailed(logger, ex, entry.Id.ToString(), streamKey);
-                    await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id);
+                    await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id).ConfigureAwait(false);
                     continue;
                 }
 
                 if (item is not null)
                 {
                     yield return item;
-                    await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id);
+                    await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id).ConfigureAwait(false);
                 }
             }
         }
@@ -118,7 +118,7 @@ public sealed partial class RedisKnxTelegramBroker<T>(
         if (!_groupCreatedKeys.Add(streamKey)) return;
         try
         {
-            await _db.StreamCreateConsumerGroupAsync(streamKey, consumerGroup, consumerGroupStartId, createStream: true);
+            await _db.StreamCreateConsumerGroupAsync(streamKey, consumerGroup, consumerGroupStartId, createStream: true).ConfigureAwait(false);
             logger.LogInformation("{ClassName} created consumer group {ConsumerGroup} on {StreamKey}",
                 nameof(RedisKnxTelegramBroker<T>), consumerGroup, streamKey);
         }

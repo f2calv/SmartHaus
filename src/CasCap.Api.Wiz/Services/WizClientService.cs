@@ -45,7 +45,7 @@ public sealed class WizClientService(
         udpClient.Client.ReceiveTimeout = cfg.DiscoveryTimeoutMs;
 
         var broadcastEndpoint = new IPEndPoint(IPAddress.Parse(cfg.BroadcastAddress), cfg.BulbPort);
-        await udpClient.SendAsync(payload, payload.Length, broadcastEndpoint);
+        await udpClient.SendAsync(payload, payload.Length, broadcastEndpoint).ConfigureAwait(false);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(cfg.DiscoveryTimeoutMs);
@@ -54,15 +54,15 @@ public sealed class WizClientService(
         {
             try
             {
-                var result = await udpClient.ReceiveAsync(cts.Token);
+                var result = await udpClient.ReceiveAsync(cts.Token).ConfigureAwait(false);
                 var json = Encoding.UTF8.GetString(result.Buffer);
                 var response = json.FromJson<WizResponse<WizPilotState>>(s_jsonOptions);
                 var ip = result.RemoteEndPoint.Address.ToString();
 
                 if (response?.Result is not null)
                 {
-                    var pilotState = await GetPilotAsync(ip, cancellationToken);
-                    var systemConfig = await GetSystemConfigAsync(ip, cancellationToken);
+                    var pilotState = await GetPilotAsync(ip, cancellationToken).ConfigureAwait(false);
+                    var systemConfig = await GetSystemConfigAsync(ip, cancellationToken).ConfigureAwait(false);
                     var mac = response.Result.Mac ?? systemConfig?.Mac;
                     var deviceName = ResolveDeviceName(cfg, mac);
                     var bulb = new WizBulb
@@ -102,7 +102,7 @@ public sealed class WizClientService(
     public async Task<WizPilotState?> GetPilotAsync(string bulbIp, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} getPilot for {BulbIp}", nameof(WizClientService), bulbIp);
-        var response = await SendCommandAsync<WizPilotState>(bulbIp, new { method = "getPilot" }, cancellationToken);
+        var response = await SendCommandAsync<WizPilotState>(bulbIp, new { method = "getPilot" }, cancellationToken).ConfigureAwait(false);
         return response?.Result;
     }
 
@@ -114,7 +114,7 @@ public sealed class WizClientService(
     public async Task<WizSystemConfig?> GetSystemConfigAsync(string bulbIp, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} getSystemConfig for {BulbIp}", nameof(WizClientService), bulbIp);
-        var response = await SendCommandAsync<WizSystemConfig>(bulbIp, new { method = "getSystemConfig" }, cancellationToken);
+        var response = await SendCommandAsync<WizSystemConfig>(bulbIp, new { method = "getSystemConfig" }, cancellationToken).ConfigureAwait(false);
         return response?.Result;
     }
 
@@ -128,7 +128,7 @@ public sealed class WizClientService(
     public async Task<bool> SetPilotAsync(string bulbIp, WizSetPilotRequest request, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} setPilot for {BulbIp}", nameof(WizClientService), bulbIp);
-        var response = await SendCommandAsync<JsonElement>(bulbIp, new { method = "setPilot", @params = request }, cancellationToken);
+        var response = await SendCommandAsync<JsonElement>(bulbIp, new { method = "setPilot", @params = request }, cancellationToken).ConfigureAwait(false);
         return response?.Error is null;
     }
 
@@ -139,14 +139,14 @@ public sealed class WizClientService(
 
         using var udpClient = CreateUdpClient(cfg);
         var endpoint = new IPEndPoint(IPAddress.Parse(bulbIp), cfg.BulbPort);
-        await udpClient.SendAsync(payload, payload.Length, endpoint);
+        await udpClient.SendAsync(payload, payload.Length, endpoint).ConfigureAwait(false);
 
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         cts.CancelAfter(cfg.CommandTimeoutMs);
 
         try
         {
-            var result = await udpClient.ReceiveAsync(cts.Token);
+            var result = await udpClient.ReceiveAsync(cts.Token).ConfigureAwait(false);
             var json = Encoding.UTF8.GetString(result.Buffer);
             return json.FromJson<WizResponse<T>>(s_jsonOptions);
         }

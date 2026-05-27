@@ -20,7 +20,7 @@ public sealed class ShellyQueryService(
     public async Task<ShellyDeviceStatusResponse?> GetDeviceStatus(string deviceId)
     {
         logger.LogDebug("{ClassName} retrieving device status for {DeviceId}", nameof(ShellyQueryService), deviceId);
-        return await clientSvc.GetDeviceStatus(deviceId);
+        return await clientSvc.GetDeviceStatus(deviceId).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -40,7 +40,7 @@ public sealed class ShellyQueryService(
         }
         logger.LogInformation("{ClassName} setting relay state to {DesiredState} for {DeviceId} ({DeviceName})",
             nameof(ShellyQueryService), turnOn ? "on" : "off", deviceId, device.DeviceName);
-        return await clientSvc.SetRelayState(deviceId, device.Channel, turnOn);
+        return await clientSvc.SetRelayState(deviceId, device.Channel, turnOn).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -48,7 +48,7 @@ public sealed class ShellyQueryService(
     /// </summary>
     public async Task<List<ShellySnapshot>> GetSnapshots()
     {
-        return await shellyQuery.GetSnapshots();
+        return await shellyQuery.GetSnapshots().ConfigureAwait(false);
     }
 
     /// <summary>

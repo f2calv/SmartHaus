@@ -14,7 +14,7 @@ public sealed class UbiquitiQueryService(
         if (ubiquitiQuery is null)
             return new UbiquitiSnapshot { SnapshotUtc = timeProvider.GetUtcNow().UtcDateTime };
 
-        return await ubiquitiQuery.GetSnapshot();
+        return await ubiquitiQuery.GetSnapshot().ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -35,6 +35,6 @@ public sealed class UbiquitiQueryService(
         var sinkTasks = new List<Task>(eventSinks.Count());
         foreach (var eventSink in eventSinks)
             sinkTasks.Add(eventSink.WriteEvent(ubiquitiEvent));
-        await Task.WhenAll(sinkTasks.ToArray());
+        await Task.WhenAll(sinkTasks.ToArray()).ConfigureAwait(false);
     }
 }

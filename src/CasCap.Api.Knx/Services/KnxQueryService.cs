@@ -19,7 +19,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         KnxStateChangeRequest request,
         CancellationToken cancellationToken = default)
     {
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var kga = knxGroupAddressLookupSvc.GetKGAByName(request.GroupAddressName);
         if (kga is null)
         {
@@ -28,18 +28,18 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             return null;
         }
 
-        var stateBefore = await knxState.GetKnxState(request.GroupAddressName, cancellationToken);
+        var stateBefore = await knxState.GetKnxState(request.GroupAddressName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
 
         var groupValue = kga.ToGroupValue(request.ActualValue);
-        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken);
+        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         logger.LogInformation("{ClassName} sending {DptSubType} value {ActualValue} ({Value}) to {GroupAddress}",
             nameof(KnxQueryService), kga.GetDptBase(), request.ActualValue, groupValue.Value, kga.Name);
 
         var iterations = 0;
         while (iterations < 5)
         {
-            await Task.Delay(100, cancellationToken);
-            var stateAfter = await knxState.GetKnxState(request.GroupAddressName, cancellationToken);
+            await Task.Delay(100, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+            var stateAfter = await knxState.GetKnxState(request.GroupAddressName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             logger.LogInformation("{ClassName} state is currently {ValueAfter}", nameof(KnxQueryService), stateAfter?.Value);
             if (stateAfter is not null && !stateAfter.Equals(stateBefore))
             {
@@ -53,7 +53,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         logger.LogWarning("{ClassName} state did not change for {GroupAddress} from {ValueBefore} to {ValueAfter} after {Iterations} poll(s)",
             nameof(KnxQueryService), request.GroupAddressName, stateBefore?.Value, request.ActualValue, iterations);
 
-        return await knxState.GetKnxState(request.GroupAddressName, cancellationToken);
+        return await knxState.GetKnxState(request.GroupAddressName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -82,12 +82,12 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var isDimmed = false;
         if (request.IsOn is false)
         {
-            await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+            await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             var vfbName = $"{request.GroupName}-{LightingFunction.VFB}";
             var vfbKga = knxGroupAddressLookupSvc.GetKGAByName(vfbName);
             if (vfbKga is not null)
             {
-                var vfbState = await knxState.GetKnxState(vfbName, cancellationToken);
+                var vfbState = await knxState.GetKnxState(vfbName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
                 isDimmed = vfbState is not null && vfbState.Value != "100";
                 logger.LogInformation("{ClassName} {GroupAddress} {Function}={VfbValue}, {IsDimmedLabel}={IsDimmed}",
                     nameof(KnxQueryService), request.GroupName, nameof(LightingFunction.VFB), vfbState?.Value, nameof(isDimmed), isDimmed);
@@ -97,7 +97,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
                     nameof(KnxQueryService), request.GroupName, nameof(LightingFunction.VFB), nameof(LightingFunction.SW));
         }
 
-        return await ResolveAndSendAsync(request.GroupName, request.Resolve(isDimmed), dryRun, cancellationToken);
+        return await ResolveAndSendAsync(request.GroupName, request.Resolve(isDimmed), dryRun, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -124,9 +124,9 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         bool? lastDirectionDown = null;
         if (request.Slats is not null)
         {
-            await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+            await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             var directionName = $"{request.GroupName}-{ShutterFunction.DIRECTION}";
-            var directionState = await knxState.GetKnxState(directionName, cancellationToken);
+            var directionState = await knxState.GetKnxState(directionName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             if (directionState is not null)
             {
                 lastDirectionDown = directionState.Value == "Down" || directionState.Value == "1";
@@ -138,7 +138,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
                     nameof(KnxQueryService), request.GroupName, nameof(ShutterFunction.DIRECTION));
         }
 
-        return await ResolveAndSendAsync(request.GroupName, request.Resolve(lastDirectionDown), dryRun, cancellationToken);
+        return await ResolveAndSendAsync(request.GroupName, request.Resolve(lastDirectionDown), dryRun, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -195,7 +195,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             };
         }
 
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
 
         var results = new List<KnxStateChangeResult>(resolved.Count);
         foreach (var (function, feedback, value) in resolved)
@@ -217,7 +217,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             }
 
             var desiredValue = value.ToString();
-            var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken);
+            var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             if (stateBefore is not null && stateBefore.Value == desiredValue)
             {
                 logger.LogWarning("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
@@ -254,7 +254,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
                     logger.LogInformation("{ClassName} lite mode, sending {Count} command(s) inline for {GroupName}",
                         nameof(KnxQueryService), itemsToQueue.Count, groupName);
                     foreach (var (function, feedback, value) in itemsToQueue)
-                        await SendValueAsync(groupName, function, feedback, value, cancellationToken);
+                        await SendValueAsync(groupName, function, feedback, value, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
                 }
                 else
                 {
@@ -319,7 +319,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         }
 
         var desiredValue = value.ToString();
-        var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken);
+        var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         if (stateBefore is not null && stateBefore.Value == desiredValue)
         {
             logger.LogWarning("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
@@ -333,7 +333,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         }
 
         var groupValue = kga.ToGroupValue(value);
-        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken);
+        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         logger.LogInformation("{ClassName} sending {DptSubType} desired value {DesiredValue} ({GroupValue}) to {GroupAddressName}",
             nameof(KnxQueryService), kga.GetDptBase(), value, groupValue, kga.Name);
 
@@ -341,8 +341,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var staleIterations = 0;
         while (staleIterations < config.Value.StateChangeMaxPollIterations)
         {
-            await Task.Delay(config.Value.StateChangePollingDelayMs, cancellationToken);
-            var stateAfter = await knxState.GetKnxState(feedbackName, cancellationToken);
+            await Task.Delay(config.Value.StateChangePollingDelayMs, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+            var stateAfter = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
             if (stateAfter is null)
             {
                 staleIterations++;
@@ -372,7 +372,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
                 staleIterations++;
         }
 
-        var finalState = await knxState.GetKnxState(feedbackName, cancellationToken);
+        var finalState = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         logger.LogWarning("{ClassName} {GroupAddress} did not reach desired value {DesiredValue}, current value is {CurrentValue} after {Iterations} poll(s)",
             nameof(KnxQueryService), feedbackName, desiredValue, finalState?.Value, staleIterations);
 
@@ -397,7 +397,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <param name="cancellationToken">Cancellation token.</param>
     public async Task SendDirectAsync(string groupAddressName, object value, CancellationToken cancellationToken = default)
     {
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var kga = knxGroupAddressLookupSvc.GetKGAByName(groupAddressName);
         if (kga is null)
         {
@@ -407,7 +407,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         }
 
         var groupValue = kga.ToGroupValue(value);
-        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken);
+        await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         logger.LogInformation("{ClassName} direct write {DptSubType} value {Value} ({GroupValue}) to {GroupAddressName}",
             nameof(KnxQueryService), kga.GetDptBase(), value, groupValue, kga.Name);
     }
@@ -422,11 +422,11 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         GroupAddressFilter groupAddressFilter = GroupAddressFilter.None,
         CancellationToken cancellationToken = default)
     {
-        var gaLookup = await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        var gaLookup = await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         if (groupAddressFilter is GroupAddressFilter.None)
             return gaLookup.Values.ToList();
 
-        var allState = await knxState.GetAllState(cancellationToken);
+        var allState = await knxState.GetAllState(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var keys = allState.Keys;
 
         if (groupAddressFilter is GroupAddressFilter.Active)
@@ -468,8 +468,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         GroupAddressFilter groupAddressFilter = GroupAddressFilter.None,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
-        await BindState(groups, cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+        await BindState(groups, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
 
         if (groupAddressFilter is GroupAddressFilter.Active)
             return groups.Where(g => g.Children.Any(c => c.Value is not null)).ToList();
@@ -485,8 +485,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <returns>An array of group names that will be affected by the change.</returns>
     public async Task<string[]> TurnAllLightsOff(CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
-        await BindState(groups, cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+        await BindState(groups, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var lights = groups.Where(p => p.Category == GroupAddressCategory.LI
             && p.Floor is not null
             && p.Room is not null
@@ -495,7 +495,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         logger.LogInformation("{ClassName} found {Count} lights to turn off {@Lights}",
            nameof(KnxQueryService), groupNames.Length, groupNames);
         foreach (var light in lights)
-            await SetLightState(new KnxLightStateChangeRequest { GroupName = light.GroupName, IsOn = false }, cancellationToken: cancellationToken);
+            await SetLightState(new KnxLightStateChangeRequest { GroupName = light.GroupName, IsOn = false }, cancellationToken: cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         return groupNames;
     }
 
@@ -505,8 +505,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <returns>An array of group names that will be affected by the change.</returns>
     public async Task<string[]> OpenAllShutters(CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
-        await BindState(groups, cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+        await BindState(groups, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var shutters = groups.Where(p => p.Category == GroupAddressCategory.BL
             && p.Floor is not null
             && p.Room is not null
@@ -516,7 +516,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         logger.LogInformation("{ClassName} found {Count} closed shutters to open {@Shutters}",
             nameof(KnxQueryService), groupNames.Length, groupNames);
         foreach (var shutter in shutters)
-            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 0 }, cancellationToken: cancellationToken);
+            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 0 }, cancellationToken: cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         return groupNames;
     }
 
@@ -526,8 +526,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <returns>An array of group names that will be affected by the change.</returns>
     public async Task<string[]> CloseAllShutters(CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
-        await BindState(groups, cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
+        await BindState(groups, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var shutters = groups.Where(p => p.Category == GroupAddressCategory.BL
             && p.Floor is not null
             && p.Room is not null
@@ -536,13 +536,13 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         logger.LogInformation("{ClassName} found {Count} opened shutters to close {@Shutters}",
             nameof(KnxQueryService), groupNames.Length, groupNames);
         foreach (var shutter in shutters)
-            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 100 }, cancellationToken: cancellationToken);
+            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 100 }, cancellationToken: cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         return groupNames;
     }
 
     private async Task BindState(List<KnxGroupAddressGroup> groups, CancellationToken cancellationToken = default)
     {
-        var allState = await knxState.GetAllState(cancellationToken);
+        var allState = await knxState.GetAllState(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         foreach (var group in groups)
         {
             foreach (var child in group.Children)
@@ -576,7 +576,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var categoryType = category is not null ? category.ParseEnum<GroupAddressCategory>() : (GroupAddressCategory?)null;
         var floorType = floor is not null ? floor.ParseEnum<FloorType>() : (FloorType?)null;
         var compassOrientation = orientation is not null ? orientation.ParseEnum<CompassOrientation>() : (CompassOrientation?)null;
-        var groups = await GetFilteredGroupAddresses(categoryType, floorType, compassOrientation, function, cancellationToken);
+        var groups = await GetFilteredGroupAddresses(categoryType, floorType, compassOrientation, function, cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         return groups
             .SelectMany(g => g.Children)
             .Select(c => c.Name)
@@ -590,7 +590,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string? function = null,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false).ConfigureAwait(false);
         var filtered = groups
             .Where(p => category is null || p.Category == category)
             .Where(p => floor is null || p.Floor == floor)
@@ -613,7 +613,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <returns>A list of <see cref="KnxRoom"/> records.</returns>
     public async Task<List<KnxRoom>> ListFloors(CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         return groups
             .Where(p => p.Floor is not null)
             .Select(p => p.Floor!.Value)
@@ -630,7 +630,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     /// <returns>A list of <see cref="KnxRoom"/> records.</returns>
     public async Task<List<KnxRoom>> ListRooms(CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         return groups
             .Where(p => p.Floor is not null && p.Room is not null)
             .Select(p => new { p.Floor, p.Room })
@@ -652,7 +652,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         CancellationToken cancellationToken = default)
     {
         var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var filtered = groups
             .Where(p => p.Category == GroupAddressCategory.BL
                 && p.Floor is not null
@@ -662,7 +662,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();
-        await BindState(filtered, cancellationToken);
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
         return filtered.Select(KnxShutter.FromGroup).ToList();
     }
 
@@ -677,12 +677,12 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupName,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var group = groups.FirstOrDefault(g => g.GroupName == groupName && g.Category == GroupAddressCategory.BL);
         if (group is null)
             return null;
 
-        await BindState([group], cancellationToken);
+        await BindState([group], cancellationToken).ConfigureAwait(false);
         return KnxShutter.FromGroup(group);
     }
 
@@ -697,7 +697,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         CancellationToken cancellationToken = default)
     {
         var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var filtered = groups
             .Where(p => p.Category == GroupAddressCategory.LI
                 && p.Floor is not null
@@ -707,7 +707,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();
-        await BindState(filtered, cancellationToken);
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
         return filtered.Select(KnxLight.FromGroup).ToList();
     }
 
@@ -722,12 +722,12 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupName,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var group = groups.FirstOrDefault(g => g.GroupName == groupName && g.Category == GroupAddressCategory.LI);
         if (group is null)
             return null;
 
-        await BindState([group], cancellationToken);
+        await BindState([group], cancellationToken).ConfigureAwait(false);
         return KnxLight.FromGroup(group);
     }
 
@@ -742,7 +742,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         CancellationToken cancellationToken = default)
     {
         var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var filtered = groups
             .Where(p => p.Category == GroupAddressCategory.SD
                 && p.Floor is not null
@@ -752,7 +752,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();
-        await BindState(filtered, cancellationToken);
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
         return filtered.Select(KnxPowerOutlet.FromGroup).ToList();
     }
 
@@ -766,12 +766,12 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupName,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var group = groups.FirstOrDefault(g => g.GroupName == groupName && g.Category == GroupAddressCategory.SD);
         if (group is null)
             return null;
 
-        await BindState([group], cancellationToken);
+        await BindState([group], cancellationToken).ConfigureAwait(false);
         return KnxPowerOutlet.FromGroup(group);
     }
 
@@ -787,7 +787,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupName,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         return groups.FirstOrDefault(g => g.GroupName == groupName);
     }
 
@@ -803,7 +803,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupAddress,
         CancellationToken cancellationToken = default)
     {
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
         return groupAddress.Contains('/')
             ? knxGroupAddressLookupSvc.GetKGAByAddress(groupAddress)
             : knxGroupAddressLookupSvc.GetKGAByName(groupAddress);
@@ -840,7 +840,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     {
         var floorType = floor is not null ? floor.ParseEnum<FloorType>() : (FloorType?)null;
         var compassOrientation = orientation is not null ? orientation.ParseEnum<CompassOrientation>() : (CompassOrientation?)null;
-        return await GetAllLighting(floorType, compassOrientation, cancellationToken);
+        return await GetAllLighting(floorType, compassOrientation, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc cref="GetAllLighting(string?, string?, CancellationToken)"/>
@@ -848,8 +848,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         CompassOrientation? orientation = null,
         CancellationToken cancellationToken = default)
     {
-        var groups = await GetFilteredGroupAddresses(GroupAddressCategory.LI, floor, orientation, function: LightingFunction.SW_FB.ToString(), cancellationToken);
-        await BindState(groups, cancellationToken);
+        var groups = await GetFilteredGroupAddresses(GroupAddressCategory.LI, floor, orientation, function: LightingFunction.SW_FB.ToString(), cancellationToken).ConfigureAwait(false);
+        await BindState(groups, cancellationToken).ConfigureAwait(false);
         groups = groups.Where(p => p.Category == GroupAddressCategory.LI).ToList();
         var d = groups
             .SelectMany(g => g.Children)
@@ -874,7 +874,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         CancellationToken cancellationToken = default)
     {
         var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var filtered = groups
             .Where(p => p.Category == GroupAddressCategory.HZ
                 && p.Floor is not null
@@ -884,7 +884,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();
-        await BindState(filtered, cancellationToken);
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
         return filtered.Select(KnxHvacZone.FromGroup).ToList();
     }
 
@@ -899,12 +899,12 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         string groupName,
         CancellationToken cancellationToken = default)
     {
-        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken);
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var group = groups.FirstOrDefault(g => g.GroupName == groupName && g.Category == GroupAddressCategory.HZ);
         if (group is null)
             return null;
 
-        await BindState([group], cancellationToken);
+        await BindState([group], cancellationToken).ConfigureAwait(false);
         return KnxHvacZone.FromGroup(group);
     }
 }

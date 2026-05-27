@@ -31,7 +31,7 @@ public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, Bud
     public async Task<BuderusSnapshot> GetSnapshot()
     {
         logger.LogDebug("{ClassName} retrieving heatpump snapshot", nameof(BuderusQueryService));
-        return await buderusQuery.GetSnapshot();
+        return await buderusQuery.GetSnapshot().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -54,6 +54,6 @@ public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, Bud
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("{ClassName} writing {DatapointId}={Value}", nameof(BuderusQueryService), datapointId, value);
-        return await km200ClientSvc.SetDataPoint(datapointId, value, cancellationToken);
+        return await km200ClientSvc.SetDataPoint(datapointId, value, cancellationToken).ConfigureAwait(false);
     }
 }

@@ -23,10 +23,10 @@ public sealed partial class KnxProcessorBgService(
 
         //wait for the KNX bus connection to be active (which implies group addresses are loaded)
         while (!knxConnectionHealthCheck.ConnectionActive && !cancellationToken.IsCancellationRequested)
-            await Task.Delay(1_000, cancellationToken);
+            await Task.Delay(1_000, cancellationToken).ConfigureAwait(false);
 
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         var sinkTasks = new List<Task>(eventSinks.Count());
         await foreach (var knxEvent in incomingBroker.SubscribeAsync(cancellationToken))
@@ -44,7 +44,7 @@ public sealed partial class KnxProcessorBgService(
 
             foreach (var eventSink in eventSinks)
                 sinkTasks.Add(eventSink.WriteEvent(knxEvent, cancellationToken));
-            await Task.WhenAll(sinkTasks);
+            await Task.WhenAll(sinkTasks).ConfigureAwait(false);
             sinkTasks.Clear();
         }
     }

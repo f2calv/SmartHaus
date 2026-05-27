@@ -57,7 +57,7 @@ public sealed partial class KnxMonitorBgService(
         {
             //load group addresses before entering leadership election — this is a stateless,
             //read-only operation that all replicas can perform concurrently
-            await WaitForGroupAddressLookupAsync(cancellationToken);
+            await WaitForGroupAddressLookupAsync(cancellationToken).ConfigureAwait(false);
 
             logger.LogInformation("{ClassName} ServiceFamily={ServiceFamily}, ShardingMode={ShardingMode}, TelegramBrokerMode={TelegramBrokerMode}",
                 nameof(KnxMonitorBgService), config.Value.ServiceFamily, config.Value.ShardingMode, config.Value.TelegramBrokerMode);
@@ -74,7 +74,7 @@ public sealed partial class KnxMonitorBgService(
             switch (effectiveShardingMode)
             {
                 case ShardingMode.Unified:
-                    await AcquireLock(cancellationToken);
+                    await AcquireLock(cancellationToken).ConfigureAwait(false);
                     break;
                 case ShardingMode.Partitioned:
                     throw new NotSupportedException(
@@ -95,7 +95,7 @@ public sealed partial class KnxMonitorBgService(
     /// </summary>
     private async Task WaitForGroupAddressLookupAsync(CancellationToken cancellationToken)
     {
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested && !knxGroupAddressLookupHealthCheck.GroupAddressesLoaded)
@@ -103,7 +103,7 @@ public sealed partial class KnxMonitorBgService(
             logger.Log(attempt % config.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                 "{ClassName} group address lookup not yet loaded, attempt {Attempt}, retry in {RetryMs}ms...",
                 nameof(KnxMonitorBgService), attempt, config.Value.ConnectionPollingDelayMs);
-            await Task.Delay(config.Value.ConnectionPollingDelayMs, cancellationToken);
+            await Task.Delay(config.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
             attempt++;
         }
     }
@@ -120,14 +120,14 @@ public sealed partial class KnxMonitorBgService(
         var lockAttempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
-            await using (var redLock = await lockFactory.CreateLockAsync(resource, expiry, wait, retry, cancellationToken))
+            await using (var redLock = await lockFactory.CreateLockAsync(resource, expiry, wait, retry, cancellationToken).ConfigureAwait(false))
             {
                 if (redLock.IsAcquired)
                 {
                     knxConnectionHealthCheck.IsLeader = true;
                     logger.LogInformation("{ClassName} distributed lock acquired on attempt {Attempt}",
                         nameof(KnxMonitorBgService), lockAttempt);
-                    await RunServiceAsync(cancellationToken);
+                    await RunServiceAsync(cancellationToken).ConfigureAwait(false);
                     knxConnectionHealthCheck.IsLeader = false;
                     knxConnectionHealthCheck.ConnectionActive = false;
                     logger.LogInformation("{ClassName} distributed lock released", nameof(KnxMonitorBgService));
@@ -152,10 +152,10 @@ public sealed partial class KnxMonitorBgService(
         switch (config.Value.ServiceFamily)
         {
             case ServiceFamily.Tunneling:
-                await ConnectAndMonitorTunneling(cancellationToken);
+                await ConnectAndMonitorTunneling(cancellationToken).ConfigureAwait(false);
                 break;
             case ServiceFamily.Routing:
-                await ConnectAndMonitorRouting(cancellationToken);
+                await ConnectAndMonitorRouting(cancellationToken).ConfigureAwait(false);
                 break;
             default:
                 throw new NotSupportedException(
@@ -167,7 +167,7 @@ public sealed partial class KnxMonitorBgService(
     private async Task ConnectAndMonitorTunneling(CancellationToken cancellationToken)
     {
         //gather information on possible Areas+Lines
-        var ipTunnelingConnectorParametersAll = await GetIpTunnelingConnectorParameters(cancellationToken);
+        var ipTunnelingConnectorParametersAll = await GetIpTunnelingConnectorParameters(cancellationToken).ConfigureAwait(false);
 
         //group discovered parameters by area/line and store for reconnection
         _lineParameters.Clear();
@@ -200,30 +200,30 @@ public sealed partial class KnxMonitorBgService(
 
         //attempt initial connection to each area/line
         foreach (var areaLine in _lineParameters.Keys)
-            await ConnectLine(areaLine, cancellationToken);
+            await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
 
         //run the health check monitor and reconnection handler concurrently;
         //await-await-WhenAny propagates the first faulted task immediately so the
         //service crashes and the pod restarts rather than running in a degraded state.
         await await Task.WhenAny(
             MonitorHealthAsync(cancellationToken),
-            ProcessReconnectionRequestsAsync(cancellationToken));
+            ProcessReconnectionRequestsAsync(cancellationToken)).ConfigureAwait(false);
     }
 
     private async Task ConnectAndMonitorRouting(CancellationToken cancellationToken)
     {
-        var routingParameters = await GetIpRoutingConnectorParameters(cancellationToken);
+        var routingParameters = await GetIpRoutingConnectorParameters(cancellationToken).ConfigureAwait(false);
 
         //routing uses a single multicast connection covering the entire KNX backbone
         var routingAreaLine = new KnxAreaLine { Area = 0, Line = 0 };
         KnxStatics.BusConnections.Clear();
         KnxStatics.BusConnections[routingAreaLine] = null;
 
-        var bus = await TryConnectRouting(routingParameters, cancellationToken);
+        var bus = await TryConnectRouting(routingParameters, cancellationToken).ConfigureAwait(false);
         if (bus is not null)
             KnxStatics.BusConnections[routingAreaLine] = bus;
 
-        await MonitorHealthAsync(cancellationToken);
+        await MonitorHealthAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -236,7 +236,7 @@ public sealed partial class KnxMonitorBgService(
             var allConnected = KnxStatics.BusConnections.Values
                 .All(bus => bus?.ConnectionState == BusConnectionState.Connected);
             knxConnectionHealthCheck.ConnectionActive = allConnected;
-            await Task.Delay(config.Value.ConnectionHealthPollingDelayMs, cancellationToken);
+            await Task.Delay(config.Value.ConnectionHealthPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -255,8 +255,8 @@ public sealed partial class KnxMonitorBgService(
             var connected = false;
             while (!connected && !cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(backoffMs, cancellationToken);
-                connected = await ConnectLine(areaLine, cancellationToken);
+                await Task.Delay(backoffMs, cancellationToken).ConfigureAwait(false);
+                connected = await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
                 if (!connected)
                 {
                     logger.LogWarning("{ClassName} reconnection to {AreaLine} failed, retrying in {BackoffMs}ms",
@@ -304,7 +304,7 @@ public sealed partial class KnxMonitorBgService(
         //iterate over the individual addresses and attempt a connection
         foreach (var parameters in parametersList)
         {
-            var bus = await TryConnect(parameters, cancellationToken);
+            var bus = await TryConnect(parameters, cancellationToken).ConfigureAwait(false);
             if (bus is not null)
             {
                 KnxStatics.BusConnections[areaLine] = bus;
@@ -328,20 +328,20 @@ public sealed partial class KnxMonitorBgService(
             nameof(KnxMonitorBgService), parameters.Name, parameters.HostAddress, parameters.IndividualAddress);
         try
         {
-            await bus.ConnectAsync(cancellationToken);
+            await bus.ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             logger.LogWarning("{ClassName} connection to {Name} {HostAddress} ({IndividualAddress}) failed, {Reason}",
                 nameof(KnxMonitorBgService), parameters.Name, parameters.HostAddress, parameters.IndividualAddress,
                 ex.InnerException?.Message ?? ex.Message);
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
         if (bus.ConnectionState != BusConnectionState.Connected)
         {
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
@@ -386,14 +386,14 @@ public sealed partial class KnxMonitorBgService(
             logger.LogDebug("{ClassName} start discovery of KNX IP devices...", nameof(KnxMonitorBgService));
             var ipDeviceDiscoveryResults = await KnxBus.DiscoverIpDevicesAsync(cancellationToken)
                 .Where(p => p.Supports(config.Value.ServiceFamily, 1), cancellationToken)
-                .ToArray(cancellationToken);
+                .ToArray(cancellationToken).ConfigureAwait(false);
 
             if (ipDeviceDiscoveryResults.Length == 0)
             {
                 logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug,
                     "{ClassName} no KNX IP devices detected, attempt '{Attempt}', retry in {RetryMs}ms...",
                     nameof(KnxMonitorBgService), attempt, config.Value.DiscoveryRetryDelayMs);
-                await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken);
+                await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
                 continue;
             }
@@ -426,7 +426,7 @@ public sealed partial class KnxMonitorBgService(
             logger.LogDebug("{ClassName} start discovery of KNX IP routing devices...", nameof(KnxMonitorBgService));
             var ipDeviceDiscoveryResults = await KnxBus.DiscoverIpDevicesAsync(cancellationToken)
                 .Where(p => p.Supports(config.Value.ServiceFamily, 1), cancellationToken)
-                .ToArray(cancellationToken);
+                .ToArray(cancellationToken).ConfigureAwait(false);
             var routingDevice = ipDeviceDiscoveryResults.FirstOrDefault();
             if (routingDevice is not null)
             {
@@ -442,7 +442,7 @@ public sealed partial class KnxMonitorBgService(
             logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug,
                 "{ClassName} no KNX IP routing devices detected, attempt {Attempt}, retry in {RetryMs}ms...",
                 nameof(KnxMonitorBgService), attempt, config.Value.DiscoveryRetryDelayMs);
-            await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken);
+            await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken).ConfigureAwait(false);
             attempt++;
         }
         throw new OperationCanceledException(cancellationToken);
@@ -457,20 +457,20 @@ public sealed partial class KnxMonitorBgService(
             nameof(KnxMonitorBgService), parameters.MulticastAddress);
         try
         {
-            await bus.ConnectAsync(cancellationToken);
+            await bus.ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             logger.LogWarning("{ClassName} routing connection to {MulticastAddress} failed, {Reason}",
                 nameof(KnxMonitorBgService), parameters.MulticastAddress,
                 ex.InnerException?.Message ?? ex.Message);
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
         if (bus.ConnectionState != BusConnectionState.Connected)
         {
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
@@ -524,7 +524,7 @@ public sealed partial class KnxMonitorBgService(
         if (tpl.ValueDecoded is not null)
         {
             var knxEvent = new KnxEvent(timeProvider.GetUtcNow().UtcDateTime, e.ToKnxGroupEvent(), kga, e.Value, tpl.ValueDecoded, tpl.ValueLabelDecoded);
-            await incomingBroker.PublishAsync(knxEvent);
+            await incomingBroker.PublishAsync(knxEvent).ConfigureAwait(false);
         }
     }
 

@@ -20,7 +20,7 @@ public sealed partial class FroniusMonitorBgService(
         logger.LogInformation("{ClassName} starting", nameof(FroniusMonitorBgService));
         try
         {
-            await RunServiceAsync(cancellationToken);
+            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(FroniusMonitorBgService));
@@ -29,15 +29,15 @@ public sealed partial class FroniusMonitorBgService(
     private async Task RunServiceAsync(CancellationToken cancellationToken)
     {
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
             if (froniusSymoConnectionHealthCheck.ConnectionActive)
             {
-                await RecordDataPoints();
-                await Task.Delay(froniusConfig.Value.PollingIntervalMs, cancellationToken);
+                await RecordDataPoints().ConfigureAwait(false);
+                await Task.Delay(froniusConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
             else
@@ -45,14 +45,14 @@ public sealed partial class FroniusMonitorBgService(
                 logger.Log(attempt % froniusConfig.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                     "{ClassName} readiness probe not yet healthy, attempt {Attempt}, retry in {RetryMs}ms...",
                     nameof(FroniusMonitorBgService), attempt, froniusConfig.Value.ConnectionPollingDelayMs);
-                await Task.Delay(froniusConfig.Value.ConnectionPollingDelayMs, cancellationToken);
+                await Task.Delay(froniusConfig.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
             }
         }
 
         async Task RecordDataPoints()
         {
-            var response = await froniusClientSvc.GetPowerFlowRealtimeData();
+            var response = await froniusClientSvc.GetPowerFlowRealtimeData().ConfigureAwait(false);
             if (response is not null)
             {
                 var froniusEvent = new FroniusEvent(response);
@@ -61,7 +61,7 @@ public sealed partial class FroniusMonitorBgService(
                 var tasks = new List<Task>(eventSinks.Count());
                 foreach (var eventSink in eventSinks)
                     tasks.Add(eventSink.WriteEvent(froniusEvent, cancellationToken));
-                await Task.WhenAll(tasks.ToArray());
+                await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
             }
             else
                 logger.LogWarning("{ClassName} get solar readings returns a null object", nameof(FroniusMonitorBgService));

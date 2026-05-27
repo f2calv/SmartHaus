@@ -23,13 +23,13 @@ public sealed class WizDiscoveryBgService(
             nameof(WizDiscoveryBgService));
 
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var bulbs = await wizClientSvc.DiscoverBulbsAsync(cancellationToken);
+                var bulbs = await wizClientSvc.DiscoverBulbsAsync(cancellationToken).ConfigureAwait(false);
                 logger.LogDebug("{ClassName} discovery cycle complete, {BulbCount} bulb(s) on network",
                     nameof(WizDiscoveryBgService), bulbs.Count);
 
@@ -71,7 +71,7 @@ public sealed class WizDiscoveryBgService(
                         var tasks = new List<Task>(eventSinks.Count());
                         foreach (var eventSink in eventSinks)
                             tasks.Add(eventSink.WriteEvent(wizEvent, cancellationToken));
-                        await Task.WhenAll(tasks);
+                        await Task.WhenAll(tasks).ConfigureAwait(false);
                     }
                 }
             }
@@ -80,7 +80,7 @@ public sealed class WizDiscoveryBgService(
                 logger.LogError(ex, "{ClassName} discovery cycle failed", nameof(WizDiscoveryBgService));
             }
 
-            await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken);
+            await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
     }
 }
