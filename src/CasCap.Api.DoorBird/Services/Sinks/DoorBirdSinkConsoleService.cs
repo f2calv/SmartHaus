@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class DoorBirdSinkConsoleService(ILogger<DoorBirdSinkConsoleService> logger) : IEventSink<DoorBirdEvent>
+public sealed class DoorBirdSinkConsoleService(ILogger<DoorBirdSinkConsoleService> logger) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

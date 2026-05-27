@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public partial class UbiquitiSinkRedisService(
+public sealed partial class UbiquitiSinkRedisService(
     ILogger<UbiquitiSinkRedisService> logger,
     IOptions<UbiquitiConfig> ubiquitiConfig,
     TimeProvider timeProvider,

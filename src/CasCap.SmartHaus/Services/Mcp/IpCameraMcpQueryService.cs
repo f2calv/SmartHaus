@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IUbiquitiQueryService"/> that exposes IP camera operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class IpCameraMcpQueryService(IUbiquitiQueryService ubiquitiQuerySvc)
+public sealed partial class IpCameraMcpQueryService(IUbiquitiQueryService ubiquitiQuerySvc)
 {
     /// <inheritdoc cref="IUbiquitiQueryService.GetSnapshot"/>
     [McpServerTool]

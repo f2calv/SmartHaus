@@ -1,4 +1,4 @@
-﻿namespace CasCap.Controllers;
+namespace CasCap.Controllers;
 
 /// <summary>
 /// REST API controller for Sicce water pump data queries.
@@ -8,7 +8,7 @@
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class SicceController(ISicceQueryService sicceQuerySvc) : ControllerBase
+public sealed class SicceController(ISicceQueryService sicceQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="SicceQueryService.GetSnapshot"/>
     [HttpGet]

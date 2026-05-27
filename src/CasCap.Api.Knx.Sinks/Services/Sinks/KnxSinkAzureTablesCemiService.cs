@@ -13,7 +13,7 @@ namespace CasCap.Services;
 /// all sharing the same partition key.
 /// </remarks>
 [SinkType("AzureTablesCemi")]
-public partial class KnxSinkAzureTablesCemiService : IEventSink<KnxEvent>
+public sealed partial class KnxSinkAzureTablesCemiService : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTablesCemi";

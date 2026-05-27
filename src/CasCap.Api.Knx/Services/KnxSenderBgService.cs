@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// This service handles sending outbound telegrams to the KNX bus, these outbound telegrams are
 /// dequeued from the <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxOutgoingTelegram"/>.
 /// </summary>
-public partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
+public sealed partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "Knx";

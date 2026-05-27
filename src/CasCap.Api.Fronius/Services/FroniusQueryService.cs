@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Key functions are also made accessible via <see cref="Controllers.FroniusController"/>.
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class FroniusQueryService(
+public sealed class FroniusQueryService(
     ILogger<FroniusQueryService> logger,
     FroniusClientService clientSvc,
     IFroniusQuery froniusQuery) : IFroniusQueryService

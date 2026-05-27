@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage entity that records every individual Wiz bulb reading.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class WizReadingEntity : ITableEntity
+public sealed class WizReadingEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public WizReadingEntity() { }

@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Manipulates endpoint+event data from the Buderus KM200 in conjunction with EventSinks.
 /// </summary>
-public class BuderusKm200MonitorBgService(
+public sealed class BuderusKm200MonitorBgService(
     ILogger<BuderusKm200MonitorBgService> logger,
     IOptions<BuderusConfig> buderusConfig,
     TimeProvider timeProvider,

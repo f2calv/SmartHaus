@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://www.fronius.com/~/downloads/Solar%20Energy/Operating%20Instructions/42,0410,2012.pdf"/> for the full API specification.
 /// Our inverter model is a Fronius Symo Gen24.
 /// </remarks>
-public class FroniusClientService : HttpClientBase
+public sealed class FroniusClientService : HttpClientBase
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="FroniusClientService"/> class.

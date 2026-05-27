@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// Key functions are also made accessible via <see cref="Controllers.DDnsController"/>.
 /// </remarks>
-public class DDnsQueryService(
+public sealed class DDnsQueryService(
     ILogger<DDnsQueryService> logger,
     DDnsFindMyIpClientService findMyIpClientSvc) : IDDnsQueryService
 {

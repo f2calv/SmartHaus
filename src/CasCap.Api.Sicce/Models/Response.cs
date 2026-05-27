@@ -1,4 +1,4 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Base response from Sicce API.</summary>
 public class Response

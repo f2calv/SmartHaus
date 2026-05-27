@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Useful for local development and diagnostics.
 /// </summary>
 [SinkType("Console")]
-public class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleService> logger) : IEventSink<EdgeHardwareEvent>
+public sealed class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleService> logger) : IEventSink<EdgeHardwareEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

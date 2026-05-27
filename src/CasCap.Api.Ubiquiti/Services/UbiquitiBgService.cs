@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <c>FeatureFlagBgService</c> requires at least one registered <see cref="IBgFeature"/>
 /// per enabled feature to avoid a startup exception.
 /// </summary>
-public class UbiquitiBgService(ILogger<UbiquitiBgService> logger) : IBgFeature
+public sealed class UbiquitiBgService(ILogger<UbiquitiBgService> logger) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "Ubiquiti";

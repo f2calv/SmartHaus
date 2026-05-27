@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// so that <c>FeatureFlagService</c> always starts it once registered.
 /// Consumers query metrics via <see cref="IEdgeHardwareQueryService"/> rather than this service directly.
 /// </remarks>
-public partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
+public sealed partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMonitorBgService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
     TimeProvider timeProvider,
     IKubeAppConfig kubeAppConfig,

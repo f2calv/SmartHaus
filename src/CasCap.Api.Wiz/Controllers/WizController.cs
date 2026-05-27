@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class WizController(IWizQueryService wizQuerySvc) : ControllerBase
+public sealed class WizController(IWizQueryService wizQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="WizQueryService.GetDiscoveredBulbs"/>
     [HttpGet("bulbs")]

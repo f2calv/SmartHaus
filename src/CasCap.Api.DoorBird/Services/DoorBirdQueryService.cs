@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <inheritdoc/>
-public class DoorBirdQueryService(
+public sealed class DoorBirdQueryService(
     ILogger<DoorBirdQueryService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
     TimeProvider timeProvider,

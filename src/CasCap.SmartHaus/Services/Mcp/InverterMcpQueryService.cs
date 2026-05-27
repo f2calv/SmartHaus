@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IFroniusQueryService"/> that exposes solar inverter operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class InverterMcpQueryService(IFroniusQueryService froniusQuerySvc)
+public sealed partial class InverterMcpQueryService(IFroniusQueryService froniusQuerySvc)
 {
     /// <inheritdoc cref="IFroniusQueryService.GetPowerFlowRealtimeData"/>
     [McpServerTool]

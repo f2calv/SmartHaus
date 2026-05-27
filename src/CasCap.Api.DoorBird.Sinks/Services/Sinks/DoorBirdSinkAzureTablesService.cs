@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class DoorBirdSinkAzureTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public sealed partial class DoorBirdSinkAzureTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

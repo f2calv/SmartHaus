@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IKnxQueryService"/> that exposes bus system operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySvc, IKnxState knxState)
+public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySvc, IKnxState knxState)
 {
     //TODO: I dont like these group addresses hardcoded here, need to change this
     const string FrontDoorContactGroupName = "EG-BI-Entrance(FrontDoor)-East-STATE";

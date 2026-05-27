@@ -8,7 +8,7 @@ namespace CasCap.Swagger;
 /// in XML documentation files, enabling controller actions to inherit summaries
 /// and parameter descriptions from service methods.
 /// </summary>
-public class InheritDocOperationFilter : IOperationFilter
+public sealed class InheritDocOperationFilter : IOperationFilter
 {
     private readonly Dictionary<string, XPathNavigator> _memberCache;
 

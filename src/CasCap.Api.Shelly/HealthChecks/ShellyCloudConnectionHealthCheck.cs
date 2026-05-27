@@ -5,7 +5,7 @@ namespace CasCap.HealthChecks;
 /// <summary>
 /// Health check that verifies connectivity to the Shelly Cloud API.
 /// </summary>
-public class ShellyCloudConnectionHealthCheck(
+public sealed class ShellyCloudConnectionHealthCheck(
     ILogger<ShellyCloudConnectionHealthCheck> logger,
     IOptions<ShellyConfig> config,
     IHostEnvironment env,

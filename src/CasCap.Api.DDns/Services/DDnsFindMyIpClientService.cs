@@ -1,9 +1,9 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
 /// <summary>HTTP client for discovering the external IP address.</summary>
-public class DDnsFindMyIpClientService : HttpClientBase
+public sealed class DDnsFindMyIpClientService : HttpClientBase
 {
     /// <summary>Initializes a new instance of the <see cref="DDnsFindMyIpClientService"/> class.</summary>
     /// <param name="logger">Logger instance.</param>

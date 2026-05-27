@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage entity that records every individual Shelly smart plug reading.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class ShellyReadingEntity : ITableEntity
+public sealed class ShellyReadingEntity : ITableEntity
 {
     /// <summary>Initializes a new instance of the <see cref="ShellyReadingEntity"/> class.</summary>
     public ShellyReadingEntity() { }

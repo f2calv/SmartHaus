@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <param name="kubeAppConfig">Kubernetes application configuration.</param>
 /// <param name="piYfS201SensorSvc">YF-S201 flow sensor service.</param>
 /// <param name="piBmp280SensorSvc">BMP280 temperature/pressure sensor service.</param>
-public class GpioMonitorBgService(ILogger<GpioMonitorBgService> logger,
+public sealed class GpioMonitorBgService(ILogger<GpioMonitorBgService> logger,
     IKubeAppConfig kubeAppConfig,
     GpioYfS201SensorService piYfS201SensorSvc,
     GpioBmp280SensorService piBmp280SensorSvc) : IBgFeature

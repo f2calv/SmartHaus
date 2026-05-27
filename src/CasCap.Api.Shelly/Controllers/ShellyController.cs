@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class ShellyController(IShellyQueryService shellyQuerySvc) : ControllerBase
+public sealed class ShellyController(IShellyQueryService shellyQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="ShellyQueryService.GetSnapshots"/>
     [HttpGet]

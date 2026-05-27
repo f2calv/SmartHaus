@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService> logger) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
+public sealed partial class EdgeHardwareSinkMemoryService(ILogger<EdgeHardwareSinkMemoryService> logger) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

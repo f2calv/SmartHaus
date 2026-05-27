@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class SignalCliController(SignalCliRestClientService signalCliRestClientSvc) : ControllerBase
+public sealed class SignalCliController(SignalCliRestClientService signalCliRestClientSvc) : ControllerBase
 {
     /// <inheritdoc cref="SignalCliRestClientService.GetAbout"/>
     [HttpGet("about")]

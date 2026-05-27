@@ -11,7 +11,7 @@ namespace CasCap.Services;
 /// when GPU temperature oscillates around the threshold.
 /// </summary>
 [SinkType("CommsStream")]
-public partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSinkCommsStreamService> logger,
+public sealed partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSinkCommsStreamService> logger,
     IOptions<EdgeHardwareConfig> config,
     IEventSink<CommsEvent> commsSink) : IEventSink<EdgeHardwareEvent>
 {

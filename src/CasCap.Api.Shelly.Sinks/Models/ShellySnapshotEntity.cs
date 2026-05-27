@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage snapshot entity storing the latest Shelly smart plug values.
 /// RowKey is the DeviceId so each device gets its own snapshot row under the "summary" partition.
 /// </summary>
-public class ShellySnapshotEntity : ITableEntity
+public sealed class ShellySnapshotEntity : ITableEntity
 {
     /// <summary>Initializes a new instance of the <see cref="ShellySnapshotEntity"/> class.</summary>
     public ShellySnapshotEntity() { }

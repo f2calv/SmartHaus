@@ -11,7 +11,7 @@ namespace CasCap.Services;
 /// current deployment.
 /// </remarks>
 [McpServerToolType]
-public partial class SmartLightingMcpQueryService(
+public sealed partial class SmartLightingMcpQueryService(
     IKnxQueryService? knxQuerySvc = null,
     IWizQueryService? wizQuerySvc = null,
     IShellyQueryService? shellyQuerySvc = null)

@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// Snapshot hashes are keyed per device. Line items include the device ID.
 /// </summary>
 [SinkType("Redis")]
-public partial class ShellySinkRedisService(
+public sealed partial class ShellySinkRedisService(
     ILogger<ShellySinkRedisService> logger,
     IOptions<ShellyConfig> shellyConfig,
     TimeProvider timeProvider,

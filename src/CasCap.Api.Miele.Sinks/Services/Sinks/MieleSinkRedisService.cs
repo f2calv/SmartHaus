@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Redis (per-appliance snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
+public sealed partial class MieleSinkRedisService(ILogger<MieleSinkRedisService> logger,
     IOptions<MieleConfig> mieleConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MieleEvent>, IMieleQuery

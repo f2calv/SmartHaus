@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger) : IEventSink<FroniusEvent>
+public sealed class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger) : IEventSink<FroniusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

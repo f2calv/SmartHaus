@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class BuderusQueryService(ILogger<BuderusQueryService> logger, BuderusKm200ClientService km200ClientSvc, IBuderusQuery buderusQuery) : IBuderusQueryService
+public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, BuderusKm200ClientService km200ClientSvc, IBuderusQuery buderusQuery) : IBuderusQueryService
 {
     /// <summary>
     /// Retrieves events from Redis, optionally filtered by sensor <paramref name="id"/>.

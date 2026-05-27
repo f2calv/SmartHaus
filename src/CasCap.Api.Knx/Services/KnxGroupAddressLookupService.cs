@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Handles the exported KNX Group Address file from ETS software, the file contents
 /// are parsed, validated and converted into DTO.
 /// </summary>
-public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck)
+public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck)
 {
 
     private Dictionary<string, KnxGroupAddressParsed> dLookupByAddress { get; set; } = [];

@@ -1,11 +1,11 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage line-item entity that records a single <see cref="BuderusEvent.Value"/>
 /// for each <see cref="BuderusEvent.Id"/> and <see cref="BuderusEvent.TimestampUtc"/>.
 /// Uses <c>yyMMdd</c> date-based partitioning consistent with all other domain sinks.
 /// </summary>
-public class BuderusReadingEntity : ITableEntity
+public sealed class BuderusReadingEntity : ITableEntity
 {
     /// <summary>Initializes a new instance of the <see cref="BuderusReadingEntity"/> class.</summary>
     public BuderusReadingEntity() { }

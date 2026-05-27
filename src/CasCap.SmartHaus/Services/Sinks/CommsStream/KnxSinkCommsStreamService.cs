@@ -11,7 +11,7 @@ namespace CasCap.Services;
 /// bus connection dropped/reconnected events to the comms stream.
 /// </remarks>
 [SinkType("CommsStream")]
-public partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
+public sealed partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";

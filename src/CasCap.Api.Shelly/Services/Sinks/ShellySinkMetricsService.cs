@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// names, enabling property access via reflection.
 /// </summary>
 [SinkType("Metrics")]
-public class ShellySinkMetricsService : IEventSink<ShellyEvent>
+public sealed class ShellySinkMetricsService : IEventSink<ShellyEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

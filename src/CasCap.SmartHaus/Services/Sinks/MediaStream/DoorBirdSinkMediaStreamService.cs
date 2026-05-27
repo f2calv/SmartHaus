@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// route the image to the appropriate domain agent for analysis.
 /// </summary>
 [SinkType("MediaStream")]
-public class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStreamService> logger,
+public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStreamService> logger,
     IOptions<SecurityAgentConfig> securityAgentConfig,
     IEventSink<MediaEvent> mediaSink,
     IRemoteCache remoteCache) : IEventSink<DoorBirdEvent>

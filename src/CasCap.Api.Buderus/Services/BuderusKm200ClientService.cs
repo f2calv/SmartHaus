@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Concerned with raw HTTP interaction with the KM200 unit.
 /// </summary>
-public class BuderusKm200ClientService : HttpClientBase
+public sealed class BuderusKm200ClientService : HttpClientBase
 {
     private readonly BuderusConfig _config;
     private readonly BuderusKm200Reader _buderusKm200Reader;

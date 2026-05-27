@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <see cref="IEventSink{T}"/> for downstream processing by <see cref="CommunicationsBgService"/>.
 /// </summary>
 [SinkType("CommsStream")]
-public class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
+public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>

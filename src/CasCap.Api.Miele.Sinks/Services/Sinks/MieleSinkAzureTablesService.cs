@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public partial class MieleSinkAzureTablesService : IEventSink<MieleEvent>, IMieleQuery
+public sealed partial class MieleSinkAzureTablesService : IEventSink<MieleEvent>, IMieleQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

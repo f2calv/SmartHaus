@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// via <see cref="MetricAttribute"/>.
 /// </summary>
 [SinkType("Metrics")]
-public class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
+public sealed class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// production: https://sicce.thingscloud.it
 /// test: https://sicce-test.thingscloud.it
 /// </summary>
-public class SicceClientService : HttpClientBase
+public sealed class SicceClientService : HttpClientBase
 {
     //private readonly ILogger _logger;
     private readonly SicceConfig _appConfig;

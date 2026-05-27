@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained via merge-upsert — each datapoint becomes a column.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class BuderusSinkAzureTablesService : IEventSink<BuderusEvent>, IBuderusQuery
+public sealed partial class BuderusSinkAzureTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Azure Table entity that records the raw serialised CEMI frame for a KNX telegram.
 /// </summary>
-public class KnxCemiReadingEntity : ITableEntity
+public sealed class KnxCemiReadingEntity : ITableEntity
 {
     /// <inheritdoc/>
     public KnxCemiReadingEntity() { }

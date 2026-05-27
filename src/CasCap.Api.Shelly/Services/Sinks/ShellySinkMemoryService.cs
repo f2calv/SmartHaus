@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : IEventSink<ShellyEvent>, IShellyQuery
+public sealed partial class ShellySinkMemoryService(ILogger<ShellySinkMemoryService> logger) : IEventSink<ShellyEvent>, IShellyQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

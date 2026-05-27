@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// Registration is gated to Windows in
 /// <see cref="CasCap.Extensions.EdgeHardwareServiceCollectionExtensions.AddEdgeHardware"/>.
 /// </remarks>
-public class GpuTestBgService(ILogger<GpuTestBgService> logger) : IBgFeature
+public sealed class GpuTestBgService(ILogger<GpuTestBgService> logger) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "EdgeHardware";

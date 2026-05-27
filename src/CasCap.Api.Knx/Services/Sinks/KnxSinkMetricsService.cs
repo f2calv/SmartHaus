@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// Gauges are created lazily as new group addresses are discovered at runtime.
 /// </summary>
 [SinkType("Metrics")]
-public class KnxSinkMetricsService : IEventSink<KnxEvent>
+public sealed class KnxSinkMetricsService : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

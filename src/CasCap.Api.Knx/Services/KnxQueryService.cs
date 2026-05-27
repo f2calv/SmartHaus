@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// Key functions are made accessible via the KNX controllers.
 /// </remarks>
-public class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<KnxConfig> config, IKnxState knxState, KnxGroupAddressLookupService knxGroupAddressLookupSvc, IStateChangeQueue stateChangeQueue, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IKnxQueryService
+public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<KnxConfig> config, IKnxState knxState, KnxGroupAddressLookupService knxGroupAddressLookupSvc, IStateChangeQueue stateChangeQueue, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IKnxQueryService
 {
     /// <summary>
     /// Sends a value to the KNX bus for a given group address name.

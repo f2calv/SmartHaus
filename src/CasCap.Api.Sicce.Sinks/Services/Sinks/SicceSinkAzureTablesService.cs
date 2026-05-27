@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class SicceSinkAzureTablesService : IEventSink<SicceEvent>, ISicceQuery
+public sealed partial class SicceSinkAzureTablesService : IEventSink<SicceEvent>, ISicceQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

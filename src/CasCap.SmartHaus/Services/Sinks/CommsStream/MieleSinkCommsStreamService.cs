@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// and writes alerts to the comms Redis Stream via <see cref="IEventSink{T}"/>.
 /// </summary>
 [SinkType("CommsStream")]
-public partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsStreamService> logger,
+public sealed partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<MieleEvent>
 {
     /// <inheritdoc/>

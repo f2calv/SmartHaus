@@ -1,11 +1,11 @@
-﻿using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.Diagnostics.HealthChecks;
 
 namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check that verifies connectivity to the DoorBird door entry system.
 /// </summary>
-public class DoorBirdConnectionHealthCheck(
+public sealed class DoorBirdConnectionHealthCheck(
     ILogger<DoorBirdConnectionHealthCheck> logger,
     IOptions<DoorBirdConfig> config,
     IHostEnvironment env,

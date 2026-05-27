@@ -17,7 +17,7 @@ namespace CasCap.Services;
 /// </description></item>
 /// </list>
 /// </summary>
-public class KnxAutomationBgService(
+public sealed class KnxAutomationBgService(
     ILogger<KnxAutomationBgService> logger,
     IOptions<KnxConfig> knxConfig,
     TimeProvider timeProvider,

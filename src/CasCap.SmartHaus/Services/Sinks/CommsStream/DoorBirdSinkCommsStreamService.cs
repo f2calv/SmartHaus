@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// AI vision analysis before writing to the comms stream.
 /// </summary>
 [SinkType("CommsStream")]
-public partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamService> logger,
+public sealed partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>

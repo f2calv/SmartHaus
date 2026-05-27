@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public partial class WizSinkAzureTablesService : IEventSink<WizEvent>, IWizQuery
+public sealed partial class WizSinkAzureTablesService : IEventSink<WizEvent>, IWizQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

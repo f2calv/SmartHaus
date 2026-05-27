@@ -3,7 +3,7 @@ namespace CasCap.HealthChecks;
 /// <summary>
 /// Health check that verifies connectivity to the signal-cli REST API.
 /// </summary>
-public class SignalCliConnectionHealthCheck(
+public sealed class SignalCliConnectionHealthCheck(
     ILogger<SignalCliConnectionHealthCheck> logger,
     IOptions<SignalCliConfig> config,
     IHostEnvironment env,

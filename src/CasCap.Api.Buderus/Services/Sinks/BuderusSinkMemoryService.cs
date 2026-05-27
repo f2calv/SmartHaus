@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config, TimeProvider timeProvider) : IEventSink<BuderusEvent>, IBuderusQuery
+public sealed partial class BuderusSinkMemoryService(ILogger<BuderusSinkMemoryService> logger, IOptions<BuderusConfig> config, TimeProvider timeProvider) : IEventSink<BuderusEvent>, IBuderusQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

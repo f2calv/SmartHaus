@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://shelly-api-docs.shelly.cloud/cloud-control-api/"/> for the API specification.
 /// Targets the Shelly Plug S (Gen1) device via Cloud API.
 /// </remarks>
-public class ShellyCloudClientService(
+public sealed class ShellyCloudClientService(
     ILogger<ShellyCloudClientService> logger,
     IOptions<ShellyConfig> config,
     IHttpClientFactory httpClientFactory)

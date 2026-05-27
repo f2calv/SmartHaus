@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Key functions are also made accessible via <see cref="Controllers.ShellyController"/>.
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class ShellyQueryService(
+public sealed class ShellyQueryService(
     ILogger<ShellyQueryService> logger,
     IOptions<ShellyConfig> config,
     ShellyCloudClientService clientSvc,

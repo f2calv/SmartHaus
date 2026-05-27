@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for polling the Fronius Symo inverter and publishing events to sinks.</summary>
-public partial class FroniusMonitorBgService(
+public sealed partial class FroniusMonitorBgService(
     ILogger<FroniusMonitorBgService> logger,
     IOptions<FroniusConfig> froniusConfig,
     FroniusSymoConnectionHealthCheck froniusSymoConnectionHealthCheck,

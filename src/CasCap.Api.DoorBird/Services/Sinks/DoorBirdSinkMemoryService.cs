@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// per <see cref="DoorBirdEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public sealed partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

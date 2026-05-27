@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <see cref="BuderusConfig.DatapointMappings"/>.
 /// </summary>
 [SinkType("Metrics")]
-public class BuderusSinkMetricsService : IEventSink<BuderusEvent>
+public sealed class BuderusSinkMetricsService : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

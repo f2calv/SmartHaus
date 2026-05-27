@@ -447,4 +447,4 @@ finally
 return result;
 
 /// <summary>Program class for integration testing.</summary>
-public partial class Program { }
+public sealed partial class Program { }

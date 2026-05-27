@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxEvent"/>.
 /// When a line connection drops, it is automatically re-established without affecting other lines.
 /// </summary>
-public partial class KnxMonitorBgService(
+public sealed partial class KnxMonitorBgService(
     ILogger<KnxMonitorBgService> logger,
     IOptions<RedlockConfig> redlockConfig,
     IOptions<KnxConfig> config,

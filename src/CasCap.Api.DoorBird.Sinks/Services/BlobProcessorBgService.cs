@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>Background service for processing DoorBird image blobs.</summary>
 /// <param name="logger">Logger instance.</param>
 /// <param name="doorBirdAzBlobStorageSvc">Azure Blob Storage service for DoorBird.</param>
-public class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : BackgroundService
+public sealed class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : BackgroundService
 {
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)

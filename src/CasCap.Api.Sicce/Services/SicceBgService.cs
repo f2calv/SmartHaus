@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for monitoring Sicce devices and publishing events to sinks.</summary>
-public class SicceBgService(
+public sealed class SicceBgService(
     ILogger<SicceBgService> logger,
     IOptions<SicceConfig> sicceConfig,
     IHostEnvironment env,

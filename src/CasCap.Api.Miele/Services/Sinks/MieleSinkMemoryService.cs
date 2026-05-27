@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IEventSink<MieleEvent>, IMieleQuery
+public sealed partial class MieleSinkMemoryService(ILogger<MieleSinkMemoryService> logger) : IEventSink<MieleEvent>, IMieleQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

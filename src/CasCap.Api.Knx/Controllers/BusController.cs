@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class BusController(IKnxQueryService knxQuerySvc) : ControllerBase
+public sealed class BusController(IKnxQueryService knxQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="KnxQueryService.GetGroupAddresses"/>
     [HttpGet("addresses")]

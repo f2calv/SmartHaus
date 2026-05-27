@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Redis (per-bulb snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
+public sealed partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     IOptions<WizConfig> wizConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery

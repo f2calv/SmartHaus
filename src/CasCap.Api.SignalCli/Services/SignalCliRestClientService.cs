@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public class SignalCliRestClientService : HttpClientBase, INotifier
+public sealed class SignalCliRestClientService : HttpClientBase, INotifier
 {
     private readonly SignalCliConfig _config;
 

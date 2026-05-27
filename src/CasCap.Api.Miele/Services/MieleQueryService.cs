@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// Key functions are also made accessible via <see cref="CasCap.Controllers.MieleController"/>.
 /// </remarks>
-public class MieleQueryService(
+public sealed class MieleQueryService(
     ILogger<MieleQueryService> logger,
     MieleClientService clientSvc) : IMieleQueryService
 {

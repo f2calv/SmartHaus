@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// names, enabling property access via reflection.
 /// </summary>
 [SinkType("Metrics")]
-public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
+public sealed class FroniusSinkMetricsService : IEventSink<FroniusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

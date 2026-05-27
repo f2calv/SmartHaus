@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) : IEventSink<FroniusEvent>, IFroniusQuery
+public sealed partial class FroniusSinkMemoryService(ILogger<FroniusSinkMemoryService> logger) : IEventSink<FroniusEvent>, IFroniusQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

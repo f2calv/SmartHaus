@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// per <see cref="UbiquitiEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public sealed partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

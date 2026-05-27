@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <summary>
 /// <see cref="KnxRedisStateService"/> is intended to be the single source of truth regarding the state of all the group addresses on the KNX Bus.
 /// </summary>
-public class KnxRedisStateService : IKnxState
+public sealed class KnxRedisStateService : IKnxState
 {
     private readonly ILogger _logger;
     private readonly IRemoteCache _remoteCache;

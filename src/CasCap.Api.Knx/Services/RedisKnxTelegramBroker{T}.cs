@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// automatically evicted. Consumers read via a consumer group ensuring at-least-once delivery.
 /// </summary>
 /// <typeparam name="T">The telegram type being transported.</typeparam>
-public partial class RedisKnxTelegramBroker<T>(
+public sealed partial class RedisKnxTelegramBroker<T>(
     ILogger<RedisKnxTelegramBroker<T>> logger,
     IRemoteCache remoteCache,
     TimeProvider timeProvider,

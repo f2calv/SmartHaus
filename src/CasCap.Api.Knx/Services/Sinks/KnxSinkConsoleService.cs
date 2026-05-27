@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
+public sealed partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage entity that maintains a running summary of Ubiquiti camera activity.
 /// A single row is upserted on every event via merge-upsert.
 /// </summary>
-public class UbiquitiSnapshotEntity : ITableEntity
+public sealed class UbiquitiSnapshotEntity : ITableEntity
 {
     /// <summary>
     /// Parameterless constructor required by Azure Table Storage deserialization.

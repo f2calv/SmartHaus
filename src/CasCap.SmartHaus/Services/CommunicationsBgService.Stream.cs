@@ -2,7 +2,7 @@ using StackExchange.Redis;
 
 namespace CasCap.Services;
 
-public partial class CommunicationsBgService
+public sealed partial class CommunicationsBgService
 {
     private async Task EnsureConsumerGroupAsync()
     {

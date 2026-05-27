@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is detected; the CPU temperature gauge is always updated when available.
 /// </summary>
 [SinkType("Metrics")]
-internal class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
+internal sealed class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

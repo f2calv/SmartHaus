@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Facade service for Wiz smart bulb operations, delegating to <see cref="WizClientService"/>.
 /// </summary>
-public class WizQueryService(
+public sealed class WizQueryService(
     ILogger<WizQueryService> logger,
     WizClientService clientSvc) : IWizQueryService
 {

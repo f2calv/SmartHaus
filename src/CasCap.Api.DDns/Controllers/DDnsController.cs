@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class DDnsController(IDDnsQueryService dDnsQuerySvc) : ControllerBase
+public sealed class DDnsController(IDDnsQueryService dDnsQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="DDnsQueryService.GetCurrentIp"/>
     [HttpGet("ip")]

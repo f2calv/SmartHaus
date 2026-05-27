@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Azure Table Storage snapshot entity storing the latest Miele appliance state.</summary>
-public class MieleSnapshotEntity : ITableEntity
+public sealed class MieleSnapshotEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public MieleSnapshotEntity() { }

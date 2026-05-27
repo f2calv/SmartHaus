@@ -1,9 +1,9 @@
-﻿using Azure.Core;
+using Azure.Core;
 
 namespace CasCap.Services;
 
 /// <summary>DoorBird-specific Azure Blob Storage service.</summary>
-public class DoorBirdAzBlobStorageService : AzBlobStorageBase, IDoorBirdAzBlobStorageService
+public sealed class DoorBirdAzBlobStorageService : AzBlobStorageBase, IDoorBirdAzBlobStorageService
 {
     /// <summary>Initializes a new instance using a connection string.</summary>
     public DoorBirdAzBlobStorageService(string connectionString, string containerName)

@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class WizSinkMemoryService(ILogger<WizSinkMemoryService> logger) : IEventSink<WizEvent>, IWizQuery
+public sealed partial class WizSinkMemoryService(ILogger<WizSinkMemoryService> logger) : IEventSink<WizEvent>, IWizQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

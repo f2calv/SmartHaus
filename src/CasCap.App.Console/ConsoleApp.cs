@@ -10,7 +10,7 @@ namespace CasCap.App.Console;
 /// Main console application. Connects to the first <see cref="AgentConfig"/> from
 /// <see cref="AIConfig"/> and runs a simple interactive prompt loop with streaming responses.
 /// </summary>
-public class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConfig, IOptions<ApiAuthConfig> apiAuthConfig, AgentCommandHandler commandHandler, IServiceProvider serviceProvider)
+public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConfig, IOptions<ApiAuthConfig> apiAuthConfig, AgentCommandHandler commandHandler, IServiceProvider serviceProvider)
 {
     /// <summary>
     /// Approximate tokenizer for input token counting. Uses the <c>cl100k_base</c> encoding

@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage entity that maintains a running summary of DoorBird activity.
 /// A single row is upserted on every event via merge-upsert.
 /// </summary>
-public class DoorBirdSnapshotEntity : ITableEntity
+public sealed class DoorBirdSnapshotEntity : ITableEntity
 {
     /// <summary>
     /// Parameterless constructor required by Azure Table Storage deserialization.

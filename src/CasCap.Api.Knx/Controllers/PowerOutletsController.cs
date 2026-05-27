@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class PowerOutletsController(IKnxQueryService knxQuerySvc) : ControllerBase
+public sealed class PowerOutletsController(IKnxQueryService knxQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="KnxQueryService.ListPowerOutlets"/>
     [HttpGet]

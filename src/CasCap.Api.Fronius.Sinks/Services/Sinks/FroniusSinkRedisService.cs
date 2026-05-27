@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="FroniusEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class FroniusSinkRedisService(
+public sealed partial class FroniusSinkRedisService(
     ILogger<FroniusSinkRedisService> logger,
     IOptions<FroniusConfig> froniusConfig,
     TimeProvider timeProvider,

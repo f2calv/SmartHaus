@@ -5,7 +5,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Redis")]
-public partial class BuderusSinkRedisService(
+public sealed partial class BuderusSinkRedisService(
     ILogger<BuderusSinkRedisService> logger,
     IOptions<BuderusConfig> buderusConfig,
     TimeProvider timeProvider,

@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="EdgeHardwareEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class EdgeHardwareSinkRedisService(
+public sealed partial class EdgeHardwareSinkRedisService(
     ILogger<EdgeHardwareSinkRedisService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
     TimeProvider timeProvider,

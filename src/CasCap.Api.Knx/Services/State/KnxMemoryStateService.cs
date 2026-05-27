@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// In-memory implementation of <see cref="IKnxState"/> backed by a <see cref="ConcurrentDictionary{TKey, TValue}"/>.
 /// Intended for local development or as a fallback when Redis is unavailable.
 /// </summary>
-public class KnxMemoryStateService(ILogger<KnxMemoryStateService> logger) : IKnxState
+public sealed class KnxMemoryStateService(ILogger<KnxMemoryStateService> logger) : IKnxState
 {
     private readonly ConcurrentDictionary<string, State> _states = new();
 

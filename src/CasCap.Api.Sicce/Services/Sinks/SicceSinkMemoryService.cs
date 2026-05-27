@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IEventSink<SicceEvent>, ISicceQuery
+public sealed partial class SicceSinkMemoryService(ILogger<SicceSinkMemoryService> logger) : IEventSink<SicceEvent>, ISicceQuery
 {
     /// <inheritdoc/>
     public string SinkType => "Memory";

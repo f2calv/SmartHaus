@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage snapshot entity storing the latest Fronius inverter values.
 /// </summary>
-public class FroniusSnapshotEntity : ITableEntity
+public sealed class FroniusSnapshotEntity : ITableEntity
 {
     /// <summary>Initializes a new instance of the <see cref="FroniusSnapshotEntity"/> class.</summary>
     public FroniusSnapshotEntity() { }

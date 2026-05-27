@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Thread-safe queue backed by a <see cref="ConcurrentQueue{T}"/> for KNX state change
 /// operations that are processed out-of-band by <see cref="KnxAutomationBgService"/>.
 /// </summary>
-public class StateChangeQueue : IStateChangeQueue
+public sealed class StateChangeQueue : IStateChangeQueue
 {
     private readonly ConcurrentQueue<KnxStateChangeItem> _queue = new();
 

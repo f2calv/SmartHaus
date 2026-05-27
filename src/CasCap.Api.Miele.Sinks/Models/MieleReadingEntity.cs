@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage entity that records every individual Miele appliance event.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class MieleReadingEntity : ITableEntity
+public sealed class MieleReadingEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public MieleReadingEntity() { }

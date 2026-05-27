@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a per-device snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class ShellySinkAzureTablesService : IEventSink<ShellyEvent>, IShellyQuery
+public sealed partial class ShellySinkAzureTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

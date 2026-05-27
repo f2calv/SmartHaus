@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IBuderusQueryService"/> that exposes heat pump operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class HeatPumpMcpQueryService(IBuderusQueryService buderusQuerySvc)
+public sealed partial class HeatPumpMcpQueryService(IBuderusQueryService buderusQuerySvc)
 {
     /// <inheritdoc cref="IBuderusQueryService.GetSnapshot"/>
     [McpServerTool]

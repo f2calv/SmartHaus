@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// via <see cref="MetricAttribute"/>.
 /// </summary>
 [SinkType("Metrics")]
-public class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
+public sealed class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

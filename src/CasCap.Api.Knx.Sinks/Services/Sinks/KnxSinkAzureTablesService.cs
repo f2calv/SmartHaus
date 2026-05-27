@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained in a separate table.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class KnxSinkAzureTablesService : IEventSink<KnxEvent>, IKnxQuery
+public sealed partial class KnxSinkAzureTablesService : IEventSink<KnxEvent>, IKnxQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

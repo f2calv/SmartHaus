@@ -1,11 +1,11 @@
-﻿using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.Diagnostics.HealthChecks;
 
 namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check that verifies connectivity to the Fronius Symo solar inverter.
 /// </summary>
-public class FroniusSymoConnectionHealthCheck(
+public sealed class FroniusSymoConnectionHealthCheck(
     ILogger<FroniusSymoConnectionHealthCheck> logger,
     IOptions<FroniusConfig> config,
     IHostEnvironment env,

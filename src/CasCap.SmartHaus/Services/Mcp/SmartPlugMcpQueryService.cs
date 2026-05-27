@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IShellyQueryService"/> that exposes smart plug and relay operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class SmartPlugMcpQueryService(IShellyQueryService shellyQuerySvc)
+public sealed partial class SmartPlugMcpQueryService(IShellyQueryService shellyQuerySvc)
 {
     /// <inheritdoc cref="IShellyQueryService.GetSnapshots"/>
     [McpServerTool]

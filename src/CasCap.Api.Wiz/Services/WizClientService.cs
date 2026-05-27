@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Low-level UDP client for communicating with Wiz smart bulbs on the local network.
 /// Handles discovery broadcasts and individual bulb commands via the Wiz JSON/UDP protocol.
 /// </summary>
-public class WizClientService(
+public sealed class WizClientService(
     ILogger<WizClientService> logger,
     IOptions<WizConfig> config,
     TimeProvider timeProvider)

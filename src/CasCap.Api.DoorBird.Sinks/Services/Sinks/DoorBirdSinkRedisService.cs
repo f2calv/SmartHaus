@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public partial class DoorBirdSinkRedisService(
+public sealed partial class DoorBirdSinkRedisService(
     ILogger<DoorBirdSinkRedisService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
     TimeProvider timeProvider,

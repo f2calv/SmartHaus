@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// names, enabling property access via reflection.
 /// </summary>
 [SinkType("Metrics")]
-public class SicceSinkMetricsService : IEventSink<SicceEvent>
+public sealed class SicceSinkMetricsService : IEventSink<SicceEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

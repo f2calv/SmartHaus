@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Event sink that queues <see cref="DoorBirdEvent"/> images for upload to Azure Blob Storage.
 /// </summary>
 [SinkType("AzBlob")]
-public partial class DoorBirdSinkAzBlobService(ILogger<DoorBirdSinkAzBlobService> logger) : IEventSink<DoorBirdEvent>
+public sealed partial class DoorBirdSinkAzBlobService(ILogger<DoorBirdSinkAzBlobService> logger) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "AzBlob";

@@ -1,11 +1,11 @@
-﻿using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.Diagnostics.HealthChecks;
 
 namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check that verifies connectivity to the Miele cloud API.
 /// </summary>
-public class MieleConnectionHealthCheck(
+public sealed class MieleConnectionHealthCheck(
     ILogger<MieleConnectionHealthCheck> logger,
     IOptions<MieleConfig> config,
     IHostEnvironment env,

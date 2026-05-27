@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class FroniusSinkAzureTablesService : IEventSink<FroniusEvent>, IFroniusQuery
+public sealed partial class FroniusSinkAzureTablesService : IEventSink<FroniusEvent>, IFroniusQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

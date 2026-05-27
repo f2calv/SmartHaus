@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : IEventSink<MieleEvent>
+public sealed class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : IEventSink<MieleEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

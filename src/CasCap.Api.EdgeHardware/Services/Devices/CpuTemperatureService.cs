@@ -5,7 +5,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Reads CPU temperature from the Linux thermal zone via <see cref="CpuTemperature"/>.
 /// </summary>
-public class CpuTemperatureService(ILogger<CpuTemperatureService> logger) : ICpuTemperatureProvider
+public sealed class CpuTemperatureService(ILogger<CpuTemperatureService> logger) : ICpuTemperatureProvider
 {
     private readonly CpuTemperature _temperature = new();
 

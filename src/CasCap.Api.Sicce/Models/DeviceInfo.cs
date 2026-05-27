@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Sicce device information.</summary>
-public class DeviceInfo
+public sealed class DeviceInfo
 {
     /// <summary>Device identifier.</summary>
     [JsonPropertyName("Id")]

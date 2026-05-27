@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://developer.miele.com"/> for the full API specification.
 /// Uses OAuth 2.0 Bearer token authentication.
 /// </remarks>
-public class MieleClientService : HttpClientBase
+public sealed class MieleClientService : HttpClientBase
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="MieleClientService"/> class.

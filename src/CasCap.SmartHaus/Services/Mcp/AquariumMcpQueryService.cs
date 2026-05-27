@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>MCP tools for querying aquarium water pump status and readings.</summary>
 [McpServerToolType]
-public class AquariumMcpQueryService(ISicceQueryService sicceSvc)
+public sealed class AquariumMcpQueryService(ISicceQueryService sicceSvc)
 {
     /// <summary>Retrieves the current aquarium pump snapshot.</summary>
     [McpServerTool]

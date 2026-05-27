@@ -1,11 +1,11 @@
-﻿using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.Diagnostics.HealthChecks;
 
 namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check that verifies connectivity to the Buderus KM200 gateway.
 /// </summary>
-public class BuderusKm200ConnectionHealthCheck(
+public sealed class BuderusKm200ConnectionHealthCheck(
     ILogger<BuderusKm200ConnectionHealthCheck> logger,
     IOptions<BuderusConfig> config,
     IHostEnvironment env,

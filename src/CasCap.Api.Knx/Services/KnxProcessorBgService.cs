@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <see cref="IEventSink{KnxEvent}"/> instances for processing (e.g. writing to Redis,
 /// sending alerts, etc).
 /// </summary>
-public partial class KnxProcessorBgService(
+public sealed partial class KnxProcessorBgService(
     ILogger<KnxProcessorBgService> logger,
     IEnumerable<IEventSink<KnxEvent>> eventSinks,
     KnxConnectionHealthCheck knxConnectionHealthCheck,

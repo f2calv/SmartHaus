@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// when the charge level oscillates around the threshold.
 /// </summary>
 [SinkType("CommsStream")]
-public class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService> logger, IOptions<FroniusConfig> config, IEventSink<CommsEvent> commsSink) : IEventSink<FroniusEvent>
+public sealed class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService> logger, IOptions<FroniusConfig> config, IEventSink<CommsEvent> commsSink) : IEventSink<FroniusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";

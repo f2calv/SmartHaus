@@ -11,7 +11,7 @@ namespace CasCap.Services;
 /// tagged with <c>event_type</c> and <c>hub_name</c>.
 /// </remarks>
 [SinkType("Metrics")]
-public class HausHubSinkMetricsService : IEventSink<HubEvent>
+public sealed class HausHubSinkMetricsService : IEventSink<HubEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Metrics";

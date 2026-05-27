@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for polling all configured Shelly smart plugs and publishing events to sinks.</summary>
-public class ShellyMonitorBgService(
+public sealed class ShellyMonitorBgService(
     ILogger<ShellyMonitorBgService> logger,
     IOptions<ShellyConfig> shellyConfig,
     ShellyCloudConnectionHealthCheck shellyCloudConnectionHealthCheck,

@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// reports an overpower condition. Tracks alert state per device.
 /// </summary>
 [SinkType("CommsStream")]
-public class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
+public sealed class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";

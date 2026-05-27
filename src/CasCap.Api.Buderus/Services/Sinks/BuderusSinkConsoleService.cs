@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger) : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

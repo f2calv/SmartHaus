@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class UbiquitiSinkAzureTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public sealed partial class UbiquitiSinkAzureTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";

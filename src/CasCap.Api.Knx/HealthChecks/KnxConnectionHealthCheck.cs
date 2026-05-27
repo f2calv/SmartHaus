@@ -1,4 +1,4 @@
-﻿namespace CasCap.HealthChecks;
+namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check for the KNX bus connection.
@@ -15,7 +15,7 @@
 /// after <see cref="KnxGroupAddressLookupHealthCheck.GroupAddressesLoaded"/> is already <see langword="true"/>,
 /// so services only need to gate on this single health check.
 /// </summary>
-public class KnxConnectionHealthCheck : IHealthCheck
+public sealed class KnxConnectionHealthCheck : IHealthCheck
 {
     private volatile bool _connectionActive = false;
     private volatile bool _isLeader = false;

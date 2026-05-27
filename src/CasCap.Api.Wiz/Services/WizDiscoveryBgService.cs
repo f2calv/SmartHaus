@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Background service that periodically discovers Wiz bulbs on the local network
 /// and emits <see cref="WizEvent"/> to registered sinks when bulb state changes are detected.
 /// </summary>
-public class WizDiscoveryBgService(
+public sealed class WizDiscoveryBgService(
     ILogger<WizDiscoveryBgService> logger,
     IOptions<WizConfig> wizConfig,
     TimeProvider timeProvider,

@@ -14,7 +14,7 @@ namespace CasCap.Services;
 /// effectively using the hot water tank as a thermal battery.
 /// </remarks>
 [SinkType("CommsStream")]
-public class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";

@@ -18,7 +18,7 @@ namespace CasCap.Services;
 /// </list>
 /// </remarks>
 [SinkType("Console")]
-public class HausHubSinkConsoleService : IEventSink<HubEvent>
+public sealed class HausHubSinkConsoleService : IEventSink<HubEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "Console";

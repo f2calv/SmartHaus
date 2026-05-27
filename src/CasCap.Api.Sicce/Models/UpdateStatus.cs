@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// device_model_id > 6
 /// </summary>
-public class UpdateStatus
+public sealed class UpdateStatus
 {
     /// <summary>
     /// Power range 5 - 100

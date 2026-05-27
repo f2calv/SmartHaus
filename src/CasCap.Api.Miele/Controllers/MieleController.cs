@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class MieleController(IMieleQueryService mieleQuerySvc) : ControllerBase
+public sealed class MieleController(IMieleQueryService mieleQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="MieleQueryService.GetDevices"/>
     [HttpGet("devices")]

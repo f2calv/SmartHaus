@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <inheritdoc/>
-public class UbiquitiQueryService(
+public sealed class UbiquitiQueryService(
     ILogger<UbiquitiQueryService> logger,
     TimeProvider timeProvider,
     IEnumerable<IEventSink<UbiquitiEvent>> eventSinks,

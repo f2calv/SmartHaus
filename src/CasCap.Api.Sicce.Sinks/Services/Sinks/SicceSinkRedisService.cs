@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="SicceEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class SicceSinkRedisService(
+public sealed partial class SicceSinkRedisService(
     ILogger<SicceSinkRedisService> logger,
     IOptions<SicceConfig> sicceConfig,
     TimeProvider timeProvider,

@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and supports retrieval of the latest snapshot per group address.
 /// </summary>
 [SinkType("Redis")]
-public partial class KnxSinkRedisService(
+public sealed partial class KnxSinkRedisService(
     ILogger<KnxSinkRedisService> logger,
     IOptions<KnxConfig> knxConfig,
     IRemoteCache remoteCache,

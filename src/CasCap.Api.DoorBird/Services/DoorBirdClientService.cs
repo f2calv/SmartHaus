@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://www.doorbird.com/downloads/api_lan.pdf?rev=0.36"/> for the full API specification.
 /// Our device model is a DoorBird D2101V, but this client should work with any DoorBird device that supports the LAN API.
 /// </remarks>
-public class DoorBirdClientService : HttpClientBase
+public sealed class DoorBirdClientService : HttpClientBase
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="DoorBirdClientService"/> class.

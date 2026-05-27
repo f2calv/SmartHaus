@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage snapshot entity storing the latest Sicce device values.
 /// </summary>
-public class SicceSnapshotEntity : ITableEntity
+public sealed class SicceSnapshotEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public SicceSnapshotEntity() { }
