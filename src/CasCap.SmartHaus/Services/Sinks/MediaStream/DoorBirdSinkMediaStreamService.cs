@@ -14,9 +14,6 @@ public class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStreamServi
     /// <inheritdoc/>
     public string SinkType => "MediaStream";
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)

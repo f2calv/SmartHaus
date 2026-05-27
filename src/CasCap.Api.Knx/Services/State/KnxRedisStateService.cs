@@ -9,7 +9,7 @@ public class KnxRedisStateService : IKnxState
 {
     private readonly ILogger _logger;
     private readonly IRemoteCache _remoteCache;
-    private readonly IEventSink<KnxEvent> _azTablesSink;
+    private readonly IKnxQuery _knxQuery;
     private readonly SinkConfigParams _redisConfig;
     private readonly KnxGroupAddressLookupService _knxGroupAddressLookupSvc;
     private readonly TimeProvider _timeProvider;
@@ -18,7 +18,7 @@ public class KnxRedisStateService : IKnxState
     public KnxRedisStateService(ILogger<KnxRedisStateService> logger,
         IOptions<KnxConfig> config,
         TimeProvider timeProvider,
-        [FromKeyedServices("AzureTables")] IEventSink<KnxEvent> azTablesSink,
+        IKnxQuery knxQuery,
         KnxGroupAddressLookupService knxGroupAddressLookupSvc,
         IRemoteCache remoteCache
     )
@@ -27,7 +27,7 @@ public class KnxRedisStateService : IKnxState
         _timeProvider = timeProvider;
         _redisConfig = config.Value.Sinks.AvailableSinks["Redis"];
         _remoteCache = remoteCache;
-        _azTablesSink = azTablesSink;
+        _knxQuery = knxQuery;
         _knxGroupAddressLookupSvc = knxGroupAddressLookupSvc;
         //IsStateSynced = _env.IsDevelopment();//bypass state sync when running locally?
 
@@ -186,13 +186,13 @@ public class KnxRedisStateService : IKnxState
         var validNames = new HashSet<string>(lookup.Values.Select(kga => kga.Name));
 
         var sourceStates = new List<State>();
-        await foreach (var knxEvent in _azTablesSink.GetEvents(cancellationToken: cancellationToken))
+        await foreach (var knxEvent in _knxQuery.GetEvents(cancellationToken: cancellationToken))
         {
             if (_knxGroupAddressLookupSvc.GetKGAByName(knxEvent.Kga.Name) is null)
                 continue;
             sourceStates.Add(new State(knxEvent.Kga.Name, knxEvent.ValueAsString, knxEvent.ValueLabel, knxEvent.TimestampUtc));
         }
-        await _azTablesSink.HousekeepingAsync(validNames, cancellationToken);
+        await _knxQuery.HousekeepingAsync(validNames, cancellationToken);
 
         var currentStates = await GetAllRedisState();
 

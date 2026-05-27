@@ -56,9 +56,6 @@ public partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamSer
         _lastPowerSwitch = @event.PowerSwitch;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing pump event")]
     private static partial void LogWriteEvent(ILogger logger, string className);

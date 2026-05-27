@@ -56,9 +56,6 @@ public partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSink
             _alertFiredByNode[@event.NodeName] = false;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for node {NodeName}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);

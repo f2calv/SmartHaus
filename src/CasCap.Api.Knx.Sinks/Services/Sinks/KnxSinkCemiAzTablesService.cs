@@ -88,14 +88,6 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
         }
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(0, cancellationToken);
-        throw new NotSupportedException();
-        yield return null;
-    }
 
     /// <summary>
     /// Retrieves all CEMI reading entities from the table, ordered by timestamp (RowKey).

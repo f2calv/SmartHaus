@@ -10,9 +10,6 @@ public partial class DoorBirdSinkAzBlobStorageService(ILogger<DoorBirdSinkAzBlob
     public string SinkType => "AzBlob";
 
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)

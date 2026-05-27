@@ -72,27 +72,27 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        AsyncPageable<BuderusReadingEntity> entities;
-        if (id is null)
-            entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-        else
-            entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey && ent.d == id, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new BuderusEvent(entity.Id, entity.value, entity.TimestampUtc);
-        }
-    }
-
-    /// <inheritdoc/>
     public Task<BuderusSnapshot> GetSnapshot()
         => GetSnapshotFromTable();
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var filter = id is not null
+            ? $"PartitionKey eq '{pk}' and RowKey ge '{id}' and RowKey lt '{id}~'"
+            : $"PartitionKey eq '{pk}'";
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<TableEntity>(filter, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            var datapointId = entity.GetString("Id") ?? entity.RowKey;
+            var value = entity.GetString("v") ?? string.Empty;
+            var ts = entity.GetDateTimeOffset("Timestamp") ?? DateTimeOffset.MinValue;
+            yield return new BuderusEvent(datapointId, value, ts.UtcDateTime);
+        }
+    }
 
     /// <summary>
     /// Retrieves the latest Buderus snapshot from Azure Table Storage,

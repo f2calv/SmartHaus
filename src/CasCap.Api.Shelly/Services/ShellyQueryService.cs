@@ -11,8 +11,7 @@ public class ShellyQueryService(
     ILogger<ShellyQueryService> logger,
     IOptions<ShellyConfig> config,
     ShellyCloudClientService clientSvc,
-    [FromKeyedServices(SinkServiceCollectionExtensions.PrimarySinkKey)] IEventSink<ShellyEvent> primarySink,
-    IShellyQuery? shellyQuery = null) : IShellyQueryService
+    IShellyQuery shellyQuery) : IShellyQueryService
 {
     /// <summary>
     /// Retrieves the current device status from the Shelly Cloud API.
@@ -49,8 +48,6 @@ public class ShellyQueryService(
     /// </summary>
     public async Task<List<ShellySnapshot>> GetSnapshots()
     {
-        if (shellyQuery is null)
-            return [];
         return await shellyQuery.GetSnapshots();
     }
 
@@ -62,5 +59,5 @@ public class ShellyQueryService(
     public IAsyncEnumerable<ShellyEvent> GetReadings(
         int limit = 100,
         CancellationToken cancellationToken = default)
-        => primarySink.GetEvents(limit: limit, cancellationToken: cancellationToken);
+        => shellyQuery.GetEvents(limit: limit, cancellationToken: cancellationToken);
 }

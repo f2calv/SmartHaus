@@ -41,9 +41,6 @@ public partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsStreamSer
         }
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<MieleEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);

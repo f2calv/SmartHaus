@@ -31,9 +31,6 @@ public partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStr
         }, cancellationToken);
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing {EventType} event")]
     private static partial void LogWriteEvent(ILogger logger, string className, string eventType);

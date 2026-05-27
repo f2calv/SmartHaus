@@ -69,13 +69,6 @@ public partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
         await ProcessStateChangeAlerts(@event, cancellationToken);
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(0, cancellationToken);
-        throw new NotSupportedException();
-        yield return null;
-    }
 
     /// <summary>
     /// Tracks the last known <see cref="State"/> for each monitored group address.

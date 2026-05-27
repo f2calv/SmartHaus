@@ -10,8 +10,7 @@ namespace CasCap.Services;
 public class SicceQueryService(
     ILogger<SicceQueryService> logger,
     SicceClientService clientSvc,
-    [FromKeyedServices(SinkServiceCollectionExtensions.PrimarySinkKey)] IEventSink<SicceEvent> primarySink,
-    ISicceQuery? sicceQuery = null) : ISicceQueryService
+    ISicceQuery sicceQuery) : ISicceQueryService
 {
     /// <inheritdoc/>
     public async Task<DeviceInfo?> GetDeviceInfo()
@@ -23,8 +22,6 @@ public class SicceQueryService(
     /// <inheritdoc/>
     public async Task<SicceSnapshot> GetSnapshot()
     {
-        if (sicceQuery is null)
-            return new();
         return await sicceQuery.GetSnapshot();
     }
 
@@ -32,5 +29,5 @@ public class SicceQueryService(
     public IAsyncEnumerable<SicceEvent> GetReadings(
         int limit = 100,
         CancellationToken cancellationToken = default)
-        => primarySink.GetEvents(limit: limit, cancellationToken: cancellationToken);
+        => sicceQuery.GetEvents(limit: limit, cancellationToken: cancellationToken);
 }

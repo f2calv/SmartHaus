@@ -85,11 +85,11 @@ public partial class ShellySinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_summaryValues))
+        if (_seriesValues is null)
             yield break;
-
         var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 

@@ -61,23 +61,6 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new FroniusEvent(entity.SOC, entity.P_Akku, entity.P_Grid, entity.P_Load, entity.P_PV, entity.TimestampUtc);
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<InverterSnapshot> GetSnapshot()
     {
         var entity = await GetSnapshotEntity();
@@ -90,6 +73,21 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
             PhotovoltaicPower = entity.P_PV,
             ReadingUtc = entity.ReadingUtc,
         };
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
+            e => e.PartitionKey == pk, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new FroniusEvent(entity.SOC, entity.P_Akku, entity.P_Grid, entity.P_Load, entity.P_PV,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
     }
 
     /// <summary>

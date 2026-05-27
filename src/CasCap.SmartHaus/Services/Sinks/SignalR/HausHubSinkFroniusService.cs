@@ -20,7 +20,4 @@ public class HausHubSinkFroniusService(
         await hubContext.Clients.All.ReceiveFroniusEvent(@event);
     }
 
-    /// <inheritdoc />
-    public IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 }

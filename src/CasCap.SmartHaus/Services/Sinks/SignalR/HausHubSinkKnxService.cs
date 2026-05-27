@@ -20,7 +20,4 @@ public class HausHubSinkKnxService(
         await hubContext.Clients.All.ReceiveKnxEvent(@event);
     }
 
-    /// <inheritdoc />
-    public IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 }

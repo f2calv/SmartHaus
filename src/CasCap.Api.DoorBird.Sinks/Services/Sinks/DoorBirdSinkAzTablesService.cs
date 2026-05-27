@@ -75,30 +75,6 @@ public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, ID
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        AsyncPageable<DoorBirdReadingEntity> entities;
-        if (id is null)
-            entities = _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-        else
-            entities = _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(ent => ent.PartitionKey == partitionKey && ent.t == id, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new DoorBirdEvent
-            {
-                DoorBirdEventType = Enum.Parse<DoorBirdEventType>(entity.EventType),
-                DateCreatedUtc = entity.TimestampUtc,
-            };
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<DoorBirdSnapshot> GetSnapshot()
     {
         var entity = await GetSnapshotEntity();

@@ -61,23 +61,6 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<SicceReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new SicceEvent(entity.Temperature, entity.Power, entity.IsOnline, entity.PowerSwitch, entity.TimestampUtc);
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<SicceSnapshot> GetSnapshot()
     {
         var entity = await GetSnapshotEntity();
@@ -89,6 +72,21 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
             PowerSwitch = entity.PowerSwitch,
             ReadingUtc = entity.ReadingUtc,
         };
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<SicceReadingEntity>(
+            e => e.PartitionKey == pk, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new SicceEvent(entity.Temperature, entity.Power, entity.IsOnline, entity.PowerSwitch,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
     }
 
     /// <summary>

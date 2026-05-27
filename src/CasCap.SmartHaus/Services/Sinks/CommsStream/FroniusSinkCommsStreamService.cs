@@ -46,11 +46,4 @@ public class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService
             _alertFired = false;
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.CompletedTask;
-        yield break;
-    }
 }

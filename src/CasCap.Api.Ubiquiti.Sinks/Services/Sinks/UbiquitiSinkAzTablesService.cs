@@ -77,32 +77,6 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        AsyncPageable<UbiquitiReadingEntity> entities;
-        if (id is null)
-            entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-        else
-            entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey && ent.t == id, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new UbiquitiEvent
-            {
-                UbiquitiEventType = Enum.Parse<UbiquitiEventType>(entity.EventType),
-                DateCreatedUtc = entity.TimestampUtc,
-                CameraId = entity.CameraId,
-                CameraName = entity.CameraName,
-            };
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<UbiquitiSnapshot> GetSnapshot()
     {
         var entity = await GetSnapshotEntity();

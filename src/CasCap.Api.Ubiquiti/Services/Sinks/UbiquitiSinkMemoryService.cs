@@ -42,10 +42,6 @@ public partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService
             RingCount = GetCount(UbiquitiEventType.Ring),
         });
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

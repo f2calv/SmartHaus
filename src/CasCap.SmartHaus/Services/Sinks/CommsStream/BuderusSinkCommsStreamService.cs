@@ -83,11 +83,4 @@ public class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService
             _alertFired = false;
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.CompletedTask;
-        yield break;
-    }
 }

@@ -39,16 +39,9 @@ public partial class KnxSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (id is not null)
-        {
-            var state = await knxState.GetKnxState(id, cancellationToken);
-            if (state is not null)
-                yield return ToKnxEvent(state);
-            yield break;
-        }
-
         var allState = await knxState.GetAllState(cancellationToken);
         foreach (var state in allState.Values.Take(limit))
             yield return ToKnxEvent(state);

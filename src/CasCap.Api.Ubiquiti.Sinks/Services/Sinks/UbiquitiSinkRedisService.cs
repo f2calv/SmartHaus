@@ -93,9 +93,10 @@ public partial class UbiquitiSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_seriesValues))
+        if (_seriesValues is null)
             yield break;
 
         if (id is null)

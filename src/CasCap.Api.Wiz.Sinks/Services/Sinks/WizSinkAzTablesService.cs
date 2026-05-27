@@ -45,35 +45,6 @@ public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
     public Task<List<WizSnapshot>> GetSnapshots() =>
         GetSnapshotEntities();
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<WizEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var count = 0;
-        AsyncPageable<WizReadingEntity> query;
-        if (id is not null)
-            query = _lineItemTableClient.QueryAsync<WizReadingEntity>(
-                e => e.PartitionKey == id, cancellationToken: cancellationToken);
-        else
-            query = _lineItemTableClient.QueryAsync<WizReadingEntity>(cancellationToken: cancellationToken);
-
-        await foreach (var entity in query)
-        {
-            if (count++ >= limit) yield break;
-            yield return new WizEvent
-            {
-                DeviceId = entity.PartitionKey,
-                IpAddress = entity.ip,
-                State = entity.s,
-                Dimming = entity.d,
-                SceneId = entity.sc,
-                Temp = entity.t,
-                Rssi = entity.r,
-                TimestampUtc = entity.TimestampUtc,
-            };
-        }
-    }
-
     #region private helpers
 
     private async Task<List<WizSnapshot>> GetSnapshotEntities()

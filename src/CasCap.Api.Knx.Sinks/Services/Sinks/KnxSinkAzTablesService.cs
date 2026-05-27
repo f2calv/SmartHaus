@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained in a separate table.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
+public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>, IKnxQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -83,15 +83,14 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
     }
 
     /// <summary>
-    /// Removes snapshot entries for group addresses not in <paramref name="validIds"/>.
+    /// Removes snapshot entries for group addresses not in <paramref name="validNames"/>.
     /// </summary>
-    public async Task HousekeepingAsync(IReadOnlyCollection<string> validIds, CancellationToken cancellationToken = default)
+    public async Task HousekeepingAsync(HashSet<string> validNames, CancellationToken cancellationToken = default)
     {
-        var validSet = validIds as IReadOnlySet<string> ?? new HashSet<string>(validIds);
         var entitiesToDelete = new List<string>();
         await foreach (var entity in _snapshotTableClient.QueryAsync<KnxSnapshotEntity>(select: [nameof(KnxSnapshotEntity.RowKey)], cancellationToken: cancellationToken))
         {
-            if (!validSet.Contains(entity.RowKey))
+            if (!validNames.Contains(entity.RowKey))
                 entitiesToDelete.Add(entity.RowKey);
         }
         foreach (var name in entitiesToDelete)

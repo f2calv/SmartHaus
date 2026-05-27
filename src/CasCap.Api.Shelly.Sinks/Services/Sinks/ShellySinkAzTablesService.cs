@@ -60,23 +60,6 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new ShellyEvent(entity.DeviceId, string.Empty, entity.Power, entity.RelayState, entity.Temperature, entity.Overpower, entity.TimestampUtc);
-        }
-    }
-
-    /// <inheritdoc/>
     public async Task<List<ShellySnapshot>> GetSnapshots()
     {
         var snapshots = new List<ShellySnapshot>();
@@ -97,6 +80,29 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
             });
         }
         return snapshots;
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var filter = id is not null
+            ? $"PartitionKey eq '{pk}' and RowKey ge '{id}' and RowKey lt '{id}~'"
+            : $"PartitionKey eq '{pk}'";
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<ShellyReadingEntity>(filter, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new ShellyEvent(
+                deviceId: entity.DeviceId ?? string.Empty,
+                deviceName: string.Empty,
+                power: entity.Power,
+                relayState: entity.RelayState,
+                temperature: entity.Temperature,
+                overpower: entity.Overpower,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
     }
 
     /// <summary>

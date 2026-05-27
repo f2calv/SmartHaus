@@ -20,7 +20,4 @@ public class HausHubSinkBuderusService(
         await hubContext.Clients.All.ReceiveBuderusEvent(@event);
     }
 
-    /// <inheritdoc />
-    public IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 }
