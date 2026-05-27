@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained via merge-upsert — each datapoint becomes a column.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
+public partial class BuderusSinkAzureTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -21,9 +21,9 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
     private const string SnapshotRowKey = "latest";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BuderusSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="BuderusSinkAzureTablesService"/> class.
     /// </summary>
-    public BuderusSinkAzTablesService(ILogger<BuderusSinkAzTablesService> logger, IOptions<BuderusConfig> config,
+    public BuderusSinkAzureTablesService(ILogger<BuderusSinkAzureTablesService> logger, IOptions<BuderusConfig> config,
         IOptions<AzureAuthConfig> azureAuthConfig, TimeProvider timeProvider)
     {
         _logger = logger;
@@ -43,7 +43,7 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
     /// <inheritdoc/>
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(BuderusSinkAzTablesService), @event.Id);
+        LogWriteEvent(_logger, nameof(BuderusSinkAzureTablesService), @event.Id);
 
         var lineItemEntity = new BuderusReadingEntity(@event).GetEntity();
         var lineItemTask = _lineItemTableClient.UpsertEntityAsync(lineItemEntity, cancellationToken: cancellationToken);
@@ -67,7 +67,7 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(BuderusSinkAzTablesService), nameof(WriteEvent));
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(BuderusSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 

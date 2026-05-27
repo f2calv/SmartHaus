@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public partial class DoorBirdSinkAzureTablesService : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -28,9 +28,9 @@ public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, ID
     private int _relayTriggerCount;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="DoorBirdSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="DoorBirdSinkAzureTablesService"/> class.
     /// </summary>
-    public DoorBirdSinkAzTablesService(ILogger<DoorBirdSinkAzTablesService> logger,
+    public DoorBirdSinkAzureTablesService(ILogger<DoorBirdSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<DoorBirdConfig> config,
         TimeProvider timeProvider)
@@ -51,7 +51,7 @@ public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, ID
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(DoorBirdSinkAzTablesService), @event.DoorBirdEventType.ToString());
+        LogWriteEvent(_logger, nameof(DoorBirdSinkAzureTablesService), @event.DoorBirdEventType.ToString());
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -70,7 +70,7 @@ public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, ID
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(DoorBirdSinkAzTablesService), nameof(WriteEvent));
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(DoorBirdSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
@@ -111,7 +111,7 @@ public partial class DoorBirdSinkAzTablesService : IEventSink<DoorBirdEvent>, ID
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
-            nameof(DoorBirdSinkAzTablesService), partitionKey);
+            nameof(DoorBirdSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(
             p => p.PartitionKey == partitionKey
             ).ToListAsync();

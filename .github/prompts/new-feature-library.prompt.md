@@ -251,11 +251,11 @@ global using System.Runtime.Serialization;
 - Include `DateTimeOffset? ReadingUtc { get; init; }`.
 - `GetEntity()` method.
 
-#### 2.5 Create `Services/Sinks/{Feature}SinkAzTablesService.cs`
+#### 2.5 Create `Services/Sinks/{Feature}SinkAzureTablesService.cs`
 
 ```csharp
 [SinkType("AzureTables")]
-public class {Feature}SinkAzTablesService : IEventSink<{Feature}Event>, I{Feature}Query
+public class {Feature}SinkAzureTablesService : IEventSink<{Feature}Event>, I{Feature}Query
 ```
 
 - Inject `ILogger`, `IOptions<AzureAuthConfig>`, `IOptions<{Feature}Config>`.

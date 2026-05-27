@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public partial class UbiquitiSinkAzureTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -30,9 +30,9 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     private int _ringCount;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UbiquitiSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="UbiquitiSinkAzureTablesService"/> class.
     /// </summary>
-    public UbiquitiSinkAzTablesService(ILogger<UbiquitiSinkAzTablesService> logger,
+    public UbiquitiSinkAzureTablesService(ILogger<UbiquitiSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<UbiquitiConfig> config,
         TimeProvider timeProvider)
@@ -53,7 +53,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(UbiquitiSinkAzTablesService), @event.CameraId ?? "unknown");
+        LogWriteEvent(_logger, nameof(UbiquitiSinkAzureTablesService), @event.CameraId ?? "unknown");
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -72,7 +72,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(UbiquitiSinkAzTablesService), nameof(WriteEvent));
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(UbiquitiSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 

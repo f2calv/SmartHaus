@@ -2,7 +2,7 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="MieleEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQuery
+public partial class MieleSinkAzureTablesService : IEventSink<MieleEvent>, IMieleQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -15,7 +15,7 @@ public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQu
     private readonly TimeProvider _timeProvider;
 
     /// <summary>Initializes a new instance.</summary>
-    public MieleSinkAzTablesService(ILogger<MieleSinkAzTablesService> logger,
+    public MieleSinkAzureTablesService(ILogger<MieleSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<MieleConfig> mieleConfig,
         TimeProvider timeProvider)
@@ -35,7 +35,7 @@ public partial class MieleSinkAzTablesService : IEventSink<MieleEvent>, IMieleQu
     /// <inheritdoc/>
     public async Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(MieleSinkAzTablesService), @event.DeviceId);
+        LogWriteEvent(_logger, nameof(MieleSinkAzureTablesService), @event.DeviceId);
 
         var lineItemEntity = new MieleReadingEntity(@event).GetEntity();
         var snapshotEntity = new MieleSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();

@@ -6,7 +6,7 @@ namespace CasCap.Tests;
 
 /// <summary>
 /// Integration tests for the CEMI frame deserialization and <see cref="GroupValue"/> decoding pipeline.
-/// Reads CEMI data from Azure Table Storage via <see cref="KnxSinkCemiAzTablesService"/>.
+/// Reads CEMI data from Azure Table Storage via <see cref="KnxSinkAzureTablesCemiService"/>.
 /// </summary>
 public class CemiDecodingTests(ITestOutputHelper output) : TestBase(output)
 {
@@ -14,7 +14,7 @@ public class CemiDecodingTests(ITestOutputHelper output) : TestBase(output)
     public async Task DecodeCemiFrames_FromAzureTableStorage()
     {
         var logger = _serviceProvider.GetRequiredService<ILogger<CemiDecodingTests>>();
-        var cemiAzTablesSink = (KnxSinkCemiAzTablesService)_serviceProvider
+        var cemiAzTablesSink = (KnxSinkAzureTablesCemiService)_serviceProvider
             .GetRequiredKeyedService<IEventSink<KnxEvent>>("AzureTablesCemi");
 
         await _knxGroupAddressLookupSvc.GetLookup();

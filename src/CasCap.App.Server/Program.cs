@@ -47,7 +47,7 @@ try
     builder.Services.AddSystemMcp();
 
     // Register SignalR services unconditionally so IHubContext<> is always resolvable for
-    // HausHub sinks discovered during assembly scanning (e.g. HausHubSinkBuderusService).
+    // HausHub sinks discovered during assembly scanning (e.g. BuderusSinkSignalRService).
     // The hub endpoint mapping and Redis backplane are configured later when SignalRHub is enabled.
     builder.Services.AddSignalR();
 

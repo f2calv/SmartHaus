@@ -11,7 +11,7 @@ This project provides additional `IEventSink<UbiquitiEvent>` implementations bey
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `UbiquitiSinkRedisService` | `"Redis"` | Maintains running event counts and last-seen timestamps per event type (motion, smart detection, ring) in a Redis hash. Also implements `IUbiquitiQuery`. |
-| `UbiquitiSinkAzTablesService` | `"AzureTables"` | Writes individual `UbiquitiEvent` rows to a line-items Azure Table and upserts a single snapshot row with aggregate counts and timestamps. |
+| `UbiquitiSinkAzureTablesService` | `"AzureTables"` | Writes individual `UbiquitiEvent` rows to a line-items Azure Table and upserts a single snapshot row with aggregate counts and timestamps. |
 
 ## Configuration
 

@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// is maintained in a separate table.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>, IKnxQuery
+public partial class KnxSinkAzureTablesService : IEventSink<KnxEvent>, IKnxQuery
 {
     /// <inheritdoc/>
     public string SinkType => "AzureTables";
@@ -22,9 +22,9 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>, IKnxQuery
     private ConcurrentDictionary<string, KnxSnapshotEntity> _dSnapshot = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="KnxSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="KnxSinkAzureTablesService"/> class.
     /// </summary>
-    public KnxSinkAzTablesService(ILogger<KnxSinkAzTablesService> logger, IOptions<KnxConfig> config,
+    public KnxSinkAzureTablesService(ILogger<KnxSinkAzureTablesService> logger, IOptions<KnxConfig> config,
         IOptions<AzureAuthConfig> azureAuthConfig)
     {
         _logger = logger;
@@ -42,7 +42,7 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>, IKnxQuery
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(KnxSinkAzTablesService), @event.Kga.Name);
+        LogWriteEvent(_logger, nameof(KnxSinkAzureTablesService), @event.Kga.Name);
 
         await EnsureSnapshotInitializedAsync(cancellationToken);
 
@@ -62,7 +62,7 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>, IKnxQuery
         }
         catch (Exception ex)
         {
-            LogWriteEventError(_logger, ex, nameof(KnxSinkAzTablesService));
+            LogWriteEventError(_logger, ex, nameof(KnxSinkAzureTablesService));
         }
     }
 

@@ -11,7 +11,7 @@ This project provides additional `IEventSink<SicceEvent>` implementations beyond
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `SicceSinkRedisService` | `"Redis"` | Stores temperature, power, online status, and power switch state in a Redis hash. Line items in daily sorted sets. Implements `ISicceQuery` for snapshot retrieval. |
-| `SicceSinkAzTablesService` | `"AzureTables"` | Writes detailed `SicceEvent` rows to a line-items Azure Table and upserts a rolling snapshot row. Implements `ISicceQuery`. |
+| `SicceSinkAzureTablesService` | `"AzureTables"` | Writes detailed `SicceEvent` rows to a line-items Azure Table and upserts a rolling snapshot row. Implements `ISicceQuery`. |
 
 ## Configuration
 
