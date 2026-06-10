@@ -7,11 +7,14 @@ namespace CasCap.Services;
 /// Writes <see cref="MediaEvent"/> entries to the <see cref="MediaConfig.StreamKey"/>
 /// Redis Stream for consumption by <see cref="MediaBgService"/>.
 /// </summary>
-public class MediaStreamSinkService(ILogger<MediaStreamSinkService> logger,
+public sealed class MediaStreamSinkService(ILogger<MediaStreamSinkService> logger,
     IOptions<MediaConfig> mediaConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<MediaEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "MediaStream";
+
     private readonly IDatabase _db = remoteCache.Db;
 
     /// <inheritdoc/>

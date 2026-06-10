@@ -9,13 +9,16 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public partial class UbiquitiSinkRedisService(
+public sealed partial class UbiquitiSinkRedisService(
     ILogger<UbiquitiSinkRedisService> logger,
     IOptions<UbiquitiConfig> ubiquitiConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = ubiquitiConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = ubiquitiConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
@@ -90,9 +93,10 @@ public partial class UbiquitiSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_seriesValues))
+        if (_seriesValues is null)
             yield break;
 
         if (id is null)

@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
+public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]

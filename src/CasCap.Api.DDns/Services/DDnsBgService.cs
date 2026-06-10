@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// <remarks>See <see href="https://github.com/Azure/azure-sdk-for-net/tree/main/sdk/dns/Azure.ResourceManager.Dns" />.</remarks>
 /// <remarks>See <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/doc/dev/mgmt_quickstart.md" />.</remarks>
 /// </summary>
-public class DDnsBgService(
+public sealed class DDnsBgService(
     ILogger<DDnsBgService> logger,
     IOptions<RedlockConfig> redlockConfig,
     IOptions<AzureAuthConfig> azureAuthConfig,

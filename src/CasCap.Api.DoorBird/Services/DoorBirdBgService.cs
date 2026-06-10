@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <c>FeatureFlagBgService</c> requires at least one registered <see cref="IBgFeature"/>
 /// per enabled feature to avoid a startup exception.
 /// </summary>
-public class DoorBirdBgService(ILogger<DoorBirdBgService> logger) : IBgFeature
+public sealed class DoorBirdBgService(ILogger<DoorBirdBgService> logger) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "DoorBird";
@@ -17,7 +17,7 @@ public class DoorBirdBgService(ILogger<DoorBirdBgService> logger) : IBgFeature
         logger.LogInformation("{ClassName} started (webhook-only, idling)", nameof(DoorBirdBgService));
         try
         {
-            await Task.Delay(Timeout.Infinite, cancellationToken);
+            await Task.Delay(Timeout.Infinite, cancellationToken).ConfigureAwait(false);
         }
         catch (OperationCanceledException) { }
         logger.LogInformation("{ClassName} exiting", nameof(DoorBirdBgService));

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents the response from the <c>POST /v1/polls/{number}</c> endpoint.
 /// </summary>
-public record CreatePollResponse
+public sealed record CreatePollResponse
 {
     /// <summary>
     /// The timestamp identifier of the created poll.

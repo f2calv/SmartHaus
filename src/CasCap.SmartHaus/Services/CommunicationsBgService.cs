@@ -28,7 +28,7 @@ namespace CasCap.Services;
 /// stream events as-is and logs received messages without responding.
 /// </para>
 /// </remarks>
-public partial class CommunicationsBgService : IBgFeature
+public sealed partial class CommunicationsBgService : IBgFeature
 {
     private readonly ILogger _logger;
     private readonly SignalCliConfig _signalCliConfig;

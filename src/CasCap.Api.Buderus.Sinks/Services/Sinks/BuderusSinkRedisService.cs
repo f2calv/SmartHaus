@@ -5,13 +5,16 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Redis")]
-public partial class BuderusSinkRedisService(
+public sealed partial class BuderusSinkRedisService(
     ILogger<BuderusSinkRedisService> logger,
     IOptions<BuderusConfig> buderusConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<BuderusEvent>, IBuderusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = buderusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = buderusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
     private readonly Dictionary<string, DatapointMapping> _datapointMappings = buderusConfig.Value.DatapointMappings;
@@ -54,17 +57,20 @@ public partial class BuderusSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_summaryValues))
+        if (_seriesValues is null)
             yield break;
 
         if (id is null)
         {
-            // Snapshot: yield every hash entry as an event
+            // Summary: iterate all known datapoints and return latest value
+            if (string.IsNullOrWhiteSpace(_summaryValues))
+                yield break;
             var entries = await remoteCache.Db.HashGetAllAsync(_summaryValues);
-            foreach (var entry in entries)
-                yield return new BuderusEvent(entry.Name.ToString(), entry.Value.ToString(), timeProvider.GetUtcNow().UtcDateTime);
+            foreach (var entry in entries.Take(limit))
+                yield return new BuderusEvent(entry.Name!, entry.Value!, timeProvider.GetUtcNow().UtcDateTime);
         }
         else
         {

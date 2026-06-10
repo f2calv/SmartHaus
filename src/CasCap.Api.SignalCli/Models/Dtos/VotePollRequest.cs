@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to vote on a Signal poll via <c>POST /v1/polls/{number}/vote</c>.
 /// </summary>
-public record VotePollRequest
+public sealed record VotePollRequest
 {
     /// <summary>
     /// The author of the poll (phone number or UUID).

@@ -9,11 +9,14 @@ namespace CasCap.Services;
 /// names, enabling property access via reflection.
 /// </summary>
 [SinkType("Metrics")]
-public class ShellySinkMetricsService : IEventSink<ShellyEvent>
+public sealed class ShellySinkMetricsService : IEventSink<ShellyEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<string, Measurement<double>> _measurements = [];
-    private readonly Dictionary<string, Func<ShellyEvent, double>> _propertyAccessors = [];
+    private readonly FrozenDictionary<string, Func<ShellyEvent, double>> _propertyAccessors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="ShellySinkMetricsService"/> class.
@@ -25,6 +28,7 @@ public class ShellySinkMetricsService : IEventSink<ShellyEvent>
         _logger = logger;
         var metricNamePrefix = shellyConfig.Value.MetricNamePrefix;
         var meter = meterFactory.Create(metricNamePrefix);
+        var propertyAccessors = new Dictionary<string, Func<ShellyEvent, double>>();
 
         foreach (var function in Enum.GetValues<ShellyFunction>())
         {
@@ -39,7 +43,7 @@ public class ShellySinkMetricsService : IEventSink<ShellyEvent>
                 continue;
 
             _measurements[propName] = default;
-            _propertyAccessors[propName] = CreateAccessor(prop);
+            propertyAccessors[propName] = CreateAccessor(prop);
 
             var metricName = $"{metricNamePrefix}.{metricAttr.Name}";
             meter.CreateObservableGauge(
@@ -51,6 +55,8 @@ public class ShellySinkMetricsService : IEventSink<ShellyEvent>
             _logger.LogInformation("{ClassName} registered gauge {MetricName} for {Property}",
                 nameof(ShellySinkMetricsService), metricName, propName);
         }
+
+        _propertyAccessors = propertyAccessors.ToFrozenDictionary();
     }
 
     /// <inheritdoc/>
@@ -66,9 +72,6 @@ public class ShellySinkMetricsService : IEventSink<ShellyEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Facade service for Wiz smart bulb operations, delegating to <see cref="WizClientService"/>.
 /// </summary>
-public class WizQueryService(
+public sealed class WizQueryService(
     ILogger<WizQueryService> logger,
     WizClientService clientSvc) : IWizQueryService
 {
@@ -18,7 +18,7 @@ public class WizQueryService(
     public async Task<IReadOnlyDictionary<string, WizBulb>> DiscoverBulbs(CancellationToken cancellationToken)
     {
         logger.LogDebug("{ClassName} triggering on-demand bulb discovery", nameof(WizQueryService));
-        return await clientSvc.DiscoverBulbsAsync(cancellationToken);
+        return await clientSvc.DiscoverBulbsAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -26,7 +26,7 @@ public class WizQueryService(
     {
         var ip = ResolveIpOrThrow(bulbIdentifier);
         logger.LogDebug("{ClassName} getting pilot state for {BulbIp}", nameof(WizQueryService), ip);
-        return await clientSvc.GetPilotAsync(ip, cancellationToken);
+        return await clientSvc.GetPilotAsync(ip, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -34,7 +34,7 @@ public class WizQueryService(
     {
         var ip = ResolveIpOrThrow(bulbIdentifier);
         logger.LogDebug("{ClassName} getting system config for {BulbIp}", nameof(WizQueryService), ip);
-        return await clientSvc.GetSystemConfigAsync(ip, cancellationToken);
+        return await clientSvc.GetSystemConfigAsync(ip, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -42,7 +42,7 @@ public class WizQueryService(
     {
         var ip = ResolveIpOrThrow(bulbIdentifier);
         logger.LogInformation("{ClassName} setting pilot state for {BulbIp}", nameof(WizQueryService), ip);
-        return await clientSvc.SetPilotAsync(ip, request, cancellationToken);
+        return await clientSvc.SetPilotAsync(ip, request, cancellationToken).ConfigureAwait(false);
     }
 
     /// <inheritdoc/>
@@ -51,7 +51,7 @@ public class WizQueryService(
         var ip = ResolveIpOrThrow(bulbIdentifier);
         logger.LogInformation("{ClassName} setting power state for {BulbIp} to {PowerState}",
             nameof(WizQueryService), ip, on);
-        return await clientSvc.SetPilotAsync(ip, new WizSetPilotRequest { State = on }, cancellationToken);
+        return await clientSvc.SetPilotAsync(ip, new WizSetPilotRequest { State = on }, cancellationToken).ConfigureAwait(false);
     }
 
     private string ResolveIpOrThrow(string bulbIdentifier) =>

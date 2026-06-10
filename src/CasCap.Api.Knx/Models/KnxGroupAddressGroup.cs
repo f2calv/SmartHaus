@@ -8,7 +8,7 @@ namespace CasCap.Models;
 /// all belong to the group <c>OG-BL-FamilyBathroom-West</c>.
 /// </summary>
 [MessagePackObject(true)]
-public record KnxGroupAddressGroup
+public sealed record KnxGroupAddressGroup
 {
     /// <summary>
     /// The group address group name — all segments except the function suffix,

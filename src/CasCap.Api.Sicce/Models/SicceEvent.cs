@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Represents a Sicce water pump device reading event.</summary>
-public record SicceEvent
+public sealed record SicceEvent
 {
     /// <summary>Initializes a new instance from a <see cref="DeviceInfo"/> API response.</summary>
     /// <param name="deviceInfo">Device information from the Sicce cloud API.</param>

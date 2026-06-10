@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class ShellySinkConsoleService(ILogger<ShellySinkConsoleService> logger) : IEventSink<ShellyEvent>
+public sealed class ShellySinkConsoleService(ILogger<ShellySinkConsoleService> logger) : IEventSink<ShellyEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
@@ -13,6 +16,4 @@ public class ShellySinkConsoleService(ILogger<ShellySinkConsoleService> logger) 
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

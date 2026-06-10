@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// BHA response containing device version and firmware information.
 /// </summary>
-public record BHAInfo
+public sealed record BHAInfo
 {
     /// <summary>
     /// The API return code.

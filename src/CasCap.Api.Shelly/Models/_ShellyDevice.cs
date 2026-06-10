@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Represents a single Shelly Plug S device within <see cref="ShellyConfig.Devices"/>.
 /// </summary>
-public record ShellyDevice
+public sealed record ShellyDevice
 {
     /// <summary>
     /// The Shelly device ID to control and monitor.

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Request payload for switching a KNX power outlet on or off.
 /// </summary>
-public record KnxPowerOutletStateChangeRequest : IValidatableObject
+public sealed record KnxPowerOutletStateChangeRequest : IValidatableObject
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     /// <example>DG-SD-Office-South</example>

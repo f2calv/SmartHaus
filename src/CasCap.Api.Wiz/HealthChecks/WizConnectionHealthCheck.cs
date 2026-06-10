@@ -6,7 +6,7 @@ namespace CasCap.HealthChecks;
 /// Health check that verifies at least one Wiz bulb is reachable on the local network
 /// by checking the count of discovered bulbs.
 /// </summary>
-public class WizConnectionHealthCheck(
+public sealed class WizConnectionHealthCheck(
     ILogger<WizConnectionHealthCheck> logger,
     WizClientService wizClientSvc) : IHealthCheck
 {

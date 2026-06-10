@@ -14,8 +14,11 @@ namespace CasCap.Services;
 /// effectively using the hot water tank as a thermal battery.
 /// </remarks>
 [SinkType("CommsStream")]
-public class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly double _hysteresis = heatingAgentConfig.Value.Dhw1AlertHysteresis;
     private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(heatingAgentConfig.Value.Dhw1AlertCooldownMs);
 
@@ -80,11 +83,4 @@ public class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService
             _alertFired = false;
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.CompletedTask;
-        yield break;
-    }
 }

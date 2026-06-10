@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Configuration options for the Buderus KM200 heating system integration.
 /// </summary>
-public record BuderusConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record BuderusConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(BuderusConfig)}";

@@ -16,7 +16,7 @@ namespace CasCap.Services;
 /// </para>
 /// </remarks>
 [McpServerToolType]
-public partial class MessagingMcpQueryService(
+public sealed partial class MessagingMcpQueryService(
     SignalCliRestClientService signalCliSvc,
     IPollTracker pollTracker,
     string phoneNumber,

@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.AspNetCore.SignalR.Client;
 
 namespace CasCap.Services;
 
@@ -63,7 +63,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
         async Task<bool> ConnectWithRetryAsync(CancellationToken cancellationToken = default)
         {
             var retry = 5;
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
@@ -87,6 +87,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
                 }
                 await Task.Delay(retry * 1_000, cancellationToken);
             }
+            return false;
         }
     }
 

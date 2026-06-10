@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Remote control status of a Miele appliance.
 /// </summary>
-public record RemoteEnable
+public sealed record RemoteEnable
 {
     /// <summary>
     /// Whether the device can be fully controlled remotely.

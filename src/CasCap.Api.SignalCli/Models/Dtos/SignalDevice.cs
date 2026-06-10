@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a linked device returned by <c>GET /v1/devices/{number}</c>.
 /// </summary>
-public record SignalDevice
+public sealed record SignalDevice
 {
     /// <summary>
     /// The device identifier.

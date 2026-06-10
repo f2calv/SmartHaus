@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a per-device snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShellyQuery
+public sealed partial class ShellySinkAzureTablesService : IEventSink<ShellyEvent>, IShellyQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
@@ -15,9 +18,9 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
     private const string SnapshotPartitionKey = "summary";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="ShellySinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="ShellySinkAzureTablesService"/> class.
     /// </summary>
-    public ShellySinkAzTablesService(ILogger<ShellySinkAzTablesService> logger,
+    public ShellySinkAzureTablesService(ILogger<ShellySinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<ShellyConfig> config,
         TimeProvider timeProvider)
@@ -38,7 +41,7 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
     /// <inheritdoc/>
     public async Task WriteEvent(ShellyEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(ShellySinkAzTablesService), @event.DeviceId);
+        LogWriteEvent(_logger, nameof(ShellySinkAzureTablesService), @event.DeviceId);
 
         var lineItemEntity = new ShellyReadingEntity(@event).GetEntity();
         var snapshotEntity = new ShellySnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -52,24 +55,7 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(ShellySinkAzTablesService), nameof(WriteEvent));
-        }
-    }
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new ShellyEvent(entity.DeviceId, string.Empty, entity.Power, entity.RelayState, entity.Temperature, entity.Overpower, entity.TimestampUtc);
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(ShellySinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
@@ -96,6 +82,29 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
         return snapshots;
     }
 
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var filter = id is not null
+            ? $"PartitionKey eq '{pk}' and RowKey ge '{id}' and RowKey lt '{id}~'"
+            : $"PartitionKey eq '{pk}'";
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<ShellyReadingEntity>(filter, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new ShellyEvent(
+                deviceId: entity.DeviceId ?? string.Empty,
+                deviceName: string.Empty,
+                power: entity.Power,
+                relayState: entity.RelayState,
+                temperature: entity.Temperature,
+                overpower: entity.Overpower,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
+    }
+
     /// <summary>
     /// Retrieves smart plug line item readings for the current day.
     /// </summary>
@@ -104,7 +113,7 @@ public partial class ShellySinkAzTablesService : IEventSink<ShellyEvent>, IShell
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
-            nameof(ShellySinkAzTablesService), partitionKey);
+            nameof(ShellySinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
             p => p.PartitionKey == partitionKey
             ).ToListAsync();

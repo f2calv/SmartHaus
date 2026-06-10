@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Shortened device information from <c>GET /short/devices</c>.
 /// </summary>
-public record MieleShortDevice
+public sealed record MieleShortDevice
 {
     /// <summary>
     /// The serial number of the device.

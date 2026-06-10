@@ -7,13 +7,16 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="FroniusEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class FroniusSinkRedisService(
+public sealed partial class FroniusSinkRedisService(
     ILogger<FroniusSinkRedisService> logger,
     IOptions<FroniusConfig> froniusConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<FroniusEvent>, IFroniusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = froniusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = froniusConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
@@ -70,11 +73,11 @@ public partial class FroniusSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_summaryValues))
+        if (_seriesValues is null)
             yield break;
-
         var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 

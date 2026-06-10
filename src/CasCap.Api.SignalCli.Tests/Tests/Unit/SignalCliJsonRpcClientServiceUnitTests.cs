@@ -1,16 +1,14 @@
 using System.Net.WebSockets;
 
-namespace CasCap.Tests;
+namespace CasCap.Tests.Unit;
 
 /// <summary>
-/// Tests for <see cref="SignalCliJsonRpcClientService"/> covering WebSocket URI construction,
-/// buffer draining, and integration against a real signal-cli REST API instance running
-/// in <c>json-rpc</c> mode.
+/// Self-contained unit tests for <see cref="SignalCliJsonRpcClientService"/> covering
+/// WebSocket URI construction, enum membership, JSON deserialization, and DI registration.
 /// </summary>
-public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : TestBase(output)
+[Trait("Category", "WebSocket")]
+public class SignalCliJsonRpcClientServiceUnitTests(ITestOutputHelper output)
 {
-    #region Unit tests
-
     [Theory]
     [InlineData("http://localhost:8080", "+49123456789", "ws://localhost:8080/v1/receive/%2B49123456789")]
     [InlineData("https://signal.example.com", "+44780143", "wss://signal.example.com/v1/receive/%2B44780143")]
@@ -18,14 +16,8 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
     public void BuildWebSocketUri_ConstructsCorrectUri(string baseAddress, string phoneNumber, string expectedUri)
     {
         var uri = SignalCliJsonRpcClientService.BuildWebSocketUri(baseAddress, phoneNumber);
-        _output.WriteLine($"Input=({baseAddress}, {phoneNumber}) => {uri}");
+        output.WriteLine($"Input=({baseAddress}, {phoneNumber}) => {uri}");
         Assert.Equal(expectedUri, uri.ToString());
-    }
-
-    [Fact]
-    public void Transport_DefaultsToJsonRpc()
-    {
-        Assert.Equal(SignalCliTransport.JsonRpc, _config.TransportMode);
     }
 
     [Fact]
@@ -86,38 +78,34 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         Assert.Null(notification.Params);
     }
 
-    #endregion
-
-    #region DI registration tests
-
     [Fact]
     public void AddSignalCli_WithRestTransport_RegistersRestClient()
     {
         var configuration = BuildConfiguration(SignalCliTransport.Normal);
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddXUnitLogging(_output);
+            .AddXUnitLogging(output);
         services.AddSignalCli(configuration);
 
         using var sp = services.BuildServiceProvider();
         var notifier = sp.GetRequiredService<INotifier>();
         Assert.IsType<SignalCliRestClientService>(notifier);
-        _output.WriteLine($"INotifier resolved to {notifier.GetType().Name}");
+        output.WriteLine($"INotifier resolved to {notifier.GetType().Name}");
     }
 
     [Fact]
-    public void AddSignalCli_WithJsonRpcTransport_RegistersJsonRpcClient()
+    public async Task AddSignalCli_WithJsonRpcTransport_RegistersJsonRpcClient()
     {
         var configuration = BuildConfiguration(SignalCliTransport.JsonRpc);
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddXUnitLogging(_output);
+            .AddXUnitLogging(output);
         services.AddSignalCli(configuration);
 
-        using var sp = services.BuildServiceProvider();
+        await using var sp = services.BuildServiceProvider();
         var notifier = sp.GetRequiredService<INotifier>();
         Assert.IsType<SignalCliJsonRpcClientService>(notifier);
-        _output.WriteLine($"INotifier resolved to {notifier.GetType().Name}");
+        output.WriteLine($"INotifier resolved to {notifier.GetType().Name}");
     }
 
     [Fact]
@@ -126,72 +114,16 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         var configuration = BuildConfiguration(SignalCliTransport.JsonRpc);
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
-            .AddXUnitLogging(_output);
+            .AddXUnitLogging(output);
         services.AddSignalCli(configuration);
 
         using var sp = services.BuildServiceProvider();
         var restClient = sp.GetRequiredService<SignalCliRestClientService>();
         Assert.NotNull(restClient);
-        _output.WriteLine($"SignalCliRestClientService is directly resolvable alongside JsonRpc INotifier");
+        output.WriteLine($"SignalCliRestClientService is directly resolvable alongside JsonRpc INotifier");
     }
-
-    #endregion
-
-    #region Integration tests (require json-rpc mode server)
-
-    [Fact(Skip = "Requires signal-cli REST API running in json-rpc mode")]
-    public async Task ConnectAsync_EstablishesWebSocket()
-    {
-        await using var jsonRpcSvc = CreateJsonRpcService();
-        await jsonRpcSvc.ConnectAsync();
-        _output.WriteLine("WebSocket connected successfully");
-    }
-
-    [Fact(Skip = "Requires signal-cli REST API running in json-rpc mode")]
-    public async Task ReceiveAsync_ReturnsBufferedMessages()
-    {
-        await using var jsonRpcSvc = CreateJsonRpcService();
-        var notifier = (INotifier)jsonRpcSvc;
-
-        // Send a message to self so we have something to receive
-        var msg = new SignalMessageRequest
-        {
-            Message = $"JSON-RPC test at {DateTime.UtcNow:O}",
-            Number = _config.PhoneNumber,
-            Recipients = [_config.PhoneNumber]
-        };
-        var sendResult = await notifier.SendAsync(msg);
-        Assert.NotNull(sendResult);
-        _output.WriteLine($"Sent message, timestamp={sendResult.Timestamp}");
-
-        // Allow time for WebSocket delivery
-        await Task.Delay(2000);
-
-        var messages = await notifier.ReceiveAsync(_config.PhoneNumber);
-        _output.WriteLine($"Received {messages?.Length ?? 0} message(s)");
-        Assert.NotNull(messages);
-    }
-
-    [Fact(Skip = "Requires signal-cli REST API running in json-rpc mode")]
-    public async Task ListGroupsAsync_DelegatesToRestClient()
-    {
-        await using var jsonRpcSvc = CreateJsonRpcService();
-        var notifier = (INotifier)jsonRpcSvc;
-
-        var groups = await notifier.ListGroupsAsync(_config.PhoneNumber);
-        Assert.NotNull(groups);
-        _output.WriteLine($"Groups={groups.Length}");
-    }
-
-    #endregion
 
     #region Private helpers
-
-    private SignalCliJsonRpcClientService CreateJsonRpcService() =>
-        new(
-            _serviceProvider.GetRequiredService<ILoggerFactory>().CreateLogger<SignalCliJsonRpcClientService>(),
-            _serviceProvider.GetRequiredService<IOptions<SignalCliConfig>>(),
-            _serviceProvider.GetRequiredService<SignalCliRestClientService>());
 
     private static IConfigurationRoot BuildConfiguration(SignalCliTransport transport) =>
         new ConfigurationBuilder()

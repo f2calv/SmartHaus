@@ -4,11 +4,14 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Redis (per-bulb snapshot hash + daily sorted set).</summary>
 [SinkType("Redis")]
-public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
+public sealed partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     IOptions<WizConfig> wizConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<WizEvent>, IWizQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _snapshotValues = wizConfig.Value.Sinks.AvailableSinks
         .GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = wizConfig.Value.Sinks.AvailableSinks
@@ -82,8 +85,8 @@ public partial class WizSinkRedisService(ILogger<WizSinkRedisService> logger,
     public async IAsyncEnumerable<WizEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_seriesValues is null) yield break;
-
+        if (_seriesValues is null)
+            yield break;
         var dayKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByRankAsync(dayKey, 0, limit - 1, Order.Descending);
         foreach (var entry in entries)

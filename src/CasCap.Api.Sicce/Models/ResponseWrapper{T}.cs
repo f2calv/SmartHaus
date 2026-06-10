@@ -1,8 +1,8 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Generic wrapper for API responses containing data of type <typeparamref name="T"/>.</summary>
 /// <typeparam name="T">The type of data contained in the response.</typeparam>
-public class ResponseWrapper<T> : Response
+public sealed class ResponseWrapper<T> : Response
 {
     /// <summary>
     /// optional object

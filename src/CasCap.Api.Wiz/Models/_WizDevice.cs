@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Represents a single known Wiz bulb within <see cref="WizConfig.Devices"/>.
 /// Maps a MAC address to a human-readable name for identification and control.
 /// </summary>
-public record WizDevice
+public sealed record WizDevice
 {
     /// <summary>
     /// MAC address of the Wiz bulb (e.g. "a8bb50aabbcc").

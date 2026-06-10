@@ -1,10 +1,10 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage entity that records every individual KNX telegram.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class KnxReadingEntity : ITableEntity
+public sealed class KnxReadingEntity : ITableEntity
 {
     /// <inheritdoc/>
     public KnxReadingEntity() { }

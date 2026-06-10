@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// A point-in-time snapshot of edge hardware metrics — GPU telemetry (optional, from
 /// <c>nvidia-smi</c>) and CPU temperature (always available on supported platforms).
 /// </summary>
-public record EdgeHardwareSnapshot
+public sealed record EdgeHardwareSnapshot
 {
     // ── GPU metrics (optional — populated only when nvidia-smi is available) ──
 

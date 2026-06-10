@@ -1,27 +1,61 @@
 # CasCap.Api.SignalCli.Tests
 
-Integration tests for the Signal messenger library ([CasCap.Api.SignalCli](../CasCap.Api.SignalCli)) exercising `SignalCliRestClientService` against a running [signal-cli REST API](https://bbernhard.github.io/signal-cli-rest-api/) instance.
+Integration and unit tests for the Signal messenger library ([CasCap.Api.SignalCli](../CasCap.Api.SignalCli)) exercising `SignalCliRestClientService` against a running [signal-cli REST API](https://bbernhard.github.io/signal-cli-rest-api/) instance, plus self-contained unit tests for WebSocket URI construction, JSON deserialization, and DI registration.
 
-## Purpose
+## Tests
 
-These tests verify that the full signal-cli API surface works correctly — from version retrieval to message sending, device management, group operations, and profile updates.
+| Class | Folder | Methods | Test Cases |
+| --- | --- | --- | --- |
+| `SignalCliJsonRpcClientServiceUnitTests` | Unit | 7 | 9 |
+| `SignalCliRestClientServiceTests` | Integration | 52 | 52 |
+| `SignalCliJsonRpcClientServiceTests` | Integration | 4 | 4 |
+| **Total** | | **63** | **65** |
 
-### Test classes
+## Trait Categories
 
-| Class | Description |
+| Category | Description |
 | --- | --- |
-| `SignalCliRestClientServiceTests` | Integration tests covering `GetAbout`, `SendMessage`, `ListAccounts`, `GetQrCodeLink`, `ListLinkedDevices`, `ListGroups`, `ListAttachments`, `UpdateProfile`, and typing indicator endpoints |
-| `SignalCliJsonRpcClientServiceTests` | Unit tests for WebSocket URI construction and transport-mode defaults, plus integration tests against a signal-cli REST API instance running in `json-rpc` mode |
+| `Integration` | Tests requiring a running signal-cli REST API instance |
+| `WebSocket` | Self-contained unit tests for WebSocket/JSON-RPC logic |
+
+## Skipped Tests
+
+| Skip Reason | Count |
+| --- | --- |
+| Requires signal-cli REST API running in json-rpc mode | 3 |
+| Requires a dedicated test phone number | 2 |
+| Destructive or cannot be undone | 4 |
+| Requires a second phone number | 2 |
+| Requires a real challenge token / device-link URI / invite link / pack ID | 4 |
+| One-shot setup already completed | 1 |
+| Requires an untrusted identity to trust | 1 |
+| VerifyNumber requires dedicated test phone number and token | 1 |
+| **Total** | **18** |
+
+## File Structure
+
+```text
+CasCap.Api.SignalCli.Tests/
+├── CasCap.Api.SignalCli.Tests.csproj
+├── GlobalUsings.cs
+├── README.md
+├── xunit.runner.json
+└── Tests/
+    ├── Unit/
+    │   └── SignalCliJsonRpcClientServiceUnitTests.cs
+    └── Integration/
+        ├── TestBase.cs
+        ├── SignalCliRestClientServiceTests.cs
+        └── SignalCliJsonRpcClientServiceTests.cs
+```
 
 ## Prerequisites
 
 - A running signal-cli REST API accessible from the test host.
-- `appsettings.json` with `AppConfig`, `ConnectionStrings`, `CasCap:SignalCliConfig` and `CasCap:CommsAgentConfig` sections including `BaseAddress`, `PhoneNumber` and `GroupName`.
-- `appsettings.Development.json` (optional) with the signal-cli server URL.
+- `appsettings.json` / `appsettings.Local.json` with `CasCap:SignalCliConfig` section including `BaseAddress`, `PhoneNumber`, and `BasicAuthEnabled`.
+- `CasCap:AIConfig:CommsAgent:Settings:GroupName` for group-related integration tests.
 
-> Tests that require a registered phone number (e.g. `SendMessage_ToSelf`) are automatically skipped when `SignalCliConfig.PhoneNumber` is not configured.
-
-## Running the tests
+## Running the Tests
 
 ```bash
 dotnet test src/CasCap.Api.SignalCli.Tests/CasCap.Api.SignalCli.Tests.csproj
@@ -34,7 +68,7 @@ dotnet test src/CasCap.Api.SignalCli.Tests/CasCap.Api.SignalCli.Tests.csproj
 | Project | Purpose |
 | --- | --- |
 | `CasCap.Api.SignalCli` | Library under test |
-| `CasCap.Api.Azure.Auth` | Azure authentication for integration tests |
+| `CasCap.Api.Azure.Auth` | Azure authentication for Key Vault configuration |
 | `CasCap.Common.Configuration` | `AddStandardConfiguration` / `AddKeyVaultConfigurationFrom` |
 | `CasCap.Common.Extensions` | Shared extension helpers |
 | `CasCap.Common.Logging` | xUnit logging integration |

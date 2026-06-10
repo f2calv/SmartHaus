@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger) : IEventSink<BuderusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
@@ -12,6 +15,4 @@ public class BuderusSinkConsoleService(ILogger<BuderusSinkConsoleService> logger
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    IAsyncEnumerable<BuderusEvent> IEventSink<BuderusEvent>.GetEvents(string? id, int limit, CancellationToken cancellationToken) => throw new NotImplementedException();
 }

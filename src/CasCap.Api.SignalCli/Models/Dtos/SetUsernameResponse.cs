@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents the response from the <c>POST /v1/accounts/{number}/username</c> endpoint.
 /// </summary>
-public record SetUsernameResponse
+public sealed record SetUsernameResponse
 {
     /// <summary>
     /// The assigned username.

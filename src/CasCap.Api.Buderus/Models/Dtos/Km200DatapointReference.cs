@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Reference to a KM200 datapoint.</summary>
-public record Km200DatapointReference
+public sealed record Km200DatapointReference
 {
     /// <summary>Datapoint identifier.</summary>
     [JsonPropertyName("id")]

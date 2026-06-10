@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public class SignalCliRestClientService : HttpClientBase, INotifier
+public sealed class SignalCliRestClientService : HttpClientBase, INotifier
 {
     private readonly SignalCliConfig _config;
 
@@ -69,7 +69,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         const string requestUri = "v2/send";
         try
         {
-            var tpl = await PostJsonAsync<SignalMessageResponse, string>(requestUri, msg, TimeSpan.FromMilliseconds(_config.SendTimeoutMs));
+            var tpl = await PostJsonAsync<SignalMessageResponse, string>(requestUri, msg, TimeSpan.FromMilliseconds(_config.SendTimeoutMs)).ConfigureAwait(false);
             if (tpl.result is not null)
                 _logger.LogDebug("{ClassName} message {Message} sent, timestamp {Timestamp}",
                     nameof(SignalCliRestClientService), msg.Message, tpl.result.Timestamp);
@@ -116,7 +116,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         var requestUri = $"v1/receive/{Esc(number)}";
         try
         {
-            var tpl = await base.GetAsync<SignalReceivedMessage[], object>(requestUri);
+            var tpl = await base.GetAsync<SignalReceivedMessage[], object>(requestUri).ConfigureAwait(false);
             var messages = tpl.result;
             if (messages is not null)
                 _logger.LogDebug("{ClassName} received {Count} message(s) for {Number}",
@@ -386,7 +386,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         var requestUri = $"v1/groups/{Esc(number)}";
         try
         {
-            var tpl = await PostJsonAsync<CreateGroupResponse, string>(requestUri, request);
+            var tpl = await PostJsonAsync<CreateGroupResponse, string>(requestUri, request).ConfigureAwait(false);
             if (tpl.result is not null)
                 _logger.LogInformation("{ClassName} group {GroupName} created with id {GroupId}",
                     nameof(SignalCliRestClientService), request.Name, tpl.result.Id);
@@ -595,7 +595,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         var requestUri = $"v1/polls/{Esc(number)}";
         try
         {
-            var tpl = await PostJsonAsync<CreatePollResponse, string>(requestUri, request);
+            var tpl = await PostJsonAsync<CreatePollResponse, string>(requestUri, request).ConfigureAwait(false);
             if (tpl.result is not null)
                 _logger.LogInformation("{ClassName} poll created for {Recipient}, timestamp {Timestamp}",
                     nameof(SignalCliRestClientService), request.Recipient, tpl.result.Timestamp);
@@ -633,16 +633,14 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
     #region INotifier
 
     /// <inheritdoc/>
-    async Task<INotificationResponse?> INotifier.SendAsync(INotificationMessage message, CancellationToken cancellationToken)
-    {
-        if (message is SignalMessageRequest signalMsg)
-            return await SendMessage(signalMsg);
-        throw new ArgumentException($"Expected {nameof(SignalMessageRequest)}", nameof(message));
-    }
+    async Task<INotificationResponse?> INotifier.SendAsync(INotificationMessage message, CancellationToken cancellationToken) =>
+        message is SignalMessageRequest signalMsg
+            ? await SendMessage(signalMsg).ConfigureAwait(false)
+            : throw new ArgumentException($"Expected {nameof(SignalMessageRequest)}", nameof(message));
 
     /// <inheritdoc/>
     async Task<IReceivedNotification[]?> INotifier.ReceiveAsync(string account, CancellationToken cancellationToken) =>
-        await ReceiveMessages(account, cancellationToken);
+        await ReceiveMessages(account, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     Task<byte[]?> INotifier.GetAttachmentAsync(string attachmentId, CancellationToken cancellationToken) =>
@@ -650,7 +648,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
 
     /// <inheritdoc/>
     async Task<INotificationGroup[]?> INotifier.ListGroupsAsync(string account, CancellationToken cancellationToken) =>
-        await ListGroups(account);
+        await ListGroups(account).ConfigureAwait(false);
 
     /// <inheritdoc/>
     Task<bool> INotifier.StartProcessingAsync(string account, string recipient, CancellationToken cancellationToken) =>
@@ -677,7 +675,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
     {
         try
         {
-            var tpl = await base.GetAsync<TResult, object>(requestUri);
+            var tpl = await base.GetAsync<TResult, object>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -693,7 +691,7 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
     {
         try
         {
-            var tpl = await PostJsonAsync<TResult, object>(requestUri, body);
+            var tpl = await PostJsonAsync<TResult, object>(requestUri, body).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -709,8 +707,8 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         try
         {
             var response = body is not null
-                ? await Client.PostAsJsonAsync(requestUri, body)
-                : await Client.PostAsync(requestUri, null);
+                ? await Client.PostAsJsonAsync(requestUri, body).ConfigureAwait(false)
+                : await Client.PostAsync(requestUri, null).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             return true;
         }
@@ -727,8 +725,8 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
         try
         {
             var response = body is not null
-                ? await Client.PutAsJsonAsync(requestUri, body)
-                : await Client.PutAsync(requestUri, null);
+                ? await Client.PutAsJsonAsync(requestUri, body).ConfigureAwait(false)
+                : await Client.PutAsync(requestUri, null).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             return true;
         }
@@ -751,10 +749,10 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
                 {
                     Content = JsonContent.Create(body)
                 };
-                response = await Client.SendAsync(request);
+                response = await Client.SendAsync(request).ConfigureAwait(false);
             }
             else
-                response = await Client.DeleteAsync(requestUri);
+                response = await Client.DeleteAsync(requestUri).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
             return true;
         }
@@ -777,12 +775,12 @@ public class SignalCliRestClientService : HttpClientBase, INotifier
                 {
                     Content = JsonContent.Create(body)
                 };
-                response = await Client.SendAsync(request);
+                response = await Client.SendAsync(request).ConfigureAwait(false);
             }
             else
-                response = await Client.DeleteAsync(requestUri);
+                response = await Client.DeleteAsync(requestUri).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<T>();
+            return await response.Content.ReadFromJsonAsync<T>().ConfigureAwait(false);
         }
         catch (Exception ex)
         {

@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Represents the current state of a KNX group address including its decoded value, value label and timestamp.
 /// </summary>
-public record State
+public sealed record State
 {
     /// <summary>Initializes a new instance of the <see cref="State"/> record.</summary>
     public State() { }
@@ -53,7 +53,7 @@ public record State
     /// Determines equality based on <see cref="GroupAddress"/>, <see cref="Value"/> and <see cref="ValueLabel"/> only,
     /// excluding <see cref="TimestampUtc"/>.
     /// </summary>
-    public virtual bool Equals(State? other)
+    public bool Equals(State? other)
         => other is not null
         && GroupAddress == other.GroupAddress
         && Value == other.Value

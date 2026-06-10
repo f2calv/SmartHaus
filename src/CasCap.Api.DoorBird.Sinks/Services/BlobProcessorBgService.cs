@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>Background service for processing DoorBird image blobs.</summary>
 /// <param name="logger">Logger instance.</param>
 /// <param name="doorBirdAzBlobStorageSvc">Azure Blob Storage service for DoorBird.</param>
-public class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : BackgroundService
+public sealed partial class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : BackgroundService
 {
     /// <inheritdoc/>
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -21,8 +21,11 @@ public class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoo
     {
         await foreach (var blob in BlobStatics.UploadQueue.Reader.ReadAllAsync(cancellationToken))
         {
-            logger.LogDebug("{ClassName} now processing {BlobName}", nameof(BlobProcessorBgService), blob.BlobName);
+            LogProcessingBlob(logger, nameof(BlobProcessorBgService), blob.BlobName);
             await doorBirdAzBlobStorageSvc.UploadBlob(blob.BlobName, blob.bytes, cancellationToken);
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} now processing {BlobName}")]
+    private static partial void LogProcessingBlob(ILogger logger, string className, string blobName);
 }

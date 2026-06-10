@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to update an existing Signal group via <c>PUT /v1/groups/{number}/{groupId}</c>.
 /// </summary>
-public record UpdateGroupRequest
+public sealed record UpdateGroupRequest
 {
     /// <summary>
     /// New group name. Omit to leave unchanged.

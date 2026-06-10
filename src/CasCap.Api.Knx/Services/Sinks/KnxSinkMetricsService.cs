@@ -12,8 +12,11 @@ namespace CasCap.Services;
 /// Gauges are created lazily as new group addresses are discovered at runtime.
 /// </summary>
 [SinkType("Metrics")]
-public class KnxSinkMetricsService : IEventSink<KnxEvent>
+public sealed class KnxSinkMetricsService : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Meter _meter;
     private readonly string _metricNamePrefix;
@@ -95,9 +98,6 @@ public class KnxSinkMetricsService : IEventSink<KnxEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// BHA response containing the list of HTTP notification subscribers.
 /// </summary>
-public record BHANotificationList
+public sealed record BHANotificationList
 {
     /// <summary>
     /// The API return code.

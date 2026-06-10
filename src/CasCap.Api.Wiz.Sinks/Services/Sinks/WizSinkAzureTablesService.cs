@@ -2,15 +2,18 @@ namespace CasCap.Services;
 
 /// <summary>Persists <see cref="WizEvent"/> data to Azure Table Storage (line items + snapshot).</summary>
 [SinkType("AzureTables")]
-public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
+public sealed partial class WizSinkAzureTablesService : IEventSink<WizEvent>, IWizQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
     private const string SnapshotPartitionKey = "summary";
 
     /// <summary>Initializes a new instance.</summary>
-    public WizSinkAzTablesService(ILogger<WizSinkAzTablesService> logger,
+    public WizSinkAzureTablesService(ILogger<WizSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<WizConfig> wizConfig)
     {
@@ -28,7 +31,7 @@ public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
     /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(WizSinkAzTablesService), @event.DeviceId);
+        LogWriteEvent(_logger, nameof(WizSinkAzureTablesService), @event.DeviceId);
 
         var lineItemEntity = new WizReadingEntity(@event).GetEntity();
         var snapshotEntity = new WizSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -41,35 +44,6 @@ public partial class WizSinkAzTablesService : IEventSink<WizEvent>, IWizQuery
     /// <inheritdoc/>
     public Task<List<WizSnapshot>> GetSnapshots() =>
         GetSnapshotEntities();
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<WizEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var count = 0;
-        AsyncPageable<WizReadingEntity> query;
-        if (id is not null)
-            query = _lineItemTableClient.QueryAsync<WizReadingEntity>(
-                e => e.PartitionKey == id, cancellationToken: cancellationToken);
-        else
-            query = _lineItemTableClient.QueryAsync<WizReadingEntity>(cancellationToken: cancellationToken);
-
-        await foreach (var entity in query)
-        {
-            if (count++ >= limit) yield break;
-            yield return new WizEvent
-            {
-                DeviceId = entity.PartitionKey,
-                IpAddress = entity.ip,
-                State = entity.s,
-                Dimming = entity.d,
-                SceneId = entity.sc,
-                Temp = entity.t,
-                Rssi = entity.r,
-                TimestampUtc = entity.TimestampUtc,
-            };
-        }
-    }
 
     #region private helpers
 

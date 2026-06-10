@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Hardware identification label for a Miele device.
 /// </summary>
-public record DeviceIdentLabel
+public sealed record DeviceIdentLabel
 {
     /// <summary>
     /// The serial number of the device.
@@ -39,7 +39,7 @@ public record DeviceIdentLabel
 /// <summary>
 /// Communication module identification label.
 /// </summary>
-public record XkmIdentLabel
+public sealed record XkmIdentLabel
 {
     /// <summary>
     /// The technical type of the communication module.

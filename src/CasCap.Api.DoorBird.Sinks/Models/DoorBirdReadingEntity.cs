@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Azure Table Storage entity that records every individual DoorBird event.
 /// </summary>
-public class DoorBirdReadingEntity : ITableEntity
+public sealed class DoorBirdReadingEntity : ITableEntity
 {
     /// <summary>
     /// Parameterless constructor required by Azure Table Storage deserialization.

@@ -7,7 +7,7 @@ namespace CasCap.Models;
 /// (e.g. <c>"Knx,Fronius,DoorBird"</c>) which <see cref="GetEnabledFeatures"/> splits
 /// into a case-insensitive <see cref="HashSet{T}"/>.
 /// </remarks>
-public record FeatureConfig : IAppConfig
+public sealed record FeatureConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(FeatureConfig)}";

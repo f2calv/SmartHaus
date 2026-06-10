@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Represents a Wiz smart bulb state event captured during a discovery cycle.</summary>
-public record WizEvent
+public sealed record WizEvent
 {
     /// <summary>Unique device identifier (typically the MAC address).</summary>
     [Description("Unique device identifier")]

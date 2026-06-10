@@ -6,8 +6,11 @@ namespace CasCap.Services;
 /// is maintained via merge-upsert — each datapoint becomes a column.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBuderusQuery
+public sealed partial class BuderusSinkAzureTablesService : IEventSink<BuderusEvent>, IBuderusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
@@ -18,9 +21,9 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
     private const string SnapshotRowKey = "latest";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="BuderusSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="BuderusSinkAzureTablesService"/> class.
     /// </summary>
-    public BuderusSinkAzTablesService(ILogger<BuderusSinkAzTablesService> logger, IOptions<BuderusConfig> config,
+    public BuderusSinkAzureTablesService(ILogger<BuderusSinkAzureTablesService> logger, IOptions<BuderusConfig> config,
         IOptions<AzureAuthConfig> azureAuthConfig, TimeProvider timeProvider)
     {
         _logger = logger;
@@ -40,7 +43,7 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
     /// <inheritdoc/>
     public async Task WriteEvent(BuderusEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(BuderusSinkAzTablesService), @event.Id);
+        LogWriteEvent(_logger, nameof(BuderusSinkAzureTablesService), @event.Id);
 
         var lineItemEntity = new BuderusReadingEntity(@event).GetEntity();
         var lineItemTask = _lineItemTableClient.UpsertEntityAsync(lineItemEntity, cancellationToken: cancellationToken);
@@ -64,32 +67,32 @@ public partial class BuderusSinkAzTablesService : IEventSink<BuderusEvent>, IBud
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(BuderusSinkAzTablesService), nameof(WriteEvent));
-        }
-    }
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        AsyncPageable<BuderusReadingEntity> entities;
-        if (id is null)
-            entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-        else
-            entities = _lineItemTableClient.QueryAsync<BuderusReadingEntity>(ent => ent.PartitionKey == partitionKey && ent.d == id, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new BuderusEvent(entity.Id, entity.value, entity.TimestampUtc);
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(BuderusSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
     /// <inheritdoc/>
     public Task<BuderusSnapshot> GetSnapshot()
         => GetSnapshotFromTable();
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var filter = id is not null
+            ? $"PartitionKey eq '{pk}' and RowKey ge '{id}' and RowKey lt '{id}~'"
+            : $"PartitionKey eq '{pk}'";
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<TableEntity>(filter, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            var datapointId = entity.GetString("Id") ?? entity.RowKey;
+            var value = entity.GetString("v") ?? string.Empty;
+            var ts = entity.GetDateTimeOffset("Timestamp") ?? DateTimeOffset.MinValue;
+            yield return new BuderusEvent(datapointId, value, ts.UtcDateTime);
+        }
+    }
 
     /// <summary>
     /// Retrieves the latest Buderus snapshot from Azure Table Storage,

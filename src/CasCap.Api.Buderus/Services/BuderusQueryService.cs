@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// <remarks>
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class BuderusQueryService(ILogger<BuderusQueryService> logger, [FromKeyedServices(SinkServiceCollectionExtensions.PrimarySinkKey)] IEventSink<BuderusEvent> primarySink, BuderusKm200ClientService km200ClientSvc, IBuderusQuery? buderusQuery = null) : IBuderusQueryService
+public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, BuderusKm200ClientService km200ClientSvc, IBuderusQuery buderusQuery) : IBuderusQueryService
 {
     /// <summary>
     /// Retrieves events from Redis, optionally filtered by sensor <paramref name="id"/>.
@@ -22,7 +22,7 @@ public class BuderusQueryService(ILogger<BuderusQueryService> logger, [FromKeyed
         CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} retrieving events, {SensorId}", nameof(BuderusQueryService), id ?? "all");
-        return primarySink.GetEvents(id, limit, cancellationToken);
+        return buderusQuery.GetEvents(id, limit, cancellationToken);
     }
 
     /// <summary>
@@ -31,9 +31,7 @@ public class BuderusQueryService(ILogger<BuderusQueryService> logger, [FromKeyed
     public async Task<BuderusSnapshot> GetSnapshot()
     {
         logger.LogDebug("{ClassName} retrieving heatpump snapshot", nameof(BuderusQueryService));
-        if (buderusQuery is null)
-            return new();
-        return await buderusQuery.GetSnapshot();
+        return await buderusQuery.GetSnapshot().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -56,6 +54,6 @@ public class BuderusQueryService(ILogger<BuderusQueryService> logger, [FromKeyed
         CancellationToken cancellationToken = default)
     {
         logger.LogInformation("{ClassName} writing {DatapointId}={Value}", nameof(BuderusQueryService), datapointId, value);
-        return await km200ClientSvc.SetDataPoint(datapointId, value, cancellationToken);
+        return await km200ClientSvc.SetDataPoint(datapointId, value, cancellationToken).ConfigureAwait(false);
     }
 }

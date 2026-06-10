@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage line-item entity that records individual edge hardware readings.
 /// Uses ultra-short column names to minimize payload size for high-volume data.
 /// </summary>
-public class EdgeHardwareReadingEntity : ITableEntity
+public sealed class EdgeHardwareReadingEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public EdgeHardwareReadingEntity() { }

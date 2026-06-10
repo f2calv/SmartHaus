@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents a KNX binary-input contact (door sensor, window sensor, presence detector)
 /// with decoded feedback state from <see cref="ContactFunction"/>.
 /// </summary>
-public record KnxContact
+public sealed record KnxContact
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     [Description("Group name (e.g. EG-BI-Entrance(FrontDoor)-East).")]

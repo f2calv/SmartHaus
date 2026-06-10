@@ -1,11 +1,11 @@
-﻿using Iot.Device.OneWire;
+using Iot.Device.OneWire;
 
 namespace CasCap.Services;
 
 /// <summary>
 /// DS18B20 is a waterproof temperature sensor.
 /// </summary>
-public class GpioDs18B20SensorService(ILogger<GpioDs18B20SensorService> logger)
+public sealed class GpioDs18B20SensorService(ILogger<GpioDs18B20SensorService> logger)
 {
 
     //https://github.com/dotnet/iot/blob/ddb69e5e71b48c14a8ec37c63ad72a82d7f50652/src/devices/OneWire/README.md?plain=1#L3

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents metadata of an attachment included in a received Signal message.
 /// </summary>
-public record SignalReceivedAttachment : INotificationAttachment
+public sealed record SignalReceivedAttachment : INotificationAttachment
 {
     /// <summary>
     /// The MIME content type (e.g. <c>"image/jpeg"</c>, <c>"audio/aac"</c>).

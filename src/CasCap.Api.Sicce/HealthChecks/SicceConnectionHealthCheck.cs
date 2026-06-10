@@ -1,11 +1,11 @@
-﻿using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.Diagnostics.HealthChecks;
 
 namespace CasCap.HealthChecks;
 
 /// <summary>
 /// Health check that verifies connectivity to the Sicce aquarium pump API.
 /// </summary>
-public class SicceConnectionHealthCheck(
+public sealed class SicceConnectionHealthCheck(
     ILogger<SicceConnectionHealthCheck> logger,
     IOptions<SicceConfig> config,
     IHostEnvironment env,

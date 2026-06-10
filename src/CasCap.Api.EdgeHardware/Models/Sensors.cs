@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Sensor hardware configuration.
 /// </summary>
-public record Sensors
+public sealed record Sensors
 {
     /// <summary>
     /// HC-SR501 PIR motion sensor configuration.

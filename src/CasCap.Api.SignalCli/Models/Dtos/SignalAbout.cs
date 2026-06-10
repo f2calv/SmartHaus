@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents the response from the <c>GET /v1/about</c> endpoint.
 /// </summary>
-public record SignalAbout
+public sealed record SignalAbout
 {
     /// <summary>
     /// The build number of the running signal-cli-rest-api instance.

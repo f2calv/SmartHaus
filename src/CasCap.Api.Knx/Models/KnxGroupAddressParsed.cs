@@ -34,7 +34,7 @@ namespace CasCap.Models;
 /// </para>
 /// </remarks>
 [MessagePackObject(true)]
-public record KnxGroupAddressParsed
+public sealed record KnxGroupAddressParsed
 {
     /// <summary>
     /// Parameterless constructor for JSON/MessagePack deserialization.

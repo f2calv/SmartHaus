@@ -1,7 +1,7 @@
-﻿namespace CasCap.Services;
+namespace CasCap.Services;
 
 /// <summary>Static storage for DoorBird blob upload queue.</summary>
-public class BlobStatics
+public sealed class BlobStatics
 {
     /// <summary>Channel for queuing blob uploads.</summary>
     public static Channel<IMyBlob> UploadQueue { get; set; }

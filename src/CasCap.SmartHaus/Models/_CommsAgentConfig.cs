@@ -10,7 +10,7 @@ namespace CasCap.Models;
 /// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.CommsAgent"/>
 /// in <c>AIConfig.Agents</c>.
 /// </remarks>
-public record CommsAgentConfig : IAppConfig
+public sealed record CommsAgentConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName =>

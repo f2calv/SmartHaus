@@ -1,4 +1,4 @@
-﻿namespace CasCap.Services;
+namespace CasCap.Services;
 
 /// <summary>Hosted service for Raspberry Pi camera and motion detection.</summary>
 public class RaspberryHostedService : IHostedService

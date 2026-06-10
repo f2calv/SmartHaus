@@ -17,7 +17,7 @@ This project provides additional `IEventSink<BuderusEvent>` implementations beyo
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `BuderusSinkRedisService` | `"Redis"` | Stores the latest value for each datapoint in a Redis hash (`SinkSettingKeys.SnapshotValues`). Maintains a per-datapoint sorted set of historical events for time-range queries. Also implements `IBuderusQuery` for snapshot retrieval. |
-| `BuderusSinkAzTablesService` | `"AzureTables"` | Writes individual `BuderusEvent` rows to a line-items Azure Table and upserts a single rolling snapshot row where each datapoint ID is a column. |
+| `BuderusSinkAzureTablesService` | `"AzureTables"` | Writes individual `BuderusEvent` rows to a line-items Azure Table and upserts a single rolling snapshot row where each datapoint ID is a column. |
 
 ## Configuration
 

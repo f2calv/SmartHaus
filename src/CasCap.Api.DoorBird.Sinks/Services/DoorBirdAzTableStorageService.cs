@@ -3,7 +3,7 @@ using Azure.Core;
 namespace CasCap.Services;
 
 /// <summary>Azure Table Storage service implementation for DoorBird data.</summary>
-public class DoorBirdAzTableStorageService : AzTableStorageBase, IDoorBirdAzTableStorageService
+public sealed class DoorBirdAzTableStorageService : AzTableStorageBase, IDoorBirdAzTableStorageService
 {
     /// <summary>Initializes a new instance of the <see cref="DoorBirdAzTableStorageService"/> class.</summary>
     /// <param name="endpoint">Azure Table Storage endpoint URI.</param>

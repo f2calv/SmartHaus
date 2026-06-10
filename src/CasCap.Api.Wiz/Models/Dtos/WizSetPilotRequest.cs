@@ -1,7 +1,7 @@
 namespace CasCap.Models.Dtos;
 
 /// <summary>Request payload for the Wiz <c>setPilot</c> command.</summary>
-public record WizSetPilotRequest
+public sealed record WizSetPilotRequest
 {
     /// <summary>Whether to turn the bulb on or off.</summary>
     [Description("Turn the bulb on (true) or off (false).")]

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Power flow real-time data from <c>GetPowerFlowRealtimeData.fcgi</c>.
 /// </summary>
-public record PowerFlowRealtimeData
+public sealed record PowerFlowRealtimeData
 {
     /// <summary>
     /// Dictionary of inverters keyed by device ID (e.g. "1").

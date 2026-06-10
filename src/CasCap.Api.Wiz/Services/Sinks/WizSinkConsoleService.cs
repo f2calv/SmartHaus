@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class WizSinkConsoleService(ILogger<WizSinkConsoleService> logger) : IEventSink<WizEvent>
+public sealed class WizSinkConsoleService(ILogger<WizSinkConsoleService> logger) : IEventSink<WizEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
@@ -13,7 +16,4 @@ public class WizSinkConsoleService(ILogger<WizSinkConsoleService> logger) : IEve
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<WizEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 }

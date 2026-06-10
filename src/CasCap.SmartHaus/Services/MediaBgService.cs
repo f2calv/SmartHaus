@@ -21,7 +21,7 @@ namespace CasCap.Services;
 /// can relay them to the notification group.
 /// </para>
 /// </remarks>
-public class MediaBgService(ILogger<MediaBgService> logger,
+public sealed class MediaBgService(ILogger<MediaBgService> logger,
     IOptions<MediaConfig> mediaConfig,
     IOptions<AIConfig> aiConfig,
     TimeProvider timeProvider,

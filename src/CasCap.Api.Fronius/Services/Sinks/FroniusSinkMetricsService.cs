@@ -9,11 +9,14 @@ namespace CasCap.Services;
 /// names, enabling property access via reflection.
 /// </summary>
 [SinkType("Metrics")]
-public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
+public sealed class FroniusSinkMetricsService : IEventSink<FroniusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<string, Measurement<double>> _measurements = [];
-    private readonly Dictionary<string, Func<FroniusEvent, double>> _propertyAccessors = [];
+    private readonly FrozenDictionary<string, Func<FroniusEvent, double>> _propertyAccessors;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="FroniusSinkMetricsService"/> class.
@@ -25,6 +28,7 @@ public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
         _logger = logger;
         var metricNamePrefix = froniusConfig.Value.MetricNamePrefix;
         var meter = meterFactory.Create(metricNamePrefix);
+        var propertyAccessors = new Dictionary<string, Func<FroniusEvent, double>>();
 
         foreach (var function in Enum.GetValues<FroniusFunction>())
         {
@@ -39,7 +43,7 @@ public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
                 continue;
 
             _measurements[propName] = default;
-            _propertyAccessors[propName] = CreateAccessor(prop);
+            propertyAccessors[propName] = CreateAccessor(prop);
 
             var metricName = $"{metricNamePrefix}.{metricAttr.Name}";
             meter.CreateObservableGauge(
@@ -51,6 +55,8 @@ public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
             _logger.LogInformation("{ClassName} registered gauge {MetricName} for {Property}",
                 nameof(FroniusSinkMetricsService), metricName, propName);
         }
+
+        _propertyAccessors = propertyAccessors.ToFrozenDictionary();
     }
 
     /// <inheritdoc/>
@@ -65,9 +71,6 @@ public class FroniusSinkMetricsService : IEventSink<FroniusEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a sticker pack returned by <c>GET /v1/sticker-packs/{number}</c>.
 /// </summary>
-public record SignalStickerPack
+public sealed record SignalStickerPack
 {
     /// <summary>
     /// The unique identifier of the sticker pack.

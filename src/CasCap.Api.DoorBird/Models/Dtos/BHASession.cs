@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// BHA response containing session authentication details.
 /// </summary>
-public record BHASession
+public sealed record BHASession
 {
     /// <summary>
     /// The API return code.

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A single active device entry containing its type and serial number.
 /// </summary>
-public record ActiveDeviceEntry
+public sealed record ActiveDeviceEntry
 {
     /// <summary>
     /// Device type identifier.

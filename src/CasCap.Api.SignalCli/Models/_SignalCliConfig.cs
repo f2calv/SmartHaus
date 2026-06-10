@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public record SignalCliConfig : IAppConfig, IHealthCheckConfig
+public sealed record SignalCliConfig : IAppConfig, IHealthCheckConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(SignalCliConfig)}";
@@ -34,13 +34,13 @@ public record SignalCliConfig : IAppConfig, IHealthCheckConfig
     /// The health check endpoint path. Defaults to <c>"v1/health"</c>.
     /// </summary>
     [Required]
-    public required string HealthCheckUri { get; init; } = "v1/health";
+    public string HealthCheckUri { get; init; } = "v1/health";
 
     /// <summary>
     /// The Kubernetes probe type for the health check. Defaults to <see cref="KubernetesProbeTypes.Readiness"/>.
     /// </summary>
     [Required]
-    public required KubernetesProbeTypes HealthCheck { get; init; } = KubernetesProbeTypes.Readiness;
+    public KubernetesProbeTypes HealthCheck { get; init; } = KubernetesProbeTypes.Readiness;
 
     /// <summary>
     /// Per-request timeout in milliseconds for <c>POST /v2/send</c>.
@@ -70,6 +70,15 @@ public record SignalCliConfig : IAppConfig, IHealthCheckConfig
     /// </remarks>
     [Phone]
     public string? PhoneNumberDebug { get; init; }
+
+    /// <summary>Bounded capacity of the internal message channel.</summary>
+    /// <remarks>
+    /// Defaults to <c>256</c>. When the channel is full the WebSocket receive loop applies
+    /// back-pressure (waits) until a consumer drains messages via <c>ReceiveAsync</c>.
+    /// Used by <see cref="CasCap.Services.SignalCliJsonRpcClientService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int ChannelCapacity { get; init; } = 256;
 
     /// <summary>Maximum number of WebSocket reconnection attempts before giving up.</summary>
     /// <remarks>

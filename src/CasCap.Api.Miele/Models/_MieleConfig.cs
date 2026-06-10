@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Configuration options for the Miele cloud API integration.
 /// </summary>
-public record MieleConfig : IAppConfig, IHealthCheckConfig
+public sealed record MieleConfig : IAppConfig, IHealthCheckConfig
 {
     /// <summary>Initializes a new instance of the <see cref="MieleConfig"/> record.</summary>
     [SetsRequiredMembers]

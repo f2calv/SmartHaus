@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQuery
+public sealed partial class SicceSinkAzureTablesService : IEventSink<SicceEvent>, ISicceQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
@@ -16,9 +19,9 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
     private const string SnapshotRowKey = "latest";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="SicceSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="SicceSinkAzureTablesService"/> class.
     /// </summary>
-    public SicceSinkAzTablesService(ILogger<SicceSinkAzTablesService> logger,
+    public SicceSinkAzureTablesService(ILogger<SicceSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<SicceConfig> config,
         TimeProvider timeProvider)
@@ -39,7 +42,7 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
     /// <inheritdoc/>
     public async Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(SicceSinkAzTablesService));
+        LogWriteEvent(_logger, nameof(SicceSinkAzureTablesService));
 
         var lineItemEntity = new SicceReadingEntity(@event).GetEntity();
         var snapshotEntity = new SicceSnapshotEntity(SnapshotPartitionKey, SnapshotRowKey, @event).GetEntity();
@@ -53,24 +56,7 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(SicceSinkAzTablesService), nameof(WriteEvent));
-        }
-    }
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<SicceReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new SicceEvent(entity.Temperature, entity.Power, entity.IsOnline, entity.PowerSwitch, entity.TimestampUtc);
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(SicceSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
@@ -86,6 +72,21 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
             PowerSwitch = entity.PowerSwitch,
             ReadingUtc = entity.ReadingUtc,
         };
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<SicceReadingEntity>(
+            e => e.PartitionKey == pk, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new SicceEvent(entity.Temperature, entity.Power, entity.IsOnline, entity.PowerSwitch,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
     }
 
     /// <summary>
@@ -105,7 +106,7 @@ public partial class SicceSinkAzTablesService : IEventSink<SicceEvent>, ISicceQu
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
-            nameof(SicceSinkAzTablesService), partitionKey);
+            nameof(SicceSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<SicceReadingEntity>(
             p => p.PartitionKey == partitionKey
             ).ToListAsync();

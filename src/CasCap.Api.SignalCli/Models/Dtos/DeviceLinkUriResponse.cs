@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents the response from the <c>GET /v1/qrcodelink/raw</c> endpoint.
 /// </summary>
-public record DeviceLinkUriResponse
+public sealed record DeviceLinkUriResponse
 {
     /// <summary>
     /// The device-link URI used to link a new device.

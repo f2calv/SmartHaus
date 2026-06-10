@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class DoorBirdSinkConsoleService(ILogger<DoorBirdSinkConsoleService> logger) : IEventSink<DoorBirdEvent>
+public sealed class DoorBirdSinkConsoleService(ILogger<DoorBirdSinkConsoleService> logger) : IEventSink<DoorBirdEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
@@ -12,6 +15,4 @@ public class DoorBirdSinkConsoleService(ILogger<DoorBirdSinkConsoleService> logg
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

@@ -1,4 +1,4 @@
-﻿using Iot.Device.Bmxx80;
+using Iot.Device.Bmxx80;
 using Iot.Device.Bmxx80.PowerMode;
 using System.Device.I2c;
 
@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// BMP280 temperature and barometric pressure sensor.
 /// https://cdn-shop.adafruit.com/datasheets/BST-BMP280-DS001-11.pdf
 /// </summary>
-public class GpioBmp280SensorService(ILogger<GpioBmp280SensorService> logger)
+public sealed class GpioBmp280SensorService(ILogger<GpioBmp280SensorService> logger)
 {
 
     /// <summary>Starts the BMP280 sensor monitoring loop.</summary>

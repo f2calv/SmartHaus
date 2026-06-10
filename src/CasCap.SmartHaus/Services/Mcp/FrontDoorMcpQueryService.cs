@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IDoorBirdQueryService"/> that exposes front door intercom operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorBirdQuerySvc)
+public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorBirdQuerySvc)
 {
     /// <inheritdoc cref="IDoorBirdQueryService.GetSnapshot"/>
     [McpServerTool]

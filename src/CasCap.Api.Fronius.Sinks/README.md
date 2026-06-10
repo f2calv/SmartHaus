@@ -17,7 +17,7 @@ This project provides additional `IEventSink<FroniusEvent>` implementations beyo
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `FroniusSinkRedisService` | `"Redis"` | Stores the latest five power metrics (`SOC`, `P_Akku`, `P_Grid`, `P_Load`, `P_PV`) in a Redis hash. Also implements `IFroniusQuery` for snapshot retrieval. |
-| `FroniusSinkAzTablesService` | `"AzureTables"` | Writes detailed `FroniusEvent` rows to a line-items Azure Table and upserts a rolling snapshot row per inverter. |
+| `FroniusSinkAzureTablesService` | `"AzureTables"` | Writes detailed `FroniusEvent` rows to a line-items Azure Table and upserts a rolling snapshot row per inverter. |
 
 ## Configuration
 

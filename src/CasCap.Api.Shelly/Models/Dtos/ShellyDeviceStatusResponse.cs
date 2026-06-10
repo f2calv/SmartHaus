@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Response from the Shelly Cloud <c>/device/status</c> endpoint.
 /// </summary>
-public record ShellyDeviceStatusResponse
+public sealed record ShellyDeviceStatusResponse
 {
     /// <summary>Whether the API call was successful.</summary>
     [JsonPropertyName("isok")]

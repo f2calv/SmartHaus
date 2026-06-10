@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Event arguments for message events.</summary>
-public class MessageEventArgs : EventArgs
+public sealed class MessageEventArgs : EventArgs
 {
     /// <summary>Initializes a new instance of the <see cref="MessageEventArgs"/> class.</summary>
     /// <param name="user">The user who sent the message.</param>

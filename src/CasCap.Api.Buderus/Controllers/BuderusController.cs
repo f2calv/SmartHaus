@@ -1,4 +1,4 @@
-﻿namespace CasCap.Controllers;
+namespace CasCap.Controllers;
 
 /// <summary>
 /// REST API controller for Buderus KM200 heat pump data queries and control.
@@ -8,7 +8,7 @@
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class BuderusController(IBuderusQueryService buderusQuerySvc) : ControllerBase
+public sealed class BuderusController(IBuderusQueryService buderusQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="BuderusQueryService.GetSnapshot"/>
     [HttpGet]

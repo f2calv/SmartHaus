@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a Signal contact returned by <c>GET /v1/contacts/{number}</c>.
 /// </summary>
-public record SignalContact
+public sealed record SignalContact
 {
     /// <summary>
     /// The contact's phone number.

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a contact's nickname details within a <see cref="SignalContact"/>.
 /// </summary>
-public record Nickname
+public sealed record Nickname
 {
     /// <summary>
     /// The given (first) name portion of the nickname.

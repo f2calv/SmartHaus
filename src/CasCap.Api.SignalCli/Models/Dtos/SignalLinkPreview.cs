@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a link preview to attach to a Signal message.
 /// </summary>
-public record SignalLinkPreview
+public sealed record SignalLinkPreview
 {
     /// <summary>
     /// The URL for the preview.

@@ -3,7 +3,7 @@ using Azure.Core;
 namespace CasCap.Services;
 
 /// <summary>Azure Table Storage service implementation for Ubiquiti data.</summary>
-public class UbiquitiAzTableStorageService : AzTableStorageBase, IUbiquitiAzTableStorageService
+public sealed class UbiquitiAzTableStorageService : AzTableStorageBase, IUbiquitiAzTableStorageService
 {
     /// <summary>Initializes a new instance of the <see cref="UbiquitiAzTableStorageService"/> class.</summary>
     /// <param name="endpoint">Azure Table Storage endpoint URI.</param>

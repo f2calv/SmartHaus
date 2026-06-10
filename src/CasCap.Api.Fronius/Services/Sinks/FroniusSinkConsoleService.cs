@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger) : IEventSink<FroniusEvent>
+public sealed class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger) : IEventSink<FroniusEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
@@ -13,6 +16,4 @@ public class FroniusSinkConsoleService(ILogger<FroniusSinkConsoleService> logger
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

@@ -7,8 +7,11 @@ namespace CasCap.Services;
 /// and only the columns affected by each event are updated via merge-upsert.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public sealed partial class UbiquitiSinkAzureTablesService : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
@@ -27,9 +30,9 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     private int _ringCount;
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="UbiquitiSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="UbiquitiSinkAzureTablesService"/> class.
     /// </summary>
-    public UbiquitiSinkAzTablesService(ILogger<UbiquitiSinkAzTablesService> logger,
+    public UbiquitiSinkAzureTablesService(ILogger<UbiquitiSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<UbiquitiConfig> config,
         TimeProvider timeProvider)
@@ -50,7 +53,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(UbiquitiSinkAzTablesService), @event.CameraId ?? "unknown");
+        LogWriteEvent(_logger, nameof(UbiquitiSinkAzureTablesService), @event.CameraId ?? "unknown");
 
         await EnsureCountersInitializedAsync(cancellationToken);
 
@@ -69,33 +72,7 @@ public partial class UbiquitiSinkAzTablesService : IEventSink<UbiquitiEvent>, IU
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(UbiquitiSinkAzTablesService), nameof(WriteEvent));
-        }
-    }
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        AsyncPageable<UbiquitiReadingEntity> entities;
-        if (id is null)
-            entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-        else
-            entities = _lineItemTableClient.QueryAsync<UbiquitiReadingEntity>(ent => ent.PartitionKey == partitionKey && ent.t == id, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new UbiquitiEvent
-            {
-                UbiquitiEventType = Enum.Parse<UbiquitiEventType>(entity.EventType),
-                DateCreatedUtc = entity.TimestampUtc,
-                CameraId = entity.CameraId,
-                CameraName = entity.CameraName,
-            };
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(UbiquitiSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 

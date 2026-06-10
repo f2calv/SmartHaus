@@ -8,8 +8,11 @@ namespace CasCap.Services;
 /// via <see cref="MetricAttribute"/>.
 /// </summary>
 [SinkType("Metrics")]
-public class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
+public sealed class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<DoorBirdEventType, Measurement<double>> _measurements = [];
 
@@ -47,9 +50,6 @@ public class DoorBirdSinkMetricsService : IEventSink<DoorBirdEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

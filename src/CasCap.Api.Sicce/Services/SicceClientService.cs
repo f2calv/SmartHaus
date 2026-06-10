@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// production: https://sicce.thingscloud.it
 /// test: https://sicce-test.thingscloud.it
 /// </summary>
-public class SicceClientService : HttpClientBase
+public sealed class SicceClientService : HttpClientBase
 {
     //private readonly ILogger _logger;
     private readonly SicceConfig _appConfig;
@@ -39,7 +39,7 @@ public class SicceClientService : HttpClientBase
         (ResponseWrapper<DeviceInfo>? result, string? error) tpl = default;
         try
         {
-            tpl = await base.GetAsync<ResponseWrapper<DeviceInfo>, string>(requestUri);
+            tpl = await base.GetAsync<ResponseWrapper<DeviceInfo>, string>(requestUri).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -76,7 +76,7 @@ public class SicceClientService : HttpClientBase
         (Response? result, string? error) tpl = default;
         try
         {
-            tpl = await base.PostJsonAsync<Response, string>(requestUri, req);
+            tpl = await base.PostJsonAsync<Response, string>(requestUri, req).ConfigureAwait(false);
         }
         catch (Exception ex)
         {

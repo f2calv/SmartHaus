@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Represents an event from a Ubiquiti UniFi Protect camera such as motion detection or smart detection.
 /// </summary>
-public record UbiquitiEvent
+public sealed record UbiquitiEvent
 {
     /// <summary>
     /// Unique identifier for this event instance.

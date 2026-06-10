@@ -7,13 +7,16 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="SicceEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class SicceSinkRedisService(
+public sealed partial class SicceSinkRedisService(
     ILogger<SicceSinkRedisService> logger,
     IOptions<SicceConfig> sicceConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<SicceEvent>, ISicceQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = sicceConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = sicceConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
@@ -68,11 +71,11 @@ public partial class SicceSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_summaryValues))
+        if (_seriesValues is null)
             yield break;
-
         var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 

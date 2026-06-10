@@ -8,8 +8,11 @@ namespace CasCap.Services;
 /// via <see cref="MetricAttribute"/>.
 /// </summary>
 [SinkType("Metrics")]
-public class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
+public sealed class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private readonly Dictionary<UbiquitiEventType, Measurement<double>> _measurements = [];
 
@@ -47,9 +50,6 @@ public class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

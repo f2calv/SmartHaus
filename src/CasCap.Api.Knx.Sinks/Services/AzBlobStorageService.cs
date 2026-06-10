@@ -1,9 +1,9 @@
-﻿using Azure.Core;
+using Azure.Core;
 
 namespace CasCap.Services;
 
 /// <summary>KNX-specific Azure Blob Storage service.</summary>
-public class KnxAzBlobStorageService : AzBlobStorageBase, IKnxAzBlobStorageService
+public sealed class KnxAzBlobStorageService : AzBlobStorageBase, IKnxAzBlobStorageService
 {
     /// <summary>Initializes a new instance using a connection string.</summary>
     public KnxAzBlobStorageService(string connectionString, string containerName)

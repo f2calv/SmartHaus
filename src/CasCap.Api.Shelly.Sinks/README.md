@@ -11,7 +11,7 @@ Provides Redis and Azure Table Storage sinks for persisting Shelly smart plug ev
 | Service | Description |
 | --- | --- |
 | `ShellySinkRedisService` | Persists snapshot as a Redis hash and line items as daily sorted sets |
-| `ShellySinkAzTablesService` | Persists line items and snapshot to Azure Table Storage |
+| `ShellySinkAzureTablesService` | Persists line items and snapshot to Azure Table Storage |
 
 ## Dependencies
 

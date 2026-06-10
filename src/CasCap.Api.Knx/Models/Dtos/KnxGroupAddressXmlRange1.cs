@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents a level-1 group range in the ETS XML export (e.g. Central, DG, OG, EG, KG).
 /// </summary>
 [Serializable]
-public record KnxGroupAddressXmlRange1
+public sealed record KnxGroupAddressXmlRange1
 {
     /// <summary>
     /// Display name of the group range (e.g. "DG", "OG", "EG").

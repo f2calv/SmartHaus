@@ -1,4 +1,4 @@
-﻿namespace CasCap.Controllers;
+namespace CasCap.Controllers;
 
 /// <summary>
 /// REST API controller for DoorBird device queries.
@@ -8,7 +8,7 @@
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class DoorBirdController(IDoorBirdQueryService doorBirdQuerySvc) : ControllerBase
+public sealed class DoorBirdController(IDoorBirdQueryService doorBirdQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="DoorBirdQueryService.GetSnapshot"/>
     [HttpGet]

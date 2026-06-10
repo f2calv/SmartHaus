@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class SicceSinkConsoleService(ILogger<SicceSinkConsoleService> logger) : IEventSink<SicceEvent>
+public sealed class SicceSinkConsoleService(ILogger<SicceSinkConsoleService> logger) : IEventSink<SicceEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(SicceEvent @event, CancellationToken cancellationToken = default)
     {
@@ -13,6 +16,4 @@ public class SicceSinkConsoleService(ILogger<SicceSinkConsoleService> logger) : 
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<SicceEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

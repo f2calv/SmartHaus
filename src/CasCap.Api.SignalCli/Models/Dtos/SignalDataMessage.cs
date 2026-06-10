@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents the data message payload of a received Signal message containing
 /// the text body, optional attachments and group information.
 /// </summary>
-public record SignalDataMessage
+public sealed record SignalDataMessage
 {
     /// <summary>
     /// The plaintext message body. May be <see langword="null"/> for attachment-only messages.

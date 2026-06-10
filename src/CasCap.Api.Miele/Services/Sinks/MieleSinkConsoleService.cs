@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : IEventSink<MieleEvent>
+public sealed class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : IEventSink<MieleEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(MieleEvent @event, CancellationToken cancellationToken = default)
     {
@@ -13,7 +16,4 @@ public class MieleSinkConsoleService(ILogger<MieleSinkConsoleService> logger) : 
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<MieleEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 }

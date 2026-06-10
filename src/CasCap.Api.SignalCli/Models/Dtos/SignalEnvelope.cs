@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents the envelope of a received Signal message, containing source metadata
 /// and the typed message payload.
 /// </summary>
-public record SignalEnvelope
+public sealed record SignalEnvelope
 {
     /// <summary>
     /// The sender's phone number in international format (e.g. <c>"+49151..."</c>).

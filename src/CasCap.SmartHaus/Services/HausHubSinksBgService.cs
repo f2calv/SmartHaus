@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Background service that initializes all registered <see cref="IEventSink{HubEvent}"/>
 /// instances when the <c>SignalRHub</c> feature starts.
 /// </summary>
-public class HausHubSinksBgService(ILogger<HausHubSinksBgService> logger,
+public sealed class HausHubSinksBgService(ILogger<HausHubSinksBgService> logger,
     IEnumerable<IEventSink<HubEvent>> sinks) : IBgFeature
 {
     /// <inheritdoc/>

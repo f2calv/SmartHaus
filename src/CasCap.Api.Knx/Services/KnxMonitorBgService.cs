@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxEvent"/>.
 /// When a line connection drops, it is automatically re-established without affecting other lines.
 /// </summary>
-public partial class KnxMonitorBgService(
+public sealed partial class KnxMonitorBgService(
     ILogger<KnxMonitorBgService> logger,
     IOptions<RedlockConfig> redlockConfig,
     IOptions<KnxConfig> config,
@@ -57,7 +57,7 @@ public partial class KnxMonitorBgService(
         {
             //load group addresses before entering leadership election — this is a stateless,
             //read-only operation that all replicas can perform concurrently
-            await WaitForGroupAddressLookupAsync(cancellationToken);
+            await WaitForGroupAddressLookupAsync(cancellationToken).ConfigureAwait(false);
 
             logger.LogInformation("{ClassName} ServiceFamily={ServiceFamily}, ShardingMode={ShardingMode}, TelegramBrokerMode={TelegramBrokerMode}",
                 nameof(KnxMonitorBgService), config.Value.ServiceFamily, config.Value.ShardingMode, config.Value.TelegramBrokerMode);
@@ -74,7 +74,7 @@ public partial class KnxMonitorBgService(
             switch (effectiveShardingMode)
             {
                 case ShardingMode.Unified:
-                    await AcquireLock(cancellationToken);
+                    await AcquireLock(cancellationToken).ConfigureAwait(false);
                     break;
                 case ShardingMode.Partitioned:
                     throw new NotSupportedException(
@@ -95,7 +95,7 @@ public partial class KnxMonitorBgService(
     /// </summary>
     private async Task WaitForGroupAddressLookupAsync(CancellationToken cancellationToken)
     {
-        await knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested && !knxGroupAddressLookupHealthCheck.GroupAddressesLoaded)
@@ -103,7 +103,7 @@ public partial class KnxMonitorBgService(
             logger.Log(attempt % config.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                 "{ClassName} group address lookup not yet loaded, attempt {Attempt}, retry in {RetryMs}ms...",
                 nameof(KnxMonitorBgService), attempt, config.Value.ConnectionPollingDelayMs);
-            await Task.Delay(config.Value.ConnectionPollingDelayMs, cancellationToken);
+            await Task.Delay(config.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
             attempt++;
         }
     }
@@ -120,27 +120,24 @@ public partial class KnxMonitorBgService(
         var lockAttempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
-            await using (var redLock = await lockFactory.CreateLockAsync(resource, expiry, wait, retry, cancellationToken))
+            await using (var redLock = await lockFactory.CreateLockAsync(resource, expiry, wait, retry, cancellationToken).ConfigureAwait(false))
             {
                 if (redLock.IsAcquired)
                 {
                     knxConnectionHealthCheck.IsLeader = true;
-                    logger.LogInformation("{ClassName} distributed lock acquired on attempt {Attempt}",
-                        nameof(KnxMonitorBgService), lockAttempt);
-                    await RunServiceAsync(cancellationToken);
+                    LogLockAcquired(logger, nameof(KnxMonitorBgService), lockAttempt);
+                    await RunServiceAsync(cancellationToken).ConfigureAwait(false);
                     knxConnectionHealthCheck.IsLeader = false;
                     knxConnectionHealthCheck.ConnectionActive = false;
-                    logger.LogInformation("{ClassName} distributed lock released", nameof(KnxMonitorBgService));
+                    LogLockReleased(logger, nameof(KnxMonitorBgService));
                 }
                 else
                 {
                     lockAttempt++;
-                    logger.LogInformation("{ClassName} distributed lock failed on attempt {Attempt}",
-                        nameof(KnxMonitorBgService), lockAttempt);
+                    LogLockFailed(logger, nameof(KnxMonitorBgService), lockAttempt);
                 }
             }
-            logger.LogInformation("{ClassName} distributed lock pending attempt {Attempt}",
-                nameof(KnxMonitorBgService), lockAttempt + 1);
+            LogLockPending(logger, nameof(KnxMonitorBgService), lockAttempt + 1);
         }
     }
 
@@ -152,10 +149,10 @@ public partial class KnxMonitorBgService(
         switch (config.Value.ServiceFamily)
         {
             case ServiceFamily.Tunneling:
-                await ConnectAndMonitorTunneling(cancellationToken);
+                await ConnectAndMonitorTunneling(cancellationToken).ConfigureAwait(false);
                 break;
             case ServiceFamily.Routing:
-                await ConnectAndMonitorRouting(cancellationToken);
+                await ConnectAndMonitorRouting(cancellationToken).ConfigureAwait(false);
                 break;
             default:
                 throw new NotSupportedException(
@@ -167,7 +164,7 @@ public partial class KnxMonitorBgService(
     private async Task ConnectAndMonitorTunneling(CancellationToken cancellationToken)
     {
         //gather information on possible Areas+Lines
-        var ipTunnelingConnectorParametersAll = await GetIpTunnelingConnectorParameters(cancellationToken);
+        var ipTunnelingConnectorParametersAll = await GetIpTunnelingConnectorParameters(cancellationToken).ConfigureAwait(false);
 
         //group discovered parameters by area/line and store for reconnection
         _lineParameters.Clear();
@@ -200,30 +197,30 @@ public partial class KnxMonitorBgService(
 
         //attempt initial connection to each area/line
         foreach (var areaLine in _lineParameters.Keys)
-            await ConnectLine(areaLine, cancellationToken);
+            await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
 
         //run the health check monitor and reconnection handler concurrently;
         //await-await-WhenAny propagates the first faulted task immediately so the
         //service crashes and the pod restarts rather than running in a degraded state.
         await await Task.WhenAny(
             MonitorHealthAsync(cancellationToken),
-            ProcessReconnectionRequestsAsync(cancellationToken));
+            ProcessReconnectionRequestsAsync(cancellationToken)).ConfigureAwait(false);
     }
 
     private async Task ConnectAndMonitorRouting(CancellationToken cancellationToken)
     {
-        var routingParameters = await GetIpRoutingConnectorParameters(cancellationToken);
+        var routingParameters = await GetIpRoutingConnectorParameters(cancellationToken).ConfigureAwait(false);
 
         //routing uses a single multicast connection covering the entire KNX backbone
         var routingAreaLine = new KnxAreaLine { Area = 0, Line = 0 };
         KnxStatics.BusConnections.Clear();
         KnxStatics.BusConnections[routingAreaLine] = null;
 
-        var bus = await TryConnectRouting(routingParameters, cancellationToken);
+        var bus = await TryConnectRouting(routingParameters, cancellationToken).ConfigureAwait(false);
         if (bus is not null)
             KnxStatics.BusConnections[routingAreaLine] = bus;
 
-        await MonitorHealthAsync(cancellationToken);
+        await MonitorHealthAsync(cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -236,7 +233,7 @@ public partial class KnxMonitorBgService(
             var allConnected = KnxStatics.BusConnections.Values
                 .All(bus => bus?.ConnectionState == BusConnectionState.Connected);
             knxConnectionHealthCheck.ConnectionActive = allConnected;
-            await Task.Delay(config.Value.ConnectionHealthPollingDelayMs, cancellationToken);
+            await Task.Delay(config.Value.ConnectionHealthPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -248,26 +245,25 @@ public partial class KnxMonitorBgService(
     {
         await foreach (var areaLine in _reconnectChannel.Reader.ReadAllAsync(cancellationToken))
         {
-            logger.LogWarning("{ClassName} reconnection requested for {AreaLine}", nameof(KnxMonitorBgService), areaLine);
+            LogReconnectionRequested(logger, nameof(KnxMonitorBgService), areaLine);
 
             var backoffMs = config.Value.ReconnectBackoffMs;
             var maxBackoffMs = config.Value.ReconnectMaxBackoffMs;
             var connected = false;
             while (!connected && !cancellationToken.IsCancellationRequested)
             {
-                await Task.Delay(backoffMs, cancellationToken);
-                connected = await ConnectLine(areaLine, cancellationToken);
+                await Task.Delay(backoffMs, cancellationToken).ConfigureAwait(false);
+                connected = await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
                 if (!connected)
                 {
-                    logger.LogWarning("{ClassName} reconnection to {AreaLine} failed, retrying in {BackoffMs}ms",
-                        nameof(KnxMonitorBgService), areaLine, backoffMs);
+                    LogReconnectionFailed(logger, nameof(KnxMonitorBgService), areaLine, backoffMs);
                     backoffMs = Math.Min(backoffMs * 2, maxBackoffMs);
                 }
             }
 
             if (connected)
             {
-                logger.LogInformation("{ClassName} reconnection to {AreaLine} succeeded", nameof(KnxMonitorBgService), areaLine);
+                LogReconnectionSucceeded(logger, nameof(KnxMonitorBgService), areaLine);
                 connectionNotifier.Notify(new KnxConnectionStateChange
                 {
                     AreaLine = areaLine,
@@ -287,11 +283,11 @@ public partial class KnxMonitorBgService(
     {
         if (!_lineParameters.TryGetValue(areaLine, out var parametersList))
         {
-            logger.LogError("{ClassName} no stored discovery parameters for {AreaLine}", nameof(KnxMonitorBgService), areaLine);
+            LogNoStoredParameters(logger, nameof(KnxMonitorBgService), areaLine);
             return false;
         }
 
-        logger.LogInformation("{ClassName} connecting to {AreaLine}", nameof(KnxMonitorBgService), areaLine);
+        LogConnectingToAreaLine(logger, nameof(KnxMonitorBgService), areaLine);
 
         //dispose the old bus connection if one exists
         if (KnxStatics.BusConnections.TryGetValue(areaLine, out var oldBus) && oldBus is not null)
@@ -304,7 +300,7 @@ public partial class KnxMonitorBgService(
         //iterate over the individual addresses and attempt a connection
         foreach (var parameters in parametersList)
         {
-            var bus = await TryConnect(parameters, cancellationToken);
+            var bus = await TryConnect(parameters, cancellationToken).ConfigureAwait(false);
             if (bus is not null)
             {
                 KnxStatics.BusConnections[areaLine] = bus;
@@ -328,20 +324,20 @@ public partial class KnxMonitorBgService(
             nameof(KnxMonitorBgService), parameters.Name, parameters.HostAddress, parameters.IndividualAddress);
         try
         {
-            await bus.ConnectAsync(cancellationToken);
+            await bus.ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             logger.LogWarning("{ClassName} connection to {Name} {HostAddress} ({IndividualAddress}) failed, {Reason}",
                 nameof(KnxMonitorBgService), parameters.Name, parameters.HostAddress, parameters.IndividualAddress,
                 ex.InnerException?.Message ?? ex.Message);
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
         if (bus.ConnectionState != BusConnectionState.Connected)
         {
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
@@ -386,14 +382,14 @@ public partial class KnxMonitorBgService(
             logger.LogDebug("{ClassName} start discovery of KNX IP devices...", nameof(KnxMonitorBgService));
             var ipDeviceDiscoveryResults = await KnxBus.DiscoverIpDevicesAsync(cancellationToken)
                 .Where(p => p.Supports(config.Value.ServiceFamily, 1), cancellationToken)
-                .ToArray(cancellationToken);
+                .ToArray(cancellationToken).ConfigureAwait(false);
 
             if (ipDeviceDiscoveryResults.Length == 0)
             {
                 logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug,
                     "{ClassName} no KNX IP devices detected, attempt '{Attempt}', retry in {RetryMs}ms...",
                     nameof(KnxMonitorBgService), attempt, config.Value.DiscoveryRetryDelayMs);
-                await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken);
+                await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
                 continue;
             }
@@ -426,7 +422,7 @@ public partial class KnxMonitorBgService(
             logger.LogDebug("{ClassName} start discovery of KNX IP routing devices...", nameof(KnxMonitorBgService));
             var ipDeviceDiscoveryResults = await KnxBus.DiscoverIpDevicesAsync(cancellationToken)
                 .Where(p => p.Supports(config.Value.ServiceFamily, 1), cancellationToken)
-                .ToArray(cancellationToken);
+                .ToArray(cancellationToken).ConfigureAwait(false);
             var routingDevice = ipDeviceDiscoveryResults.FirstOrDefault();
             if (routingDevice is not null)
             {
@@ -442,7 +438,7 @@ public partial class KnxMonitorBgService(
             logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug,
                 "{ClassName} no KNX IP routing devices detected, attempt {Attempt}, retry in {RetryMs}ms...",
                 nameof(KnxMonitorBgService), attempt, config.Value.DiscoveryRetryDelayMs);
-            await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken);
+            await Task.Delay(config.Value.DiscoveryRetryDelayMs, cancellationToken).ConfigureAwait(false);
             attempt++;
         }
         throw new OperationCanceledException(cancellationToken);
@@ -457,20 +453,20 @@ public partial class KnxMonitorBgService(
             nameof(KnxMonitorBgService), parameters.MulticastAddress);
         try
         {
-            await bus.ConnectAsync(cancellationToken);
+            await bus.ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
             logger.LogWarning("{ClassName} routing connection to {MulticastAddress} failed, {Reason}",
                 nameof(KnxMonitorBgService), parameters.MulticastAddress,
                 ex.InnerException?.Message ?? ex.Message);
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
         if (bus.ConnectionState != BusConnectionState.Connected)
         {
-            await bus.DisposeAsync();
+            await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
 
@@ -502,8 +498,7 @@ public partial class KnxMonitorBgService(
             //without this, routed telegrams are received by every connection and published multiple times
             if (e.SourceAddress.AreaAddress != busAddr.AreaAddress || e.SourceAddress.LineAddress != busAddr.LineAddress)
             {
-                logger.LogDebug("{ClassName} dropped telegram [cross-line] from {SourceAddress} to {DestinationAddress} on {BusAddress}",
-                    nameof(KnxMonitorBgService), e.SourceAddress, e.DestinationAddress, busAddr);
+                LogDroppedCrossLine(logger, nameof(KnxMonitorBgService), e.SourceAddress, e.DestinationAddress, busAddr);
                 return;
             }
 
@@ -511,8 +506,7 @@ public partial class KnxMonitorBgService(
             var sourceAddress = e.SourceAddress.ToString();
             if (_allDiscoveredAddresses.Contains(sourceAddress) && !_connectedAddresses.ContainsKey(sourceAddress))
             {
-                logger.LogDebug("{ClassName} dropped telegram [rival tunneling address] from {SourceAddress} to {DestinationAddress} on {BusAddress}",
-                    nameof(KnxMonitorBgService), sourceAddress, e.DestinationAddress, busAddr);
+                LogDroppedRivalAddress(logger, nameof(KnxMonitorBgService), sourceAddress, e.DestinationAddress, busAddr);
                 return;
             }
         }
@@ -524,7 +518,7 @@ public partial class KnxMonitorBgService(
         if (tpl.ValueDecoded is not null)
         {
             var knxEvent = new KnxEvent(timeProvider.GetUtcNow().UtcDateTime, e.ToKnxGroupEvent(), kga, e.Value, tpl.ValueDecoded, tpl.ValueLabelDecoded);
-            await incomingBroker.PublishAsync(knxEvent);
+            await incomingBroker.PublishAsync(knxEvent).ConfigureAwait(false);
         }
     }
 
@@ -542,8 +536,7 @@ public partial class KnxMonitorBgService(
             .FirstOrDefault(kvp => ReferenceEquals(kvp.Value, bus)).Key;
         if (areaLine is not null)
         {
-            logger.LogWarning("{ClassName} connection dropped for {AreaLine}, queuing reconnection",
-                nameof(KnxMonitorBgService), areaLine);
+            LogConnectionDropped(logger, nameof(KnxMonitorBgService), areaLine);
             connectionNotifier.Notify(new KnxConnectionStateChange
             {
                 AreaLine = areaLine,
@@ -565,6 +558,42 @@ public partial class KnxMonitorBgService(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} ConnectionStateChanged, ConnectionState={ConnectionState}")]
     private static partial void LogConnectionStateChanged(ILogger logger, string className, string connectionState);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} dropped telegram [cross-line] from {SourceAddress} to {DestinationAddress} on {BusAddress}")]
+    private static partial void LogDroppedCrossLine(ILogger logger, string className, IndividualAddress sourceAddress, GroupAddress destinationAddress, IndividualAddress busAddress);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} dropped telegram [rival tunneling address] from {SourceAddress} to {DestinationAddress} on {BusAddress}")]
+    private static partial void LogDroppedRivalAddress(ILogger logger, string className, string sourceAddress, GroupAddress destinationAddress, IndividualAddress busAddress);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} reconnection requested for {AreaLine}")]
+    private static partial void LogReconnectionRequested(ILogger logger, string className, KnxAreaLine areaLine);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} reconnection to {AreaLine} failed, retrying in {BackoffMs}ms")]
+    private static partial void LogReconnectionFailed(ILogger logger, string className, KnxAreaLine areaLine, int backoffMs);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} reconnection to {AreaLine} succeeded")]
+    private static partial void LogReconnectionSucceeded(ILogger logger, string className, KnxAreaLine areaLine);
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} no stored discovery parameters for {AreaLine}")]
+    private static partial void LogNoStoredParameters(ILogger logger, string className, KnxAreaLine areaLine);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} connecting to {AreaLine}")]
+    private static partial void LogConnectingToAreaLine(ILogger logger, string className, KnxAreaLine areaLine);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} connection dropped for {AreaLine}, queuing reconnection")]
+    private static partial void LogConnectionDropped(ILogger logger, string className, KnxAreaLine areaLine);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} distributed lock acquired on attempt {Attempt}")]
+    private static partial void LogLockAcquired(ILogger logger, string className, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} distributed lock released")]
+    private static partial void LogLockReleased(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} distributed lock failed on attempt {Attempt}")]
+    private static partial void LogLockFailed(ILogger logger, string className, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} distributed lock pending attempt {Attempt}")]
+    private static partial void LogLockPending(ILogger logger, string className, int attempt);
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} InterfaceConfigurationChanged")]
     private static partial void LogInterfaceConfigurationChanged(ILogger logger, string className);

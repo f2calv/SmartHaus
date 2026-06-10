@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Standard Fronius API response wrapper containing a <see cref="Head"/> and a typed <see cref="Body{T}"/>.
 /// </summary>
 /// <typeparam name="T">The type of the <c>Data</c> property inside the response body.</typeparam>
-public record ApiWrapper<T>
+public sealed record ApiWrapper<T>
 {
     /// <summary>
     /// The response body containing the typed data payload.

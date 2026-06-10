@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Power meter reading within a Shelly device status.
 /// </summary>
-public record ShellyMeter
+public sealed record ShellyMeter
 {
     /// <summary>Instantaneous power consumption in Watts.</summary>
     [JsonPropertyName("power")]

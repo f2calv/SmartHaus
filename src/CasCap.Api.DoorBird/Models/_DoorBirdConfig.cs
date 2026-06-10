@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Configuration options for the DoorBird door entry system integration.
 /// </summary>
-public record DoorBirdConfig : IAppConfig, IHealthCheckConfig, IAzBlobStorageConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record DoorBirdConfig : IAppConfig, IHealthCheckConfig, IAzBlobStorageConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(DoorBirdConfig)}";

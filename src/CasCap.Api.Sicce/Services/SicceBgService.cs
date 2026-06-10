@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for monitoring Sicce devices and publishing events to sinks.</summary>
-public class SicceBgService(
+public sealed class SicceBgService(
     ILogger<SicceBgService> logger,
     IOptions<SicceConfig> sicceConfig,
     IHostEnvironment env,
@@ -21,7 +21,7 @@ public class SicceBgService(
         logger.LogInformation("{ClassName} starting", nameof(SicceBgService));
         try
         {
-            await RunServiceAsync(cancellationToken);
+            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(SicceBgService));
@@ -30,15 +30,15 @@ public class SicceBgService(
     private async Task RunServiceAsync(CancellationToken cancellationToken)
     {
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
             if (env.IsDevelopment() || sicceConnectionHealthCheck.ConnectionActive)
             {
-                await RecordDataPoints();
-                await Task.Delay(sicceConfig.Value.PollingIntervalMs, cancellationToken);
+                await RecordDataPoints().ConfigureAwait(false);
+                await Task.Delay(sicceConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
             else
@@ -46,14 +46,14 @@ public class SicceBgService(
                 logger.Log(attempt % sicceConfig.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                     "{ClassName} readiness probe not yet healthy, attempt {Attempt}, retry in {RetryMs}ms...",
                     nameof(SicceBgService), attempt, sicceConfig.Value.ConnectionPollingDelayMs);
-                await Task.Delay(sicceConfig.Value.ConnectionPollingDelayMs, cancellationToken);
+                await Task.Delay(sicceConfig.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
             }
         }
 
         async Task RecordDataPoints()
         {
-            var deviceInfo = await sicceClientSvc.GetDeviceInfo();
+            var deviceInfo = await sicceClientSvc.GetDeviceInfo().ConfigureAwait(false);
             if (deviceInfo is not null)
             {
                 var sicceEvent = new SicceEvent(deviceInfo, timeProvider.GetUtcNow().UtcDateTime);
@@ -61,7 +61,7 @@ public class SicceBgService(
                 var tasks = new List<Task>(eventSinks.Count());
                 foreach (var eventSink in eventSinks)
                     tasks.Add(eventSink.WriteEvent(sicceEvent, cancellationToken));
-                await Task.WhenAll(tasks.ToArray());
+                await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
             }
             else
                 logger.LogWarning("{ClassName} get device info returns a null object", nameof(SicceBgService));

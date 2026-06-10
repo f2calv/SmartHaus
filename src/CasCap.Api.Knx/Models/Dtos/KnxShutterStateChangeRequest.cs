@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Request payload for setting the position and/or slats of a KNX blind or shutter group address.
 /// At least one of <see cref="VPosition"/> or <see cref="Slats"/> must be set.
 /// </summary>
-public record KnxShutterStateChangeRequest : IValidatableObject
+public sealed record KnxShutterStateChangeRequest : IValidatableObject
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     /// <example>DG-BL-North-L</example>

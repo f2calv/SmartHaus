@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// Contains either <see cref="Resolved"/> entries (function/feedback pairs with polling)
 /// or <see cref="DirectWrites"/> (fire-and-forget bus writes without feedback polling).
 /// </summary>
-public record KnxStateChangeItem
+public sealed record KnxStateChangeItem
 {
     /// <summary>
     /// The base group name (e.g. <c>DG-LI-Office-DL-South</c>).

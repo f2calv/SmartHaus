@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
+public sealed partial class EdgeHardwareSinkAzureTablesService : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
@@ -15,9 +18,9 @@ public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEv
     private const string SnapshotPartitionKey = "summary";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="EdgeHardwareSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="EdgeHardwareSinkAzureTablesService"/> class.
     /// </summary>
-    public EdgeHardwareSinkAzTablesService(ILogger<EdgeHardwareSinkAzTablesService> logger,
+    public EdgeHardwareSinkAzureTablesService(ILogger<EdgeHardwareSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<EdgeHardwareConfig> config,
         TimeProvider timeProvider)
@@ -38,7 +41,7 @@ public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEv
     /// <inheritdoc/>
     public async Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(EdgeHardwareSinkAzTablesService), @event.NodeName);
+        LogWriteEvent(_logger, nameof(EdgeHardwareSinkAzureTablesService), @event.NodeName);
 
         var lineItemEntity = new EdgeHardwareReadingEntity(@event).GetEntity();
         var snapshotEntity = new EdgeHardwareSnapshotEntity(SnapshotPartitionKey, @event).GetEntity();
@@ -52,7 +55,7 @@ public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEv
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(EdgeHardwareSinkAzTablesService), nameof(WriteEvent));
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(EdgeHardwareSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
@@ -87,7 +90,7 @@ public partial class EdgeHardwareSinkAzTablesService : IEventSink<EdgeHardwareEv
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} getting data from table storage for partitionKey {PartitionKey}",
-            nameof(EdgeHardwareSinkAzTablesService), partitionKey);
+            nameof(EdgeHardwareSinkAzureTablesService), partitionKey);
 
         var entities = await _lineItemTableClient.QueryAsync<EdgeHardwareReadingEntity>(
             p => p.PartitionKey == partitionKey, cancellationToken: cancellationToken).ToListAsync(cancellationToken);

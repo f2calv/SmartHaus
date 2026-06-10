@@ -15,7 +15,7 @@ public static class ServiceCollectionExtensions
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
     /// <param name="configure">Optional delegate to programmatically override configuration values.</param>
-    public static void AddSignalCli(this IServiceCollection services, IConfiguration configuration,
+    public static IServiceCollection AddSignalCli(this IServiceCollection services, IConfiguration configuration,
         Action<SignalCliConfig>? configure = null)
     {
         var config = services.AddAndGetCasCapConfiguration<SignalCliConfig>(configuration, configure);
@@ -60,5 +60,7 @@ public static class ServiceCollectionExtensions
         if (config.HealthCheck != KubernetesProbeTypes.None)
             services.AddHealthChecks()
                 .AddCheck<SignalCliConnectionHealthCheck>(nameof(SignalCliConnectionHealthCheck), tags: config.HealthCheck.GetTags());
+
+        return services;
     }
 }

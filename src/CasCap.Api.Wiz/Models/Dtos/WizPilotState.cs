@@ -1,7 +1,7 @@
 namespace CasCap.Models.Dtos;
 
 /// <summary>Represents the current pilot state of a Wiz bulb.</summary>
-public record WizPilotState
+public sealed record WizPilotState
 {
     /// <summary>MAC address of the bulb.</summary>
     [Description("MAC address of the bulb.")]

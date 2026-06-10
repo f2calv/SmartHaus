@@ -13,8 +13,11 @@ namespace CasCap.Services;
 /// all sharing the same partition key.
 /// </remarks>
 [SinkType("AzureTablesCemi")]
-public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
+public sealed partial class KnxSinkAzureTablesCemiService : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTablesCemi";
+
     private readonly ILogger _logger;
     private readonly TableClient _cemiTableClient;
     private readonly bool _batchingEnabled;
@@ -26,9 +29,9 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     private static readonly TimeSpan FlushInterval = TimeSpan.FromSeconds(5);
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="KnxSinkCemiAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="KnxSinkAzureTablesCemiService"/> class.
     /// </summary>
-    public KnxSinkCemiAzTablesService(ILogger<KnxSinkCemiAzTablesService> logger, IOptions<KnxConfig> config,
+    public KnxSinkAzureTablesCemiService(ILogger<KnxSinkAzureTablesCemiService> logger, IOptions<KnxConfig> config,
         IOptions<AzureAuthConfig> azureAuthConfig)
     {
         _logger = logger;
@@ -48,13 +51,13 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     {
         if (_batchingEnabled)
         {
-            _logger.LogInformation("{ClassName} batching enabled, starting flush loop", nameof(KnxSinkCemiAzTablesService));
+            _logger.LogInformation("{ClassName} batching enabled, starting flush loop", nameof(KnxSinkAzureTablesCemiService));
             _ = Task.Run(() => FlushLoopAsync(cancellationToken), cancellationToken);
         }
         else
         {
             _logger.LogInformation("{ClassName} batching disabled, writes will be submitted individually",
-                nameof(KnxSinkCemiAzTablesService));
+                nameof(KnxSinkAzureTablesCemiService));
         }
 
         return Task.CompletedTask;
@@ -63,7 +66,7 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        LogSerialisingCemi(_logger, nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
+        LogSerialisingCemi(_logger, nameof(KnxSinkAzureTablesCemiService), @event.Kga.Name);
 
         var cemiHex = @event.Args.ToCemiHex();
         var entity = new KnxCemiReadingEntity(CemiPartitionKey, @event, cemiHex).GetEntity();
@@ -80,19 +83,11 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
             }
             catch (Exception ex)
             {
-                LogWriteCemiFailed(_logger, ex, nameof(KnxSinkCemiAzTablesService), @event.Kga.Name);
+                LogWriteCemiFailed(_logger, ex, nameof(KnxSinkAzureTablesCemiService), @event.Kga.Name);
             }
         }
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(0, cancellationToken);
-        throw new NotSupportedException();
-        yield return null;
-    }
 
     /// <summary>
     /// Retrieves all CEMI reading entities from the table, ordered by timestamp (RowKey).
@@ -109,7 +104,7 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     /// </summary>
     private async Task FlushLoopAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} batch flush loop started", nameof(KnxSinkCemiAzTablesService));
+        _logger.LogInformation("{ClassName} batch flush loop started", nameof(KnxSinkAzureTablesCemiService));
 
         var batch = new List<TableTransactionAction>(MaxBatchSize);
 
@@ -142,7 +137,7 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ClassName} unexpected error in flush loop", nameof(KnxSinkCemiAzTablesService));
+                _logger.LogError(ex, "{ClassName} unexpected error in flush loop", nameof(KnxSinkAzureTablesCemiService));
                 await Task.Delay(1_000, cancellationToken);
             }
         }
@@ -154,7 +149,7 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
         if (batch.Count > 0)
             await FlushBatchAsync(batch, CancellationToken.None);
 
-        _logger.LogInformation("{ClassName} batch flush loop stopped", nameof(KnxSinkCemiAzTablesService));
+        _logger.LogInformation("{ClassName} batch flush loop stopped", nameof(KnxSinkAzureTablesCemiService));
     }
 
     /// <summary>
@@ -164,12 +159,12 @@ public partial class KnxSinkCemiAzTablesService : IEventSink<KnxEvent>
     {
         try
         {
-            LogFlushingBatch(_logger, nameof(KnxSinkCemiAzTablesService), batch.Count);
+            LogFlushingBatch(_logger, nameof(KnxSinkAzureTablesCemiService), batch.Count);
             await _cemiTableClient.SubmitTransactionAsync(batch, cancellationToken);
         }
         catch (Exception ex)
         {
-            LogFlushBatchFailed(_logger, ex, nameof(KnxSinkCemiAzTablesService), batch.Count);
+            LogFlushBatchFailed(_logger, ex, nameof(KnxSinkAzureTablesCemiService), batch.Count);
         }
         finally
         {

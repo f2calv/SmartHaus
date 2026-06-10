@@ -14,8 +14,10 @@ The library supports two transport modes, controlled by the `TransportMode` conf
 
 | Mode | Service | Message reception | Description |
 | --- | --- | --- | --- |
-| `Rest` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Traditional REST-based polling. All endpoints work via standard HTTP calls. |
-| `JsonRpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Persistent WebSocket connection for real-time message delivery. All non-receive operations delegate to the underlying `SignalCliRestClientService`. Requires the signal-cli server to run in `json-rpc` or `json-rpc-native` mode. Features automatic reconnection with exponential backoff (2 s → 2 min, up to 10 attempts). |
+| `Normal` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Standard REST-based polling. Slowest performance, normal memory usage. |
+| `Native` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Native REST API with polling-based message reception. Medium performance, normal memory usage. |
+| `JsonRpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Persistent WebSocket connection for real-time message delivery. All non-receive operations delegate to the underlying `SignalCliRestClientService`. Requires the signal-cli server to run in `json-rpc` mode. Features automatic reconnection with exponential backoff (2 s → 2 min, up to 10 attempts). Faster performance, increased memory usage. |
+| `JsonRpcNative` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Native JSON-RPC mode with WebSocket-based push. Fastest performance, normal memory usage. |
 
 ## Controller
 
@@ -155,17 +157,18 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 
 | Setting | Type | Default | Required | Description |
 | --- | --- | --- | --- | --- |
-| `TransportMode` | `SignalCliTransport` | `JsonRpc` | — | Transport mode: `Rest` (HTTP polling) or `JsonRpc` (WebSocket) |
+| `TransportMode` | `SignalCliTransport` | `JsonRpc` | — | Transport mode: `Normal`, `Native` (HTTP polling) or `JsonRpc`, `JsonRpcNative` (WebSocket) |
 | `BaseAddress` | `string` | — | ✓ | Base URL of the signal-cli REST API (e.g. `http://localhost:8080`) |
-| `HealthCheckUri` | `string` | `"v1/health"` | ✓ | Path used to verify API connectivity |
-| `HealthCheck` | `KubernetesProbeTypes` | `Readiness` | ✓ | Kubernetes probe type for the health check tag |
+| `HealthCheckUri` | `string` | `"v1/health"` | — | Path used to verify API connectivity |
+| `HealthCheck` | `KubernetesProbeTypes` | `Readiness` | — | Kubernetes probe type for the health check tag |
 | `PhoneNumber` | `string` | — | ✓ | Registered Signal sender number (e.g. `"+49151..."`) |
 | `PhoneNumberDebug` | `string?` | `null` | — | Optional recipient number for debug/diagnostic messages ("Note to Self" feed) |
 | `SendTimeoutMs` | `int` | `180000` | — | Per-request timeout in milliseconds for `POST /v2/send` |
-| `ChannelCapacity` | `int` | `1000` | — | Bounded channel capacity for outgoing/incoming message queues |
+| `ChannelCapacity` | `int` | `256` | — | Bounded capacity of the internal message channel (back-pressure when full) |
 | `MaxReconnectAttempts` | `int` | `10` | — | Maximum number of WebSocket reconnection attempts before giving up |
 | `InitialReconnectDelayMs` | `int` | `2000` | — | Initial backoff delay in milliseconds for WebSocket reconnection |
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
+| `BasicAuthEnabled` | `bool` | `false` | — | Whether to attach HTTP Basic credentials to outgoing requests (cross-cluster access via ingress) |
 
 ## Configuration Examples
 
@@ -195,7 +198,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
       "PhoneNumber": "+49151...",
       "PhoneNumberDebug": "+49151...",
       "SendTimeoutMs": 180000,
-      "ChannelCapacity": 1000,
+      "ChannelCapacity": 256,
       "MaxReconnectAttempts": 10,
       "InitialReconnectDelayMs": 2000,
       "MaxReconnectDelayMs": 120000
@@ -260,6 +263,10 @@ classDiagram
         +PhoneNumber string
         +PhoneNumberDebug string?
         +ChannelCapacity int
+        +MaxReconnectAttempts int
+        +InitialReconnectDelayMs int
+        +MaxReconnectDelayMs int
+        +BasicAuthEnabled bool
     }
 
     SignalCliRestClientService ..> SignalCliConfig : reads
@@ -273,11 +280,16 @@ classDiagram
 flowchart LR
     A["AddSignalCli()"] --> B["Bind SignalCliConfig"]
     A --> C["Register HttpClient"]
-    A --> D["Register INotifier → SignalCliRestClientService"]
+    A --> D{"TransportMode?"}
     A --> E["Register SignalCliConnectionHealthCheck"]
-    C --> F["IHttpClientFactory"]
-    F --> D
-    F --> E
+    D -->|Normal / Native| F["INotifier \u2192 SignalCliRestClientService"]
+    D -->|JsonRpc / JsonRpcNative| G["INotifier \u2192 SignalCliJsonRpcClientService"]
+    G --> H["delegates non-receive ops"]
+    H --> F2["SignalCliRestClientService"]
+    C --> I["IHttpClientFactory"]
+    I --> F
+    I --> G
+    I --> E
 ```
 
 ## Dependencies
@@ -286,8 +298,11 @@ flowchart LR
 
 | Package | Purpose |
 | --- | --- |
+| [Asp.Versioning.Mvc](https://www.nuget.org/packages/asp.versioning.mvc) | API versioning for controllers |
+| [Microsoft.AspNetCore.Http.Abstractions](https://www.nuget.org/packages/microsoft.aspnetcore.http.abstractions) | HTTP abstractions for middleware/controller support |
 | [Microsoft.Extensions.Http](https://www.nuget.org/packages/microsoft.extensions.http) | `HttpClient` factory |
 | [Microsoft.Extensions.Diagnostics.HealthChecks](https://www.nuget.org/packages/microsoft.extensions.diagnostics.healthchecks) | Health check abstractions |
+| [CasCap.Common.Configuration](https://www.nuget.org/packages/cascap.common.configuration) | Configuration binding helpers |
 | [CasCap.Common.Extensions](https://www.nuget.org/packages/cascap.common.extensions) | Shared extension helpers |
 | [CasCap.Common.Logging](https://www.nuget.org/packages/cascap.common.logging) | Structured logging helpers |
 | [CasCap.Common.Net](https://www.nuget.org/packages/cascap.common.net) | HTTP client base (`HttpClientBase`) |

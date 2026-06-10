@@ -7,11 +7,10 @@ namespace CasCap.Services;
 /// Key functions are also made accessible via <see cref="Controllers.FroniusController"/>.
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class FroniusQueryService(
+public sealed class FroniusQueryService(
     ILogger<FroniusQueryService> logger,
     FroniusClientService clientSvc,
-    [FromKeyedServices(SinkServiceCollectionExtensions.PrimarySinkKey)] IEventSink<FroniusEvent> primarySink,
-    IFroniusQuery? froniusQuery = null) : IFroniusQueryService
+    IFroniusQuery froniusQuery) : IFroniusQueryService
 {
     /// <summary>
     /// Fronius Symo solar inverter raw power flow inverter object retrieval.
@@ -83,8 +82,6 @@ public class FroniusQueryService(
     /// </summary>
     public async Task<InverterSnapshot> GetInverterSnapshot()
     {
-        if (froniusQuery is null)
-            return new();
         return await froniusQuery.GetSnapshot();
     }
 
@@ -96,5 +93,5 @@ public class FroniusQueryService(
     public IAsyncEnumerable<FroniusEvent> GetInverterReadings(
         int limit = 100,
         CancellationToken cancellationToken = default)
-        => primarySink.GetEvents(limit: limit, cancellationToken: cancellationToken);
+        => froniusQuery.GetEvents(limit: limit, cancellationToken: cancellationToken);
 }

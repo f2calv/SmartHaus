@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Dynamic DNS configuration.</summary>
-public record DDnsConfig : IAppConfig
+public sealed record DDnsConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(DDnsConfig)}";

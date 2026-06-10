@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Configuration options for the Ubiquiti UniFi Protect IP camera integration.
 /// </summary>
-public record UbiquitiConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record UbiquitiConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(UbiquitiConfig)}";

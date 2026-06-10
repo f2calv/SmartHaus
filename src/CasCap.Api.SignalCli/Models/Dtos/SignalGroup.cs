@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents a Signal group returned by the <c>GET /v1/groups/{number}</c> or
 /// <c>GET /v1/groups/{number}/{groupId}</c> endpoint.
 /// </summary>
-public record SignalGroup : INotificationGroup
+public sealed record SignalGroup : INotificationGroup
 {
     /// <summary>
     /// The group identifier (e.g. <c>"group.xxx"</c>).

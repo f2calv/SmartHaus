@@ -18,8 +18,11 @@ namespace CasCap.Services;
 /// </list>
 /// </remarks>
 [SinkType("Console")]
-public class HausHubSinkConsoleService : IEventSink<HubEvent>
+public sealed class HausHubSinkConsoleService : IEventSink<HubEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     private const string SuppressAfterInactivityMinutes = nameof(SuppressAfterInactivityMinutes);
 
     private readonly ILogger _logger;
@@ -68,9 +71,6 @@ public class HausHubSinkConsoleService : IEventSink<HubEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<HubEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     #region private helpers
 

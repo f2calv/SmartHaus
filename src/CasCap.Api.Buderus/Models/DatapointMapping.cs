@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Maps a KM200 datapoint ID to an Azure Table Storage column name and optional OpenTelemetry metric definition.
 /// </summary>
-public record DatapointMapping
+public sealed record DatapointMapping
 {
     /// <summary>
     /// The Azure Table Storage column name used in the snapshot table.

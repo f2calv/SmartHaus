@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Combined ident and state for a Miele device from <c>GET /devices/{deviceId}</c>.
 /// </summary>
-public record MieleDevice
+public sealed record MieleDevice
 {
     /// <summary>
     /// Device identification information.

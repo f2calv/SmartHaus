@@ -11,7 +11,7 @@ These tests verify KNX group address parsing, ETS metadata loading, and CEMI fra
 | Class | Description |
 | --- | --- |
 | `GroupAddressTests` | Unit and integration tests for group address parsing, ETS naming-convention validation, Unix timestamp conversions, and group-address lookup |
-| `CemiDecodingTests` | Integration tests that retrieve raw CEMI frames from Azure Table Storage via `KnxSinkCemiAzTablesService` and verify the full deserialization and `GroupValue` decoding pipeline |
+| `CemiDecodingTests` | Integration tests that retrieve raw CEMI frames from Azure Table Storage via `KnxSinkAzureTablesCemiService` and verify the full deserialization and `GroupValue` decoding pipeline |
 | `ChannelKnxTelegramBrokerTests` | Unit tests for `ChannelKnxTelegramBroker<T>` verifying publish/subscribe round-tripping and item ordering |
 
 ## Prerequisites

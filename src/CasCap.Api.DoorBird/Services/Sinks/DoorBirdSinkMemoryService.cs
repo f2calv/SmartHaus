@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// per <see cref="DoorBirdEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
+public sealed partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<DoorBirdEventType, (DateTime LastUtc, int Count)> _state = new();
 
     /// <inheritdoc/>
@@ -35,10 +38,6 @@ public partial class DoorBirdSinkMemoryService(ILogger<DoorBirdSinkMemoryService
             RelayTriggerCount = GetCount(DoorBirdEventType.DoorRelay),
         });
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

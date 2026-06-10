@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a typing indicator event.
 /// </summary>
-public record SignalTypingMessage
+public sealed record SignalTypingMessage
 {
     /// <summary>
     /// The action: <c>"STARTED"</c> or <c>"STOPPED"</c>.

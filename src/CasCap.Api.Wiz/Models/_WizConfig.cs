@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Configuration options for the Wiz smart lighting integration.</summary>
-public record WizConfig : IAppConfig, IHealthCheckConfig
+public sealed record WizConfig : IAppConfig, IHealthCheckConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(WizConfig)}";

@@ -11,7 +11,7 @@ namespace CasCap.Models;
 /// <see cref="CasCap.Services.GpioHcsr501SensorService"/> for motion detection,
 /// and by the stats footer for energy comparison formatting.
 /// </remarks>
-public record EdgeHardwareConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record EdgeHardwareConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(EdgeHardwareConfig)}";

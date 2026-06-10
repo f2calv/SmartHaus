@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// BHA response containing SIP status information.
 /// </summary>
-public record BHASipStatus
+public sealed record BHASipStatus
 {
     /// <summary>
     /// The API return code.

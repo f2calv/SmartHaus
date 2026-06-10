@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// Useful for local development and diagnostics.
 /// </summary>
 [SinkType("Console")]
-public class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleService> logger) : IEventSink<EdgeHardwareEvent>
+public sealed class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleService> logger) : IEventSink<EdgeHardwareEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(EdgeHardwareEvent @event, CancellationToken cancellationToken = default)
     {
@@ -20,7 +23,4 @@ public class EdgeHardwareSinkConsoleService(ILogger<EdgeHardwareSinkConsoleServi
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

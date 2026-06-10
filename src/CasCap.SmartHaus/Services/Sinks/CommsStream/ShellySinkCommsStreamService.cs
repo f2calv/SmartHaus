@@ -7,8 +7,11 @@ namespace CasCap.Services;
 /// reports an overpower condition. Tracks alert state per device.
 /// </summary>
 [SinkType("CommsStream")]
-public class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
+public sealed class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly ConcurrentDictionary<string, bool> _alertFiredByDevice = [];
 
     /// <inheritdoc/>
@@ -36,11 +39,4 @@ public class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> 
             _alertFiredByDevice[@event.DeviceId] = false;
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<ShellyEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.CompletedTask;
-        yield break;
-    }
 }

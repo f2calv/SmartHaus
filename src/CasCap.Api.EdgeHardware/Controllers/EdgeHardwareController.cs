@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class EdgeHardwareController(IEdgeHardwareQueryService edgeHardwareQuerySvc) : ControllerBase
+public sealed class EdgeHardwareController(IEdgeHardwareQueryService edgeHardwareQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="EdgeHardwareQueryService.GetLatestSnapshots"/>
     [HttpGet]

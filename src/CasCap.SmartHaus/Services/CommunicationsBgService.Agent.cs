@@ -2,7 +2,7 @@ using Microsoft.Agents.AI;
 
 namespace CasCap.Services;
 
-public partial class CommunicationsBgService
+public sealed partial class CommunicationsBgService
 {
     private async Task<(AgentRunResult? Result, List<CommsDebugStep> DebugSteps)> RunAgentAsync(string prompt, byte[]? binaryContent, string? mimeType,
         bool bypassSession, string? sender, long? timestamp, CancellationToken cancellationToken)

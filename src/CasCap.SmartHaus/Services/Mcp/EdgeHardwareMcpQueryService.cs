@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IEdgeHardwareQueryService"/> that exposes edge hardware monitoring data as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class EdgeHardwareMcpQueryService(IEdgeHardwareQueryService edgeHardwareQuerySvc)
+public sealed partial class EdgeHardwareMcpQueryService(IEdgeHardwareQueryService edgeHardwareQuerySvc)
 {
     /// <summary>
     /// Returns the latest edge hardware snapshots (GPU and CPU metrics) for all nodes.

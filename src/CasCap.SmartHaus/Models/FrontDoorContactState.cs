@@ -3,7 +3,7 @@ using System.Text.Json.Serialization;
 namespace CasCap.Models;
 
 /// <summary>Represents the current open/closed state of the front door contact sensor.</summary>
-public record FrontDoorContactState
+public sealed record FrontDoorContactState
 {
     /// <summary>Whether the front door is currently physically open.</summary>
     [Description("true = door is physically open, false = door is physically closed. This is a contact sensor — it does NOT indicate locked/unlocked.")]

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a KNX power outlet with decoded feedback values for each <see cref="PowerOutletFunction"/>.
 /// </summary>
-public record KnxPowerOutlet
+public sealed record KnxPowerOutlet
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     [Description("Group name (e.g. DG-SD-Office).")]

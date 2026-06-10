@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://shelly-api-docs.shelly.cloud/cloud-control-api/"/> for the API specification.
 /// Targets the Shelly Plug S (Gen1) device via Cloud API.
 /// </remarks>
-public class ShellyCloudClientService(
+public sealed class ShellyCloudClientService(
     ILogger<ShellyCloudClientService> logger,
     IOptions<ShellyConfig> config,
     IHttpClientFactory httpClientFactory)
@@ -31,9 +31,9 @@ public class ShellyCloudClientService(
                 new KeyValuePair<string, string>("id", deviceId),
             ]);
 
-            var response = await _client.PostAsync("device/status", content);
+            var response = await _client.PostAsync("device/status", content).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<ShellyDeviceStatusResponse>();
+            return await response.Content.ReadFromJsonAsync<ShellyDeviceStatusResponse>().ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -62,9 +62,9 @@ public class ShellyCloudClientService(
                 new KeyValuePair<string, string>("turn", turnOn ? "on" : "off"),
             ]);
 
-            var response = await _client.PostAsync("device/relay/control", content);
+            var response = await _client.PostAsync("device/relay/control", content).ConfigureAwait(false);
             response.EnsureSuccessStatusCode();
-            return await response.Content.ReadFromJsonAsync<ShellyRelayControlResponse>();
+            return await response.Content.ReadFromJsonAsync<ShellyRelayControlResponse>().ConfigureAwait(false);
         }
         catch (Exception ex)
         {

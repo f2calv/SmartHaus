@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for polling all configured Shelly smart plugs and publishing events to sinks.</summary>
-public class ShellyMonitorBgService(
+public sealed class ShellyMonitorBgService(
     ILogger<ShellyMonitorBgService> logger,
     IOptions<ShellyConfig> shellyConfig,
     ShellyCloudConnectionHealthCheck shellyCloudConnectionHealthCheck,
@@ -22,8 +22,8 @@ public class ShellyMonitorBgService(
             nameof(ShellyMonitorBgService), shellyConfig.Value.Devices.Length);
         try
         {
-            await ValidateConfiguredDevicesAsync();
-            await RunServiceAsync(cancellationToken);
+            await ValidateConfiguredDevicesAsync().ConfigureAwait(false);
+            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(ShellyMonitorBgService));
@@ -38,9 +38,9 @@ public class ShellyMonitorBgService(
         foreach (var device in shellyConfig.Value.Devices)
         {
             // Shelly Cloud API is rate-limited to 1 req/sec — throttle before every call
-            await Task.Delay(1_500);
+            await Task.Delay(1_500).ConfigureAwait(false);
 
-            var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId);
+            var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId).ConfigureAwait(false);
             if (response is null || !response.IsOk)
                 logger.LogWarning("{ClassName} configured device {DeviceId} ({DeviceName}) not reachable via Shelly Cloud — device may be unplugged or offline",
                     nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName);
@@ -53,15 +53,15 @@ public class ShellyMonitorBgService(
     private async Task RunServiceAsync(CancellationToken cancellationToken)
     {
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         var attempt = 1;
         while (!cancellationToken.IsCancellationRequested)
         {
             if (shellyCloudConnectionHealthCheck.ConnectionActive || env.IsDevelopment())
             {
-                await RecordDataPoints();
-                await Task.Delay(shellyConfig.Value.PollingIntervalMs, cancellationToken);
+                await RecordDataPoints().ConfigureAwait(false);
+                await Task.Delay(shellyConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
             else
@@ -69,7 +69,7 @@ public class ShellyMonitorBgService(
                 logger.Log(attempt % shellyConfig.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                     "{ClassName} readiness probe not yet healthy, attempt {Attempt}, retry in {RetryMs}ms...",
                     nameof(ShellyMonitorBgService), attempt, shellyConfig.Value.ConnectionPollingDelayMs);
-                await Task.Delay(shellyConfig.Value.ConnectionPollingDelayMs, cancellationToken);
+                await Task.Delay(shellyConfig.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
                 attempt++;
             }
         }
@@ -79,9 +79,9 @@ public class ShellyMonitorBgService(
             foreach (var device in shellyConfig.Value.Devices)
             {
                 // Shelly Cloud API is rate-limited to 1 req/sec — throttle before every call
-                await Task.Delay(1_500, cancellationToken);
+                await Task.Delay(1_500, cancellationToken).ConfigureAwait(false);
 
-                var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId);
+                var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId).ConfigureAwait(false);
                 if (response is not null && response.IsOk)
                 {
                     var shellyEvent = new ShellyEvent(device, response, timeProvider.GetUtcNow().UtcDateTime);
@@ -89,7 +89,7 @@ public class ShellyMonitorBgService(
                     var tasks = new List<Task>(eventSinks.Count());
                     foreach (var eventSink in eventSinks)
                         tasks.Add(eventSink.WriteEvent(shellyEvent, cancellationToken));
-                    await Task.WhenAll(tasks.ToArray());
+                    await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
                 }
                 else
                     logger.LogWarning("{ClassName} get device status returns a null or failed response for {DeviceId} ({DeviceName})",

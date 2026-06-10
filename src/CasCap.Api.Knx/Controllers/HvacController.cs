@@ -8,7 +8,7 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class HvacController(IKnxQueryService knxQuerySvc) : ControllerBase
+public sealed class HvacController(IKnxQueryService knxQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="KnxQueryService.ListHvacZones"/>
     [HttpGet]

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// BHA response for the light-on endpoint.
 /// </summary>
-public record BHALightOn
+public sealed record BHALightOn
 {
     /// <summary>
     /// The API return code (e.g. "1" for success).

@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// Individual events are written to a line-items table and a single snapshot row is upserted.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFroniusQuery
+public sealed partial class FroniusSinkAzureTablesService : IEventSink<FroniusEvent>, IFroniusQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TimeProvider _timeProvider;
     private readonly TableClient _lineItemTableClient;
@@ -16,9 +19,9 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
     private const string SnapshotRowKey = "latest";
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="FroniusSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="FroniusSinkAzureTablesService"/> class.
     /// </summary>
-    public FroniusSinkAzTablesService(ILogger<FroniusSinkAzTablesService> logger,
+    public FroniusSinkAzureTablesService(ILogger<FroniusSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
         IOptions<FroniusConfig> config,
         TimeProvider timeProvider)
@@ -39,7 +42,7 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
     /// <inheritdoc/>
     public async Task WriteEvent(FroniusEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(FroniusSinkAzTablesService));
+        LogWriteEvent(_logger, nameof(FroniusSinkAzureTablesService));
 
         var lineItemEntity = new FroniusReadingEntity(@event).GetEntity();
         var snapshotEntity = new FroniusSnapshotEntity(SnapshotPartitionKey, SnapshotRowKey, @event).GetEntity();
@@ -53,24 +56,7 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(FroniusSinkAzTablesService), nameof(WriteEvent));
-        }
-    }
-
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
-        [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        var entities = _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
-            ent => ent.PartitionKey == partitionKey, cancellationToken: cancellationToken);
-
-        var count = 0;
-        await foreach (var entity in entities)
-        {
-            if (++count > Math.Min(limit, 1000))
-                yield break;
-            yield return new FroniusEvent(entity.SOC, entity.P_Akku, entity.P_Grid, entity.P_Load, entity.P_PV, entity.TimestampUtc);
+            _logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(FroniusSinkAzureTablesService), nameof(WriteEvent));
         }
     }
 
@@ -87,6 +73,21 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
             PhotovoltaicPower = entity.P_PV,
             ReadingUtc = entity.ReadingUtc,
         };
+    }
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<FroniusEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var pk = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
+        var count = 0;
+        await foreach (var entity in _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
+            e => e.PartitionKey == pk, maxPerPage: limit, cancellationToken: cancellationToken))
+        {
+            if (++count > limit) yield break;
+            yield return new FroniusEvent(entity.SOC, entity.P_Akku, entity.P_Grid, entity.P_Load, entity.P_PV,
+                entity.Timestamp?.UtcDateTime ?? DateTime.MinValue);
+        }
     }
 
     /// <summary>
@@ -106,7 +107,7 @@ public partial class FroniusSinkAzTablesService : IEventSink<FroniusEvent>, IFro
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
         _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
-            nameof(FroniusSinkAzTablesService), partitionKey);
+            nameof(FroniusSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
             p => p.PartitionKey == partitionKey
             ).ToListAsync();

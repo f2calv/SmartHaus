@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IMieleQueryService"/> that exposes home appliance operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public partial class AppliancesMcpQueryService(IMieleQueryService mieleQuerySvc)
+public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQuerySvc)
 {
     /// <inheritdoc cref="IMieleQueryService.GetDevices"/>
     [McpServerTool]

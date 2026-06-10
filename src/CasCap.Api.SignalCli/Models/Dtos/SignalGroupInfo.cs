@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents group information attached to a received Signal data message.
 /// </summary>
-public record SignalGroupInfo
+public sealed record SignalGroupInfo
 {
     /// <summary>
     /// The group identifier.

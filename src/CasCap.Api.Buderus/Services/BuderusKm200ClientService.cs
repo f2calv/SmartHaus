@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
@@ -8,7 +8,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Concerned with raw HTTP interaction with the KM200 unit.
 /// </summary>
-public class BuderusKm200ClientService : HttpClientBase
+public sealed class BuderusKm200ClientService : HttpClientBase
 {
     private readonly BuderusConfig _config;
     private readonly BuderusKm200Reader _buderusKm200Reader;
@@ -64,7 +64,7 @@ public class BuderusKm200ClientService : HttpClientBase
 
         foreach (var id in dataPointRoots)
         {
-            var dp = await GetDP(id);
+            var dp = await GetDP(id).ConfigureAwait(false);
             if (dp is not null) datapoints.Add(dp);
         }
 
@@ -73,13 +73,13 @@ public class BuderusKm200ClientService : HttpClientBase
         async Task<Km200DatapointObject?> GetDP(string requestUriOrId)
         {
             if (cancellationToken.IsCancellationRequested) return null;
-            var dp = await GetDataPoint(requestUriOrId);
+            var dp = await GetDataPoint(requestUriOrId).ConfigureAwait(false);
             if (dp is not null)
             {
                 datapoints.Add(dp);
                 if (!dp.References.IsNullOrEmpty())
                     foreach (var dpref in dp.References!)
-                        _ = await GetDP(dpref.Uri);//recursive
+                        _ = await GetDP(dpref.Uri).ConfigureAwait(false);//recursive
             }
             return dp;
         }
@@ -91,7 +91,7 @@ public class BuderusKm200ClientService : HttpClientBase
     public async Task<Km200DatapointObject?> GetDataPoint(string requestUriOrId)
     {
         requestUriOrId = $"{_config.BaseAddress}:{_config.Port}{requestUriOrId}";
-        var tpl = await GetAsync<string, string>(requestUriOrId);
+        var tpl = await GetAsync<string, string>(requestUriOrId).ConfigureAwait(false);
         if (tpl.result is null || tpl.result.IndexOf("Sorry, the requested file does not exist on this server.") > -1)
             _logger.LogWarning("url '{RequestUriOrId}' not found", requestUriOrId);
         else
@@ -119,7 +119,7 @@ public class BuderusKm200ClientService : HttpClientBase
     /// </returns>
     public async Task<bool> SetDataPoint(string datapointId, object value, CancellationToken cancellationToken = default)
     {
-        var dp = await GetDataPoint(datapointId);
+        var dp = await GetDataPoint(datapointId).ConfigureAwait(false);
         if (dp is null)
         {
             _logger.LogWarning("{ClassName} datapoint '{DatapointId}' not found, cannot write", nameof(BuderusKm200ClientService), datapointId);
@@ -141,7 +141,7 @@ public class BuderusKm200ClientService : HttpClientBase
 
         _logger.LogInformation("{ClassName} writing to '{DatapointId}' value={Value}", nameof(BuderusKm200ClientService), datapointId, value);
 
-        var response = await Client.SendAsync(request, cancellationToken);
+        var response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("{ClassName} failed to write to '{DatapointId}', StatusCode={StatusCode}",

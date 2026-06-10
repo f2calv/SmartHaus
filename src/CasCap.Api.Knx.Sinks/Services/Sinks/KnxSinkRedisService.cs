@@ -7,13 +7,16 @@ namespace CasCap.Services;
 /// and supports retrieval of the latest snapshot per group address.
 /// </summary>
 [SinkType("Redis")]
-public partial class KnxSinkRedisService(
+public sealed partial class KnxSinkRedisService(
     ILogger<KnxSinkRedisService> logger,
     IOptions<KnxConfig> knxConfig,
     IRemoteCache remoteCache,
     IKnxState knxState
     ) : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _seriesValues = knxConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
     /// <inheritdoc/>
@@ -36,16 +39,9 @@ public partial class KnxSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (id is not null)
-        {
-            var state = await knxState.GetKnxState(id, cancellationToken);
-            if (state is not null)
-                yield return ToKnxEvent(state);
-            yield break;
-        }
-
         var allState = await knxState.GetAllState(cancellationToken);
         foreach (var state in allState.Values.Take(limit))
             yield return ToKnxEvent(state);

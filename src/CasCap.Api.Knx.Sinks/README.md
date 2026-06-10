@@ -17,8 +17,8 @@ This project provides additional `IEventSink<KnxEvent>` implementations beyond t
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `KnxSinkRedisService` | `"Redis"` | Stores the latest decoded group-address value in a Redis hash and maintains per-group-address sorted sets of historical telegrams for time-range queries. Also implements `IKnxQuery`. |
-| `KnxSinkAzTablesService` | `"AzureTables"` | Writes individual `KnxEvent` rows to a line-items Azure Table and maintains a rolling snapshot table where each group address is a column. |
-| `KnxSinkCemiAzTablesService` | `"AzureTablesCemi"` | Batches raw CEMI L-Data frames to a separate Azure Table for low-level protocol analysis and replay. |
+| `KnxSinkAzureTablesService` | `"AzureTables"` | Writes individual `KnxEvent` rows to a line-items Azure Table and maintains a rolling snapshot table where each group address is a column. |
+| `KnxSinkAzureTablesCemiService` | `"AzureTablesCemi"` | Batches raw CEMI L-Data frames to a separate Azure Table for low-level protocol analysis and replay. |
 
 ## Configuration
 

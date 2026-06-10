@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// for cross-pod transport via Redis streams.
 /// </summary>
 [MessagePackObject(true)]
-public record KnxOutgoingTelegram
+public sealed record KnxOutgoingTelegram
 {
     /// <inheritdoc cref="KnxGroupAddressParsed" />
     [Required]

@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Request body for updating a writeable KM200 datapoint value.
 /// </summary>
-public record SetDataPointRequest
+public sealed record SetDataPointRequest
 {
     /// <summary>
     /// The new value to write to the datapoint.

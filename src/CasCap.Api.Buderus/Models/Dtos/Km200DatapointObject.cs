@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// include <see cref="Value"/> and <see cref="UnitOfMeasure"/>; container types
 /// (<see cref="MyDatapointType.refEnum"/>) carry only <see cref="References"/>.
 /// </summary>
-public record Km200DatapointObject
+public sealed record Km200DatapointObject
 {
     /// <summary>
     /// Absolute datapoint path, e.g. <c>/dhwCircuits/dhw1/actualTemp</c>.

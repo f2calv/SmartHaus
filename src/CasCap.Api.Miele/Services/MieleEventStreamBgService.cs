@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for the Miele Server-Sent Events stream.</summary>
-public class MieleEventStreamBgService(
+public sealed class MieleEventStreamBgService(
     ILogger<MieleEventStreamBgService> logger,
     IOptions<MieleConfig> mieleConfig,
     TimeProvider timeProvider,

@@ -5,8 +5,11 @@ namespace CasCap.Services;
 /// per <see cref="UbiquitiEventType"/> and provides snapshot queries without requiring external infrastructure.
 /// </summary>
 [SinkType("Memory")]
-public partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
+public sealed partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService> logger, TimeProvider timeProvider) : IEventSink<UbiquitiEvent>, IUbiquitiQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Memory";
+
     private readonly ConcurrentDictionary<UbiquitiEventType, (DateTime LastUtc, int Count)> _state = new();
 
     /// <inheritdoc/>
@@ -39,10 +42,6 @@ public partial class UbiquitiSinkMemoryService(ILogger<UbiquitiSinkMemoryService
             RingCount = GetCount(UbiquitiEventType.Ring),
         });
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default)
-        => throw new NotImplementedException();
 
     #region private helpers
 

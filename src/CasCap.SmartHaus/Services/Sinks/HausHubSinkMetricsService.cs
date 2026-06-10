@@ -11,8 +11,11 @@ namespace CasCap.Services;
 /// tagged with <c>event_type</c> and <c>hub_name</c>.
 /// </remarks>
 [SinkType("Metrics")]
-public class HausHubSinkMetricsService : IEventSink<HubEvent>
+public sealed class HausHubSinkMetricsService : IEventSink<HubEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private const string MetricName = "signalrhub.events";
 
     private readonly ILogger _logger;
@@ -73,9 +76,6 @@ public class HausHubSinkMetricsService : IEventSink<HubEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<HubEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     #region private helpers
 

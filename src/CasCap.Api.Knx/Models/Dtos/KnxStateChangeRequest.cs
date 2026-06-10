@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Request payload for sending a value to the KNX bus.
 /// </summary>
-public record KnxStateChangeRequest
+public sealed record KnxStateChangeRequest
 {
     /// <summary>
     /// The KNX group address name (e.g. EG-LI-Entrance-DL-SW).

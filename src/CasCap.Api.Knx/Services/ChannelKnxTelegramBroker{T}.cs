@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// run in the same process.
 /// </summary>
 /// <typeparam name="T">The telegram type being transported.</typeparam>
-public class ChannelKnxTelegramBroker<T> : IKnxTelegramBroker<T>
+public sealed class ChannelKnxTelegramBroker<T> : IKnxTelegramBroker<T>
 {
     private readonly Channel<T> _channel = Channel.CreateBounded<T>(
         new BoundedChannelOptions(1_000) { SingleReader = true });

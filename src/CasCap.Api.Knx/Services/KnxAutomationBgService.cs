@@ -17,7 +17,7 @@ namespace CasCap.Services;
 /// </description></item>
 /// </list>
 /// </summary>
-public class KnxAutomationBgService(
+public sealed class KnxAutomationBgService(
     ILogger<KnxAutomationBgService> logger,
     IOptions<KnxConfig> knxConfig,
     TimeProvider timeProvider,
@@ -38,7 +38,7 @@ public class KnxAutomationBgService(
         logger.LogInformation("{ClassName} starting", nameof(KnxAutomationBgService));
         try
         {
-            await WaitForConnectionAsync(cancellationToken);
+            await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
 
             var tasks = new List<Task> { ProcessQueueAsync(cancellationToken) };
 
@@ -50,7 +50,7 @@ public class KnxAutomationBgService(
 
             //await-await-WhenAny propagates the first faulted task immediately so the
             //service crashes and the pod restarts rather than running in a degraded state.
-            await await Task.WhenAny(tasks);
+            await await Task.WhenAny(tasks).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(KnxAutomationBgService));
@@ -70,7 +70,7 @@ public class KnxAutomationBgService(
             logger.Log(attempt % knxConfig.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
                 "{ClassName} readiness probe not yet healthy, attempt {Attempt}, retry in {RetryMs}ms...",
                 nameof(KnxAutomationBgService), attempt, knxConfig.Value.ConnectionPollingDelayMs);
-            await Task.Delay(knxConfig.Value.ConnectionPollingDelayMs, cancellationToken);
+            await Task.Delay(knxConfig.Value.ConnectionPollingDelayMs, cancellationToken).ConfigureAwait(false);
             attempt++;
         }
         logger.LogInformation("{ClassName} KNX connection active after {Attempt} attempt(s)",
@@ -87,11 +87,11 @@ public class KnxAutomationBgService(
         {
             if (!stateChangeQueue.TryDequeue(out var item))
             {
-                await Task.Delay(knxConfig.Value.QueuePollingDelayMs, cancellationToken);
+                await Task.Delay(knxConfig.Value.QueuePollingDelayMs, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
-            await _queueSemaphore.WaitAsync(cancellationToken);
+            await _queueSemaphore.WaitAsync(cancellationToken).ConfigureAwait(false);
             _ = ProcessItemAsync(item, cancellationToken);
         }
     }
@@ -110,7 +110,7 @@ public class KnxAutomationBgService(
                     nameof(KnxAutomationBgService), item.DirectWrites.Count, item.GroupName);
 
                 foreach (var (groupAddressName, value) in item.DirectWrites)
-                    await knxQuerySvc.SendDirectAsync(groupAddressName, value, cancellationToken);
+                    await knxQuerySvc.SendDirectAsync(groupAddressName, value, cancellationToken).ConfigureAwait(false);
             }
 
             if (item.Resolved is not null)
@@ -120,7 +120,7 @@ public class KnxAutomationBgService(
 
                 foreach (var (function, feedback, value) in item.Resolved)
                 {
-                    var result = await knxQuerySvc.SendValueAsync(item.GroupName, function, feedback, value, cancellationToken);
+                    var result = await knxQuerySvc.SendValueAsync(item.GroupName, function, feedback, value, cancellationToken).ConfigureAwait(false);
                     logger.LogInformation("{ClassName} {GroupAddress} completed with outcome {Outcome}",
                         nameof(KnxAutomationBgService), result.GroupAddress, result.Outcome);
                 }
@@ -151,7 +151,7 @@ public class KnxAutomationBgService(
         while (!cancellationToken.IsCancellationRequested)
         {
             UpdateDayNight();
-            await Task.Delay(knxConfig.Value.DayNightPollingDelayMs, cancellationToken);
+            await Task.Delay(knxConfig.Value.DayNightPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
 
         void UpdateDayNight()

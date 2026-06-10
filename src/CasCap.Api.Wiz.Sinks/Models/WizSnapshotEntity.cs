@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Azure Table Storage snapshot entity storing the latest Wiz bulb state.</summary>
-public class WizSnapshotEntity : ITableEntity
+public sealed class WizSnapshotEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public WizSnapshotEntity() { }

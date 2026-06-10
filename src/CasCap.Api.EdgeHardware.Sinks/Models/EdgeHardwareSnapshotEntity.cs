@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Azure Table Storage snapshot entity that stores the latest edge hardware reading.
 /// Uses readable column names since this is a low-volume summary entity.
 /// </summary>
-public class EdgeHardwareSnapshotEntity : ITableEntity
+public sealed class EdgeHardwareSnapshotEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public EdgeHardwareSnapshotEntity() { }

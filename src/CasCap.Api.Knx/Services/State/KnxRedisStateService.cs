@@ -5,11 +5,11 @@ namespace CasCap.Services;
 /// <summary>
 /// <see cref="KnxRedisStateService"/> is intended to be the single source of truth regarding the state of all the group addresses on the KNX Bus.
 /// </summary>
-public class KnxRedisStateService : IKnxState
+public sealed class KnxRedisStateService : IKnxState
 {
     private readonly ILogger _logger;
     private readonly IRemoteCache _remoteCache;
-    private readonly IEventSink<KnxEvent> _azTablesSink;
+    private readonly IKnxQuery _knxQuery;
     private readonly SinkConfigParams _redisConfig;
     private readonly KnxGroupAddressLookupService _knxGroupAddressLookupSvc;
     private readonly TimeProvider _timeProvider;
@@ -18,7 +18,7 @@ public class KnxRedisStateService : IKnxState
     public KnxRedisStateService(ILogger<KnxRedisStateService> logger,
         IOptions<KnxConfig> config,
         TimeProvider timeProvider,
-        [FromKeyedServices("AzureTables")] IEventSink<KnxEvent> azTablesSink,
+        IKnxQuery knxQuery,
         KnxGroupAddressLookupService knxGroupAddressLookupSvc,
         IRemoteCache remoteCache
     )
@@ -27,7 +27,7 @@ public class KnxRedisStateService : IKnxState
         _timeProvider = timeProvider;
         _redisConfig = config.Value.Sinks.AvailableSinks["Redis"];
         _remoteCache = remoteCache;
-        _azTablesSink = azTablesSink;
+        _knxQuery = knxQuery;
         _knxGroupAddressLookupSvc = knxGroupAddressLookupSvc;
         //IsStateSynced = _env.IsDevelopment();//bypass state sync when running locally?
 
@@ -50,7 +50,7 @@ public class KnxRedisStateService : IKnxState
     }
 
     /// <inheritdoc/>
-    public async Task SetKnxState(string groupAddressName, DateTime timestampUtc, string valueDecoded, string? valueLabelDecoded)
+    public async ValueTask SetKnxState(string groupAddressName, DateTime timestampUtc, string valueDecoded, string? valueLabelDecoded)
     {
         if (groupAddressName is null)
             throw new ArgumentException($"{groupAddressName} param should not be null", nameof(groupAddressName));
@@ -74,7 +74,7 @@ public class KnxRedisStateService : IKnxState
             //Observability: per-day call counter aligned with CasCap.Common.Caching pattern
             trackKey = (RedisValue)$"stats:knx:{_timeProvider.GetUtcNow().UtcDateTime:yyMMdd}",
             trackCaller = (RedisValue)nameof(SetKnxState)
-        }, flags: CommandFlags.FireAndForget);
+        }, flags: CommandFlags.FireAndForget).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -82,7 +82,7 @@ public class KnxRedisStateService : IKnxState
     /// </summary>
     private async Task<Dictionary<string, string>> GetHashAll(string key)
     {
-        var hs = await _remoteCache.Db.HashGetAllAsync(key);
+        var hs = await _remoteCache.Db.HashGetAllAsync(key).ConfigureAwait(false);
         return hs.ToDictionary(k => k.Name.ToString(), v => v.Value.ToString());
     }
 
@@ -90,21 +90,21 @@ public class KnxRedisStateService : IKnxState
     /// Sets a string key with an expiry, used for blocking/debouncing.
     /// </summary>
     private async Task SetBlock(string key, string value, TimeSpan expiry)
-        => _ = await _remoteCache.Db.StringSetAsync(key, value, expiry, flags: CommandFlags.FireAndForget);
+        => _ = await _remoteCache.Db.StringSetAsync(key, value, expiry, flags: CommandFlags.FireAndForget).ConfigureAwait(false);
 
     /// <summary>
     /// Checks if a string key exists, used for blocking/debouncing.
     /// </summary>
     private async Task<bool> IsBlocked(string key)
     {
-        var result = await _remoteCache.Db.StringGetAsync(key);
+        var result = await _remoteCache.Db.StringGetAsync(key).ConfigureAwait(false);
         return result.HasValue;
     }
 
     /// <inheritdoc/>
-    public async Task<State?> GetKnxState(string groupAddressName, CancellationToken cancellationToken = default)
+    public async ValueTask<State?> GetKnxState(string groupAddressName, CancellationToken cancellationToken = default)
     {
-        await EnsureStateSynced(cancellationToken);
+        await EnsureStateSynced(cancellationToken).ConfigureAwait(false);
 
         var luaScript = _remoteCache.LuaScripts[$"CasCap.Resources.{nameof(GetKnxState)}.lua"];
 
@@ -119,7 +119,7 @@ public class KnxRedisStateService : IKnxState
             //Observability: per-day call counter aligned with CasCap.Common.Caching pattern
             trackKey = (RedisValue)$"stats:knx:{_timeProvider.GetUtcNow().UtcDateTime:yyMMdd}",
             trackCaller = (RedisValue)nameof(GetKnxState)
-        });
+        }).ConfigureAwait(false);
 
         if (result is null || result.Length < 2 || result[0].IsNull || result[1].IsNull)
         {
@@ -146,12 +146,12 @@ public class KnxRedisStateService : IKnxState
     {
         if (!IsStateSynced)
         {
-            await semaphoreSlim.WaitAsync(cancellationToken);
+            await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
             if (IsStateSynced) return;
             _logger.LogWarning("{ClassName} performing one-time sync from Azure Table Storage to Redis", nameof(KnxRedisStateService));
             try
             {
-                await SyncState(cancellationToken);
+                await SyncState(cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -167,10 +167,10 @@ public class KnxRedisStateService : IKnxState
     /// Builds a dictionary of all <see cref="State"/> objects from the snapshot values, strings and timestamps hashes.
     /// </summary>
     /// <inheritdoc/>
-    public async Task<Dictionary<string, State>> GetAllState(CancellationToken cancellationToken = default)
+    public async ValueTask<Dictionary<string, State>> GetAllState(CancellationToken cancellationToken = default)
     {
-        await EnsureStateSynced(cancellationToken);
-        return await GetAllRedisState();
+        await EnsureStateSynced(cancellationToken).ConfigureAwait(false);
+        return await GetAllRedisState().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -182,19 +182,19 @@ public class KnxRedisStateService : IKnxState
 
         // Populate the group address lookup before iterating events — GetKGAByName only
         // checks the in-memory dictionary and will miss everything if GetLookup hasn't run yet.
-        var lookup = await _knxGroupAddressLookupSvc.GetLookup(cancellationToken);
+        var lookup = await _knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
         var validNames = new HashSet<string>(lookup.Values.Select(kga => kga.Name));
 
         var sourceStates = new List<State>();
-        await foreach (var knxEvent in _azTablesSink.GetEvents(cancellationToken: cancellationToken))
+        await foreach (var knxEvent in _knxQuery.GetEvents(cancellationToken: cancellationToken))
         {
             if (_knxGroupAddressLookupSvc.GetKGAByName(knxEvent.Kga.Name) is null)
                 continue;
             sourceStates.Add(new State(knxEvent.Kga.Name, knxEvent.ValueAsString, knxEvent.ValueLabel, knxEvent.TimestampUtc));
         }
-        await _azTablesSink.HousekeepingAsync(validNames, cancellationToken);
+        await _knxQuery.HousekeepingAsync(validNames, cancellationToken).ConfigureAwait(false);
 
-        var currentStates = await GetAllRedisState();
+        var currentStates = await GetAllRedisState().ConfigureAwait(false);
 
         var updated = 0;
         foreach (var sourceState in sourceStates)
@@ -206,7 +206,7 @@ public class KnxRedisStateService : IKnxState
                 continue;
             }
             _logger.LogDebug("{ClassName} updating Redis key '{Key}' with value '{Value}'", nameof(KnxRedisStateService), sourceState.GroupAddress, sourceState.Value);
-            await SetKnxState(sourceState.GroupAddress, sourceState.TimestampUtc, sourceState.Value, sourceState.ValueLabel ?? string.Empty);
+            await SetKnxState(sourceState.GroupAddress, sourceState.TimestampUtc, sourceState.Value, sourceState.ValueLabel ?? string.Empty).ConfigureAwait(false);
             updated++;
         }
         _logger.LogInformation("{ClassName} performed one-time sync, updated {Updated} of {Total} entries from Azure Table Storage to Redis in {ElapsedMilliseconds}ms",
@@ -222,11 +222,11 @@ public class KnxRedisStateService : IKnxState
         var tStrings = GetHashAll(_redisConfig.GetSetting(KnxSinkKeys.SnapshotStrings)!);
         var tTimestamps = GetHashAll(_redisConfig.GetSetting(KnxSinkKeys.SnapshotTimestamps)!);
 
-        await Task.WhenAll(tValues, tStrings, tTimestamps);
+        await Task.WhenAll(tValues, tStrings, tTimestamps).ConfigureAwait(false);
 
-        var values = await tValues;
-        var strings = await tStrings;
-        var timestamps = await tTimestamps;
+        var values = await tValues.ConfigureAwait(false);
+        var strings = await tStrings.ConfigureAwait(false);
+        var timestamps = await tTimestamps.ConfigureAwait(false);
 
         var groupAddresses = values.Select(p => p.Key)
             .Union(strings.Select(p => p.Key))

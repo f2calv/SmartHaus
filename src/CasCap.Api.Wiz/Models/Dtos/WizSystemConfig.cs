@@ -1,7 +1,7 @@
 namespace CasCap.Models.Dtos;
 
 /// <summary>Represents the system configuration of a Wiz bulb.</summary>
-public record WizSystemConfig
+public sealed record WizSystemConfig
 {
     /// <summary>MAC address of the bulb.</summary>
     [Description("MAC address of the bulb.")]

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to close a Signal poll via <c>DELETE /v1/polls/{number}</c>.
 /// </summary>
-public record ClosePollRequest
+public sealed record ClosePollRequest
 {
     /// <summary>
     /// The timestamp of the poll to close (from <see cref="CreatePollResponse.Timestamp"/>).

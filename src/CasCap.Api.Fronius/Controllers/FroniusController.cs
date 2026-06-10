@@ -1,4 +1,4 @@
-﻿namespace CasCap.Controllers;
+namespace CasCap.Controllers;
 
 /// <summary>
 /// REST API controller for Fronius inverter data queries.
@@ -8,7 +8,7 @@
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public class FroniusController(IFroniusQueryService froniusQuerySvc) : ControllerBase
+public sealed class FroniusController(IFroniusQueryService froniusQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="FroniusQueryService.GetInverterSnapshot"/>
     [HttpGet]

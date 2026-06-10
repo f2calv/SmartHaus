@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// This service handles sending outbound telegrams to the KNX bus, these outbound telegrams are
 /// dequeued from the <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxOutgoingTelegram"/>.
 /// </summary>
-public partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
+public sealed partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "Knx";
@@ -17,7 +17,7 @@ public partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOpt
         logger.LogInformation("{ClassName} starting", nameof(KnxSenderBgService));
         try
         {
-            await RunServiceAsync(cancellationToken);
+            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
         logger.LogInformation("{ClassName} exiting", nameof(KnxSenderBgService));
@@ -50,7 +50,7 @@ public partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOpt
                 var groupValue = dptBase.SizeInBit < 8 && msg.GroupValueData.Length == 1
                     ? new GroupValue(msg.GroupValueData[0], (int)dptBase.SizeInBit)
                     : new GroupValue(msg.GroupValueData);
-                await bus.WriteGroupValueAsync(groupAddress, groupValue, cancellationToken: cancellationToken);
+                await bus.WriteGroupValueAsync(groupAddress, groupValue, cancellationToken: cancellationToken).ConfigureAwait(false);
             }
 
             // Only log if we sent to at least one bus, otherwise the error logs above should be sufficient

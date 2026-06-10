@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a single result from the <c>GET /v1/search/{number}</c> endpoint.
 /// </summary>
-public record SearchResult
+public sealed record SearchResult
 {
     /// <summary>
     /// The phone number that was searched.

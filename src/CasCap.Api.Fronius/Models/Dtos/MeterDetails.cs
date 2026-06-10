@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Meter device details (manufacturer, model, serial).
 /// </summary>
-public record MeterDetails
+public sealed record MeterDetails
 {
     /// <summary>
     /// Meter manufacturer name.

@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Snapshot of the current local date/time state for the house.</summary>
-public record DateTimeState
+public sealed record DateTimeState
 {
     /// <summary>Current local date and time.</summary>
     [Description("Local date and time in the house time zone.")]

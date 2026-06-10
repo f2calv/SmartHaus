@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
+public sealed partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger, IOptions<KnxConfig> config) : IEventSink<KnxEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
@@ -19,13 +22,6 @@ public partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService> logger
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public async IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
-    {
-        await Task.Delay(0, cancellationToken);
-        throw new NotSupportedException();
-        yield return null;
-    }
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing telegram for {GroupAddressName}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string groupAddressName);

@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Background service that periodically discovers Wiz bulbs on the local network
 /// and emits <see cref="WizEvent"/> to registered sinks when bulb state changes are detected.
 /// </summary>
-public class WizDiscoveryBgService(
+public sealed class WizDiscoveryBgService(
     ILogger<WizDiscoveryBgService> logger,
     IOptions<WizConfig> wizConfig,
     TimeProvider timeProvider,
@@ -23,13 +23,13 @@ public class WizDiscoveryBgService(
             nameof(WizDiscoveryBgService));
 
         foreach (var eventSink in eventSinks)
-            await eventSink.InitializeAsync(cancellationToken);
+            await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                var bulbs = await wizClientSvc.DiscoverBulbsAsync(cancellationToken);
+                var bulbs = await wizClientSvc.DiscoverBulbsAsync(cancellationToken).ConfigureAwait(false);
                 logger.LogDebug("{ClassName} discovery cycle complete, {BulbCount} bulb(s) on network",
                     nameof(WizDiscoveryBgService), bulbs.Count);
 
@@ -71,7 +71,7 @@ public class WizDiscoveryBgService(
                         var tasks = new List<Task>(eventSinks.Count());
                         foreach (var eventSink in eventSinks)
                             tasks.Add(eventSink.WriteEvent(wizEvent, cancellationToken));
-                        await Task.WhenAll(tasks);
+                        await Task.WhenAll(tasks).ConfigureAwait(false);
                     }
                 }
             }
@@ -80,7 +80,7 @@ public class WizDiscoveryBgService(
                 logger.LogError(ex, "{ClassName} discovery cycle failed", nameof(WizDiscoveryBgService));
             }
 
-            await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken);
+            await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
     }
 }

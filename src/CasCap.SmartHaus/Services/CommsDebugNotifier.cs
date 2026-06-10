@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// <see cref="SignalCliConfig.PhoneNumberDebug"/> number ("Note to Self") for observability
 /// of the comms agent pipeline.
 /// </summary>
-public class CommsDebugNotifier(
+public sealed class CommsDebugNotifier(
     ILogger<CommsDebugNotifier> logger,
     IOptions<SignalCliConfig> signalCliConfig,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,

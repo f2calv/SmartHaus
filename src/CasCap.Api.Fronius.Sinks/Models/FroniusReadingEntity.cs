@@ -1,10 +1,10 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage entity that records every individual Fronius inverter reading.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class FroniusReadingEntity : ITableEntity
+public sealed class FroniusReadingEntity : ITableEntity
 {
     /// <summary>Initializes a new instance of the <see cref="FroniusReadingEntity"/> class.</summary>
     public FroniusReadingEntity() { }

@@ -7,12 +7,11 @@ namespace CasCap.Services;
 /// Key functions are also made accessible via <see cref="Controllers.ShellyController"/>.
 /// Queries are delegated to the keyed <see cref="SinkServiceCollectionExtensions.PrimarySinkKey"/> sink.
 /// </remarks>
-public class ShellyQueryService(
+public sealed class ShellyQueryService(
     ILogger<ShellyQueryService> logger,
     IOptions<ShellyConfig> config,
     ShellyCloudClientService clientSvc,
-    [FromKeyedServices(SinkServiceCollectionExtensions.PrimarySinkKey)] IEventSink<ShellyEvent> primarySink,
-    IShellyQuery? shellyQuery = null) : IShellyQueryService
+    IShellyQuery shellyQuery) : IShellyQueryService
 {
     /// <summary>
     /// Retrieves the current device status from the Shelly Cloud API.
@@ -21,7 +20,7 @@ public class ShellyQueryService(
     public async Task<ShellyDeviceStatusResponse?> GetDeviceStatus(string deviceId)
     {
         logger.LogDebug("{ClassName} retrieving device status for {DeviceId}", nameof(ShellyQueryService), deviceId);
-        return await clientSvc.GetDeviceStatus(deviceId);
+        return await clientSvc.GetDeviceStatus(deviceId).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -41,7 +40,7 @@ public class ShellyQueryService(
         }
         logger.LogInformation("{ClassName} setting relay state to {DesiredState} for {DeviceId} ({DeviceName})",
             nameof(ShellyQueryService), turnOn ? "on" : "off", deviceId, device.DeviceName);
-        return await clientSvc.SetRelayState(deviceId, device.Channel, turnOn);
+        return await clientSvc.SetRelayState(deviceId, device.Channel, turnOn).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -49,9 +48,7 @@ public class ShellyQueryService(
     /// </summary>
     public async Task<List<ShellySnapshot>> GetSnapshots()
     {
-        if (shellyQuery is null)
-            return [];
-        return await shellyQuery.GetSnapshots();
+        return await shellyQuery.GetSnapshots().ConfigureAwait(false);
     }
 
     /// <summary>
@@ -62,5 +59,5 @@ public class ShellyQueryService(
     public IAsyncEnumerable<ShellyEvent> GetReadings(
         int limit = 100,
         CancellationToken cancellationToken = default)
-        => primarySink.GetEvents(limit: limit, cancellationToken: cancellationToken);
+        => shellyQuery.GetEvents(limit: limit, cancellationToken: cancellationToken);
 }

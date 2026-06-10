@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// A point-in-time snapshot of Sicce water pump device state.
 /// </summary>
-public record SicceSnapshot
+public sealed record SicceSnapshot
 {
     /// <summary>Device temperature in degrees Celsius.</summary>
     [Description("Device temperature in degrees Celsius.")]

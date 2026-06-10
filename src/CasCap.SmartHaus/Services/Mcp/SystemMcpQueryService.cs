@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP tools providing general system information available to all agents.
 /// </summary>
 [McpServerToolType]
-public partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger, IOptions<AIConfig> aiConfig, TimeProvider timeProvider)
+public sealed partial class SystemMcpQueryService(ILogger<SystemMcpQueryService> logger, IOptions<AIConfig> aiConfig, TimeProvider timeProvider)
 {
     /// <summary>
     /// Returns the current date, time and UTC offset for the configured house time zone.

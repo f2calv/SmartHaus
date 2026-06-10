@@ -2,8 +2,11 @@ namespace CasCap.Services;
 
 /// <inheritdoc/>
 [SinkType("Console")]
-public class UbiquitiSinkConsoleService(ILogger<UbiquitiSinkConsoleService> logger) : IEventSink<UbiquitiEvent>
+public sealed class UbiquitiSinkConsoleService(ILogger<UbiquitiSinkConsoleService> logger) : IEventSink<UbiquitiEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Console";
+
     /// <inheritdoc/>
     public Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
@@ -12,6 +15,4 @@ public class UbiquitiSinkConsoleService(ILogger<UbiquitiSinkConsoleService> logg
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

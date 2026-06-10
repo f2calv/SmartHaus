@@ -1,4 +1,4 @@
-﻿using Iot.Device.Hcsr501;
+using Iot.Device.Hcsr501;
 using System.Device.Gpio;
 
 namespace CasCap.Services;

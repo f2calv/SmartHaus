@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace CasCap.Services;
 
-public partial class CommunicationsBgService
+public sealed partial class CommunicationsBgService
 {
     private async Task PollForMessagesAsync(CancellationToken cancellationToken)
     {

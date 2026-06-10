@@ -4,10 +4,10 @@ namespace CasCap.Models.Dtos;
 /// Represents a single KNX group address element in the ETS XML export.
 /// </summary>
 [Serializable]
-public record KnxGroupAddressXml
+public sealed record KnxGroupAddressXml
 {
     /// <summary>
-    /// Display name of the group address (e.g. "DG-LI-Büro-SW").
+    /// Display name of the group address (e.g. "DG-LI-Bï¿½ro-SW").
     /// </summary>
     [XmlAttribute]
     public required string Name { get; init; }

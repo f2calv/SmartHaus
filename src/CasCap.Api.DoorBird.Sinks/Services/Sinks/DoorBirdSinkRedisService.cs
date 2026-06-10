@@ -10,13 +10,16 @@ namespace CasCap.Services;
 /// retrieval.
 /// </summary>
 [SinkType("Redis")]
-public partial class DoorBirdSinkRedisService(
+public sealed partial class DoorBirdSinkRedisService(
     ILogger<DoorBirdSinkRedisService> logger,
     IOptions<DoorBirdConfig> doorBirdConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<DoorBirdEvent>, IDoorBirdQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _summaryValues = doorBirdConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = doorBirdConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
@@ -85,14 +88,14 @@ public partial class DoorBirdSinkRedisService(
     }
 
     /// <inheritdoc/>
-    public async IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000, [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    public async IAsyncEnumerable<DoorBirdEvent> GetEvents(string? id = null, int limit = 1000,
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_seriesValues))
+        if (_seriesValues is null)
             yield break;
 
         if (id is null)
         {
-            // Yield today's events across all event types
             foreach (var eventType in Enum.GetValues<DoorBirdEventType>())
             {
                 var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}:{eventType}";

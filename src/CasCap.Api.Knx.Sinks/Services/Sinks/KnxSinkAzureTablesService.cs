@@ -6,8 +6,11 @@ namespace CasCap.Services;
 /// is maintained in a separate table.
 /// </summary>
 [SinkType("AzureTables")]
-public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
+public sealed partial class KnxSinkAzureTablesService : IEventSink<KnxEvent>, IKnxQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "AzureTables";
+
     private readonly ILogger _logger;
     private readonly TableClient _lineItemTableClient;
     private readonly TableClient _snapshotTableClient;
@@ -19,9 +22,9 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
     private ConcurrentDictionary<string, KnxSnapshotEntity> _dSnapshot = new();
 
     /// <summary>
-    /// Initializes a new instance of the <see cref="KnxSinkAzTablesService"/> class.
+    /// Initializes a new instance of the <see cref="KnxSinkAzureTablesService"/> class.
     /// </summary>
-    public KnxSinkAzTablesService(ILogger<KnxSinkAzTablesService> logger, IOptions<KnxConfig> config,
+    public KnxSinkAzureTablesService(ILogger<KnxSinkAzureTablesService> logger, IOptions<KnxConfig> config,
         IOptions<AzureAuthConfig> azureAuthConfig)
     {
         _logger = logger;
@@ -39,7 +42,7 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
     /// <inheritdoc/>
     public async Task WriteEvent(KnxEvent @event, CancellationToken cancellationToken = default)
     {
-        LogWriteEvent(_logger, nameof(KnxSinkAzTablesService), @event.Kga.Name);
+        LogWriteEvent(_logger, nameof(KnxSinkAzureTablesService), @event.Kga.Name);
 
         await EnsureSnapshotInitializedAsync(cancellationToken);
 
@@ -59,7 +62,7 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
         }
         catch (Exception ex)
         {
-            LogWriteEventError(_logger, ex, nameof(KnxSinkAzTablesService));
+            LogWriteEventError(_logger, ex, nameof(KnxSinkAzureTablesService));
         }
     }
 
@@ -80,15 +83,14 @@ public partial class KnxSinkAzTablesService : IEventSink<KnxEvent>
     }
 
     /// <summary>
-    /// Removes snapshot entries for group addresses not in <paramref name="validIds"/>.
+    /// Removes snapshot entries for group addresses not in <paramref name="validNames"/>.
     /// </summary>
-    public async Task HousekeepingAsync(IReadOnlyCollection<string> validIds, CancellationToken cancellationToken = default)
+    public async Task HousekeepingAsync(HashSet<string> validNames, CancellationToken cancellationToken = default)
     {
-        var validSet = validIds as IReadOnlySet<string> ?? new HashSet<string>(validIds);
         var entitiesToDelete = new List<string>();
         await foreach (var entity in _snapshotTableClient.QueryAsync<KnxSnapshotEntity>(select: [nameof(KnxSnapshotEntity.RowKey)], cancellationToken: cancellationToken))
         {
-            if (!validSet.Contains(entity.RowKey))
+            if (!validNames.Contains(entity.RowKey))
                 entitiesToDelete.Add(entity.RowKey);
         }
         foreach (var name in entitiesToDelete)

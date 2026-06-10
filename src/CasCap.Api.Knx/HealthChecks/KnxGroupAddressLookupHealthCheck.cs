@@ -1,7 +1,7 @@
-﻿namespace CasCap.HealthChecks;
+namespace CasCap.HealthChecks;
 
 /// <summary>Health check that reports healthy once KNX group addresses have been loaded.</summary>
-public class KnxGroupAddressLookupHealthCheck : IHealthCheck
+public sealed class KnxGroupAddressLookupHealthCheck : IHealthCheck
 {
     private volatile bool _connectionActive = false;
 

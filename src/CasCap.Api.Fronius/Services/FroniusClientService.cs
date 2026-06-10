@@ -1,4 +1,4 @@
-﻿using CasCap.Common.Services;
+using CasCap.Common.Services;
 
 namespace CasCap.Services;
 
@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// See <see href="https://www.fronius.com/~/downloads/Solar%20Energy/Operating%20Instructions/42,0410,2012.pdf"/> for the full API specification.
 /// Our inverter model is a Fronius Symo Gen24.
 /// </remarks>
-public class FroniusClientService : HttpClientBase
+public sealed class FroniusClientService : HttpClientBase
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="FroniusClientService"/> class.
@@ -31,7 +31,7 @@ public class FroniusClientService : HttpClientBase
         var requestUri = "solar_api/v1/GetPowerFlowRealtimeData.fcgi";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<PowerFlowRealtimeData>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<PowerFlowRealtimeData>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -50,7 +50,7 @@ public class FroniusClientService : HttpClientBase
         var requestUri = $"solar_api/v1/GetInverterRealtimeData.cgi?Datacollection={dataCollection}";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<CommonInverterData>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<CommonInverterData>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -68,7 +68,7 @@ public class FroniusClientService : HttpClientBase
         var requestUri = "solar_api/v1/GetInverterInfo.cgi";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, InverterInfoEntry>>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, InverterInfoEntry>>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -90,7 +90,7 @@ public class FroniusClientService : HttpClientBase
         var requestUri = "solar_api/v1/GetActiveDeviceInfo.cgi";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<ActiveDeviceInfoData>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<ActiveDeviceInfoData>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -112,7 +112,7 @@ public class FroniusClientService : HttpClientBase
             requestUri += $"&DeviceId={deviceId.Value}";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, MeterRealtimeData>>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, MeterRealtimeData>>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)
@@ -134,7 +134,7 @@ public class FroniusClientService : HttpClientBase
             requestUri += $"&DeviceId={deviceId.Value}";
         try
         {
-            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, StorageRealtimeData>>, string>(requestUri);
+            var tpl = await base.GetAsync<ApiWrapper<Dictionary<string, StorageRealtimeData>>, string>(requestUri).ConfigureAwait(false);
             return tpl.result;
         }
         catch (Exception ex)

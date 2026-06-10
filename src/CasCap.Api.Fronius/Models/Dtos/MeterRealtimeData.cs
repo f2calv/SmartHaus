@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Meter real-time data from <c>GetMeterRealtimeData.cgi</c>.
 /// Contains energy, power, current, voltage and frequency measurements.
 /// </summary>
-public record MeterRealtimeData
+public sealed record MeterRealtimeData
 {
     /// <summary>
     /// Meter device details.

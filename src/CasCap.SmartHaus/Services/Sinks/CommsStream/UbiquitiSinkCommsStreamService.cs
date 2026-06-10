@@ -5,12 +5,12 @@ namespace CasCap.Services;
 /// <see cref="IEventSink{T}"/> for downstream processing by <see cref="CommunicationsBgService"/>.
 /// </summary>
 [SinkType("CommsStream")]
-public class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
+public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
     IEventSink<CommsEvent> commsSink) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
-    public IAsyncEnumerable<UbiquitiEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
+    public string SinkType => "CommsStream";
+
 
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)

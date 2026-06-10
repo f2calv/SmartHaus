@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Handles the exported KNX Group Address file from ETS software, the file contents
 /// are parsed, validated and converted into DTO.
 /// </summary>
-public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck)
+public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck)
 {
 
     private Dictionary<string, KnxGroupAddressParsed> dLookupByAddress { get; set; } = [];
@@ -18,19 +18,23 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     /// <summary>
     /// Populates and returns the dictionary of parsed group addresses keyed by address.
     /// </summary>
-    public async Task<Dictionary<string, KnxGroupAddressParsed>> GetLookup(CancellationToken cancellationToken = default)
+    public ValueTask<Dictionary<string, KnxGroupAddressParsed>> GetLookup(CancellationToken cancellationToken = default)
     {
-        if (dLookupByAddress.Count == 0)
-        {
-            await semaphoreSlim.WaitAsync(cancellationToken);
-            if (dLookupByAddress.Count > 0) return dLookupByAddress;
-            await PopulateLookup(cancellationToken);
-            if (dLookupByAddress.Count > 0)
-                knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
-            else
-                logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
-            semaphoreSlim.Release();
-        }
+        if (dLookupByAddress.Count > 0)
+            return ValueTask.FromResult(dLookupByAddress);
+        return PopulateAndReturnLookupAsync(cancellationToken);
+    }
+
+    private async ValueTask<Dictionary<string, KnxGroupAddressParsed>> PopulateAndReturnLookupAsync(CancellationToken cancellationToken)
+    {
+        await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
+        if (dLookupByAddress.Count > 0) { semaphoreSlim.Release(); return dLookupByAddress; }
+        await PopulateLookup(cancellationToken).ConfigureAwait(false);
+        if (dLookupByAddress.Count > 0)
+            knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
+        else
+            logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
+        semaphoreSlim.Release();
         return dLookupByAddress;
     }
 
@@ -45,7 +49,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     /// <returns>A list of <see cref="KnxGroupAddressXml"/> entries with placeholders removed.</returns>
     public async Task<List<KnxGroupAddressXml>> GetGroupAddressesRaw(CancellationToken cancellationToken = default)
     {
-        await GetLookup(cancellationToken);
+        await GetLookup(cancellationToken).ConfigureAwait(false);
         return _xmlGroupAddresses;
     }
 
@@ -60,7 +64,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     /// <returns>A list of <see cref="KnxGroupAddressGroup"/> records.</returns>
     public async Task<List<KnxGroupAddressGroup>> GetGroupAddressesGrouped(CancellationToken cancellationToken = default)
     {
-        var lookup = await GetLookup(cancellationToken);
+        var lookup = await GetLookup(cancellationToken).ConfigureAwait(false);
         return BuildGroups(lookup.Values);
     }
 
@@ -103,7 +107,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     public static async Task<List<KnxGroupAddressXml>> DeserializeGroupAddressesFromFile(string? path = null, CancellationToken cancellationToken = default)
     {
         var fullPath = path ?? AppDomain.CurrentDomain.BaseDirectory.Extend("knxgroupaddresses.xml");
-        var xml = await File.ReadAllTextAsync(fullPath, cancellationToken);
+        var xml = await File.ReadAllTextAsync(fullPath, cancellationToken).ConfigureAwait(false);
         var gae = xml.FromXml<KnxGroupAddressXmlExport>();
         return (gae ?? throw new InvalidOperationException("Failed to deserialize group address XML.")).GroupRange
             .SelectMany(r1 => r1.GroupRange)
@@ -114,7 +118,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
     private async Task PopulateLookup(CancellationToken cancellationToken)
     {
         var sw = Stopwatch.StartNew();
-        var gae = await LoadGroupAddressesFromFile(cancellationToken);
+        var gae = await LoadGroupAddressesFromFile(cancellationToken).ConfigureAwait(false);
         if (gae is not null)
         {
             _xmlGroupAddresses = gae.GroupRange.SelectMany(p => p.GroupRange.SelectMany(q => q.GroupAddress))
@@ -157,7 +161,7 @@ public class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> 
 
         if (File.Exists(fullPath))
         {
-            var str = await File.ReadAllTextAsync(fullPath, cancellationToken);
+            var str = await File.ReadAllTextAsync(fullPath, cancellationToken).ConfigureAwait(false);
             gae = str.FromXml<KnxGroupAddressXmlExport>();
             if (gae is not null)
             {

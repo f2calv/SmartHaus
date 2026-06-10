@@ -11,10 +11,13 @@ namespace CasCap.Services;
 /// when GPU temperature oscillates around the threshold.
 /// </summary>
 [SinkType("CommsStream")]
-public partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSinkCommsStreamService> logger,
+public sealed partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSinkCommsStreamService> logger,
     IOptions<EdgeHardwareConfig> config,
     IEventSink<CommsEvent> commsSink) : IEventSink<EdgeHardwareEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly double _gpuAlertThreshold = config.Value.GpuAlertThresholdC;
     private readonly double _gpuRearmThreshold = config.Value.GpuAlertThresholdC - config.Value.GpuAlertHysteresis;
     private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(config.Value.GpuAlertCooldownMs);
@@ -53,9 +56,6 @@ public partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSink
             _alertFiredByNode[@event.NodeName] = false;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
-        => throw new NotSupportedException();
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for node {NodeName}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string nodeName);

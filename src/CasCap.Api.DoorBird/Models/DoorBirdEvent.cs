@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Represents a DoorBird event with an associated image snapshot.
 /// </summary>
-public record DoorBirdEvent
+public sealed record DoorBirdEvent
 {
     /// <summary>
     /// Unique identifier for this event instance.

@@ -4,7 +4,7 @@ namespace CasCap.Models;
 /// Translation dictionaries for a single language, mapping English enum values
 /// to their localised equivalents.
 /// </summary>
-public record KnxTranslationLanguage
+public sealed record KnxTranslationLanguage
 {
     /// <summary>
     /// Floor abbreviation translations, e.g. <c>DG</c> → <c>Dachgeschoss</c>.

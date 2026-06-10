@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents the result of a single state change attempt for a KNX group address.
 /// </summary>
-public record KnxStateChangeResult
+public sealed record KnxStateChangeResult
 {
     /// <summary>
     /// The feedback group address name that was polled.

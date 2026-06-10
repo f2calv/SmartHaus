@@ -6,13 +6,16 @@ namespace CasCap.Services;
 /// Event sink that persists <see cref="EdgeHardwareEvent"/> snapshot data and line items to Redis.
 /// </summary>
 [SinkType("Redis")]
-public partial class EdgeHardwareSinkRedisService(
+public sealed partial class EdgeHardwareSinkRedisService(
     ILogger<EdgeHardwareSinkRedisService> logger,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache
     ) : IEventSink<EdgeHardwareEvent>, IEdgeHardwareQuery
 {
+    /// <inheritdoc/>
+    public string SinkType => "Redis";
+
     private readonly string? _snapshotValues = edgeHardwareConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SnapshotValues);
     private readonly string? _seriesValues = edgeHardwareConfig.Value.Sinks.AvailableSinks.GetValueOrDefault("Redis")?.GetSetting(SinkSettingKeys.SeriesValues);
 
@@ -92,9 +95,8 @@ public partial class EdgeHardwareSinkRedisService(
     public async IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(_snapshotValues))
+        if (_seriesValues is null)
             yield break;
-
         var lineItemKey = $"{_seriesValues}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var entries = await remoteCache.Db.SortedSetRangeByScoreWithScoresAsync(lineItemKey, order: Order.Descending, take: Math.Min(limit, 1000));
 

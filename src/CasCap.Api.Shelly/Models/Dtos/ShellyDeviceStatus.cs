@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// The inner device status payload from the Shelly Cloud API.
 /// </summary>
-public record ShellyDeviceStatus
+public sealed record ShellyDeviceStatus
 {
     /// <summary>Array of relay states.</summary>
     [JsonPropertyName("relays")]

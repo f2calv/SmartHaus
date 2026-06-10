@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Wraps the relay control result from the Shelly Cloud API.
 /// </summary>
-public record ShellyRelayControlData
+public sealed record ShellyRelayControlData
 {
     /// <summary>The device ID that was controlled.</summary>
     [JsonPropertyName("device_id")]

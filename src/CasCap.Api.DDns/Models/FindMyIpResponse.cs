@@ -1,9 +1,9 @@
-﻿using System.Text.Json.Serialization;
+using System.Text.Json.Serialization;
 
 namespace CasCap.Models;
 
 /// <summary>Response from IP discovery service.</summary>
-public record FindMyIpResponse
+public sealed record FindMyIpResponse
 {
     /// <summary>External IP address.</summary>
     [JsonPropertyName("ip")]

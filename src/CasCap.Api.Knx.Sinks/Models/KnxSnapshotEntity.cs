@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage snapshot entity storing the latest value per KNX group address.
 /// </summary>
-public class KnxSnapshotEntity : ITableEntity
+public sealed class KnxSnapshotEntity : ITableEntity
 {
     /// <inheritdoc/>
     public KnxSnapshotEntity() { }

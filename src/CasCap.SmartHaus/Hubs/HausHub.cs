@@ -8,7 +8,7 @@ namespace CasCap.Hubs;
 /// responsibility, with all feature pods connecting to it as clients.
 /// </summary>
 [Authorize]
-public class HausHub(ILogger<HausHub> logger, IOptions<AppConfig> appConfig,
+public sealed class HausHub(ILogger<HausHub> logger, IOptions<AppConfig> appConfig,
     TimeProvider timeProvider,
     IEnumerable<IEventSink<HubEvent>> hubSinks) : Hub<IHausClientHub>, IHausServerHub
 {

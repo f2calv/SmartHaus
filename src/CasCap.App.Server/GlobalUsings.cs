@@ -17,6 +17,7 @@ global using Microsoft.OpenApi;
 global using OpenTelemetry.Metrics;
 global using OpenTelemetry.Trace;
 global using Serilog.Formatting.Json;
+global using System.Collections.Frozen;
 global using System.Reflection;
 global using System.Runtime.InteropServices;
 global using System.Text.Json.Serialization;

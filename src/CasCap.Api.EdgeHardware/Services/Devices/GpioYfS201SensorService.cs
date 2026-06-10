@@ -1,11 +1,11 @@
-﻿using System.Device.Gpio;
+using System.Device.Gpio;
 
 namespace CasCap.Services;
 
 /// <summary>
 /// YF-S201 is a flow sensor.
 /// </summary>
-public class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IKubeAppConfig kubeAppConfig, TimeProvider timeProvider)
+public sealed class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IKubeAppConfig kubeAppConfig, TimeProvider timeProvider)
 {
     private readonly GpioController _controller = new();
 

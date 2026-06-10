@@ -6,8 +6,11 @@ namespace CasCap.Services;
 /// is detected; the CPU temperature gauge is always updated when available.
 /// </summary>
 [SinkType("Metrics")]
-internal class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
+internal sealed class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "Metrics";
+
     private readonly ILogger _logger;
     private Measurement<double> _gpuPower;
     private Measurement<double> _gpuTemp;
@@ -70,7 +73,4 @@ internal class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEvent>
         return Task.CompletedTask;
     }
 
-    /// <inheritdoc/>
-    public IAsyncEnumerable<EdgeHardwareEvent> GetEvents(string? id = null, int limit = 1000,
-        CancellationToken cancellationToken = default) => throw new NotImplementedException();
 }

@@ -12,11 +12,14 @@ namespace CasCap.Services;
 /// Uses <see cref="IRemoteCache.Db"/> to call <c>XADD</c>. The stream key is
 /// <see cref="CommsAgentConfig.StreamKey"/>.
 /// </remarks>
-public class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
+public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
     IOptions<CommsAgentConfig> commsAgentConfig,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<CommsEvent>
 {
+    /// <inheritdoc/>
+    public string SinkType => "CommsStream";
+
     private readonly IDatabase _db = remoteCache.Db;
 
     /// <inheritdoc/>

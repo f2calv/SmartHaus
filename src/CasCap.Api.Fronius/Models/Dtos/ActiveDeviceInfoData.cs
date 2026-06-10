@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Active device info from <c>GetActiveDeviceInfo.cgi</c>.
 /// </summary>
-public record ActiveDeviceInfoData
+public sealed record ActiveDeviceInfoData
 {
     /// <summary>
     /// Connected inverters keyed by device index.

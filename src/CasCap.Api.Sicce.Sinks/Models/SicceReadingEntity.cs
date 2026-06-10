@@ -1,10 +1,10 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Azure Table Storage entity that records every individual Sicce device reading.
 /// Uses ultra-short column names to reduce payload size for high-volume data.
 /// </summary>
-public class SicceReadingEntity : ITableEntity
+public sealed class SicceReadingEntity : ITableEntity
 {
     /// <summary>Parameterless constructor required by Azure Table Storage SDK.</summary>
     public SicceReadingEntity() { }
