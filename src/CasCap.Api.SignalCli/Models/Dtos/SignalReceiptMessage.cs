@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a delivery or read receipt.
 /// </summary>
-public record SignalReceiptMessage
+public sealed record SignalReceiptMessage
 {
     /// <summary>
     /// The receipt type: <c>"DELIVERY"</c> or <c>"READ"</c>.

@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Relay state within a Shelly device status.
 /// </summary>
-public record ShellyRelay
+public sealed record ShellyRelay
 {
     /// <summary>Whether the relay is switched on.</summary>
     [JsonPropertyName("ison")]

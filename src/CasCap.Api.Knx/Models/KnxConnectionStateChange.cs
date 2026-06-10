@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Represents a KNX bus connection state transition (dropped or reconnected).
 /// </summary>
-public record KnxConnectionStateChange
+public sealed record KnxConnectionStateChange
 {
     /// <summary>
     /// The area/line whose connection changed.

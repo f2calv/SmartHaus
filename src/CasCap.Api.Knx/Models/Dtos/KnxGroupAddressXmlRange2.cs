@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents a level-2 group range in the ETS XML export (e.g. Lighting, ShutterControl, Heating).
 /// </summary>
 [Serializable]
-public record KnxGroupAddressXmlRange2
+public sealed record KnxGroupAddressXmlRange2
 {
     /// <summary>
     /// Display name of the group range (e.g. "Lighting", "Heating").

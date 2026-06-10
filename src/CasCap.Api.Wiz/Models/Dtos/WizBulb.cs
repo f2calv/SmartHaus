@@ -1,7 +1,7 @@
 namespace CasCap.Models.Dtos;
 
 /// <summary>Represents a discovered Wiz bulb on the local network.</summary>
-public record WizBulb
+public sealed record WizBulb
 {
     /// <summary>IP address of the bulb on the local network.</summary>
     [Description("IP address of the bulb on the local network.")]

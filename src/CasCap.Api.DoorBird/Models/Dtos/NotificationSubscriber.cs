@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A single HTTP notification subscriber entry registered on the DoorBird device.
 /// </summary>
-public record NotificationSubscriber
+public sealed record NotificationSubscriber
 {
     /// <summary>
     /// The event type this subscriber listens for (e.g. "doorbell", "motionsensor").

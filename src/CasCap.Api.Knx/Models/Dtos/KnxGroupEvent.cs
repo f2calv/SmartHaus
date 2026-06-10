@@ -7,7 +7,7 @@ namespace CasCap.Models.Dtos;
 /// Conversion from <see cref="Knx.Falcon.GroupEventArgs"/> is handled by
 /// <see cref="CasCap.Extensions.CemiLDataExtensions.ToKnxGroupEvent"/>.
 /// </summary>
-public record KnxGroupEvent
+public sealed record KnxGroupEvent
 {
     /// <summary>
     /// Type of group event (e.g. <see cref="GroupEventType.ValueRead"/>, <see cref="GroupEventType.ValueWrite"/>, <see cref="GroupEventType.ValueResponse"/>).

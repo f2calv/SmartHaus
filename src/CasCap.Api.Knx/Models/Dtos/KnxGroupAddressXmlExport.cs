@@ -8,7 +8,7 @@ namespace CasCap.Models.Dtos;
 /// and this class is designed to facilitate the deserialization of that XML data into .NET objects.
 /// </summary>
 [Serializable, XmlRoot(Namespace = "http://knx.org/xml/ga-export/01", ElementName = "GroupAddress-Export")]
-public record KnxGroupAddressXmlExport
+public sealed record KnxGroupAddressXmlExport
 {
     /// <summary>
     /// Top-level group ranges (e.g. Zentral, DG, OG, EG, KG, Data).

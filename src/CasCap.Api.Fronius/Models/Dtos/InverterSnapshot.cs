@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A point-in-time snapshot of key Fronius solar inverter values.
 /// </summary>
-public record InverterSnapshot
+public sealed record InverterSnapshot
 {
     /// <summary>
     /// Battery state of charge (%).

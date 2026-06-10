@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Sicce aquarium pump API configuration.</summary>
-public record SicceConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record SicceConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(SicceConfig)}";

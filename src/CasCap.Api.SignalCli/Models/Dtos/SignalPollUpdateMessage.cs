@@ -7,7 +7,7 @@ namespace CasCap.Models.Dtos;
 /// Present in <see cref="SignalDataMessage.PollVote"/> when a group member casts a
 /// vote on an existing poll. Property names match the signal-cli REST API output.
 /// </remarks>
-public record SignalPollUpdateMessage
+public sealed record SignalPollUpdateMessage
 {
     /// <summary>The phone number or identifier of the voter.</summary>
     [JsonPropertyName("author")]

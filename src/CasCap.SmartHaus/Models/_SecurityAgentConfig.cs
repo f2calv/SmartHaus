@@ -11,7 +11,7 @@ namespace CasCap.Models;
 /// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.SecurityAgent"/>
 /// in <c>AIConfig.Agents</c>.
 /// </remarks>
-public record SecurityAgentConfig : IAppConfig
+public sealed record SecurityAgentConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName =>

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Eco feedback data showing water and energy consumption.
 /// </summary>
-public record EcoFeedback
+public sealed record EcoFeedback
 {
     /// <summary>
     /// Current water consumption.
@@ -18,22 +18,22 @@ public record EcoFeedback
     public ConsumptionValue? currentEnergyConsumption { get; init; }
 
     /// <summary>
-    /// Relative water usage forecast for the selected program (0–1).
+    /// Relative water usage forecast for the selected program (0ï¿½1).
     /// </summary>
-    [Description("Relative water usage forecast for the selected program (0–1).")]
+    [Description("Relative water usage forecast for the selected program (0ï¿½1).")]
     public double? waterForecast { get; init; }
 
     /// <summary>
-    /// Relative energy usage forecast for the selected program (0–1).
+    /// Relative energy usage forecast for the selected program (0ï¿½1).
     /// </summary>
-    [Description("Relative energy usage forecast for the selected program (0–1).")]
+    [Description("Relative energy usage forecast for the selected program (0ï¿½1).")]
     public double? energyForecast { get; init; }
 }
 
 /// <summary>
 /// A consumption measurement with unit.
 /// </summary>
-public record ConsumptionValue
+public sealed record ConsumptionValue
 {
     /// <summary>
     /// The measurement unit (e.g. "l", "kWh").

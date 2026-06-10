@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a KNX HVAC zone with decoded values for each <see cref="HvacFunction"/>.
 /// </summary>
-public record KnxHvacZone
+public sealed record KnxHvacZone
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     [Description("Group name (e.g. EG-HZ-Kitchen).")]

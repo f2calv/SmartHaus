@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a mention within a Signal message.
 /// </summary>
-public record MessageMention
+public sealed record MessageMention
 {
     /// <summary>
     /// The phone number or UUID of the mentioned user.

@@ -5,7 +5,7 @@ namespace CasCap.Models;
 /// Emitted by <see cref="CasCap.Services.EdgeHardwareMonitorBgService"/> and consumed by
 /// <see cref="CasCap.Abstractions.IEventSink{T}"/> implementations.
 /// </summary>
-public record EdgeHardwareEvent
+public sealed record EdgeHardwareEvent
 {
     /// <summary>Kubernetes node name (or machine name) that produced this reading.</summary>
     public required string NodeName { get; init; }

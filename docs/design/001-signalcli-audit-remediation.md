@@ -81,7 +81,7 @@ The highest-risk findings. The current buffer + counting-semaphore + drain desig
 
 ## 8. Repo-Wide Note (Not SignalCli-Specific)
 
-- [ ] **`REPO-1` (Low)** — DTO `record`s are not `sealed`. The Performance convention says entity/DTO types should default to `sealed`, but **no** record in the entire SmartHaus repo is sealed. This is a repo-wide gap; if adopted, do it as a single consistent pass across the repo rather than only in SignalCli.
+- [x] **`REPO-1` (Low)** — DTO `record`s are not `sealed`. The Performance convention says entity/DTO types should default to `sealed`, but **no** record in the entire SmartHaus repo is sealed. This is a repo-wide gap; if adopted, do it as a single consistent pass across the repo rather than only in SignalCli.
 
 ---
 

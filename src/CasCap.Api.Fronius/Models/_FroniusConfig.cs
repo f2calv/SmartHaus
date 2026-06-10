@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Configuration for the Fronius Symo solar inverter integration.
 /// </summary>
-public record FroniusConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record FroniusConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(FroniusConfig)}";

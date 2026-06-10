@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a known identity returned by <c>GET /v1/identities/{number}</c>.
 /// </summary>
-public record SignalIdentity
+public sealed record SignalIdentity
 {
     /// <summary>
     /// The phone number associated with this identity.

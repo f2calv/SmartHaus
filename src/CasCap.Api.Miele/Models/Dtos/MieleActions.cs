@@ -3,12 +3,12 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Available actions for a Miele device from <c>GET /devices/{deviceId}/actions</c>.
 /// </summary>
-public record MieleActions
+public sealed record MieleActions
 {
     /// <summary>
-    /// Available process actions (1=Start, 2=Stop, 3=Pause, 4–7=Superfreezing/Supercooling).
+    /// Available process actions (1=Start, 2=Stop, 3=Pause, 4ï¿½7=Superfreezing/Supercooling).
     /// </summary>
-    [Description("Available process actions (1=Start, 2=Stop, 3=Pause, 4–7=Superfreezing/Supercooling).")]
+    [Description("Available process actions (1=Start, 2=Stop, 3=Pause, 4ï¿½7=Superfreezing/Supercooling).")]
     public int[]? processAction { get; init; }
 
     /// <summary>

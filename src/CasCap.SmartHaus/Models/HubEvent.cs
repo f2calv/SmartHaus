@@ -8,4 +8,4 @@ namespace CasCap.Models;
 /// The name of the event type (e.g. <c>"FroniusEvent"</c>, <c>"KnxEvent"</c>).
 /// </param>
 /// <param name="Timestamp">UTC timestamp at which the hub received the event.</param>
-public record HubEvent(string EventType, DateTimeOffset Timestamp);
+public sealed record HubEvent(string EventType, DateTimeOffset Timestamp);

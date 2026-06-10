@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Represents a Shelly smart plug status reading event.</summary>
-public record ShellyEvent
+public sealed record ShellyEvent
 {
     /// <summary>Initializes a new instance from a Cloud API device status response.</summary>
     /// <param name="device">The device configuration that produced this event.</param>

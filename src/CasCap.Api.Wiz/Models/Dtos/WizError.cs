@@ -1,7 +1,7 @@
 namespace CasCap.Models.Dtos;
 
 /// <summary>Error payload returned by the Wiz bulb protocol.</summary>
-public record WizError
+public sealed record WizError
 {
     /// <summary>Numeric error code.</summary>
     [JsonPropertyName("code")]

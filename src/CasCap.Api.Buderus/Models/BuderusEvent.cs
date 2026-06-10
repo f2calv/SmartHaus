@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Represents a sensor reading event from a Buderus KM200 device.</summary>
-public record BuderusEvent
+public sealed record BuderusEvent
 {
     /// <summary>Initializes a new instance of the <see cref="BuderusEvent"/> class.</summary>
     /// <param name="id">KM200 datapoint path.</param>

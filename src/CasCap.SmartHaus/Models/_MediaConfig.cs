@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// <remarks>
 /// Bound from the <c>CasCap:MediaConfig</c> section under the application configuration root.
 /// </remarks>
-public record MediaConfig : IAppConfig
+public sealed record MediaConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(MediaConfig)}";

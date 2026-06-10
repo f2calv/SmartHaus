@@ -1,4 +1,4 @@
-﻿using Knx.Falcon;
+using Knx.Falcon;
 
 namespace CasCap.Models;
 
@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// This object is to wrap the <see cref="KnxGroupEvent"/> object along with timestamp,
 /// a <see cref="KnxGroupAddressParsed"/> object and the actual value.
 /// </summary>
-public record KnxEvent
+public sealed record KnxEvent
 {
     /// <summary>Initialises a new instance of the <see cref="KnxEvent"/> record.</summary>
     public KnxEvent(DateTime timestampUtc, KnxGroupEvent args, KnxGroupAddressParsed kga, GroupValue groupValue,

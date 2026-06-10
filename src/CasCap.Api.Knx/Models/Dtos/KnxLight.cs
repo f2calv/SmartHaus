@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a KNX light with decoded feedback values for each <see cref="LightingFunction"/>.
 /// </summary>
-public record KnxLight
+public sealed record KnxLight
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     [Description("Group name (e.g. DG-LI-Office-DL-South).")]

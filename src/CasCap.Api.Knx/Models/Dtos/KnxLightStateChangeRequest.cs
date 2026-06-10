@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Request payload for setting the state of a KNX lighting group address.
 /// Exactly one of <see cref="IsOn"/>, <see cref="DimValue"/> or <see cref="HexColour"/> must be set.
 /// </summary>
-public record KnxLightStateChangeRequest : IValidatableObject
+public sealed record KnxLightStateChangeRequest : IValidatableObject
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     /// <example>DG-LI-Office-DL-South</example>

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Site-level power flow summary returned inside <see cref="PowerFlowRealtimeData"/>.
 /// </summary>
-public record PowerFlowSite
+public sealed record PowerFlowSite
 {
     /// <summary>
     /// Whether backup mode is active.
@@ -72,14 +72,14 @@ public record PowerFlowSite
     public double P_PV { get; init; }
 
     /// <summary>
-    /// Relative autonomy as a percentage (0–100).
+    /// Relative autonomy as a percentage (0ï¿½100).
     /// </summary>
-    [Description("Relative autonomy as a percentage (0–100).")]
+    [Description("Relative autonomy as a percentage (0ï¿½100).")]
     public double rel_Autonomy { get; init; }
 
     /// <summary>
-    /// Relative self-consumption as a percentage (0–100), or null when PV power is zero.
+    /// Relative self-consumption as a percentage (0ï¿½100), or null when PV power is zero.
     /// </summary>
-    [Description("Relative self-consumption as a percentage (0–100), or null when PV power is zero.")]
+    [Description("Relative self-consumption as a percentage (0ï¿½100), or null when PV power is zero.")]
     public double? rel_SelfConsumption { get; init; }
 }

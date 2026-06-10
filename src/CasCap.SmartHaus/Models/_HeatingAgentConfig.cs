@@ -10,7 +10,7 @@ namespace CasCap.Models;
 /// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.HeatingAgent"/>
 /// in <c>AIConfig.Agents</c>.
 /// </remarks>
-public record HeatingAgentConfig : IAppConfig
+public sealed record HeatingAgentConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName =>

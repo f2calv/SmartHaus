@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// binary content cached in Redis and carries enough metadata for the service to
 /// route analysis to the appropriate domain agent.
 /// </summary>
-public record MediaEvent
+public sealed record MediaEvent
 {
     /// <summary>Identifies the subsystem that produced the media (e.g. <c>"DoorBird"</c>, <c>"Ubiquiti"</c>).</summary>
     [Required, MinLength(1)]

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Per-inverter power flow data returned inside <see cref="PowerFlowRealtimeData"/>.
 /// </summary>
-public record PowerFlowInverter
+public sealed record PowerFlowInverter
 {
     /// <summary>
     /// Battery operating mode (e.g. "normal").
@@ -42,8 +42,8 @@ public record PowerFlowInverter
     public double P { get; init; }
 
     /// <summary>
-    /// Battery state of charge as a percentage (0–100).
+    /// Battery state of charge as a percentage (0ï¿½100).
     /// </summary>
-    [Description("Battery state of charge as a percentage (0–100).")]
+    [Description("Battery state of charge as a percentage (0ï¿½100).")]
     public double SOC { get; init; }
 }

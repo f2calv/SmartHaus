@@ -2,7 +2,7 @@ namespace CasCap.Models.Dtos;
 
 /// <summary>Generic Wiz protocol response envelope.</summary>
 /// <typeparam name="T">Type of the result payload.</typeparam>
-public record WizResponse<T>
+public sealed record WizResponse<T>
 {
     /// <summary>The method that was invoked.</summary>
     [JsonPropertyName("method")]

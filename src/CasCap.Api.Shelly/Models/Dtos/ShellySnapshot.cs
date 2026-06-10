@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A point-in-time snapshot of key Shelly smart plug values.
 /// </summary>
-public record ShellySnapshot
+public sealed record ShellySnapshot
 {
     /// <summary>The Shelly device ID.</summary>
     [Description("Shelly device ID")]

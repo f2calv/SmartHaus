@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A localized key/value pair returned by the Miele API.
 /// </summary>
-public record LocalizedValue
+public sealed record LocalizedValue
 {
     /// <summary>
     /// The raw integer value.

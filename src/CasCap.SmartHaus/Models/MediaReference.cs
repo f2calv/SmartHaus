@@ -5,7 +5,7 @@ namespace CasCap.Models;
 /// (<see cref="MediaEvent"/>) and the comms pipeline (<see cref="CommsEvent.JsonPayload"/>)
 /// to reference cached bytes without carrying them inline.
 /// </summary>
-public record MediaReference
+public sealed record MediaReference
 {
     /// <summary>Redis key where the media bytes are cached (with a TTL).</summary>
     [Required, MinLength(1)]

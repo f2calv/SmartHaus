@@ -8,7 +8,7 @@ namespace CasCap.Models.Dtos;
 /// created by another group member. JSON property names are based on the signal-cli REST API
 /// output and may need adjustment after live-API verification.
 /// </remarks>
-public record SignalPollMessage
+public sealed record SignalPollMessage
 {
     /// <summary>
     /// The poll identifier (typically the creation timestamp).

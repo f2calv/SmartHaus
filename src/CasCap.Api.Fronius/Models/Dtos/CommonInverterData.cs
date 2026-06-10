@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Common inverter real-time data from <c>GetInverterRealtimeData.cgi?Datacollection=CommonInverterData</c>.
 /// </summary>
-public record CommonInverterData
+public sealed record CommonInverterData
 {
     /// <summary>
     /// Energy generated today.

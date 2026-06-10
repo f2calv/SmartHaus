@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A device program from <c>GET /devices/{deviceId}/programs</c>.
 /// </summary>
-public record MieleProgram
+public sealed record MieleProgram
 {
     /// <summary>
     /// The appliance-specific program ID.
@@ -27,7 +27,7 @@ public record MieleProgram
 /// <summary>
 /// Optional parameters for a Miele program.
 /// </summary>
-public record MieleProgramParameters
+public sealed record MieleProgramParameters
 {
     /// <summary>
     /// Temperature settings for the program.
@@ -45,7 +45,7 @@ public record MieleProgramParameters
 /// <summary>
 /// Temperature range parameters for a program.
 /// </summary>
-public record MieleProgramRange
+public sealed record MieleProgramRange
 {
     /// <summary>
     /// The lowest selectable temperature.
@@ -75,7 +75,7 @@ public record MieleProgramRange
 /// <summary>
 /// Duration range parameters for a program.
 /// </summary>
-public record MieleProgramDuration
+public sealed record MieleProgramDuration
 {
     /// <summary>
     /// The minimum duration as [hours, minutes].

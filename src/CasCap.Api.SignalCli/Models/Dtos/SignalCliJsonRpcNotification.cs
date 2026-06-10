@@ -18,7 +18,7 @@ namespace CasCap.Models.Dtos;
 /// that the REST <c>GET /v1/receive/{number}</c> endpoint returns as array elements.
 /// See <see href="https://github.com/bbernhard/signal-cli-rest-api/discussions/160"/> for details.
 /// </remarks>
-public record SignalCliJsonRpcNotification
+public sealed record SignalCliJsonRpcNotification
 {
     /// <summary>
     /// The JSON-RPC protocol version. Always <c>"2.0"</c> for spec-compliant servers.

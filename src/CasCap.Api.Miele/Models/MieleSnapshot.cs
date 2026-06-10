@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>A point-in-time snapshot of a Miele appliance state.</summary>
-public record MieleSnapshot
+public sealed record MieleSnapshot
 {
     /// <summary>Device identifier.</summary>
     [Description("Miele device identifier.")]

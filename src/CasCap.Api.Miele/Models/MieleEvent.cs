@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>Represents a Miele appliance event received via the SSE stream.</summary>
-public record MieleEvent
+public sealed record MieleEvent
 {
     /// <summary>Miele device identifier.</summary>
     [Description("Miele device identifier")]

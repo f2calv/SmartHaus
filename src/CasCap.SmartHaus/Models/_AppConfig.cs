@@ -1,11 +1,11 @@
-﻿using Azure.Core;
+using Azure.Core;
 
 namespace CasCap.Models;
 
 /// <summary>
 /// General application configuration.
 /// </summary>
-public record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, IMetricsConfig
+public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => nameof(AppConfig);

@@ -8,7 +8,7 @@ namespace CasCap.Models;
 /// one KNX group address and its datapoint type.
 /// </summary>
 [MessagePackObject(true)]
-public record KnxGroupAddressGroupFunction
+public sealed record KnxGroupAddressGroupFunction
 {
     /// <summary>
     /// Full group address name, e.g. <c>OG-BL-FamilyBathroom-West-MOVE</c>.

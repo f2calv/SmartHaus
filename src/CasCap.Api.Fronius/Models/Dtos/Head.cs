@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Response head containing status information and a timestamp.
 /// </summary>
-public record Head
+public sealed record Head
 {
     /// <summary>
     /// Optional request arguments echoed back by the API.

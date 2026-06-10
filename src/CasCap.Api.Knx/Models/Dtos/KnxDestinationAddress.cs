@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// This object is a translation of the <see cref="Knx.Falcon.GroupEventArgs.DestinationAddress"/> object.
 /// </summary>
-public record KnxDestinationAddress
+public sealed record KnxDestinationAddress
 {
     /// <summary>
     /// String representation of the group address (e.g. "1/2/3").

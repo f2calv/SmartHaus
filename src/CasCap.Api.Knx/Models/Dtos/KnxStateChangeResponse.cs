@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Response payload containing the results of one or more KNX state change attempts.
 /// </summary>
-public record KnxStateChangeResponse
+public sealed record KnxStateChangeResponse
 {
     /// <summary>
     /// Unique identifier for this state change operation.

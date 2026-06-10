@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// DoorBird device version and hardware information.
 /// </summary>
-public record DoorBirdVersion
+public sealed record DoorBirdVersion
 {
     /// <summary>
     /// The firmware version string.

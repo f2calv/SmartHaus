@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// Configuration for the Shelly smart plug Cloud API integration.
 /// </summary>
-public record ShellyConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record ShellyConfig : IAppConfig, IHealthCheckConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(ShellyConfig)}";

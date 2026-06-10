@@ -1,7 +1,7 @@
 namespace CasCap.Models;
 
 /// <summary>A point-in-time snapshot of a Wiz smart bulb state.</summary>
-public record WizSnapshot
+public sealed record WizSnapshot
 {
     /// <summary>Unique device identifier.</summary>
     [Description("Unique device identifier.")]

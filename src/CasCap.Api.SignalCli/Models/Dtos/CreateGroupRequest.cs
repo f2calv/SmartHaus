@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to create a new Signal group via <c>POST /v1/groups/{number}</c>.
 /// </summary>
-public record CreateGroupRequest
+public sealed record CreateGroupRequest
 {
     /// <summary>
     /// The group name.

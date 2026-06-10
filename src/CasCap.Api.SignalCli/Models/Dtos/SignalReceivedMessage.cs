@@ -7,7 +7,7 @@ namespace CasCap.Models.Dtos;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public record SignalReceivedMessage : IReceivedNotification
+public sealed record SignalReceivedMessage : IReceivedNotification
 {
     /// <summary>
     /// The message envelope containing source, timestamp and typed message data.

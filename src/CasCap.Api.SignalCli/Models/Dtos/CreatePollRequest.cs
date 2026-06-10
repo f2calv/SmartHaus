@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to create a Signal poll via <c>POST /v1/polls/{number}</c>.
 /// </summary>
-public record CreatePollRequest
+public sealed record CreatePollRequest
 {
     /// <summary>
     /// The poll question text.

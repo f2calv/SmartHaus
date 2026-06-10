@@ -5,7 +5,7 @@ namespace CasCap.Models.Dtos;
 /// Sends to <see cref="HvacFunction.SETP_UPDATE"/> and polls
 /// <see cref="HvacFunction.SETP"/> for confirmation.
 /// </summary>
-public record KnxHvacZoneStateChangeRequest : IValidatableObject
+public sealed record KnxHvacZoneStateChangeRequest : IValidatableObject
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     /// <example>DG-HZ-Office</example>

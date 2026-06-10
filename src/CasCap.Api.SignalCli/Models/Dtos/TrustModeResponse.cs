@@ -4,7 +4,7 @@ namespace CasCap.Models.Dtos;
 /// Represents the trust mode setting for an account from
 /// <c>GET /v1/configuration/{number}/settings</c>.
 /// </summary>
-public record TrustModeResponse
+public sealed record TrustModeResponse
 {
     /// <summary>
     /// The current trust mode (e.g. <c>"always"</c>, <c>"on-first-use"</c>).

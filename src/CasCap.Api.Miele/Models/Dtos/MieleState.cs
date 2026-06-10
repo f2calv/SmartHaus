@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Current operational state of a Miele device.
 /// </summary>
-public record MieleState
+public sealed record MieleState
 {
     /// <summary>
     /// The current program.
@@ -42,15 +42,15 @@ public record MieleState
     public int[]? startTime { get; init; }
 
     /// <summary>
-    /// Target temperatures (1–3 zones).
+    /// Target temperatures (1ï¿½3 zones).
     /// </summary>
-    [Description("Target temperatures (1–3 zones).")]
+    [Description("Target temperatures (1ï¿½3 zones).")]
     public TemperatureValue[]? targetTemperature { get; init; }
 
     /// <summary>
-    /// Current temperatures (1–3 zones).
+    /// Current temperatures (1ï¿½3 zones).
     /// </summary>
-    [Description("Current temperatures (1–3 zones).")]
+    [Description("Current temperatures (1ï¿½3 zones).")]
     public TemperatureValue[]? temperature { get; init; }
 
     /// <summary>
@@ -120,8 +120,8 @@ public record MieleState
     public EcoFeedback? ecoFeedback { get; init; }
 
     /// <summary>
-    /// Battery level as a percentage (0–100), or null if not applicable.
+    /// Battery level as a percentage (0ï¿½100), or null if not applicable.
     /// </summary>
-    [Description("Battery level as a percentage (0–100), or null if not applicable.")]
+    [Description("Battery level as a percentage (0ï¿½100), or null if not applicable.")]
     public int? batteryLevel { get; init; }
 }

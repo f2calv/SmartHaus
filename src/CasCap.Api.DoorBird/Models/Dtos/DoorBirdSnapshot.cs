@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A point-in-time snapshot of recent DoorBird device activity including last event timestamps per <see cref="DoorBirdEventType"/>.
 /// </summary>
-public record DoorBirdSnapshot
+public sealed record DoorBirdSnapshot
 {
     /// <summary>
     /// The UTC timestamp when this snapshot was generated.

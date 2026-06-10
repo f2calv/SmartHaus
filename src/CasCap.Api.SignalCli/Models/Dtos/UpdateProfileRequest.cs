@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a request to update a Signal profile via <c>PUT /v1/profiles/{number}</c>.
 /// </summary>
-public record UpdateProfileRequest
+public sealed record UpdateProfileRequest
 {
     /// <summary>
     /// New display name. Omit to leave unchanged.

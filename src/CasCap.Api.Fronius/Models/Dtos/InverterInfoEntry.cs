@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Inverter info entry for a single device from <c>GetInverterInfo.cgi</c>.
 /// </summary>
-public record InverterInfoEntry
+public sealed record InverterInfoEntry
 {
     /// <summary>
     /// User-defined custom name for the inverter.

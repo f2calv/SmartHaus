@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Inverter device status returned inside common inverter data.
 /// </summary>
-public record DeviceStatus
+public sealed record DeviceStatus
 {
     /// <summary>
     /// The device error code (0 = no error).

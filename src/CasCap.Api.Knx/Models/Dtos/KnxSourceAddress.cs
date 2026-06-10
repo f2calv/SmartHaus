@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// This object is a translation of the <see cref="Knx.Falcon.GroupEventArgs.SourceAddress"/> object.
 /// </summary>
-public record KnxSourceAddress
+public sealed record KnxSourceAddress
 {
     /// <summary>
     /// String representation of the individual address (e.g. "1.1.1").
@@ -17,17 +17,17 @@ public record KnxSourceAddress
     public string? AddressName { get; init; }
 
     /// <summary>
-    /// Area part of the individual address (high nibble, 0–15).
+    /// Area part of the individual address (high nibble, 0ï¿½15).
     /// </summary>
     public int AreaAddress { get; init; }
 
     /// <summary>
-    /// Line part of the individual address (low nibble of the high byte, 0–15).
+    /// Line part of the individual address (low nibble of the high byte, 0ï¿½15).
     /// </summary>
     public int LineAddress { get; init; }
 
     /// <summary>
-    /// Device part of the individual address (low byte, 0–255).
+    /// Device part of the individual address (low byte, 0ï¿½255).
     /// </summary>
     public int DeviceAddress { get; init; }
 

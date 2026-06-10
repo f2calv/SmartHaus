@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Storage real-time data entry from <c>GetStorageRealtimeData.cgi</c>.
 /// </summary>
-public record StorageRealtimeData
+public sealed record StorageRealtimeData
 {
     /// <summary>
     /// Storage controller data.
@@ -21,7 +21,7 @@ public record StorageRealtimeData
 /// <summary>
 /// Storage controller data containing battery state and capacity information.
 /// </summary>
-public record StorageController
+public sealed record StorageController
 {
     /// <summary>
     /// Controller device details.
@@ -54,9 +54,9 @@ public record StorageController
     public double Enable { get; init; }
 
     /// <summary>
-    /// Relative state of charge as a percentage (0–100).
+    /// Relative state of charge as a percentage (0ï¿½100).
     /// </summary>
-    [Description("Relative state of charge as a percentage (0–100).")]
+    [Description("Relative state of charge as a percentage (0ï¿½100).")]
     public double StateOfCharge_Relative { get; init; }
 
     /// <summary>

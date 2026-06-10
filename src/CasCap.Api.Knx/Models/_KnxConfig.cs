@@ -3,7 +3,7 @@ using Knx.Falcon.KnxnetIp;
 namespace CasCap.Models;
 
 /// <summary>KNX home automation configuration.</summary>
-public record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
+public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(KnxConfig)}";

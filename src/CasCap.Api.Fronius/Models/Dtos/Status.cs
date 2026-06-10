@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// API response status block returned in the <see cref="Head"/>.
 /// </summary>
-public record Status
+public sealed record Status
 {
     /// <summary>
     /// The numeric status code (0 = success).

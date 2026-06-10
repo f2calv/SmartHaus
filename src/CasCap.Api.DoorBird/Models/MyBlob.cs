@@ -1,9 +1,9 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// Represents a blob with its raw content and associated metadata.
 /// </summary>
-public record MyBlob : IMyBlob
+public sealed record MyBlob : IMyBlob
 {
     /// <summary>
     /// Initializes a new instance of the <see cref="MyBlob"/> record with an explicit creation date.

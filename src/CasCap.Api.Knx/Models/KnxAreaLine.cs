@@ -1,10 +1,10 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>
 /// This object is a simplified representation of a KNX Area/Line combination,
 /// the fully fledged object is the <see cref="Knx.Falcon.Sdk.KnxBus"/> object.
 /// </summary>
-public record KnxAreaLine
+public sealed record KnxAreaLine
 {
     /// <summary>The KNX area address (top-level segment).</summary>
     public byte Area { get; init; }

@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents group permission settings for a Signal group.
 /// </summary>
-public record GroupPermissions
+public sealed record GroupPermissions
 {
     /// <summary>
     /// Who can add members: <c>"every-member"</c> or <c>"only-admins"</c>.

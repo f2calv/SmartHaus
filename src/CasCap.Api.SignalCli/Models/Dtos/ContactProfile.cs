@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a contact's profile information within a <see cref="SignalContact"/>.
 /// </summary>
-public record ContactProfile
+public sealed record ContactProfile
 {
     /// <summary>
     /// The profile's about/status text.

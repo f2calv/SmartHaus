@@ -5,7 +5,7 @@ namespace CasCap.Models;
 /// Hub-client pods (Fronius, KNX, DoorBird, Buderus) that connect to the hub as SignalR clients
 /// also read <see cref="HubPath"/> from this section so they know where to connect.
 /// </summary>
-public record SignalRHubConfig : IAppConfig
+public sealed record SignalRHubConfig : IAppConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(SignalRHubConfig)}";

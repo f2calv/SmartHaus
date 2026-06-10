@@ -3,12 +3,12 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A temperature value with unit returned by the Miele API.
 /// </summary>
-public record TemperatureValue
+public sealed record TemperatureValue
 {
     /// <summary>
-    /// The raw temperature value (degrees Celsius × 100). -32768 indicates unused.
+    /// The raw temperature value (degrees Celsius ï¿½ 100). -32768 indicates unused.
     /// </summary>
-    [Description("The raw temperature value (degrees Celsius × 100). -32768 indicates unused.")]
+    [Description("The raw temperature value (degrees Celsius ï¿½ 100). -32768 indicates unused.")]
     public int? value_raw { get; init; }
 
     /// <summary>

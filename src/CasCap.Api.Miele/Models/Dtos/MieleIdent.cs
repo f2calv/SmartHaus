@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Identification information for a Miele device.
 /// </summary>
-public record MieleIdent
+public sealed record MieleIdent
 {
     /// <summary>
     /// The device type (e.g. Oven, Dishwasher, Washing machine).

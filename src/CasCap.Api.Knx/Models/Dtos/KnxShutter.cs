@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// Represents a KNX shutter/blind with decoded feedback values for each <see cref="ShutterFunction"/>.
 /// </summary>
-public record KnxShutter
+public sealed record KnxShutter
 {
     /// <inheritdoc cref="KnxGroupAddressGroup.GroupName"/>
     [Description("Group name (e.g. OG-BL-FamilyBathroom-West).")]

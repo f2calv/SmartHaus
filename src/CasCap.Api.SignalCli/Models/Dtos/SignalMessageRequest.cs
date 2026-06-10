@@ -6,7 +6,7 @@ namespace CasCap.Models.Dtos;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public record SignalMessageRequest : INotificationMessage
+public sealed record SignalMessageRequest : INotificationMessage
 {
     /// <summary>
     /// Internal tracking identifier, not sent to the API.

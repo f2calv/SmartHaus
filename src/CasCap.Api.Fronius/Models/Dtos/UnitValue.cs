@@ -3,12 +3,12 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A unit/value pair returned by inverter real-time data endpoints.
 /// </summary>
-public record UnitValue
+public sealed record UnitValue
 {
     /// <summary>
-    /// The measurement unit (e.g. "W", "A", "V", "Hz", "Wh", "VA", "°C").
+    /// The measurement unit (e.g. "W", "A", "V", "Hz", "Wh", "VA", "ï¿½C").
     /// </summary>
-    [Description("The measurement unit (e.g. \"W\", \"A\", \"V\", \"Hz\", \"Wh\", \"VA\", \"°C\").")]
+    [Description("The measurement unit (e.g. \"W\", \"A\", \"V\", \"Hz\", \"Wh\", \"VA\", \"ï¿½C\").")]
     public string? Unit { get; init; }
 
     /// <summary>

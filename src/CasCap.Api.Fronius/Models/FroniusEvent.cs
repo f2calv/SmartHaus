@@ -1,7 +1,7 @@
-﻿namespace CasCap.Models;
+namespace CasCap.Models;
 
 /// <summary>Represents a Fronius inverter power flow reading event.</summary>
-public record FroniusEvent
+public sealed record FroniusEvent
 {
     /// <summary>Initializes a new instance from an API response.</summary>
     /// <param name="response">Power flow realtime data API response.</param>

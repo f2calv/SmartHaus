@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// A point-in-time snapshot of recent Ubiquiti UniFi Protect camera activity including last event timestamps per <see cref="UbiquitiEventType"/>.
 /// </summary>
-public record UbiquitiSnapshot
+public sealed record UbiquitiSnapshot
 {
     /// <summary>
     /// The UTC timestamp when this snapshot was generated.

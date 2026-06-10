@@ -3,7 +3,7 @@ namespace CasCap.Models.Dtos;
 /// <summary>
 /// This object is a translation of the <see cref="Knx.Falcon.GroupEventArgs.Value"/> object.
 /// </summary>
-public record KnxGroupValue
+public sealed record KnxGroupValue
 {
     /// <summary>
     /// Decoded CLR value of the datapoint (e.g. <see langword="bool"/>, <see langword="int"/>, <see langword="float"/>).

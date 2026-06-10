@@ -3,7 +3,7 @@ namespace CasCap.Models;
 /// <summary>
 /// A point-in-time snapshot of key Buderus heat pump sensor values retrieved from Azure Table Storage.
 /// </summary>
-public record BuderusSnapshot
+public sealed record BuderusSnapshot
 {
     /// <summary>
     /// Domestic hot water circuit 1 actual temperature (°C).

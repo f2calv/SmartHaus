@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// <remarks>
 /// See <see href="https://bbernhard.github.io/signal-cli-rest-api/"/> for the full API specification.
 /// </remarks>
-public record SignalCliConfig : IAppConfig, IHealthCheckConfig
+public sealed record SignalCliConfig : IAppConfig, IHealthCheckConfig
 {
     /// <inheritdoc/>
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(SignalCliConfig)}";
