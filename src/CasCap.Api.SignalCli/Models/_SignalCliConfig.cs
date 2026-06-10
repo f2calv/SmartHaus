@@ -71,6 +71,15 @@ public record SignalCliConfig : IAppConfig, IHealthCheckConfig
     [Phone]
     public string? PhoneNumberDebug { get; init; }
 
+    /// <summary>Bounded capacity of the internal message channel.</summary>
+    /// <remarks>
+    /// Defaults to <c>256</c>. When the channel is full the WebSocket receive loop applies
+    /// back-pressure (waits) until a consumer drains messages via <c>ReceiveAsync</c>.
+    /// Used by <see cref="CasCap.Services.SignalCliJsonRpcClientService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int ChannelCapacity { get; init; } = 256;
+
     /// <summary>Maximum number of WebSocket reconnection attempts before giving up.</summary>
     /// <remarks>
     /// Defaults to <c>10</c>.

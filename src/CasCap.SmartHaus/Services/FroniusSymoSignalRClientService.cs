@@ -63,7 +63,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
         async Task<bool> ConnectWithRetryAsync(CancellationToken cancellationToken = default)
         {
             var retry = 5;
-            while (true)
+            while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {

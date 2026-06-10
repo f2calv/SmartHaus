@@ -164,6 +164,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 | `PhoneNumber` | `string` | — | ✓ | Registered Signal sender number (e.g. `"+49151..."`) |
 | `PhoneNumberDebug` | `string?` | `null` | — | Optional recipient number for debug/diagnostic messages ("Note to Self" feed) |
 | `SendTimeoutMs` | `int` | `180000` | — | Per-request timeout in milliseconds for `POST /v2/send` |
+| `ChannelCapacity` | `int` | `256` | — | Bounded capacity of the internal message channel (back-pressure when full) |
 | `MaxReconnectAttempts` | `int` | `10` | — | Maximum number of WebSocket reconnection attempts before giving up |
 | `InitialReconnectDelayMs` | `int` | `2000` | — | Initial backoff delay in milliseconds for WebSocket reconnection |
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
@@ -197,6 +198,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
       "PhoneNumber": "+49151...",
       "PhoneNumberDebug": "+49151...",
       "SendTimeoutMs": 180000,
+      "ChannelCapacity": 256,
       "MaxReconnectAttempts": 10,
       "InitialReconnectDelayMs": 2000,
       "MaxReconnectDelayMs": 120000
@@ -260,6 +262,7 @@ classDiagram
         +SendTimeoutMs int
         +PhoneNumber string
         +PhoneNumberDebug string?
+        +ChannelCapacity int
         +MaxReconnectAttempts int
         +InitialReconnectDelayMs int
         +MaxReconnectDelayMs int
