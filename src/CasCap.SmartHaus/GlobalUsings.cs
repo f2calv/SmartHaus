@@ -27,3 +27,4 @@ global using System.Net;
 global using System.Reflection;
 global using System.Runtime.CompilerServices;
 global using System.Text;
+global using System.Threading.Channels;

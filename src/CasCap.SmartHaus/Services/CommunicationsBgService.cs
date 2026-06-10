@@ -1,7 +1,6 @@
 using CasCap.HealthChecks;
 using Microsoft.Agents.AI;
 using StackExchange.Redis;
-using System.Collections.Concurrent;
 
 namespace CasCap.Services;
 
@@ -55,8 +54,8 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private string? _groupId;
     private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
-    private readonly ConcurrentQueue<ReplyRequest> _replyQueue = new();
-    private readonly SemaphoreSlim _replySignal = new(0);
+    private readonly Channel<ReplyRequest> _replyChannel = Channel.CreateUnbounded<ReplyRequest>(
+        new UnboundedChannelOptions { SingleReader = true });
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommunicationsBgService"/> class.

@@ -6,7 +6,7 @@ public sealed partial class CommunicationsBgService
 {
     private async Task PollForMessagesAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} message polling loop started", nameof(CommunicationsBgService));
+        LogPollingStarted(_logger, nameof(CommunicationsBgService));
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -15,8 +15,7 @@ public sealed partial class CommunicationsBgService
                 var messages = await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, cancellationToken);
                 if (messages is not null && messages.Length > 0)
                 {
-                    _logger.LogDebug("{ClassName} received {Count} envelope(s) from notifier",
-                        nameof(CommunicationsBgService), messages.Length);
+                    LogEnvelopesReceived(_logger, nameof(CommunicationsBgService), messages.Length);
 
                     var processed = 0;
                     foreach (var msg in messages)
@@ -24,8 +23,7 @@ public sealed partial class CommunicationsBgService
                         var envelopeType = msg is SignalReceivedMessage srm
                             ? srm.Envelope.EnvelopeType
                             : "unknown";
-                        _logger.LogDebug("{ClassName} envelope: Type={EnvelopeType}, HasContent={HasContent}, GroupId={GroupId}, Sender={Sender}",
-                            nameof(CommunicationsBgService), envelopeType, msg.HasContent, msg.GroupId, msg.Sender);
+                        LogEnvelopeDetail(_logger, nameof(CommunicationsBgService), envelopeType, msg.HasContent, msg.GroupId, msg.Sender);
 
                         // Only process content messages from the configured group,
                         // skipping our own echoes to avoid infinite reply loops.
@@ -48,17 +46,14 @@ public sealed partial class CommunicationsBgService
                     }
 
                     if (processed > 0)
-                        _logger.LogInformation("{ClassName} processed {Processed} of {Total} envelope(s)",
-                            nameof(CommunicationsBgService), processed, messages.Length);
+                        LogEnvelopesProcessed(_logger, nameof(CommunicationsBgService), processed, messages.Length);
                     else
-                        _logger.LogDebug("{ClassName} discarded {Total} non-content envelope(s)",
-                            nameof(CommunicationsBgService), messages.Length);
+                        LogEnvelopesDiscarded(_logger, nameof(CommunicationsBgService), messages.Length);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
-                _logger.LogError(ex, "{ClassName} error during poll cycle ({ExceptionType}: {ExceptionMessage})",
-                    nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
+                LogPollCycleError(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
             }
 
             // In JsonRpc mode ReceiveAsync blocks until messages arrive, so no polling delay
@@ -78,19 +73,16 @@ public sealed partial class CommunicationsBgService
             && dm.Attachments is null or { Length: 0 })
         {
             var extensionKeys = dm.ExtensionData?.Keys is { } keys ? string.Join(", ", keys) : "none";
-            _logger.LogWarning(
-                "{ClassName} received content-only message with no text or attachments from {Sender}, extension data keys: [{ExtensionKeys}], raw: {RawData}",
-                nameof(CommunicationsBgService), notification.Sender, extensionKeys,
+            LogContentOnlyNoText(_logger, nameof(CommunicationsBgService), notification.Sender, extensionKeys,
                 dm.ExtensionData is not null ? dm.ExtensionData.ToJson() : "(empty)");
             return;
         }
 
-        _logger.LogInformation("{ClassName} received message from {Sender}: {Message}",
-            nameof(CommunicationsBgService), notification.Sender, notification.Message ?? "(attachment only)");
+        LogInboundMessage(_logger, nameof(CommunicationsBgService), notification.Sender, notification.Message ?? "(attachment only)");
 
         if (_agent is null || _commsAgent is null || _provider is null)
         {
-            _logger.LogDebug("{ClassName} no agent configured, skipping processing", nameof(CommunicationsBgService));
+            LogNoAgentSkipping(_logger, nameof(CommunicationsBgService));
             return;
         }
 
@@ -100,8 +92,7 @@ public sealed partial class CommunicationsBgService
         if (notification.Attachments is { Count: > 0 })
         {
             if (notification.Attachments.Count > 1)
-                _logger.LogWarning("{ClassName} message has {Count} attachments, only the first will be processed",
-                    nameof(CommunicationsBgService), notification.Attachments.Count);
+                LogMultipleAttachments(_logger, nameof(CommunicationsBgService), notification.Attachments.Count);
 
             var attachment = notification.Attachments[0];
             if (!string.IsNullOrWhiteSpace(attachment.Id))
@@ -109,8 +100,7 @@ public sealed partial class CommunicationsBgService
                 binaryContent = await _notifier.GetAttachmentAsync(attachment.Id, cancellationToken);
                 mimeType = attachment.ContentType;
                 if (binaryContent is not null)
-                    _logger.LogInformation("{ClassName} downloaded attachment {AttachmentId} ({ContentType}, {Size} bytes)",
-                        nameof(CommunicationsBgService), attachment.Id, mimeType, binaryContent.Length);
+                    LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachment.Id, mimeType, binaryContent.Length);
             }
         }
 
@@ -119,8 +109,7 @@ public sealed partial class CommunicationsBgService
         // ── Slash-command handling ────────────────────────────────────────────
         if (ChatCommandParser.TryParseCommand(prompt, out var chatCmd, out var cmdArg))
         {
-            _logger.LogInformation("{ClassName} processing slash command {Command} from {Sender}",
-                nameof(CommunicationsBgService), chatCmd, notification.Sender);
+            LogSlashCommand(_logger, nameof(CommunicationsBgService), chatCmd, notification.Sender);
 
             // SessionBypass needs special handling — enqueue the prompt and skip reply.
             if (chatCmd is ChatCommand.SessionBypass && !string.IsNullOrWhiteSpace(cmdArg))
@@ -176,9 +165,7 @@ public sealed partial class CommunicationsBgService
         var selectedIndices = pollUpdate.OptionIndexes;
         var voter = signalMsg.Envelope.Source ?? signalMsg.Envelope.SourceNumber ?? "unknown";
 
-        _logger.LogInformation(
-            "{ClassName} received poll vote from {Voter} on poll {PollId}, selected indices: [{SelectedIndices}]",
-            nameof(CommunicationsBgService), voter, pollId, string.Join(", ", selectedIndices));
+        LogPollVoteReceived(_logger, nameof(CommunicationsBgService), voter, pollId, string.Join(", ", selectedIndices));
 
         // Fetch the poll first so we have its metadata even if it expires between
         // RecordVote and building the prompt.
@@ -186,8 +173,7 @@ public sealed partial class CommunicationsBgService
 
         if (!_pollTracker.RecordVote(pollId, voter, selectedIndices))
         {
-            _logger.LogDebug("{ClassName} poll {PollId} not tracked, ignoring vote",
-                nameof(CommunicationsBgService), pollId);
+            LogPollNotTracked(_logger, nameof(CommunicationsBgService), pollId);
             return false;
         }
 
@@ -211,25 +197,17 @@ public sealed partial class CommunicationsBgService
     private void EnqueueReply(string prompt, byte[]? binaryContent = null, string? mimeType = null,
         string? sender = null, long? timestamp = null, bool bypassSession = false, string[]? extraBase64Attachments = null)
     {
-        _replyQueue.Enqueue(new ReplyRequest(prompt, binaryContent, mimeType, sender, timestamp, bypassSession, extraBase64Attachments));
-        _logger.LogInformation("{ClassName} enqueued reply, {QueueDepth} pending",
-            nameof(CommunicationsBgService), _replyQueue.Count);
-        _replySignal.Release();
+        _replyChannel.Writer.TryWrite(new ReplyRequest(prompt, binaryContent, mimeType, sender, timestamp, bypassSession, extraBase64Attachments));
+        LogReplyEnqueued(_logger, nameof(CommunicationsBgService));
     }
 
     private async Task DrainReplyQueueAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} reply queue consumer started", nameof(CommunicationsBgService));
+        LogReplyQueueStarted(_logger, nameof(CommunicationsBgService));
 
-        while (!cancellationToken.IsCancellationRequested)
+        await foreach (var request in _replyChannel.Reader.ReadAllAsync(cancellationToken))
         {
-            await _replySignal.WaitAsync(cancellationToken);
-
-            if (!_replyQueue.TryDequeue(out var request))
-                continue;
-
-            _logger.LogInformation("{ClassName} processing reply, {QueueDepth} remaining",
-                nameof(CommunicationsBgService), _replyQueue.Count);
+            LogProcessingReply(_logger, nameof(CommunicationsBgService));
 
             try
             {
@@ -271,19 +249,15 @@ public sealed partial class CommunicationsBgService
                         Base64Attachments = base64Attachments,
                     };
 
-                    _logger.LogInformation("{ClassName} sending agent response ({Length} chars, {AttachmentCount} attachment(s)) to group {GroupId}",
-                        nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0, _groupId);
+                    LogSendingAgentResponse(_logger, nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0, _groupId);
                     var sendResult = await _notifier.SendAsync(reply, cancellationToken);
                     if (sendResult is not null)
-                        _logger.LogInformation("{ClassName} message sent successfully, timestamp={Timestamp}",
-                            nameof(CommunicationsBgService), sendResult.Timestamp);
+                        LogMessageSent(_logger, nameof(CommunicationsBgService), sendResult.Timestamp);
                     else
-                        _logger.LogWarning("{ClassName} SendAsync returned null — message may not have been delivered",
-                            nameof(CommunicationsBgService));
+                        LogSendReturnedNull(_logger, nameof(CommunicationsBgService));
 
                     // Send detailed debug stats to the debug phone number ("Note to Self").
-                    _logger.LogInformation("{ClassName} debug stats: parentUsage={HasUsage}, inputTokens={InputTokens}, outputTokens={OutputTokens}, debugSteps={StepCount}, stepsWithResult={StepsWithResult}, stepsWithUsage={StepsWithUsage}",
-                        nameof(CommunicationsBgService),
+                    LogDebugStats(_logger, nameof(CommunicationsBgService),
                         agentResult!.Usage is not null,
                         agentResult.Usage?.InputTokenCount,
                         agentResult.Usage?.OutputTokenCount,
@@ -294,8 +268,7 @@ public sealed partial class CommunicationsBgService
                         request.BinaryContent, request.MimeType, cancellationToken);
                 }
                 else
-                    _logger.LogWarning("{ClassName} agent returned empty response for prompt",
-                        nameof(CommunicationsBgService));
+                    LogAgentEmptyResponse(_logger, nameof(CommunicationsBgService));
 
                 // Green tick reaction to indicate successful processing.
                 if (request.Sender is not null && request.Timestamp is not null)
@@ -304,8 +277,7 @@ public sealed partial class CommunicationsBgService
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
-                _logger.LogError(ex, "{ClassName} error processing queued reply ({ExceptionType}: {ExceptionMessage})",
-                    nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
+                LogReplyProcessingError(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
 
                 // Red cross reaction to indicate a processing failure.
                 if (request.Sender is not null && request.Timestamp is not null)
