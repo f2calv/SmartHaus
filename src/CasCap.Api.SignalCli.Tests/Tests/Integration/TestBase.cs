@@ -45,8 +45,8 @@ public abstract class TestBase : IAsyncDisposable
         _config = services.AddAndGetCasCapConfiguration<SignalCliConfig>(configuration);
         _ = services.AddAndGetCasCapConfiguration<ApiAuthConfig>(configuration);
 
-        _groupName = configuration["CasCap:AIConfig:CommsAgent:Settings:GroupName"]
-            ?? throw new GenericException("CasCap:AIConfig:CommsAgent:Settings:GroupName is missing!");
+        _groupName = configuration["CasCap:AIConfig:Agents:CommsAgent:Settings:GroupName"]
+            ?? throw new GenericException("CasCap:AIConfig:Agents:CommsAgent:Settings:GroupName is missing!");
 
         services.AddHttpClient(nameof(SignalCliConnectionHealthCheck), (sp, client) =>
         {
