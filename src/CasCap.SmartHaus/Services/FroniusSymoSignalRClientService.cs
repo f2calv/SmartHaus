@@ -87,6 +87,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
                 }
                 await Task.Delay(retry * 1_000, cancellationToken);
             }
+            return false;
         }
     }
 
