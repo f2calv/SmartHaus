@@ -34,13 +34,13 @@ public record SignalCliConfig : IAppConfig, IHealthCheckConfig
     /// The health check endpoint path. Defaults to <c>"v1/health"</c>.
     /// </summary>
     [Required]
-    public required string HealthCheckUri { get; init; } = "v1/health";
+    public string HealthCheckUri { get; init; } = "v1/health";
 
     /// <summary>
     /// The Kubernetes probe type for the health check. Defaults to <see cref="KubernetesProbeTypes.Readiness"/>.
     /// </summary>
     [Required]
-    public required KubernetesProbeTypes HealthCheck { get; init; } = KubernetesProbeTypes.Readiness;
+    public KubernetesProbeTypes HealthCheck { get; init; } = KubernetesProbeTypes.Readiness;
 
     /// <summary>
     /// Per-request timeout in milliseconds for <c>POST /v2/send</c>.
