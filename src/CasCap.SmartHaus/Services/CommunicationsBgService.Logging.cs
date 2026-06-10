@@ -132,7 +132,7 @@ public sealed partial class CommunicationsBgService
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} debug stats: parentUsage={HasUsage}, inputTokens={InputTokens}, outputTokens={OutputTokens}, debugSteps={StepCount}, stepsWithResult={StepsWithResult}, stepsWithUsage={StepsWithUsage}")]
-    private static partial void LogDebugStats(ILogger logger, string className, bool hasUsage, int? inputTokens, int? outputTokens, int stepCount, int stepsWithResult, int stepsWithUsage);
+    private static partial void LogDebugStats(ILogger logger, string className, bool hasUsage, long? inputTokens, long? outputTokens, int stepCount, int stepsWithResult, int stepsWithUsage);
 
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "{ClassName} agent returned empty response for prompt")]
