@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
+using System.Text;
 using System.Text.Json;
 
 namespace CasCap.Services;
@@ -90,7 +91,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
         {
             try
             {
-                _webSocket = await CreateAndConnectWebSocketAsync(cancellationToken);
+                _webSocket = await CreateAndConnectWebSocketAsync(cancellationToken).ConfigureAwait(false);
 
                 _logger.LogInformation("{ClassName} WebSocket connected for {PhoneNumber}",
                     nameof(SignalCliJsonRpcClientService), _config.PhoneNumber.MaskPhoneNumber());
@@ -122,7 +123,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
                 _webSocket?.Dispose();
                 _webSocket = null;
 
-                await Task.Delay(delay, cancellationToken);
+                await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
             }
         }
     }
@@ -131,7 +132,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
 
     /// <inheritdoc/>
     async Task<INotificationResponse?> INotifier.SendAsync(INotificationMessage message, CancellationToken cancellationToken) =>
-        await ((INotifier)_restClient).SendAsync(message, cancellationToken);
+        await ((INotifier)_restClient).SendAsync(message, cancellationToken).ConfigureAwait(false);
 
     /// <inheritdoc/>
     async Task<IReceivedNotification[]?> INotifier.ReceiveAsync(string account, CancellationToken cancellationToken)
@@ -140,12 +141,12 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
         {
             _logger.LogDebug("{ClassName} WebSocket not open (state={State}), reconnecting before receive",
                 nameof(SignalCliJsonRpcClientService), _webSocket?.State.ToString() ?? "null");
-            await ConnectAsync(cancellationToken);
+            await ConnectAsync(cancellationToken).ConfigureAwait(false);
         }
 
         // Wait for at least one message to be buffered by the WebSocket receive loop,
         // providing natural back-pressure so the caller does not need a polling delay.
-        await _messageSignal.WaitAsync(cancellationToken);
+        await _messageSignal.WaitAsync(cancellationToken).ConfigureAwait(false);
 
         var messages = DrainBuffer();
 
@@ -194,11 +195,11 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
     {
         var wsUri = BuildWebSocketUri(_config.BaseAddress, _config.PhoneNumber);
         _logger.LogInformation("{ClassName} connecting to WebSocket at {Uri}", nameof(SignalCliJsonRpcClientService),
-            BuildWebSocketUri(_config.BaseAddress, _config.PhoneNumber.MaskPhoneNumber()));
+            wsUri.ToString().Replace(_config.PhoneNumber, _config.PhoneNumber.MaskPhoneNumber()));
 
         var ws = new ClientWebSocket();
         _configureWebSocket?.Invoke(ws);
-        await ws.ConnectAsync(wsUri, cancellationToken);
+        await ws.ConnectAsync(wsUri, cancellationToken).ConfigureAwait(false);
         return ws;
     }
 
@@ -207,7 +208,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
         var list = new List<SignalReceivedMessage>();
         while (_messageBuffer.TryDequeue(out var msg))
             list.Add(msg);
-        return [.. list];
+        return list.Count > 0 ? list.ToArray() : [];
     }
 
     /// <summary>
@@ -223,7 +224,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
         {
             try
             {
-                await ReceiveLoopAsync(cancellationToken);
+                await ReceiveLoopAsync(cancellationToken).ConfigureAwait(false);
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
@@ -252,14 +253,14 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
             _logger.LogWarning("{ClassName} WebSocket disconnected, reconnecting in {Delay} (attempt {Attempt}/{MaxAttempts})",
                 nameof(SignalCliJsonRpcClientService), delay, attempt, _maxReconnectAttempts);
 
-            await Task.Delay(delay, cancellationToken);
+            await Task.Delay(delay, cancellationToken).ConfigureAwait(false);
 
             try
             {
                 _webSocket?.Dispose();
                 _webSocket = null;
 
-                _webSocket = await CreateAndConnectWebSocketAsync(cancellationToken);
+                _webSocket = await CreateAndConnectWebSocketAsync(cancellationToken).ConfigureAwait(false);
 
                 // Reset attempt counter on successful reconnection.
                 attempt = 0;
@@ -290,7 +291,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
                 WebSocketReceiveResult result;
                 do
                 {
-                    result = await _webSocket.ReceiveAsync(buffer, cancellationToken);
+                    result = await _webSocket.ReceiveAsync(buffer, cancellationToken).ConfigureAwait(false);
                     if (result.MessageType is WebSocketMessageType.Close)
                     {
                         _logger.LogWarning("{ClassName} WebSocket closed by server ({Status}: {Description})",
@@ -314,7 +315,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
                 else
                 {
                     stream.Position = 0;
-                    var rawText = System.Text.Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
+                    var rawText = Encoding.UTF8.GetString(stream.GetBuffer(), 0, (int)stream.Length);
                     _logger.LogDebug("{ClassName} received WebSocket frame that could not be deserialized: {RawFrame}",
                         nameof(SignalCliJsonRpcClientService), rawText);
                 }
@@ -352,30 +353,22 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
     ///   <item><c>json-rpc</c> — raw payload: <c>{"envelope":{…},"account":"+49…"}</c></item>
     ///   <item><c>json-rpc-native</c> — JSON-RPC 2.0 notification: <c>{"jsonrpc":"2.0","method":"receive","params":{…}}</c></item>
     /// </list>
-    /// This method tries the JSON-RPC wrapper first; if <see cref="SignalCliJsonRpcNotification.Params"/>
-    /// is <see langword="null"/> it falls back to deserializing the frame as a raw
-    /// <see cref="SignalReceivedMessage"/>.
+    /// Uses <see cref="JsonDocument"/> to peek for the <c>"jsonrpc"</c> key to determine format
+    /// without relying on exception-driven control flow.
     /// </summary>
     private static SignalReceivedMessage? DeserializeMessage(MemoryStream stream)
     {
         stream.Position = 0;
 
-        // Try JSON-RPC 2.0 envelope first (json-rpc-native mode).
-        try
-        {
-            var notification = JsonSerializer.Deserialize<SignalCliJsonRpcNotification>(stream);
-            if (notification?.Params is not null)
-                return notification.Params;
-        }
-        catch (JsonException) { /* not a JSON-RPC envelope, try raw format */ }
+        using var doc = JsonDocument.Parse(stream);
+        var root = doc.RootElement;
+
+        // JSON-RPC 2.0 envelope has a "jsonrpc" property (json-rpc-native mode).
+        if (root.TryGetProperty("jsonrpc", out _) && root.TryGetProperty("params", out var paramsElement))
+            return paramsElement.Deserialize<SignalReceivedMessage>();
 
         // Fallback: raw payload without envelope (json-rpc mode).
-        stream.Position = 0;
-        try
-        {
-            return JsonSerializer.Deserialize<SignalReceivedMessage>(stream);
-        }
-        catch (JsonException) { /* unable to deserialize as either format */ return null; }
+        return root.Deserialize<SignalReceivedMessage>();
     }
 
     internal static Uri BuildWebSocketUri(string baseAddress, string phoneNumber)
@@ -410,13 +403,13 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
             return;
         _disposed = true;
 
-        await _wsCts.CancelAsync();
+        await _wsCts.CancelAsync().ConfigureAwait(false);
 
         if (_webSocket is { State: WebSocketState.Open or WebSocketState.CloseReceived })
         {
             try
             {
-                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing", CancellationToken.None);
+                await _webSocket.CloseAsync(WebSocketCloseStatus.NormalClosure, "Disposing", CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -426,7 +419,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IDisposable, IAsy
 
         if (_receiveLoopTask is not null)
         {
-            try { await _receiveLoopTask; }
+            try { await _receiveLoopTask.ConfigureAwait(false); }
             catch (OperationCanceledException) { /* expected */ }
         }
 

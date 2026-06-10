@@ -44,8 +44,8 @@ The synced "README Consistency" rule requires every project README to stay in sy
 
 Both service files are **library** code that never touches `HttpContext`, so per the Performance → ConfigureAwait convention *every* await must use `ConfigureAwait(false)`. Currently **none** of the SignalCli-level awaits do.
 
-- [ ] **`AWA-1` (High)** — [`SignalCliRestClientService`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs): add `ConfigureAwait(false)` to every await in the private helpers (`PostBoolAsync`, `PutAsync`, `DeleteAsync`, `DeleteAsync<T>`) and the explicit `INotifier` implementations.
-- [ ] **`AWA-2` (High)** — [`SignalCliJsonRpcClientService`](../../src/CasCap.Api.SignalCli/Services/SignalCliJsonRpcClientService.cs): add `ConfigureAwait(false)` to `ws.ConnectAsync`, `_webSocket.ReceiveAsync`, `_messageSignal.WaitAsync`, `Task.Delay`, and the WebSocket close in `DisposeAsync`.
+- [x] **`AWA-1` (High)** — [`SignalCliRestClientService`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs): add `ConfigureAwait(false)` to every await in the private helpers (`PostBoolAsync`, `PutAsync`, `DeleteAsync`, `DeleteAsync<T>`) and the explicit `INotifier` implementations.
+- [x] **`AWA-2` (High)** — [`SignalCliJsonRpcClientService`](../../src/CasCap.Api.SignalCli/Services/SignalCliJsonRpcClientService.cs): add `ConfigureAwait(false)` to `ws.ConnectAsync`, `_webSocket.ReceiveAsync`, `_messageSignal.WaitAsync`, `Task.Delay`, and the WebSocket close in `DisposeAsync`.
 
 ## 4. Concurrency / Correctness Bugs (JSON-RPC Client)
 
@@ -57,11 +57,11 @@ The highest-risk findings. The current buffer + counting-semaphore + drain desig
 
 ## 5. Performance & Code Smells (Services)
 
-- [ ] **`PRF-1` (Medium)** — Exception-driven control flow in `DeserializeMessage`. It deserializes twice and uses two `catch (JsonException)` blocks as the format-detection mechanism. Peek with `JsonDocument`/`Utf8JsonReader` for the `jsonrpc`/`params` keys to avoid throwing on every raw-format frame.
-- [ ] **`PRF-2` (Low)** — Double `UriBuilder` allocation for logging. `CreateAndConnectWebSocketAsync` builds `wsUri`, then builds a *second* masked URI purely for the log line. Mask the already-built string instead.
-- [ ] **`PRF-3` (Low)** — `DrainBuffer` allocates twice (a `List<T>` then a collection-expression copy `[.. list]`). Drain straight into the result, or return the list. (Likely removed entirely by `ARC-2`.)
-- [ ] **`PRF-4` (Low)** — `AddSignalCli` returns `void`. Other `Add*` extension methods conventionally return `IServiceCollection` for chaining.
-- [ ] **`PRF-5` (Low)** — `ReceiveLoopAsync` uses fully-qualified `System.Text.Encoding.UTF8`. Add `using System.Text;` and shorten to `Encoding.UTF8`.
+- [x] **`PRF-1` (Medium)** — Exception-driven control flow in `DeserializeMessage`. It deserializes twice and uses two `catch (JsonException)` blocks as the format-detection mechanism. Peek with `JsonDocument`/`Utf8JsonReader` for the `jsonrpc`/`params` keys to avoid throwing on every raw-format frame.
+- [x] **`PRF-2` (Low)** — Double `UriBuilder` allocation for logging. `CreateAndConnectWebSocketAsync` builds `wsUri`, then builds a *second* masked URI purely for the log line. Mask the already-built string instead.
+- [x] **`PRF-3` (Low)** — `DrainBuffer` allocates twice (a `List<T>` then a collection-expression copy `[.. list]`). Drain straight into the result, or return the list. (Likely removed entirely by `ARC-2`.)
+- [x] **`PRF-4` (Low)** — `AddSignalCli` returns `void`. Other `Add*` extension methods conventionally return `IServiceCollection` for chaining.
+- [x] **`PRF-5` (Low)** — `ReceiveLoopAsync` uses fully-qualified `System.Text.Encoding.UTF8`. Add `using System.Text;` and shorten to `Encoding.UTF8`.
 
 ## 6. Controller
 
