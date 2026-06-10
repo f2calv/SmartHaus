@@ -1,4 +1,4 @@
-namespace CasCap.Tests;
+namespace CasCap.Tests.Integration;
 
 /// <summary>
 /// Base class for <see cref="SignalCliRestClientService"/> integration tests.
@@ -8,16 +8,16 @@ namespace CasCap.Tests;
 public abstract class TestBase : IAsyncDisposable
 {
     /// <summary>The xUnit output helper for writing test diagnostics.</summary>
-    protected ITestOutputHelper _output;
+    protected readonly ITestOutputHelper _output;
 
     /// <summary>The <see cref="SignalCliRestClientService"/> under test.</summary>
-    protected SignalCliRestClientService svc;
+    protected readonly SignalCliRestClientService _svc;
 
     /// <summary>The resolved <see cref="SignalCliConfig"/> from configuration.</summary>
-    protected SignalCliConfig _config;
+    protected readonly SignalCliConfig _config;
 
-    /// <summary>The group name used for integration tests (from <c>CasCap:CommsAgentConfig:GroupName</c>).</summary>
-    protected string _groupName;
+    /// <summary>The group name used for integration tests (from <c>CasCap:AIConfig:CommsAgent:Settings:GroupName</c>).</summary>
+    protected readonly string _groupName;
 
     /// <summary>The DI service provider (exposed for sub-service resolution in derived tests).</summary>
     protected readonly ServiceProvider _serviceProvider;
@@ -52,7 +52,7 @@ public abstract class TestBase : IAsyncDisposable
         {
             var opts = sp.GetRequiredService<IOptions<SignalCliConfig>>().Value;
             client.BaseAddress = new Uri(opts.BaseAddress);
-            if (true)
+            if (opts.BasicAuthEnabled)
             {
                 var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
                 client.SetBasicAuth(authOpts.Username, authOpts.Password);
@@ -63,7 +63,7 @@ public abstract class TestBase : IAsyncDisposable
         services.AddSingleton<SignalCliRestClientService>();
 
         _serviceProvider = services.BuildServiceProvider();
-        svc = _serviceProvider.GetRequiredService<SignalCliRestClientService>();
+        _svc = _serviceProvider.GetRequiredService<SignalCliRestClientService>();
     }
 
     /// <inheritdoc/>
