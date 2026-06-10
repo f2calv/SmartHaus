@@ -94,7 +94,7 @@ public class SignalCliJsonRpcClientServiceUnitTests(ITestOutputHelper output)
     }
 
     [Fact]
-    public void AddSignalCli_WithJsonRpcTransport_RegistersJsonRpcClient()
+    public async Task AddSignalCli_WithJsonRpcTransport_RegistersJsonRpcClient()
     {
         var configuration = BuildConfiguration(SignalCliTransport.JsonRpc);
         var services = new ServiceCollection()
@@ -102,7 +102,7 @@ public class SignalCliJsonRpcClientServiceUnitTests(ITestOutputHelper output)
             .AddXUnitLogging(output);
         services.AddSignalCli(configuration);
 
-        using var sp = services.BuildServiceProvider();
+        await using var sp = services.BuildServiceProvider();
         var notifier = sp.GetRequiredService<INotifier>();
         Assert.IsType<SignalCliJsonRpcClientService>(notifier);
         output.WriteLine($"INotifier resolved to {notifier.GetType().Name}");
