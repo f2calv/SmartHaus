@@ -12,46 +12,64 @@ public sealed class SignalCliController(SignalCliRestClientService signalCliRest
 {
     /// <inheritdoc cref="SignalCliRestClientService.GetAbout"/>
     [HttpGet("about")]
-    public async Task<Ok<SignalAbout>> GetAbout()
-        => TypedResults.Ok(await signalCliRestClientSvc.GetAbout());
+    public async Task<Results<Ok<SignalAbout>, NotFound>> GetAbout()
+        => await signalCliRestClientSvc.GetAbout() is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.GetConfiguration"/>
     [HttpGet("configuration")]
-    public async Task<Ok<SignalConfiguration>> GetConfiguration()
-        => TypedResults.Ok(await signalCliRestClientSvc.GetConfiguration());
+    public async Task<Results<Ok<SignalConfiguration>, NotFound>> GetConfiguration()
+        => await signalCliRestClientSvc.GetConfiguration() is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListAccounts"/>
     [HttpGet("accounts")]
-    public async Task<Ok<string[]>> ListAccounts()
-        => TypedResults.Ok(await signalCliRestClientSvc.ListAccounts());
+    public async Task<Results<Ok<string[]>, NotFound>> ListAccounts()
+        => await signalCliRestClientSvc.ListAccounts() is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListContacts"/>
     [HttpGet("contacts")]
-    public async Task<Ok<SignalContact[]>> ListContacts([FromQuery] string number)
-        => TypedResults.Ok(await signalCliRestClientSvc.ListContacts(number));
+    public async Task<Results<Ok<SignalContact[]>, NotFound>> ListContacts([FromQuery] string number)
+        => await signalCliRestClientSvc.ListContacts(number) is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListGroups"/>
     [HttpGet("groups")]
-    public async Task<Ok<SignalGroup[]>> ListGroups([FromQuery] string number)
-        => TypedResults.Ok(await signalCliRestClientSvc.ListGroups(number));
+    public async Task<Results<Ok<SignalGroup[]>, NotFound>> ListGroups([FromQuery] string number)
+        => await signalCliRestClientSvc.ListGroups(number) is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListLinkedDevices"/>
     [HttpGet("devices")]
-    public async Task<Ok<SignalDevice[]>> ListLinkedDevices([FromQuery] string number)
-        => TypedResults.Ok(await signalCliRestClientSvc.ListLinkedDevices(number));
+    public async Task<Results<Ok<SignalDevice[]>, NotFound>> ListLinkedDevices([FromQuery] string number)
+        => await signalCliRestClientSvc.ListLinkedDevices(number) is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListIdentities"/>
     [HttpGet("identities")]
-    public async Task<Ok<SignalIdentity[]>> ListIdentities([FromQuery] string number)
-        => TypedResults.Ok(await signalCliRestClientSvc.ListIdentities(number));
+    public async Task<Results<Ok<SignalIdentity[]>, NotFound>> ListIdentities([FromQuery] string number)
+        => await signalCliRestClientSvc.ListIdentities(number) is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListAttachments"/>
     [HttpGet("attachments")]
-    public async Task<Ok<string[]>> ListAttachments()
-        => TypedResults.Ok(await signalCliRestClientSvc.ListAttachments());
+    public async Task<Results<Ok<string[]>, NotFound>> ListAttachments()
+        => await signalCliRestClientSvc.ListAttachments() is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 
     /// <inheritdoc cref="SignalCliRestClientService.ListStickerPacks"/>
     [HttpGet("sticker-packs")]
-    public async Task<Ok<SignalStickerPack[]>> ListStickerPacks([FromQuery] string number)
-        => TypedResults.Ok(await signalCliRestClientSvc.ListStickerPacks(number));
+    public async Task<Results<Ok<SignalStickerPack[]>, NotFound>> ListStickerPacks([FromQuery] string number)
+        => await signalCliRestClientSvc.ListStickerPacks(number) is { } result
+            ? TypedResults.Ok(result)
+            : TypedResults.NotFound();
 }
