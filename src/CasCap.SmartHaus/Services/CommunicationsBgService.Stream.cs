@@ -142,6 +142,7 @@ public sealed partial class CommunicationsBgService
         {
             Source = dict.GetValueOrDefault(nameof(CommsEvent.Source)) ?? "Unknown",
             Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
+            Environment = dict.GetValueOrDefault(nameof(CommsEvent.Environment)) ?? _env.GetAcronym(),
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                 ? ts
                 : _timeProvider.GetUtcNow().UtcDateTime,

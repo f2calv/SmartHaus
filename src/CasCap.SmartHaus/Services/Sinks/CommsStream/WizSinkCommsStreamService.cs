@@ -8,6 +8,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed partial class WizSinkCommsStreamService(ILogger<WizSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IEventSink<CommsEvent> commsSink) : IEventSink<WizEvent>
 {
     /// <inheritdoc/>
@@ -37,6 +38,7 @@ public sealed partial class WizSinkCommsStreamService(ILogger<WizSinkCommsStream
             {
                 Source = nameof(WizSinkCommsStreamService),
                 Message = $"Smart light {bulbId} turned {action}",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }

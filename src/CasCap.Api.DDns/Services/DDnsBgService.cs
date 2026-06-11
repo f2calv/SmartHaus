@@ -1,6 +1,7 @@
 using Azure.ResourceManager;
 using Azure.ResourceManager.Dns;
 using Azure.ResourceManager.Resources;
+using Microsoft.Extensions.Hosting;
 
 namespace CasCap.Services;
 
@@ -15,6 +16,7 @@ public sealed class DDnsBgService(
     IOptions<AzureAuthConfig> azureAuthConfig,
     IOptions<DDnsConfig> dDnsConfig,
     TimeProvider timeProvider,
+    IHostEnvironment env,
     DDnsFindMyIpClientService findMyIpClientSvc,
     IDistributedLockFactory lockFactory,
     IEventSink<CommsEvent> commsSink
@@ -129,6 +131,7 @@ public sealed class DDnsBgService(
             {
                 Source = nameof(DDnsBgService),
                 Message = $"DNS updated {updatedRecords.Count} A record(s) from {priorIp} to {newIp}: {recordList}",
+                Environment = env.GetAcronym(),
                 TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
             };
             await commsSink.WriteEvent(commsEvent, cancellationToken);

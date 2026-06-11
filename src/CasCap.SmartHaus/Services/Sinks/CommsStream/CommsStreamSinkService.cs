@@ -14,6 +14,7 @@ namespace CasCap.Services;
 /// </remarks>
 public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
     IOptions<CommsAgentConfig> commsAgentConfig,
+    IHostEnvironment env,
     TimeProvider timeProvider,
     IRemoteCache remoteCache) : IEventSink<CommsEvent>
 {
@@ -53,6 +54,7 @@ public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logge
             {
                 Source = dict.GetValueOrDefault(nameof(CommsEvent.Source)) ?? "Unknown",
                 Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
+                Environment = dict.GetValueOrDefault(nameof(CommsEvent.Environment)) ?? env.GetAcronym(),
                 TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                     ? ts
                     : timeProvider.GetUtcNow().UtcDateTime,

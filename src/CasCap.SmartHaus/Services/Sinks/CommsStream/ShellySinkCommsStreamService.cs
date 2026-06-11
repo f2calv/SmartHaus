@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// reports an overpower condition. Tracks alert state per device.
 /// </summary>
 [SinkType("CommsStream")]
-public sealed class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
+public sealed class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamService> logger, IHostEnvironment env, IEventSink<CommsEvent> commsSink) : IEventSink<ShellyEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";
@@ -28,6 +28,7 @@ public sealed class ShellySinkCommsStreamService(ILogger<ShellySinkCommsStreamSe
                 {
                     Source = nameof(ShellySinkCommsStreamService),
                     Message = $"Smart plug '{@event.DeviceName}' overpower alert — Power={@event.Power:F0}W, Temperature={@event.Temperature:F1}°C",
+                    Environment = env.GetAcronym(),
                     TimestampUtc = @event.TimestampUtc,
                 };
                 await commsSink.WriteEvent(commsEvent, cancellationToken);

@@ -8,6 +8,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IEventSink<CommsEvent> commsSink) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
@@ -27,6 +28,7 @@ public sealed partial class DoorBirdSinkCommsStreamService(ILogger<DoorBirdSinkC
         {
             Source = nameof(DoorBirdSinkCommsStreamService),
             Message = $"Front door entry relay activated at {@event.DateCreatedUtc:HH:mm:ss} UTC",
+            Environment = env.GetAcronym(),
             TimestampUtc = @event.DateCreatedUtc,
         }, cancellationToken);
     }

@@ -6,6 +6,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IEventSink<CommsEvent> commsSink) : IEventSink<SicceEvent>
 {
     /// <inheritdoc/>
@@ -26,6 +27,7 @@ public sealed partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsSt
             {
                 Source = nameof(SicceSinkCommsStreamService),
                 Message = "Aquarium pump has gone offline",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }
@@ -36,6 +38,7 @@ public sealed partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsSt
             {
                 Source = nameof(SicceSinkCommsStreamService),
                 Message = "Aquarium pump is back online",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }
@@ -48,6 +51,7 @@ public sealed partial class SicceSinkCommsStreamService(ILogger<SicceSinkCommsSt
             {
                 Source = nameof(SicceSinkCommsStreamService),
                 Message = $"Aquarium pump power switch toggled {state}",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }
