@@ -9,4 +9,3 @@ global using Microsoft.Extensions.Options;
 global using System.Diagnostics;
 global using System.Xml.Linq;
 global using Xunit;
-global using Xunit.Abstractions;

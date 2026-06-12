@@ -35,15 +35,15 @@ public abstract class WebApiTestBase : IAsyncLifetime
     protected IServiceProvider Services => Factory.Services;
 
     /// <inheritdoc/>
-    public virtual Task InitializeAsync()
+    public virtual ValueTask InitializeAsync()
     {
         AuthorizedClient = Factory.CreateAuthorizedClient();
         AnonymousClient = Factory.CreateAnonymousClient();
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     /// <inheritdoc/>
-    public virtual async Task DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
         AuthorizedClient.Dispose();
         AnonymousClient.Dispose();

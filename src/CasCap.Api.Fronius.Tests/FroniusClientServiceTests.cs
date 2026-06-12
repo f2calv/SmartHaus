@@ -75,7 +75,7 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
     public async Task GetStorageRealtimeData_ReturnsData()
     {
         // Debug: fetch raw JSON to inspect the response shape
-        var rawResponse = await svc.Client.GetStringAsync("solar_api/v1/GetStorageRealtimeData.cgi?Scope=System");
+        var rawResponse = await svc.Client.GetStringAsync("solar_api/v1/GetStorageRealtimeData.cgi?Scope=System", TestContext.Current.CancellationToken);
         _output.WriteLine($"Raw response: {rawResponse}");
 
         var result = await svc.GetStorageRealtimeData();

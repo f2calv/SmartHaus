@@ -25,7 +25,7 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     [Trait("Category", "Integration")]
     public async Task HealthEndpoint_Responds()
     {
-        var response = await AnonymousClient.GetAsync("/healthz");
+        var response = await AnonymousClient.GetAsync("/healthz", TestContext.Current.CancellationToken);
 
         // 200 OK  → all health checks passing
         // 503 Service Unavailable → one or more checks degraded (expected in CI without Redis)
@@ -33,7 +33,7 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable,
             $"Expected 200 or 503 but got {(int)response.StatusCode} {response.StatusCode}");
 
-        var body = await response.Content.ReadAsStringAsync();
+        var body = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         output.WriteLine($"GET /healthz → {(int)response.StatusCode}: {body}");
     }
 
@@ -44,7 +44,7 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     [Trait("Category", "Integration")]
     public async Task LivenessProbe_Responds()
     {
-        var response = await AnonymousClient.GetAsync("/healthz/live");
+        var response = await AnonymousClient.GetAsync("/healthz/live", TestContext.Current.CancellationToken);
 
         Assert.True(
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable,
@@ -60,7 +60,7 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     [Trait("Category", "Integration")]
     public async Task ReadinessProbe_Responds()
     {
-        var response = await AnonymousClient.GetAsync("/healthz/ready");
+        var response = await AnonymousClient.GetAsync("/healthz/ready", TestContext.Current.CancellationToken);
 
         Assert.True(
             response.StatusCode is HttpStatusCode.OK or HttpStatusCode.ServiceUnavailable,
@@ -81,7 +81,7 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     public async Task AllProbeEndpoints_AllowAnonymous(string path)
     {
         // Use an anonymous client (no auth header) – probes must be AllowAnonymous
-        var response = await AnonymousClient.GetAsync(path);
+        var response = await AnonymousClient.GetAsync(path, TestContext.Current.CancellationToken);
 
         Assert.NotEqual(HttpStatusCode.Unauthorized, response.StatusCode);
         output.WriteLine($"GET {path} → {(int)response.StatusCode} (anonymous)");
