@@ -14,7 +14,7 @@ namespace CasCap.Services;
 /// effectively using the hot water tank as a thermal battery.
 /// </remarks>
 [SinkType("CommsStream")]
-public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IHostEnvironment env, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";
@@ -72,6 +72,7 @@ public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStream
                     Source = nameof(BuderusSinkCommsStreamService),
                     Message = $"Hot water temperature ({actualTemp:F1}°C) has reached the target ({_currentSetpoint.Value:F1}°C). "
                         + "Consider raising the target if the solar battery is full and there is surplus solar production.",
+                    Environment = env.GetAcronym(),
                     TimestampUtc = timestampUtc,
                 };
                 await commsSink.WriteEvent(commsEvent, cancellationToken);

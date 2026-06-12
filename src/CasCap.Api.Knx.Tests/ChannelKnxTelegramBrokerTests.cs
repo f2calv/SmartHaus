@@ -11,7 +11,7 @@ public class ChannelKnxTelegramBrokerTests
         var broker = new ChannelKnxTelegramBroker<string>();
         var expected = "hello";
 
-        await broker.PublishAsync(expected);
+        await broker.PublishAsync(expected, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         await foreach (var item in broker.SubscribeAsync(cts.Token))
@@ -28,7 +28,7 @@ public class ChannelKnxTelegramBrokerTests
         var expected = new[] { 1, 2, 3 };
 
         foreach (var value in expected)
-            await broker.PublishAsync(value);
+            await broker.PublishAsync(value, TestContext.Current.CancellationToken);
 
         var received = new List<int>();
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
@@ -70,7 +70,7 @@ public class ChannelKnxTelegramBrokerTests
         // so only one subscriber should consume items.
         var broker = new ChannelKnxTelegramBroker<int>();
 
-        await broker.PublishAsync(42);
+        await broker.PublishAsync(42, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
         await foreach (var item in broker.SubscribeAsync(cts.Token))

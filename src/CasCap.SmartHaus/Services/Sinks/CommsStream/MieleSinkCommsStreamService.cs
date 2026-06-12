@@ -6,6 +6,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IEventSink<CommsEvent> commsSink) : IEventSink<MieleEvent>
 {
     /// <inheritdoc/>
@@ -24,6 +25,7 @@ public sealed partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsSt
             {
                 Source = nameof(MieleSinkCommsStreamService),
                 Message = $"Appliance {@event.DeviceName ?? @event.DeviceId} reported error code {@event.ErrorCode}",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }
@@ -36,6 +38,7 @@ public sealed partial class MieleSinkCommsStreamService(ILogger<MieleSinkCommsSt
             {
                 Source = nameof(MieleSinkCommsStreamService),
                 Message = $"Appliance {@event.DeviceName ?? @event.DeviceId} program '{@event.ProgramName ?? $"#{@event.ProgramId}"}' completed",
+                Environment = env.GetAcronym(),
                 TimestampUtc = @event.TimestampUtc,
             }, cancellationToken);
         }

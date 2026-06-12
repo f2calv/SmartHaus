@@ -71,7 +71,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     {
         // Flush pending envelopes so signal-cli processes group membership
         // changes (e.g. a member accepting an invite) before we read state.
-        var pending = await _svc.ReceiveMessages(_config.PhoneNumber);
+        var pending = await _svc.ReceiveMessages(_config.PhoneNumber, TestContext.Current.CancellationToken);
         _output.WriteLine($"FlushedMessages={pending?.Length ?? 0}");
 
         var groups = await _svc.ListGroups(_config.PhoneNumber);
@@ -225,7 +225,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Fact]
     public async Task ReceiveMessages_ReturnsMessages()
     {
-        var result = await _svc.ReceiveMessages(_config.PhoneNumber);
+        var result = await _svc.ReceiveMessages(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"ReceivedMessages={result.Length}");
         foreach (var msg in result)

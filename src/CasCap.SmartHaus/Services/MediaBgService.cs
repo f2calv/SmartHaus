@@ -24,6 +24,7 @@ namespace CasCap.Services;
 public sealed class MediaBgService(ILogger<MediaBgService> logger,
     IOptions<MediaConfig> mediaConfig,
     IOptions<AIConfig> aiConfig,
+    IHostEnvironment env,
     TimeProvider timeProvider,
     IRemoteCache remoteCache,
     IEventSink<CommsEvent> commsSink,
@@ -193,6 +194,7 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                 {
                     Source = nameof(MediaBgService),
                     Message = $"{mediaEvent.Source} {mediaEvent.MediaType} analysis ({mediaEvent.EventType}): {result.OutputText}",
+                    Environment = env.GetAcronym(),
                     TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                     JsonPayload = mediaPayload.ToJson(),
                 };

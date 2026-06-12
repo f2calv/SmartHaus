@@ -17,7 +17,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
     public async Task ConnectAsync_EstablishesWebSocket()
     {
         await using var jsonRpcSvc = CreateJsonRpcService();
-        await jsonRpcSvc.ConnectAsync();
+        await jsonRpcSvc.ConnectAsync(TestContext.Current.CancellationToken);
         _output.WriteLine("WebSocket connected successfully");
     }
 
@@ -34,14 +34,14 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
             Number = _config.PhoneNumber,
             Recipients = [_config.PhoneNumber]
         };
-        var sendResult = await notifier.SendAsync(msg);
+        var sendResult = await notifier.SendAsync(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(sendResult);
         _output.WriteLine($"Sent message, timestamp={sendResult.Timestamp}");
 
         // Allow time for WebSocket delivery
-        await Task.Delay(2000);
+        await Task.Delay(2000, TestContext.Current.CancellationToken);
 
-        var messages = await notifier.ReceiveAsync(_config.PhoneNumber);
+        var messages = await notifier.ReceiveAsync(_config.PhoneNumber, TestContext.Current.CancellationToken);
         _output.WriteLine($"Received {messages?.Length ?? 0} message(s)");
         Assert.NotNull(messages);
     }
@@ -52,7 +52,7 @@ public class SignalCliJsonRpcClientServiceTests(ITestOutputHelper output) : Test
         await using var jsonRpcSvc = CreateJsonRpcService();
         var notifier = (INotifier)jsonRpcSvc;
 
-        var groups = await notifier.ListGroupsAsync(_config.PhoneNumber);
+        var groups = await notifier.ListGroupsAsync(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(groups);
         _output.WriteLine($"Groups={groups.Length}");
     }

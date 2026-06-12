@@ -113,7 +113,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         _output.WriteLine($"Original {datapointId} = {original.Value} {original.UnitOfMeasure}");
 
         // Write the same value back (no-op from the device's perspective)
-        var success = await svc.SetDataPoint(datapointId, original.Value!);
+        var success = await svc.SetDataPoint(datapointId, original.Value!, TestContext.Current.CancellationToken);
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
         // Confirm the value is unchanged
@@ -134,7 +134,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         Assert.Equal(1, original.Writeable);
         _output.WriteLine($"Original {datapointId} = {original.Value} {original.UnitOfMeasure}");
 
-        var success = await svc.SetDataPoint(datapointId, original.Value!);
+        var success = await svc.SetDataPoint(datapointId, original.Value!, TestContext.Current.CancellationToken);
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
         var after = await svc.GetDataPoint(datapointId);
@@ -156,7 +156,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         _output.WriteLine($"Original {datapointId} = {original.Value}");
 
         // Write the same value back
-        var success = await svc.SetDataPoint(datapointId, original.Value!);
+        var success = await svc.SetDataPoint(datapointId, original.Value!, TestContext.Current.CancellationToken);
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
         var after = await svc.GetDataPoint(datapointId);
@@ -170,7 +170,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     public async Task SetDataPoint_ReadOnlyDatapoint_ReturnsFalse()
     {
         // /dhwCircuits/dhw1/actualTemp is not writeable (writeable=0)
-        var success = await svc.SetDataPoint("/dhwCircuits/dhw1/actualTemp", "50");
+        var success = await svc.SetDataPoint("/dhwCircuits/dhw1/actualTemp", "50", TestContext.Current.CancellationToken);
 
         Assert.False(success, "SetDataPoint should return false for a read-only datapoint");
         _output.WriteLine("Correctly rejected write to read-only datapoint");

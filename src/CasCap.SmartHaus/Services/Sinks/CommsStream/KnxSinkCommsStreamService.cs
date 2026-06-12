@@ -20,9 +20,11 @@ public sealed partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
     private readonly KnxConfig _config;
     private readonly IKnxState _knxState;
     private readonly IEventSink<CommsEvent> _commsSink;
+    private readonly IHostEnvironment _env;
 
     /// <inheritdoc/>
     public KnxSinkCommsStreamService(ILogger<KnxSinkCommsStreamService> logger,
+        IHostEnvironment env,
         IOptions<KnxConfig> config,
         IKnxState knxState,
         IEventSink<CommsEvent> commsSink,
@@ -30,6 +32,7 @@ public sealed partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
         )
     {
         _logger = logger;
+        _env = env;
         _config = config.Value;
         _knxState = knxState;
         _commsSink = commsSink;
@@ -94,6 +97,7 @@ public sealed partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
             {
                 Source = nameof(KnxSinkCommsStreamService),
                 Message = $"{friendly} changed from '{oldValue}' to '{newValue}'",
+                Environment = _env.GetAcronym(),
                 TimestampUtc = knxEvent.TimestampUtc,
             };
             await _commsSink.WriteEvent(commsEvent, cancellationToken);
@@ -118,6 +122,7 @@ public sealed partial class KnxSinkCommsStreamService : IEventSink<KnxEvent>
                     {
                         Source = nameof(KnxSinkCommsStreamService),
                         Message = $"Home automation bus connection {action}",
+                        Environment = _env.GetAcronym(),
                         TimestampUtc = change.TimestampUtc,
                     };
                     await _commsSink.WriteEvent(commsEvent);

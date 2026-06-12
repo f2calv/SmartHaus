@@ -1,3 +1,6 @@
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.Internal;
+
 namespace CasCap.Tests;
 
 /// <summary>
@@ -34,6 +37,9 @@ public abstract class TestBase : IAsyncDisposable
             services.AddCasCapConfiguration<AppConfig>();
             services.AddKnx(configuration);
         }
+
+        IHostEnvironment env = new HostingEnvironment { EnvironmentName = Environments.Development };
+        services.AddSingleton(env);
 
         //assign services to be tested
         _serviceProvider = services.BuildServiceProvider();

@@ -12,6 +12,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardwareSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IOptions<EdgeHardwareConfig> config,
     IEventSink<CommsEvent> commsSink) : IEventSink<EdgeHardwareEvent>
 {
@@ -48,6 +49,7 @@ public sealed partial class EdgeHardwareSinkCommsStreamService(ILogger<EdgeHardw
                 {
                     Source = nameof(EdgeHardwareSinkCommsStreamService),
                     Message = $"Compute node {@event.NodeName} GPU temperature alert: {@event.GpuTemperatureC:F1}°C (threshold {_gpuAlertThreshold}°C)",
+                    Environment = env.GetAcronym(),
                     TimestampUtc = @event.TimestampUtc,
                 }, cancellationToken);
             }

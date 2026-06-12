@@ -113,7 +113,7 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         var contents = new List<AIContent>
         {
             new TextContent("please describe this file in a maximum of two sentences"),
-            new DataContent(await File.ReadAllBytesAsync(_filePath), _fileMimeType),
+            new DataContent(await File.ReadAllBytesAsync(_filePath, TestContext.Current.CancellationToken), _fileMimeType),
             //new DataContent(await File.ReadAllBytesAsync(_filePath2), "text/plain")//not working?
             //new DataContent("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAoAAAAKCAYAAACNMs+9AAAAFUlEQVR42mP8z8BQz0AEYBxVSF+FABJADveWkH6oAAAAAElFTkSuQmCC", "image/png")
         };

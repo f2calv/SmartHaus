@@ -13,20 +13,17 @@ public sealed partial class CommunicationsBgService
                 _commsAgentConfig.ConsumerGroup,
                 _commsAgentConfig.ConsumerGroupStartId,
                 createStream: true);
-            _logger.LogInformation("{ClassName} created consumer group {ConsumerGroup} on stream {StreamKey}",
-                nameof(CommunicationsBgService), _commsAgentConfig.ConsumerGroup, _commsAgentConfig.StreamKey);
+            LogConsumerGroupCreated(_logger, nameof(CommunicationsBgService), _commsAgentConfig.ConsumerGroup, _commsAgentConfig.StreamKey);
         }
         catch (RedisServerException ex) when (ex.Message.Contains("BUSYGROUP"))
         {
-            _logger.LogDebug("{ClassName} consumer group {ConsumerGroup} already exists",
-                nameof(CommunicationsBgService), _commsAgentConfig.ConsumerGroup);
+            LogConsumerGroupExists(_logger, nameof(CommunicationsBgService), _commsAgentConfig.ConsumerGroup);
         }
     }
 
     private async Task DrainStreamAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} consuming stream {StreamKey} as {ConsumerGroup}/{ConsumerName}",
-            nameof(CommunicationsBgService), _commsAgentConfig.StreamKey,
+        LogStreamConsuming(_logger, nameof(CommunicationsBgService), _commsAgentConfig.StreamKey,
             _commsAgentConfig.ConsumerGroup, _commsAgentConfig.ConsumerName);
 
         while (!cancellationToken.IsCancellationRequested)
@@ -69,12 +66,12 @@ public sealed partial class CommunicationsBgService
             }
             catch (RedisServerException ex) when (ex.Message.Contains("NOGROUP"))
             {
-                _logger.LogWarning("{ClassName} consumer group disappeared, recreating", nameof(CommunicationsBgService));
+                LogConsumerGroupDisappeared(_logger, nameof(CommunicationsBgService));
                 await EnsureConsumerGroupAsync();
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
-                _logger.LogError(ex, "{ClassName} error during stream read cycle", nameof(CommunicationsBgService));
+                LogStreamReadError(_logger, ex, nameof(CommunicationsBgService));
                 await Task.Delay(TimeSpan.FromMilliseconds(_commsAgentConfig.PollingIntervalMs), cancellationToken);
             }
         }
@@ -82,8 +79,7 @@ public sealed partial class CommunicationsBgService
 
     private async Task ProcessCommsEventAsync(CommsEvent commsEvent, CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} processing stream event from {Source}: {Message}",
-            nameof(CommunicationsBgService), commsEvent.Source, commsEvent.Message);
+        LogProcessingStreamEvent(_logger, nameof(CommunicationsBgService), commsEvent.Source, commsEvent.Message);
 
         // Forward the raw stream event to the debug chat for observability.
         await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
@@ -94,8 +90,7 @@ public sealed partial class CommunicationsBgService
         if (_agent is null || _commsAgent is null || _provider is null)
         {
             // No agent — forward event message directly to the notification group.
-            _logger.LogInformation("{ClassName} no agent configured, forwarding event directly to group",
-                nameof(CommunicationsBgService));
+            LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
             var directMsg = new SignalMessageRequest
             {
                 Message = commsEvent.Message,
@@ -104,8 +99,7 @@ public sealed partial class CommunicationsBgService
             };
             var sendResult = await _notifier.SendAsync(directMsg, cancellationToken);
             if (sendResult is null)
-                _logger.LogWarning("{ClassName} direct forward SendAsync returned null — message may not have been delivered",
-                    nameof(CommunicationsBgService));
+                LogDirectForwardFailed(_logger, nameof(CommunicationsBgService));
             return;
         }
 
@@ -129,12 +123,10 @@ public sealed partial class CommunicationsBgService
                         var fileName = mediaRef.FileName ?? "media";
                         extraAttachments = [$"data:{mimeType};filename={fileName};base64,{Convert.ToBase64String(mediaBytes)}"];
                         await _db.KeyDeleteAsync(mediaRef.MediaRedisKey, CommandFlags.FireAndForget);
-                        _logger.LogDebug("{ClassName} attached {Size} byte media from {MediaRedisKey}",
-                            nameof(CommunicationsBgService), mediaBytes.Length, mediaRef.MediaRedisKey);
+                        LogMediaAttached(_logger, nameof(CommunicationsBgService), mediaBytes.Length, mediaRef.MediaRedisKey);
                     }
                     else
-                        _logger.LogWarning("{ClassName} media not found at {MediaRedisKey}, sending without attachment",
-                            nameof(CommunicationsBgService), mediaRef.MediaRedisKey);
+                        LogMediaNotFound(_logger, nameof(CommunicationsBgService), mediaRef.MediaRedisKey);
                 }
             }
             catch { /* JsonPayload is not a MediaCommsPayload — that's fine, skip attachment */ }
@@ -150,6 +142,7 @@ public sealed partial class CommunicationsBgService
         {
             Source = dict.GetValueOrDefault(nameof(CommsEvent.Source)) ?? "Unknown",
             Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
+            Environment = dict.GetValueOrDefault(nameof(CommsEvent.Environment)) ?? _env.GetAcronym(),
             TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
                 ? ts
                 : _timeProvider.GetUtcNow().UtcDateTime,

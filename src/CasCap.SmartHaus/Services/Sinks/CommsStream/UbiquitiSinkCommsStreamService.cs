@@ -6,6 +6,7 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("CommsStream")]
 public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
+    IHostEnvironment env,
     IEventSink<CommsEvent> commsSink) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
@@ -21,6 +22,7 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
         {
             Source = nameof(UbiquitiSinkCommsStreamService),
             Message = $"Security camera {@event.CameraName ?? @event.CameraId ?? "unknown"} detected {@event.UbiquitiEventType} at {@event.DateCreatedUtc:yyyy-MM-dd HH:mm:ss} UTC",
+            Environment = env.GetAcronym(),
             TimestampUtc = @event.DateCreatedUtc,
             JsonPayload = @event.ToJson(),
         };

@@ -17,7 +17,7 @@ public class CemiDecodingTests(ITestOutputHelper output) : TestBase(output)
         var cemiAzTablesSink = (KnxSinkAzureTablesCemiService)_serviceProvider
             .GetRequiredKeyedService<IEventSink<KnxEvent>>("AzureTablesCemi");
 
-        await _knxGroupAddressLookupSvc.GetLookup();
+        await _knxGroupAddressLookupSvc.GetLookup(TestContext.Current.CancellationToken);
 
         var serializer = new CemiLDataSerializer();
         var cemiEntities = await cemiAzTablesSink.GetCemiReadingEntities(CancellationToken.None);

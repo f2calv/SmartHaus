@@ -34,11 +34,11 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     [Trait("Category", "Integration")]
     public async Task GetSystem_WithAuthorizedClient_Returns200AndAppConfig()
     {
-        var response = await AuthorizedClient.GetAsync("/api/system");
+        var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         output.WriteLine($"GET /api/system → {json[..Math.Min(200, json.Length)]}");
 
         // The returned JSON must at minimum contain the EnabledFeatures field.
@@ -57,10 +57,10 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     [Trait("Category", "Integration")]
     public async Task GetSystem_EnabledFeatures_MatchesTestConfiguration()
     {
-        var response = await AuthorizedClient.GetAsync("/api/system");
+        var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
 
-        var json = await response.Content.ReadAsStringAsync();
+        var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         var doc = JsonDocument.Parse(json);
 
         // EnabledFeatures is a comma-separated string (e.g. "Api").
@@ -100,7 +100,7 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         client.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Basic", wrongCredentials);
 
-        var response = await client.GetAsync("/api/system");
+        var response = await client.GetAsync("/api/system", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
         output.WriteLine($"GET /api/system (wrong creds) → {(int)response.StatusCode}");
@@ -116,7 +116,7 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         await using var strictFactory = new StrictAuthCasCapAppWebApplicationFactory();
         var client = strictFactory.CreateAuthorizedClient();
 
-        var response = await client.GetAsync("/api/system");
+        var response = await client.GetAsync("/api/system", TestContext.Current.CancellationToken);
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         output.WriteLine($"GET /api/system (correct creds) → {(int)response.StatusCode}");

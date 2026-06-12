@@ -32,7 +32,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     {
         var address_errors = new List<KnxGroupAddressParsed>();
         var i = 0;
-        var gaLookup = await _knxGroupAddressLookupSvc.GetLookup();
+        var gaLookup = await _knxGroupAddressLookupSvc.GetLookup(TestContext.Current.CancellationToken);
         foreach (var kvp in gaLookup)
         {
             var kga = kvp.Value;
@@ -84,10 +84,10 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     {
         var path = _serviceProvider.GetRequiredService<IOptions<KnxConfig>>().Value.GroupAddressXmlFilePath;
 
-        var deserialized = await KnxGroupAddressLookupService.DeserializeGroupAddressesFromFile(path);
+        var deserialized = await KnxGroupAddressLookupService.DeserializeGroupAddressesFromFile(path, TestContext.Current.CancellationToken);
 
         //count GroupAddress elements directly from the raw XML
-        var xml = await File.ReadAllTextAsync(path);
+        var xml = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var xDoc = XDocument.Parse(xml);
         XNamespace ns = "http://knx.org/xml/ga-export/01";
         var xmlElementCount = xDoc.Descendants(ns + "GroupAddress").Count();
@@ -99,8 +99,8 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     [Fact]
     public async Task GroupedAddressesContainAllChildren()
     {
-        var gaLookup = await _knxGroupAddressLookupSvc.GetLookup();
-        var groups = await _knxGroupAddressLookupSvc.GetGroupAddressesGrouped();
+        var gaLookup = await _knxGroupAddressLookupSvc.GetLookup(TestContext.Current.CancellationToken);
+        var groups = await _knxGroupAddressLookupSvc.GetGroupAddressesGrouped(TestContext.Current.CancellationToken);
 
         var totalChildren = groups.Sum(g => g.Children.Count);
         _output.WriteLine($"Groups: {groups.Count}, Children: {totalChildren}, Lookup: {gaLookup.Count}");

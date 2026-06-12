@@ -9,7 +9,7 @@ namespace CasCap.Services;
 /// when the charge level oscillates around the threshold.
 /// </summary>
 [SinkType("CommsStream")]
-public sealed class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService> logger, IOptions<FroniusConfig> config, IEventSink<CommsEvent> commsSink) : IEventSink<FroniusEvent>
+public sealed class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStreamService> logger, IHostEnvironment env, IOptions<FroniusConfig> config, IEventSink<CommsEvent> commsSink) : IEventSink<FroniusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";
@@ -35,6 +35,7 @@ public sealed class FroniusSinkCommsStreamService(ILogger<FroniusSinkCommsStream
                     Source = nameof(FroniusSinkCommsStreamService),
                     Message = $"Home battery charge reached {@event.SOC:P0} (threshold {_socAlertThreshold:P0}), "
                         + $"Solar={@event.P_PV:F0}W, Grid={@event.P_Grid:F0}W, Load={@event.P_Load:F0}W",
+                    Environment = env.GetAcronym(),
                     TimestampUtc = @event.TimestampUtc,
                 };
                 await commsSink.WriteEvent(commsEvent, cancellationToken);

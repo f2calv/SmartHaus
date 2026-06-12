@@ -84,7 +84,7 @@ public class AIAgentExtensionsTests(ITestOutputHelper output) : TestBase(output)
 
         var (provider, agentConfig) = CreateTestConfig();
         var (_, agent, resolvedInstructions) = AgentExtensions.CreateAgent(provider, agentConfig);
-        var imageBytes = await File.ReadAllBytesAsync(filePath);
+        var imageBytes = await File.ReadAllBytesAsync(filePath, TestContext.Current.CancellationToken);
 
         try
         {
