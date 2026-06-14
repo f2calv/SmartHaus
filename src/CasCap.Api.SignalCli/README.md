@@ -168,6 +168,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 | `MaxReconnectAttempts` | `int` | `10` | — | Maximum number of WebSocket reconnection attempts before giving up |
 | `InitialReconnectDelayMs` | `int` | `2000` | — | Initial backoff delay in milliseconds for WebSocket reconnection |
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
+| `ReceiveStalenessTimeoutMs` | `int` | `0` | — | Max silent period (ms) on the receive stream before the watchdog logs an error and forces a reconnect; `0` disables it. Tune above your longest expected inbound gap to avoid false positives on quiet accounts |
 | `BasicAuthEnabled` | `bool` | `false` | — | Whether to attach HTTP Basic credentials to outgoing requests (cross-cluster access via ingress) |
 
 ## Configuration Examples
@@ -201,7 +202,8 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
       "ChannelCapacity": 256,
       "MaxReconnectAttempts": 10,
       "InitialReconnectDelayMs": 2000,
-      "MaxReconnectDelayMs": 120000
+      "MaxReconnectDelayMs": 120000,
+      "ReceiveStalenessTimeoutMs": 0
     }
   }
 }
