@@ -1,6 +1,6 @@
 # SignalCli Receive Liveness — Active Heartbeat Design
 
-> **Status**: Proposed — design only, no code beyond the passive watchdog (`ReceiveStalenessTimeoutMs`) has been written. This document weighs whether to build an active heartbeat and how.
+> **Status**: **Blocked / parked (2026-06-14).** Phase 0 (`HB-0`) was prototyped and tested against a live linked device, and it **invalidated the core premise of this design**: a self-addressed action does **not** echo back to the originating `signal-cli` device, so it cannot be used as a liveness probe. All prototype code was reverted. The passive watchdog (`ReceiveStalenessTimeoutMs`) remains the only shipped liveness mechanism. See [Phase 0 Findings](#phase-0-findings-hb-0--2026-06-14--premise-invalidated) below before resuming this work. The original proposal is retained unchanged for historical context.
 
 ## Overview
 
@@ -10,20 +10,52 @@ A **passive** watchdog (`ReceiveStalenessTimeoutMs`) was added as a cheap backst
 
 An **active heartbeat** removes this ambiguity by *generating* inbound traffic on a schedule and verifying it round-trips, giving minutes-level detection latency regardless of organic traffic — and working identically for quiet accounts and zero-inbound accounts.
 
+> ⚠️ **This premise was tested and proven false — see [Phase 0 Findings](#phase-0-findings-hb-0--2026-06-14--premise-invalidated).** A self-addressed action never returns to the device that sent it, so the active-heartbeat approach as designed below cannot work. The remainder of this document is preserved as the original proposal for historical context.
+
+## Phase 0 Findings (`HB-0`) — 2026-06-14 — Premise Invalidated
+
+A Development-only diagnostic probe was built to validate `HB-0`: an endpoint that sends a self-addressed action (typing indicator **or** read receipt) and waits up to 5 s for **any** inbound frame, while also reporting the receive WebSocket's connection state and the time since the last inbound frame. It was exercised against the live linked `signal-cli` device.
+
+**Result — no self-action echoes back to the originating device:**
+
+| Probe | Send result | Receive WebSocket | ms since last inbound frame | Echo within 5 s |
+| --- | --- | --- | --- | --- |
+| Read receipt → self | `SUCCESS` | `Open` (connected) | 27,658 | ❌ none |
+| Typing indicator → self | `SUCCESS` | `Open` (connected) | 43,533 | ❌ none |
+| Read receipt → self | `SUCCESS` | `Open` (connected) | 52,492 | ❌ none |
+
+The "ms since last inbound frame" counter climbed monotonically (≈27 s → 43 s → 52 s) across the three probes, proving **no inbound frame of any kind** (echo or organic) arrived for the entire ~52 s window — the WebSocket was confirmed `Open` throughout, so this was not a connectivity artifact. The `signal-cli` debug log corroborates this exactly: every `sendReceipt` / `sendTyping` returned `type: SUCCESS`, but **no subsequent inbound `json-rpc received data` frame followed** — only `Received pong` keep-alives.
+
+**Root cause.** `signal-cli` is a **linked** device. When a linked device sends a syncable action, the Signal server fans the sync transcript out to the account's **other** linked devices — **never back to the originating device**. Therefore an account pinging *itself* can never observe its own sync transcript; the transcript is delivered to the primary (Android) device instead. The design's central assumption — ["Why a self-action loops back as inbound"](#why-a-self-action-loops-back-as-inbound) — is incorrect.
+
+> **Note on the earlier apparent success.** A single ~2 s "receipt echo" observed in an earlier ad-hoc test was a **false positive**: it was coincidental organic inbound traffic (most likely a receipt/message arriving *from* the Android primary while the Signal app was open), not the self-receipt syncing back. The self-diagnosing probe (which reports WebSocket state and inter-frame timing) is what made this distinction visible.
+
+**Implication.** The active heartbeat as specified below cannot detect a dead receive thread, because there is no non-visible self-action that returns to `signal-cli`. Options for a future attempt:
+
+1. **Note-to-Self real message** — the only action likely to round-trip to the originating device is an actual message to the account's own number. This *is* visible in the Note-to-Self thread (could be mitigated with a disappearing-message timer / auto-delete) and was explicitly rejected by the [No Visible Messages constraint](#the-critical-constraint-no-visible-messages). Untested — it is unconfirmed whether even a Note-to-Self message echoes to the sending linked device.
+2. **Passive watchdog only** — accept that a genuinely silent account cannot be distinguished from a dead receive thread, and rely solely on `ReceiveStalenessTimeoutMs`. This is the current shipped state.
+3. **Second-device / out-of-band trigger** — have a *different* device or service send to the account on a schedule. Out of scope here.
+
+**Decision: parked.** All `HB-0` prototype code (probe endpoint, probe DTO, heartbeat loop, health check, config properties, enum) was reverted on 2026-06-14. To be revisited another time.
+
 ## The Critical Constraint: No Visible Messages
 
 > **Will my Android Signal app show a "hello world" ping every hour? — No. It must not, and it does not have to.**
 
 This is the dealbreaker requirement: a heartbeat that posts a visible message to **Note to Self** (or any chat) every N minutes is unacceptable. Fortunately, Signal's protocol gives us several inbound-generating actions that produce **no chat artifact** on the primary (Android) device:
 
-| Mechanism | Visible on Android? | Generates inbound frame? | Notes |
+> ⚠️ The "Generates inbound frame?" column below reflects the **original (incorrect) assumption**. Phase 0 testing proved that self-addressed typing indicators and receipts do **not** generate an inbound frame on the originating device (see [Findings](#phase-0-findings-hb-0--2026-06-14--premise-invalidated)). The table is retained as originally written.
+
+| Mechanism | Visible on Android? | Generates inbound frame? (assumed) | Notes |
 | --- | --- | --- | --- |
-| Message to *Note to Self* | **Yes** (chat entry) | Yes (sync transcript) | ❌ Unacceptable — rejected |
-| **Typing indicator to self** | No | Yes (sync transcript) | Ephemeral; never stored |
-| **Receipt to self** ([`SendReceipt`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs)) | No | Yes (sync transcript) | Already implemented |
-| **Reaction add+remove** ([`SendReaction`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs) / `RemoveReaction`) | Briefly | Yes (sync transcript) | Visible flicker — avoid |
+| Message to *Note to Self* | **Yes** (chat entry) | Yes (sync transcript) | ❌ Unacceptable — rejected. The only candidate that might actually round-trip to the sender (untested). |
+| **Typing indicator to self** | No | ~~Yes (sync transcript)~~ **No — disproven** | Ephemeral; never stored. Phase 0: sent `SUCCESS`, no echo. |
+| **Receipt to self** ([`SendReceipt`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs)) | No | ~~Yes (sync transcript)~~ **No — disproven** | Phase 0: sent `SUCCESS`, no echo. |
+| **Reaction add+remove** ([`SendReaction`](../../src/CasCap.Api.SignalCli/Services/SignalCliRestClientService.cs) / `RemoveReaction`) | Briefly | Yes (sync transcript) | Visible flicker — avoid. Untested; same self-sync limitation likely applies. |
 
 ### Why a self-action loops back as inbound
+
+> ⚠️ **Disproven by Phase 0 testing — see [Findings](#phase-0-findings-hb-0--2026-06-14--premise-invalidated).** The reasoning below is wrong: the sync transcript is fanned out to the account's *other* linked devices, **not** back to the device that originated the action. A self-action therefore never returns to `signal-cli`.
 
 `signal-cli` is a **linked device**, not the primary. When *any* linked device sends *anything* (even an ephemeral typing indicator), the Signal server fans out a **sync transcript message** to all of the account's other linked devices — including `signal-cli` itself. That transcript arrives on the **same WebSocket receive stream** we are trying to prove is alive. So the heartbeat does not require a second account or a real recipient: signal-cli pinging *itself* via a non-visible action is sufficient to exercise the full inbound pipeline.
 
@@ -120,7 +152,7 @@ All four follow the existing `IAppConfig` conventions (validation attributes, `<
 
 ## Phased Plan
 
-- [ ] **`HB-0` (Blocking)** — *Non-visibility proof.* Manually send a self typing indicator (and a self receipt as fallback) via the REST API against a real linked device. Confirm: (a) **nothing** appears in the Android chat list or notifications, and (b) the action produces an inbound frame on `/v1/receive`. Do not proceed unless both hold. Record findings here.
+- [x] **`HB-0` (Blocking)** — *Non-visibility proof.* **DONE — FAILED (2026-06-14).** Non-visibility held (nothing appeared on Android), but condition (b) **failed**: self typing indicators and self receipts do **not** produce an inbound frame on `/v1/receive`, because a linked device's sync transcript is never delivered back to itself. This invalidates the whole approach — see [Phase 0 Findings](#phase-0-findings-hb-0--2026-06-14--premise-invalidated). **Blocked: do not proceed with HB-1…HB-5 as designed.**
 - [ ] **`HB-1`** — Add the four config properties to `SignalCliConfig` + sync all config layers + README.
 - [ ] **`HB-2`** — Implement the heartbeat sender loop and echo detection in `SignalCliJsonRpcClientService`, reusing the existing `PeriodicTimer`/abort-reconnect pattern.
 - [ ] **`HB-3`** — Implement `SignalCliReceiveHeartbeatHealthCheck` (model on the staleness-health-check pattern) and wire it via `KubernetesProbeTypes`/`GetTags()`.
@@ -129,6 +161,6 @@ All four follow the existing `IAppConfig` conventions (validation attributes, `<
 
 ## Open Questions
 
-1. Does signal-cli's REST API expose typing indicators, and do they round-trip on `/v1/receive`? (Phase 0 — if not, use self-`SendReceipt`.)
+1. ~~Does signal-cli's REST API expose typing indicators, and do they round-trip on `/v1/receive`?~~ **Answered (2026-06-14):** typing indicators *and* receipts are exposed and send `SUCCESS`, but **neither round-trips to the originating device** — a linked device never receives its own sync transcript. Neither is usable as a heartbeat. Open follow-up: does an actual *Note-to-Self message* round-trip to the sending linked device? (Untested; only pursue if the visibility constraint can be relaxed.)
 2. Can we correlate the echoed sync transcript back to a specific ping timestamp, or do we accept "any inbound after a ping = alive"? The latter is simpler and sufficient for liveness.
 3. Should a sustained heartbeat failure (poisoned cache that survives reconnects) escalate beyond pod restart — e.g. an out-of-band alert via a *different* notification channel, since the Signal path itself is the thing that's broken?
