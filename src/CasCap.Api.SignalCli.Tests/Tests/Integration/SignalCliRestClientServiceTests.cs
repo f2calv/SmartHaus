@@ -7,7 +7,7 @@ namespace CasCap.Tests.Integration;
 /// These tests require a running signal-cli REST API configured via <c>appsettings.Development.json</c>
 /// with a valid <c>SignalCliConfig.BaseAddress</c> and <c>SignalCliConfig.PhoneNumber</c>.
 /// </remarks>
-[Trait("Category", "Integration")]
+[Trait(SignalCliTraits.Category, SignalCliTraits.Integration)]
 public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     /// <summary>Prefix used by all integration-test groups so they can be safely swept on teardown.</summary>
@@ -46,6 +46,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region General
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.General)]
     public async Task GetAbout_ReturnsVersionInfo()
     {
         var result = await _svc.GetAbout();
@@ -59,6 +60,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.General)]
     public async Task GetConfiguration_ReturnsConfiguration()
     {
         var result = await _svc.GetConfiguration();
@@ -67,6 +69,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.General)]
     public async Task SetConfiguration_ReturnsTrue()
     {
         var config = new SignalConfiguration
@@ -83,6 +86,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Messaging
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_ToSelf_ReturnsTimestamp()
     {
         var msg = new SignalMessageRequest
@@ -100,6 +104,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_ToGroup_ReturnsTimestamp()
     {
         // Flush pending envelopes so signal-cli processes group membership
@@ -141,6 +146,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_DirectToMember_ReturnsTimestamp()
     {
         // Diagnostic: test direct 1:1 delivery to the second group member
@@ -175,6 +181,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_WithStyledTextMode_ReturnsTimestamp()
     {
         var msg = new SignalMessageRequest
@@ -192,6 +199,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_WithMentions_ReturnsTimestamp()
     {
         var mention = new MessageMention
@@ -216,6 +224,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendMessage_WithLinkPreview_ReturnsTimestamp()
     {
         var preview = new SignalLinkPreview
@@ -239,6 +248,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task ShowTypingIndicator_ReturnsTrue()
     {
         var result = await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber);
@@ -247,6 +257,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task HideTypingIndicator_ReturnsTrue()
     {
         await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber);
@@ -256,6 +267,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
+    [Trait(SignalCliTraits.Transport, SignalCliTraits.Polling)]
     public async Task ReceiveMessages_ReturnsMessages()
     {
         var result = await _svc.ReceiveMessages(_config.PhoneNumber, TestContext.Current.CancellationToken);
@@ -284,6 +297,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendReaction_ReturnsTrue()
     {
         // Send a message first to get a timestamp to react to
@@ -305,6 +319,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task RemoveReaction_ReturnsTrue()
     {
         var msg = new SignalMessageRequest
@@ -327,6 +342,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task SendReceipt_ReturnsTrue()
     {
         var msg = new SignalMessageRequest
@@ -346,6 +362,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task RemoteDelete_ReturnsResponse()
     {
         var msg = new SignalMessageRequest
@@ -369,6 +386,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Registration
 
     [Fact(Skip = "RegisterNumber requires a dedicated test phone number")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task RegisterNumber_RequiresDedicatedTestNumber()
     {
         var result = await _svc.RegisterNumber("+10000000000");
@@ -376,6 +394,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "VerifyNumber requires a dedicated test phone number and token")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task VerifyNumber_RequiresDedicatedTestNumber()
     {
         var result = await _svc.VerifyNumber("+10000000000", "000000");
@@ -383,6 +402,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "UnregisterNumber is destructive and requires a dedicated test number")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task UnregisterNumber_RequiresDedicatedTestNumber()
     {
         var result = await _svc.UnregisterNumber("+10000000000");
@@ -394,6 +414,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Accounts
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task ListAccounts_ReturnsAccounts()
     {
         var result = await _svc.ListAccounts();
@@ -402,6 +423,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SetPin_ReturnsTrue()
     {
         var result = await _svc.SetPin(_config.PhoneNumber, "123456");
@@ -413,6 +435,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task RemovePin_ReturnsTrue()
     {
         // Set then remove
@@ -423,6 +446,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "SubmitRateLimitChallenge requires a real challenge token and captcha")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SubmitRateLimitChallenge_RequiresRealToken()
     {
         var result = await _svc.SubmitRateLimitChallenge(_config.PhoneNumber, "token", "captcha");
@@ -430,6 +454,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task UpdateAccountSettings_ReturnsTrue()
     {
         var result = await _svc.UpdateAccountSettings(_config.PhoneNumber, discoverableByNumber: true);
@@ -438,6 +463,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SetAndRemoveUsername_RoundTrip()
     {
         var setResult = await _svc.SetUsername(_config.PhoneNumber, $"testuser_{DateTime.UtcNow:yyyyMMddHHmmss}");
@@ -455,6 +481,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Contacts
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task ListContacts_ReturnsContacts()
     {
         var result = await _svc.ListContacts(_config.PhoneNumber);
@@ -479,6 +506,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task UpdateContact_ReturnsTrue()
     {
         var result = await _svc.UpdateContact(_config.PhoneNumber, _config.PhoneNumber, name: "Test Self");
@@ -487,6 +515,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task SyncContacts_ReturnsTrue()
     {
         var result = await _svc.SyncContacts(_config.PhoneNumber);
@@ -499,6 +528,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Devices
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task ListLinkedDevices_ReturnsDevices()
     {
         var result = await _svc.ListLinkedDevices(_config.PhoneNumber);
@@ -510,6 +540,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task GetQrCodeLink_ReturnsBytesOrNull()
     {
         var bytes = await _svc.GetQrCodeLink("test-device");
@@ -519,6 +550,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task GetQrCodeLinkRaw_ReturnsUriOrNull()
     {
         var result = await _svc.GetQrCodeLinkRaw("test-device-raw");
@@ -528,6 +560,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "AddDevice requires a real device-link URI from a QR code scan")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task AddDevice_RequiresRealUri()
     {
         var result = await _svc.AddDevice(_config.PhoneNumber, "sgnl://linkdevice?uuid=test&pub_key=test");
@@ -535,6 +568,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "RemoveLinkedDevice requires a linked device to remove")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task RemoveLinkedDevice_RequiresSpareDevice()
     {
         var result = await _svc.RemoveLinkedDevice(_config.PhoneNumber, 99);
@@ -542,6 +576,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "DeleteLocalAccountData is destructive and cannot be undone")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task DeleteLocalAccountData_Destructive()
     {
         var result = await _svc.DeleteLocalAccountData(_config.PhoneNumber);
@@ -553,6 +588,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Groups
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task ListGroups_ReturnsGroups()
     {
         var result = await _svc.ListGroups(_config.PhoneNumber);
@@ -569,6 +605,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "One-shot setup — SmartHaus group already created")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task CreateGroup()
     {
         var groupName = _groupName;
@@ -592,6 +629,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task CreateUpdateAndDeleteGroup_RoundTrip()
     {
         var groupName = $"TestGroup_{DateTime.UtcNow:yyyyMMddHHmmss}";
@@ -640,6 +678,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "AddGroupMembers/RemoveGroupMembers require a second phone number")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task AddAndRemoveGroupMembers_RequiresSecondNumber()
     {
         var added = await _svc.AddGroupMembers(_config.PhoneNumber, "group-id", ["+10000000001"]);
@@ -649,6 +688,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "AddGroupAdmins/RemoveGroupAdmins require a second phone number")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task AddAndRemoveGroupAdmins_RequiresSecondNumber()
     {
         var added = await _svc.AddGroupAdmins(_config.PhoneNumber, "group-id", ["+10000000001"]);
@@ -658,6 +698,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "JoinGroup requires a group invite link")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task JoinGroup_RequiresInviteLink()
     {
         var result = await _svc.JoinGroup(_config.PhoneNumber, "group-id");
@@ -665,6 +706,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "QuitGroup is destructive")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task QuitGroup_Destructive()
     {
         var result = await _svc.QuitGroup(_config.PhoneNumber, "group-id");
@@ -672,6 +714,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "BlockGroup is destructive")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task BlockGroup_Destructive()
     {
         var result = await _svc.BlockGroup(_config.PhoneNumber, "group-id");
@@ -679,6 +722,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task GetGroupAvatar_ReturnsNullForNoAvatar()
     {
         var groups = await _svc.ListGroups(_config.PhoneNumber);
@@ -699,6 +743,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Identities
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Identities)]
     public async Task ListIdentities_ReturnsIdentities()
     {
         var result = await _svc.ListIdentities(_config.PhoneNumber);
@@ -711,6 +756,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "TrustIdentity requires an untrusted identity to trust")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Identities)]
     public async Task TrustIdentity_RequiresUntrustedIdentity()
     {
         var result = await _svc.TrustIdentity(_config.PhoneNumber, "+10000000001", trustAllKnownKeys: true);
@@ -722,6 +768,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Attachments
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task ListAttachments_ReturnsAttachments()
     {
         var result = await _svc.ListAttachments();
@@ -732,6 +779,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task GetAttachment_ReturnsNullForMissingId()
     {
         var result = await _svc.GetAttachment("nonexistent-attachment-id");
@@ -740,6 +788,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task DeleteAttachment_ReturnsFalseForMissingId()
     {
         var result = await _svc.DeleteAttachment("nonexistent-attachment-id");
@@ -752,6 +801,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Profile
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Profile)]
     public async Task UpdateProfile_ReturnsTrue()
     {
         var profile = new UpdateProfileRequest
@@ -769,6 +819,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Search
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.Search)]
     public async Task SearchNumbers_ReturnsResults()
     {
         var result = await _svc.SearchNumbers(_config.PhoneNumber, [_config.PhoneNumber]);
@@ -783,6 +834,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     #region Sticker Packs
 
     [Fact]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.StickerPacks)]
     public async Task ListStickerPacks_ReturnsPacks()
     {
         var result = await _svc.ListStickerPacks(_config.PhoneNumber);
@@ -794,6 +846,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     }
 
     [Fact(Skip = "AddStickerPack requires a valid pack ID and key")]
+    [Trait(SignalCliTraits.Feature, SignalCliTraits.StickerPacks)]
     public async Task AddStickerPack_RequiresPackInfo()
     {
         var result = await _svc.AddStickerPack(_config.PhoneNumber, "pack-id", "pack-key");
