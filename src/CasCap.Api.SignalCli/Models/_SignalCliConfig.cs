@@ -105,6 +105,32 @@ public sealed record SignalCliConfig : IAppConfig, IHealthCheckConfig
     [Range(1, int.MaxValue)]
     public int MaxReconnectDelayMs { get; init; } = 120_000;
 
+    /// <summary>
+    /// Maximum time in milliseconds the WebSocket receive stream may remain silent (no inbound
+    /// frames) before the staleness watchdog logs an error and forces a reconnect. Set to <c>0</c>
+    /// to disable the watchdog (the default).
+    /// </summary>
+    /// <remarks>
+    /// <para>
+    /// Detects the failure mode where the signal-cli daemon's receive thread has died (e.g. a
+    /// poisoned <c>msg-cache</c> envelope) yet the WebSocket and the daemon process remain healthy:
+    /// outbound sending keeps working while inbound delivery silently stops indefinitely. Neither
+    /// the WebSocket reconnect loop nor a process restart detect this, so it would otherwise go
+    /// unnoticed.
+    /// </para>
+    /// <para>
+    /// <b>Heuristic — tune to your traffic.</b> The watchdog only observes inbound frames, so a
+    /// genuinely quiet account that legitimately receives nothing for a long period would trip a
+    /// short timeout. Set this comfortably above the longest expected gap between inbound messages
+    /// (e.g. several hours), or leave at <c>0</c> when no reliable inbound cadence exists. Pairs
+    /// with the server-side <c>msg-cache</c> quarantine mitigation, since a reconnect alone does
+    /// not clear a poisoned cache.
+    /// </para>
+    /// Used by <see cref="CasCap.Services.SignalCliJsonRpcClientService"/>.
+    /// </remarks>
+    [Range(0, int.MaxValue)]
+    public int ReceiveStalenessTimeoutMs { get; init; }
+
     /// <summary>Whether to attach HTTP Basic credentials from <see cref="ApiAuthConfig"/> to outgoing requests.</summary>
     /// <remarks>
     /// Defaults to <see langword="false"/>. Set to <see langword="true"/> when the signal-cli REST API is

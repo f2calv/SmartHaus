@@ -37,11 +37,16 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
 
     private ClientWebSocket? _webSocket;
     private Task? _receiveLoopTask;
+    private Task? _watchdogTask;
     private volatile bool _disposed;
 
     private readonly int _maxReconnectAttempts;
     private readonly TimeSpan _initialReconnectDelay;
     private readonly TimeSpan _maxReconnectDelay;
+    private readonly TimeSpan _receiveStalenessTimeout;
+
+    /// <summary>UTC ticks of the most recently received inbound frame; read/written across threads.</summary>
+    private long _lastFrameTicks;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SignalCliJsonRpcClientService"/> class.
@@ -65,6 +70,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
         _maxReconnectAttempts = _config.MaxReconnectAttempts;
         _initialReconnectDelay = TimeSpan.FromMilliseconds(_config.InitialReconnectDelayMs);
         _maxReconnectDelay = TimeSpan.FromMilliseconds(_config.MaxReconnectDelayMs);
+        _receiveStalenessTimeout = TimeSpan.FromMilliseconds(_config.ReceiveStalenessTimeoutMs);
 
         _channel = Channel.CreateBounded<SignalReceivedMessage>(new BoundedChannelOptions(_config.ChannelCapacity)
         {
@@ -107,6 +113,7 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
                         nameof(SignalCliJsonRpcClientService), _config.PhoneNumber.MaskPhoneNumber());
 
                     _receiveLoopTask = Task.Run(() => ReceiveLoopWithReconnectAsync(_wsCts.Token), _wsCts.Token);
+                    StartStalenessWatchdog();
                     return;
                 }
                 catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -282,7 +289,83 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
             }
         }
 
-        _channel.Writer.TryComplete();
+        // Only complete the channel when the service is being disposed. The channel is created
+        // once in the constructor and never recreated, so completing it on a transient loop exit
+        // (e.g. reconnect attempts exhausted) would permanently dead-end ReceiveAsync — every
+        // future receive would return null while alert/stream paths kept working. If the loop
+        // terminates while the service is still live, surface it loudly instead of silently
+        // killing inbound message delivery.
+        if (_disposed)
+            _channel.Writer.TryComplete();
+        else if (!cancellationToken.IsCancellationRequested)
+            _logger.LogError("{ClassName} receive loop terminated while service is still live — inbound Signal messages will no longer be delivered until the service is restarted",
+                nameof(SignalCliJsonRpcClientService));
+    }
+
+    /// <summary>
+    /// Starts the receive-staleness watchdog once, if enabled via
+    /// <see cref="SignalCliConfig.ReceiveStalenessTimeoutMs"/>. Idempotent — subsequent calls are no-ops.
+    /// </summary>
+    private void StartStalenessWatchdog()
+    {
+        if (_receiveStalenessTimeout <= TimeSpan.Zero || _watchdogTask is not null)
+            return;
+
+        _watchdogTask = Task.Run(() => ReceiveStalenessWatchdogAsync(_wsCts.Token), _wsCts.Token);
+        _logger.LogInformation("{ClassName} receive-staleness watchdog enabled, timeout={Timeout}",
+            nameof(SignalCliJsonRpcClientService), _receiveStalenessTimeout);
+    }
+
+    /// <summary>
+    /// Periodically checks how long the WebSocket receive stream has been silent. When the gap
+    /// exceeds <see cref="_receiveStalenessTimeout"/> the watchdog logs an error and aborts the
+    /// current WebSocket, which causes <see cref="ReceiveLoopAsync"/> to exit and
+    /// <see cref="ReceiveLoopWithReconnectAsync"/> to re-establish the connection.
+    /// </summary>
+    /// <remarks>
+    /// This detects a dead signal-cli receive thread (e.g. a poisoned <c>msg-cache</c> envelope)
+    /// that leaves the WebSocket and daemon process healthy while inbound delivery silently stops.
+    /// A reconnect alone will not clear a poisoned server-side cache, but the error is logged loudly
+    /// so the silent outage becomes an actionable alert rather than going unnoticed.
+    /// </remarks>
+    private async Task ReceiveStalenessWatchdogAsync(CancellationToken cancellationToken)
+    {
+        // Poll at a fraction of the timeout (min 5s) so detection latency stays bounded.
+        var interval = TimeSpan.FromTicks(Math.Max(_receiveStalenessTimeout.Ticks / 4, TimeSpan.FromSeconds(5).Ticks));
+        using var timer = new PeriodicTimer(interval);
+
+        try
+        {
+            while (await timer.WaitForNextTickAsync(cancellationToken).ConfigureAwait(false))
+            {
+                var lastFrame = new DateTime(Volatile.Read(ref _lastFrameTicks), DateTimeKind.Utc);
+                var elapsed = DateTime.UtcNow - lastFrame;
+                if (elapsed < _receiveStalenessTimeout)
+                    continue;
+
+                _logger.LogError(
+                    "{ClassName} no inbound Signal frames for {Elapsed} (>{Timeout}) — the signal-cli receive thread may be dead (e.g. poisoned msg-cache). Aborting WebSocket to force a reconnect; if this recurs, check/clear the server-side msg-cache",
+                    nameof(SignalCliJsonRpcClientService), elapsed, _receiveStalenessTimeout);
+
+                // Reset the stamp first so we re-alert at most once per timeout window while the
+                // condition persists, rather than on every poll.
+                Volatile.Write(ref _lastFrameTicks, DateTime.UtcNow.Ticks);
+
+                try
+                {
+                    _webSocket?.Abort();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogDebug(ex, "{ClassName} error aborting WebSocket from watchdog",
+                        nameof(SignalCliJsonRpcClientService));
+                }
+            }
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Expected on dispose.
+        }
     }
 
     /// <summary>
@@ -294,6 +377,10 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
     {
         var buffer = new byte[8192];
         using var stream = new MemoryStream();
+
+        // Treat a freshly (re)connected stream as live so the watchdog doesn't fire before any
+        // frame has had a chance to arrive.
+        Volatile.Write(ref _lastFrameTicks, DateTime.UtcNow.Ticks);
 
         _logger.LogDebug("{ClassName} receive loop started, WebSocket state={State}",
             nameof(SignalCliJsonRpcClientService), _webSocket?.State);
@@ -316,6 +403,9 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
                     stream.Write(buffer, 0, result.Count);
                 }
                 while (!result.EndOfMessage);
+
+                // A complete frame arrived — record liveness regardless of whether it deserializes.
+                Volatile.Write(ref _lastFrameTicks, DateTime.UtcNow.Ticks);
 
                 var message = DeserializeMessage(stream);
                 if (message is not null)
@@ -420,6 +510,12 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
         if (_receiveLoopTask is not null)
         {
             try { await _receiveLoopTask.ConfigureAwait(false); }
+            catch (OperationCanceledException) { /* expected */ }
+        }
+
+        if (_watchdogTask is not null)
+        {
+            try { await _watchdogTask.ConfigureAwait(false); }
             catch (OperationCanceledException) { /* expected */ }
         }
 
