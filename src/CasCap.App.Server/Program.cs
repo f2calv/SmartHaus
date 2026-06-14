@@ -163,6 +163,13 @@ try
     if (enabledFeatures.Contains(FeatureNames.Comms))
         builder.AddComms();
 
+    if (enabledFeatures.Contains(FeatureNames.Rag))
+    {
+        builder.AddRag();
+        mcpBuilder.WithToolsFromAssembly(typeof(RagMcpQueryService).Assembly);
+        mcpBuilder.WithPromptsFromAssembly(typeof(RagMcpQueryService).Assembly);
+    }
+
     // Register all AI agent profiles with deferred tool resolution
     var otelSourceName = AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix);
     foreach (var (agentName, agentConfig) in aiConfig.Agents.Where(a => a.Value.Enabled))
