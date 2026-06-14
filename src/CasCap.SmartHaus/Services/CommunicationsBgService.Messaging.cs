@@ -266,14 +266,22 @@ public sealed partial class CommunicationsBgService
                         debugSteps.Count(s => s.Result?.Usage is not null));
                     await _debugNotifier.SendDebugStatsAsync(request.Prompt, agentResult!, debugSteps,
                         request.BinaryContent, request.MimeType, cancellationToken);
+
+                    // Green tick reaction to indicate successful processing.
+                    if (request.Sender is not null && request.Timestamp is not null)
+                        await _notifier.SendProgressUpdateAsync(
+                            _signalCliConfig.PhoneNumber, _groupId!, "\u2705", request.Sender, request.Timestamp.Value);
                 }
                 else
+                {
                     LogAgentEmptyResponse(_logger, nameof(CommunicationsBgService));
 
-                // Green tick reaction to indicate successful processing.
-                if (request.Sender is not null && request.Timestamp is not null)
-                    await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\u2705", request.Sender, request.Timestamp.Value);
+                    // Red cross reaction: the agent failed (e.g. remote inference error) or
+                    // produced no usable response, so do not signal success to the user.
+                    if (request.Sender is not null && request.Timestamp is not null)
+                        await _notifier.SendProgressUpdateAsync(
+                            _signalCliConfig.PhoneNumber, _groupId!, "\u274C", request.Sender, request.Timestamp.Value);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
