@@ -10,6 +10,39 @@ namespace CasCap.Tests.Integration;
 [Trait("Category", "Integration")]
 public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
+    /// <summary>Prefix used by all integration-test groups so they can be safely swept on teardown.</summary>
+    private const string TestGroupPrefix = "TestGroup_";
+
+    /// <inheritdoc/>
+    /// <remarks>
+    /// Sweeps any leftover <c>TestGroup_*</c> groups created by integration tests that crashed
+    /// before their own cleanup ran. Only groups matching <see cref="TestGroupPrefix"/> are
+    /// removed — the real SmartHaus group (<c>_groupName</c>) is never touched.
+    /// </remarks>
+    public override async ValueTask DisposeAsync()
+    {
+        try
+        {
+            var groups = await _svc.ListGroups(_config.PhoneNumber);
+            if (groups is not null)
+            {
+                foreach (var group in groups.Where(g =>
+                    g.Name?.StartsWith(TestGroupPrefix, StringComparison.Ordinal) == true))
+                {
+                    var deleted = await _svc.DeleteGroup(_config.PhoneNumber, group.Id);
+                    _output.WriteLine($"Teardown: deleted orphaned group '{group.Name}' id={group.Id} => {deleted}");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            // Teardown is best-effort — never fail a test run because cleanup hit a transient error.
+            _output.WriteLine($"Teardown: orphan sweep failed: {ex.Message}");
+        }
+
+        await base.DisposeAsync();
+    }
+
     #region General
 
     [Fact]
@@ -580,24 +613,30 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         Assert.False(string.IsNullOrWhiteSpace(created.Id));
         _output.WriteLine($"Created group id={created.Id}, name={groupName}");
 
-        // GetGroup
-        var fetched = await _svc.GetGroup(_config.PhoneNumber, created.Id);
-        Assert.NotNull(fetched);
-        _output.WriteLine($"GetGroup id={fetched.Id}, name={fetched.Name}");
-
-        // UpdateGroup
-        var updateRequest = new UpdateGroupRequest
+        try
         {
-            Name = $"{groupName}_Updated",
-            Description = "Updated description"
-        };
-        var updated = await _svc.UpdateGroup(_config.PhoneNumber, created.Id, updateRequest);
-        _output.WriteLine($"UpdateGroup={updated}");
+            // GetGroup
+            var fetched = await _svc.GetGroup(_config.PhoneNumber, created.Id);
+            Assert.NotNull(fetched);
+            _output.WriteLine($"GetGroup id={fetched.Id}, name={fetched.Name}");
 
-        // Delete
-        var deleted = await _svc.DeleteGroup(_config.PhoneNumber, created.Id);
-        Assert.True(deleted);
-        _output.WriteLine($"Deleted group id={created.Id}");
+            // UpdateGroup
+            var updateRequest = new UpdateGroupRequest
+            {
+                Name = $"{groupName}_Updated",
+                Description = "Updated description"
+            };
+            var updated = await _svc.UpdateGroup(_config.PhoneNumber, created.Id, updateRequest);
+            _output.WriteLine($"UpdateGroup={updated}");
+        }
+        finally
+        {
+            // Deterministic teardown — always delete the group even if an assertion
+            // above fails mid-test, so we never leak orphaned TestGroup_* groups.
+            var deleted = await _svc.DeleteGroup(_config.PhoneNumber, created.Id);
+            Assert.True(deleted);
+            _output.WriteLine($"Deleted group id={created.Id}");
+        }
     }
 
     [Fact(Skip = "AddGroupMembers/RemoveGroupMembers require a second phone number")]

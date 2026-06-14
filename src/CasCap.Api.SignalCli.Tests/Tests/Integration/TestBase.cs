@@ -67,7 +67,7 @@ public abstract class TestBase : IAsyncDisposable
     }
 
     /// <inheritdoc/>
-    public async ValueTask DisposeAsync()
+    public virtual async ValueTask DisposeAsync()
     {
         await _serviceProvider.DisposeAsync();
         GC.SuppressFinalize(this);
