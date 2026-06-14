@@ -10,7 +10,7 @@ var result = 0;
 try
 {
     var builder = WebApplication.CreateBuilder(args);
-    var (appConfig, aiConfig, _, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
+    var (appConfig, aiConfig, apiAuthConfig, enabledFeatures, gitMetadata) = builder.InitializeConfiguration(typeof(Program).Assembly);
     var logger = SerilogWebApplicationBuilderExtensions.InitializeSerilog(builder);
     var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
         ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
@@ -18,6 +18,7 @@ try
         (IMetricsConfig)appConfig,
         gitMetadata,
         connectionMultiplexer,
+        apiAuthConfig,
         configureMetrics: metricsBuilder =>
         {
             metricsBuilder.AddView($"{appConfig.MetricNamePrefix}.test_processing.time", new ExplicitBucketHistogramConfiguration
