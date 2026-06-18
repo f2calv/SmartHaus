@@ -79,6 +79,33 @@ public sealed partial class CommunicationsBgService
 
     private async Task ProcessCommsEventAsync(CommsEvent commsEvent, CancellationToken cancellationToken)
     {
+        // Drop stale events: a producer flood or consumer backlog can leave events queued far
+        // longer than they are useful. Anything older than MaxEventAgeSeconds is acknowledged
+        // but dropped rather than delivered late.
+        if (_commsAgentConfig.StaleEventDroppingEnabled)
+        {
+            var age = _timeProvider.GetUtcNow().UtcDateTime - commsEvent.TimestampUtc;
+            if (age > TimeSpan.FromSeconds(_commsAgentConfig.MaxEventAgeSeconds))
+            {
+                _staleSinceNotice++;
+                LogStreamEventStale(_logger, nameof(CommunicationsBgService), commsEvent.Source, (long)age.TotalSeconds, _staleSinceNotice);
+                await MaybeSendDropNoticeAsync(cancellationToken);
+                return;
+            }
+        }
+
+        // Rate-limit producer-driven stream events to prevent message floods that signal-cli
+        // would otherwise drip-feed to the group over hours. Gating here (before the agent runs)
+        // also avoids wasted inference on suppressed events. Interactive replies to user messages
+        // flow through the reply queue and are never throttled by this gate.
+        if (_streamSendThrottle is not null && !_streamSendThrottle.TryAcquire())
+        {
+            _rateLimitedSinceNotice++;
+            LogStreamEventSuppressed(_logger, nameof(CommunicationsBgService), commsEvent.Source, _rateLimitedSinceNotice);
+            await MaybeSendDropNoticeAsync(cancellationToken);
+            return;
+        }
+
         LogProcessingStreamEvent(_logger, nameof(CommunicationsBgService), commsEvent.Source, commsEvent.Message);
 
         // Forward the raw stream event to the debug chat for observability.
@@ -148,5 +175,88 @@ public sealed partial class CommunicationsBgService
                 : _timeProvider.GetUtcNow().UtcDateTime,
             JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),
         };
+    }
+
+    /// <summary>
+    /// Sends a single drop-notice message to the group when stream events are being dropped
+    /// (rate-limited and/or stale), rate-limited to at most once per
+    /// <see cref="CommsAgentConfig.DropNoticeIntervalMs"/> so the notice itself cannot flood the
+    /// group. The first drop always emits a notice immediately.
+    /// </summary>
+    private async Task MaybeSendDropNoticeAsync(CancellationToken cancellationToken)
+    {
+        // The group must be resolved before we can notify; until then drops are silent (counters
+        // keep accumulating so the eventual notice reports the full total).
+        if (!_groupResolved.Task.IsCompletedSuccessfully || _groupId is null)
+            return;
+
+        var nowTicks = _timeProvider.GetUtcNow().UtcTicks;
+        var intervalTicks = TimeSpan.FromMilliseconds(_commsAgentConfig.DropNoticeIntervalMs).Ticks;
+        if (_lastDropNoticeTicks != 0 && nowTicks - _lastDropNoticeTicks < intervalTicks)
+            return;
+        _lastDropNoticeTicks = nowTicks;
+
+        var rateLimited = _rateLimitedSinceNotice;
+        var stale = _staleSinceNotice;
+        _rateLimitedSinceNotice = 0;
+        _staleSinceNotice = 0;
+
+        var total = rateLimited + stale;
+        if (total == 0)
+            return;
+
+        var parts = new List<string>(2);
+        if (rateLimited > 0)
+            parts.Add($"{rateLimited} over the {_commsAgentConfig.StreamSendRatePerMinute}/min rate limit");
+        if (stale > 0)
+            parts.Add($"{stale} older than {_commsAgentConfig.MaxEventAgeSeconds}s");
+
+        var notice = new SignalMessageRequest
+        {
+            Message = $"\uD83D\uDEA6 Dropped {total} notification(s) to avoid flooding the group \u2014 {string.Join(", ", parts)}.",
+            Number = _signalCliConfig.PhoneNumber,
+            Recipients = [_groupId],
+        };
+
+        try
+        {
+            var result = await _notifier.SendAsync(notice, cancellationToken);
+            LogDropNoticeSent(_logger, nameof(CommunicationsBgService), total, result is not null);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
+        {
+            LogDropNoticeFailed(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
+        }
+    }
+
+    /// <summary>
+    /// Token-bucket throttle gating producer-driven stream-event forwarding. Replenishes at a
+    /// fixed rate up to a fixed capacity (burst). Guarded with a lock for safety even though the
+    /// stream drain loop is the only caller.
+    /// </summary>
+    private sealed class StreamSendThrottle(int capacity, double refillPerSecond, TimeProvider timeProvider)
+    {
+        private readonly Lock _lock = new();
+        private double _tokens = capacity;
+        private long _lastRefillTimestamp = timeProvider.GetTimestamp();
+
+        /// <summary>Attempts to consume a single token, replenishing first based on elapsed time.</summary>
+        /// <returns><see langword="true"/> if a token was available and consumed; otherwise <see langword="false"/>.</returns>
+        public bool TryAcquire()
+        {
+            lock (_lock)
+            {
+                var now = timeProvider.GetTimestamp();
+                var elapsed = timeProvider.GetElapsedTime(_lastRefillTimestamp, now).TotalSeconds;
+                _lastRefillTimestamp = now;
+                _tokens = Math.Min(capacity, _tokens + (elapsed * refillPerSecond));
+                if (_tokens >= 1d)
+                {
+                    _tokens -= 1d;
+                    return true;
+                }
+                return false;
+            }
+        }
     }
 }

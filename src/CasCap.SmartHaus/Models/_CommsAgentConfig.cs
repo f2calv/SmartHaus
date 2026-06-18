@@ -119,4 +119,63 @@ public sealed record CommsAgentConfig : IAppConfig
     /// share the same Redis database. When empty (default), all sources are processed.
     /// </remarks>
     public HashSet<string> AllowedSources { get; init; } = [];
+
+    /// <summary>Whether producer-driven stream events are rate-limited before being forwarded to the group.</summary>
+    /// <remarks>
+    /// Defaults to <c>true</c>. When a burst of <see cref="CommsEvent"/> entries arrives faster than
+    /// <see cref="StreamSendRatePerMinute"/> (with an initial allowance of <see cref="StreamSendBurst"/>),
+    /// excess events are acknowledged but dropped rather than queued for slow drip-feed delivery by
+    /// signal-cli. Interactive replies to user messages are never throttled by this setting.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    public bool StreamSendThrottlingEnabled { get; init; } = true;
+
+    /// <summary>Sustained number of stream-originated messages that may be forwarded to the group per minute.</summary>
+    /// <remarks>
+    /// Defaults to <c>20</c>. Token-bucket replenishment rate.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int StreamSendRatePerMinute { get; init; } = 20;
+
+    /// <summary>Maximum initial burst of stream-originated messages allowed before throttling engages.</summary>
+    /// <remarks>
+    /// Defaults to <c>10</c>. Token-bucket capacity.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int StreamSendBurst { get; init; } = 10;
+
+    /// <summary>Whether stream events older than <see cref="MaxEventAgeSeconds"/> are dropped instead of delivered late.</summary>
+    /// <remarks>
+    /// Defaults to <c>true</c>. A producer flood or consumer backlog can leave events queued far longer
+    /// than they are useful; stale events are acknowledged but dropped rather than drip-fed to the group.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    public bool StaleEventDroppingEnabled { get; init; } = true;
+
+    /// <summary>Maximum age in seconds of a stream event before it is considered stale and dropped.</summary>
+    /// <remarks>
+    /// Defaults to <c>60</c>. Compared against <see cref="CommsEvent.TimestampUtc"/> at the moment of processing.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int MaxEventAgeSeconds { get; init; } = 60;
+
+    /// <summary>Minimum interval in milliseconds between drop-notice messages sent to the group while messages are being dropped.</summary>
+    /// <remarks>
+    /// Defaults to <c>60000</c> ms (1 minute). Covers both rate-limited and stale drops. The first drop
+    /// always emits a notice immediately. Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int DropNoticeIntervalMs { get; init; } = 60_000;
+
+    /// <summary>Maximum number of replies buffered in the outbound queue before the oldest are dropped.</summary>
+    /// <remarks>
+    /// Defaults to <c>100</c>. Bounds the reply channel so a flood cannot grow an unbounded backlog
+    /// that drip-feeds for hours; when full the oldest queued reply is discarded.
+    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int ReplyQueueCapacity { get; init; } = 100;
 }
