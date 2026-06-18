@@ -19,9 +19,16 @@
 # Include their full source tree so project references resolve.
 !deps/**
 
-# never leak local-only secrets or build artefacts into the image
+# never leak build output, VCS metadata, or local-only secrets into the image.
+# Excluding bin/obj repo-wide also keeps generated files (e.g. *.AssemblyInfo.cs,
+# *.GlobalUsings.g.cs, *.nuget.g.props) — which the allow-list above would otherwise
+# re-include — out of the context so they don't bust the restore/COPY layer cache.
+**/bin
+**/obj
+**/.git
+**/.vs
 **/appsettings.Local*.json
-deps/**/bin
-deps/**/obj
-deps/**/.git
-deps/**/.vs
+
+# test projects are never part of the runtime image; excluding the *.Tests dirs
+# keeps them out of the csproj globs / COPY and avoids cache busts on test edits
+**/*.Tests
