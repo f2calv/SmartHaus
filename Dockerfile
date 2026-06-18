@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 # check=skip=CopyIgnoredFile
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
@@ -5,34 +6,15 @@ COPY ["Directory.Build.props", "Directory.Packages.props", "appsettings.json", "
 
 ARG WORKLOAD=CasCap.App.Server
 ARG CONFIGURATION=Release
-COPY ["src/$WORKLOAD/$WORKLOAD.csproj", "src/$WORKLOAD/"]
-COPY ["src/CasCap.App/CasCap.App.csproj", "src/CasCap.App/"]
-COPY ["src/CasCap.Api.Buderus/CasCap.Api.Buderus.csproj", "src/CasCap.Api.Buderus/"]
-COPY ["src/CasCap.Api.Buderus.Sinks/CasCap.Api.Buderus.Sinks.csproj", "src/CasCap.Api.Buderus.Sinks/"]
-COPY ["src/CasCap.Api.DDns/CasCap.Api.DDns.csproj", "src/CasCap.Api.DDns/"]
-COPY ["src/CasCap.Api.DoorBird/CasCap.Api.DoorBird.csproj", "src/CasCap.Api.DoorBird/"]
-COPY ["src/CasCap.Api.DoorBird.Sinks/CasCap.Api.DoorBird.Sinks.csproj", "src/CasCap.Api.DoorBird.Sinks/"]
-COPY ["src/CasCap.Api.Fronius/CasCap.Api.Fronius.csproj", "src/CasCap.Api.Fronius/"]
-COPY ["src/CasCap.Api.Fronius.Sinks/CasCap.Api.Fronius.Sinks.csproj", "src/CasCap.Api.Fronius.Sinks/"]
-COPY ["src/CasCap.Api.Knx/CasCap.Api.Knx.csproj", "src/CasCap.Api.Knx/"]
-COPY ["src/CasCap.Api.Knx.Sinks/CasCap.Api.Knx.Sinks.csproj", "src/CasCap.Api.Knx.Sinks/"]
-COPY ["src/CasCap.Api.Miele/CasCap.Api.Miele.csproj", "src/CasCap.Api.Miele/"]
-COPY ["src/CasCap.Api.Miele.Sinks/CasCap.Api.Miele.Sinks.csproj", "src/CasCap.Api.Miele.Sinks/"]
-COPY ["src/CasCap.Api.EdgeHardware/CasCap.Api.EdgeHardware.csproj", "src/CasCap.Api.EdgeHardware/"]
-COPY ["src/CasCap.Api.EdgeHardware.Sinks/CasCap.Api.EdgeHardware.Sinks.csproj", "src/CasCap.Api.EdgeHardware.Sinks/"]
-COPY ["src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj", "src/CasCap.Api.SignalCli/"]
-COPY ["src/CasCap.Api.Sicce/CasCap.Api.Sicce.csproj", "src/CasCap.Api.Sicce/"]
-COPY ["src/CasCap.Api.Sicce.Sinks/CasCap.Api.Sicce.Sinks.csproj", "src/CasCap.Api.Sicce.Sinks/"]
-COPY ["src/CasCap.Api.Shelly/CasCap.Api.Shelly.csproj", "src/CasCap.Api.Shelly/"]
-COPY ["src/CasCap.Api.Shelly.Sinks/CasCap.Api.Shelly.Sinks.csproj", "src/CasCap.Api.Shelly.Sinks/"]
-COPY ["src/CasCap.Api.Ubiquiti/CasCap.Api.Ubiquiti.csproj", "src/CasCap.Api.Ubiquiti/"]
-COPY ["src/CasCap.Api.Ubiquiti.Sinks/CasCap.Api.Ubiquiti.Sinks.csproj", "src/CasCap.Api.Ubiquiti.Sinks/"]
-COPY ["src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj", "src/CasCap.Api.Wiz/"]
-COPY ["src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj", "src/CasCap.Api.Wiz.Sinks/"]
-COPY ["src/CasCap.SmartHaus/CasCap.SmartHaus.csproj", "src/CasCap.SmartHaus/"]
-ARG TARGETPLATFORM
+
+# ── Restore layer (cached until a csproj/props or package version changes) ──
+# Copy every project manifest first (--parents preserves directory structure) so
+# editing source (.cs) files reuses the cached restore. Restore is platform-agnostic,
+# so keep it before ARG TARGETPLATFORM to share it across architectures.
+COPY --parents src/**/*.csproj ./
 RUN dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
 COPY . .
+ARG TARGETPLATFORM
 RUN if [ "$TARGETPLATFORM" = "linux/amd64" ]; then \
     RID=linux-x64 ; \
     elif [ "$TARGETPLATFORM" = "linux/arm64" ]; then \
