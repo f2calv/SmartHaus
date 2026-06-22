@@ -19,7 +19,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout SmartHaus
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: git clone f2calv/CasCap.Common
         run: git clone --depth 1 https://github.com/f2calv/CasCap.Common.git $GITHUB_WORKSPACE/../CasCap.Common
