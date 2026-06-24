@@ -442,3 +442,6 @@ appsettings.Local.*.json
 
 # PII scan reports (.scripts/Find-Pii.ps1 -OutFile) - may contain extracted secrets
 pii-report*.csv
+
+# HVE / Copilot runtime artefacts
+.copilot-tracking/
