@@ -10,6 +10,16 @@ public static class HausServiceCollectionExtensions
 {
 
     /// <summary>
+    /// Registers the <see cref="AuditConfig"/> and <see cref="McpAuditMiddleware"/> singleton
+    /// for MCP tool call auditing and human-in-the-loop approval.
+    /// </summary>
+    public static void AddMcpAudit(this IServiceCollection services)
+    {
+        services.AddCasCapConfiguration<AuditConfig>();
+        services.TryAddSingleton<McpAuditMiddleware>();
+    }
+
+    /// <summary>
     /// Registers <see cref="MediaStreamSinkService"/> and its configuration dependencies
     /// (<see cref="SecurityAgentConfig"/>, <see cref="MediaConfig"/>).
     /// Safe to call multiple times; uses <see cref="ServiceCollectionDescriptorExtensions.TryAddSingleton{TService,TImplementation}"/>
@@ -76,8 +86,14 @@ public static class HausServiceCollectionExtensions
     /// Optional root AI configuration supplying shared <see cref="AIConfig.InstructionsPrefix"/>
     /// and <see cref="AIConfig.InstructionsSuffix"/>.
     /// </param>
+    /// <param name="configureAgent">
+    /// Optional delegate to configure the <see cref="AIAgentBuilder"/> pipeline (e.g. add middleware).
+    /// When <c>null</c> and the <see cref="McpAuditMiddleware"/> is registered, the audit middleware
+    /// is wired automatically.
+    /// </param>
     public static (IChatClient chatClient, AIAgent agent, string instructions) CreateAgent(this WebApplicationBuilder builder,
-        ProviderConfig provider, AgentConfig agentConfig, IServiceProvider serviceProvider, List<AITool>? tools = null, string? otelSourceName = null, AIConfig? aiConfig = null)
+        ProviderConfig provider, AgentConfig agentConfig, IServiceProvider serviceProvider, List<AITool>? tools = null,
+        string? otelSourceName = null, AIConfig? aiConfig = null, Action<AIAgentBuilder>? configureAgent = null)
     {
         // Infrastructure auth (k8s ingress basic auth) is only needed for Ollama
         // when running outside the cluster. OpenAI/AzureOpenAI auth is handled separately.
@@ -102,10 +118,24 @@ public static class HausServiceCollectionExtensions
             : null;
 
         return AgentExtensions.CreateAgent(provider, agentConfig, httpClient, tools,
+            configureAgent: configureAgent ?? BuildDefaultAgentMiddleware(serviceProvider),
             instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly,
             aiConfig: aiConfig,
             otelSourceName: otelSourceName,
             tokenCredential: tokenCredential);
+    }
+
+    /// <summary>
+    /// Builds a default agent middleware pipeline that wires <see cref="McpAuditMiddleware"/>
+    /// when it is registered in the service provider.
+    /// </summary>
+    private static Action<AIAgentBuilder>? BuildDefaultAgentMiddleware(IServiceProvider serviceProvider)
+    {
+        var auditMiddleware = serviceProvider.GetService<McpAuditMiddleware>();
+        if (auditMiddleware is null)
+            return null;
+
+        return b => b.Use(auditMiddleware.InvokeAsync);
     }
 
     /// <summary>
