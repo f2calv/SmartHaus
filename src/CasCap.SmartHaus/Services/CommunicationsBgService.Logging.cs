@@ -44,6 +44,22 @@ public sealed partial class CommunicationsBgService
         Message = "{ClassName} media not found at {MediaRedisKey}, sending without attachment")]
     private static partial void LogMediaNotFound(ILogger logger, string className, string mediaRedisKey);
 
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} stream event from {Source} suppressed by rate limiter ({SuppressedCount} suppressed since last notice)")]
+    private static partial void LogStreamEventSuppressed(ILogger logger, string className, string source, long suppressedCount);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} stream event from {Source} dropped as stale ({AgeSeconds}s old, {StaleCount} stale since last notice)")]
+    private static partial void LogStreamEventStale(ILogger logger, string className, string source, long ageSeconds, long staleCount);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} sent drop notice to group, {DroppedCount} message(s) dropped, delivered={Delivered}")]
+    private static partial void LogDropNoticeSent(ILogger logger, string className, long droppedCount, bool delivered);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} failed to send drop notice ({ExceptionType}: {ExceptionMessage})")]
+    private static partial void LogDropNoticeFailed(ILogger logger, Exception ex, string className, string exceptionType, string exceptionMessage);
+
     // ── Messaging partial (poll loop) ────────────────────────────────────
 
     [LoggerMessage(Level = LogLevel.Information,

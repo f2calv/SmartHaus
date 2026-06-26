@@ -54,8 +54,12 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private string? _groupId;
     private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
-    private readonly Channel<ReplyRequest> _replyChannel = Channel.CreateUnbounded<ReplyRequest>(
-        new UnboundedChannelOptions { SingleReader = true });
+    private readonly Channel<ReplyRequest> _replyChannel;
+
+    private readonly StreamSendThrottle? _streamSendThrottle;
+    private long _rateLimitedSinceNotice;
+    private long _staleSinceNotice;
+    private long _lastDropNoticeTicks;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="CommunicationsBgService"/> class.
@@ -92,6 +96,22 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _signalCliHealthCheck = signalCliHealthCheck;
         _pollTracker = pollTracker;
         _edgeHardwareQuerySvc = edgeHardwareQuerySvc;
+
+        // Bound the outbound reply queue so a producer flood cannot grow an unbounded backlog
+        // that signal-cli drip-feeds for hours; the oldest queued reply is discarded when full.
+        _replyChannel = Channel.CreateBounded<ReplyRequest>(
+            new BoundedChannelOptions(_commsAgentConfig.ReplyQueueCapacity)
+            {
+                SingleReader = true,
+                FullMode = BoundedChannelFullMode.DropOldest,
+            });
+
+        // Token-bucket gate for producer-driven stream events (see ProcessCommsEventAsync).
+        if (_commsAgentConfig.StreamSendThrottlingEnabled)
+            _streamSendThrottle = new StreamSendThrottle(
+                _commsAgentConfig.StreamSendBurst,
+                _commsAgentConfig.StreamSendRatePerMinute / 60d,
+                _timeProvider);
 
         var agentProfileName = AgentKeys.CommsAgent;
         if (_aiConfig.Agents.TryGetValue(agentProfileName, out var commsAgent))

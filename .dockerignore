@@ -6,8 +6,8 @@
 !**/*.csproj
 !**/appsettings.*
 !global.json
-!Directory.Build.props
-!Directory.Packages.props
+!**/*.props
+!**/*.targets
 
 # custom
 !**/*.lua
@@ -15,6 +15,20 @@
 !wait-for-it.sh
 !ffmpeg-record.sh
 
-# dependency repos cloned into deps/ by CI
-!deps/CasCap.Common/**
-!deps/CasCap.Api.Azure/**
+# Debug builds (Dockerfile.Debug) sync the local sibling repos into deps/.
+# Include their full source tree so project references resolve.
+!deps/**
+
+# never leak build output, VCS metadata, or local-only secrets into the image.
+# Excluding bin/obj repo-wide also keeps generated files (e.g. *.AssemblyInfo.cs,
+# *.GlobalUsings.g.cs, *.nuget.g.props) — which the allow-list above would otherwise
+# re-include — out of the context so they don't bust the restore/COPY layer cache.
+**/bin
+**/obj
+**/.git
+**/.vs
+**/appsettings.Local*.json
+
+# test projects are never part of the runtime image; excluding the *.Tests dirs
+# keeps them out of the csproj globs / COPY and avoids cache busts on test edits
+**/*.Tests
