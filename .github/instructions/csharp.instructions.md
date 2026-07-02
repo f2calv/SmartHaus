@@ -110,6 +110,13 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 
 - Prefer `System.Threading.Lock` over `object` for dedicated lock instances. Enables a thinner locking path and signals intent more clearly.
 
+### TimeProvider for Current Time
+
+- **Never call `DateTime.UtcNow`, `DateTime.Now`, `DateTime.Today`, `DateTimeOffset.UtcNow`, or `DateTimeOffset.Now` directly in service / production code.** Inject `TimeProvider` and read the current instant via `timeProvider.GetUtcNow()` (returns `DateTimeOffset`) or `timeProvider.GetUtcNow().UtcDateTime` (for a `DateTime`). This keeps time deterministic and testable (`FakeTimeProvider`) and lets simulation runs advance a controlled clock.
+- **DI**: `TimeProvider` is registered as a singleton (`TimeProvider.System`) and injected via the primary constructor, ordered after `ILogger` and `IOptions<T>` but before application services. Static helpers that cannot take a constructor may accept an optional `TimeProvider? timeProvider = null` parameter and fall back to `TimeProvider.System`.
+- **Delays and timers on the injected clock**: Use the `TimeProvider` overloads — `Task.Delay(TimeSpan, timeProvider, ct)`, `timeProvider.CreateTimer(...)` — so simulated time controls scheduling too.
+- **Permitted direct use**: Test code, `TimeProvider` implementations themselves, and static/`const` field initialisers or model default-property initialisers where DI is unavailable. Prefer refactoring to inject `TimeProvider` when practical.
+
 ### Hot-Path Conventions
 
 - **`[MethodImpl(MethodImplOptions.AggressiveInlining)]`**: Apply to leaf-level parsing/conversion methods called in tight loops. Do not apply to methods with complex control flow — the JIT already inlines small methods.
