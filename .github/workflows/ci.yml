@@ -15,5 +15,8 @@ permissions: {} #Note: deny all permissions at the workflow level; individual jo
 jobs:
   release:
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    with:
+      tag-prefix: ''
+      move-major-tag: false
     permissions:
       contents: write
