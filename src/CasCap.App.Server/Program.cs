@@ -19,13 +19,8 @@ try
         gitMetadata,
         connectionMultiplexer,
         apiAuthConfig,
-        configureMetrics: metricsBuilder =>
-        {
-            metricsBuilder.AddView($"{appConfig.MetricNamePrefix}.test_processing.time", new ExplicitBucketHistogramConfiguration
-            {
-                Boundaries = [5, 10, 15, 20]
-            });
-        },
+        configureMetrics: metricsBuilder => metricsBuilder
+            .AddHistogramView(appConfig.MetricNamePrefix, "test_processing.time", 5, 10, 15, 20),
         configureTracing: tracingBuilder =>
         {
             tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
