@@ -69,7 +69,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
                 if (val <= 254)
                 {
                     var str = $"{main}/{middle}/{val}";
-                    Debug.WriteLine(str);
+                    _output.WriteLine(str);
                     Assert.Equal(str, AddressString);
                     break;
                 }
