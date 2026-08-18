@@ -44,6 +44,7 @@ jobs:
   nuget:
     runs-on: ubuntu-latest
     permissions:
+      id-token: write #nuget.org trusted publishing exchanges this for a short-lived api key
       packages: write
       contents: read
     needs: [versioning, build]
@@ -52,7 +53,7 @@ jobs:
       - uses: f2calv/gha-dotnet-nuget@v2
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          nuget-user: ${{ github.repository_owner }}
           version: ${{ needs.versioning.outputs.version }}
           execute-tests: false
           solution-name: SmartHaus.Release.slnx
