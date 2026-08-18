@@ -1,6 +1,7 @@
 using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using ModelContextProtocol.AspNetCore;
 using Serilog;
 using StackExchange.Redis;
 
@@ -19,13 +20,8 @@ try
         gitMetadata,
         connectionMultiplexer,
         apiAuthConfig,
-        configureMetrics: metricsBuilder =>
-        {
-            metricsBuilder.AddView($"{appConfig.MetricNamePrefix}.test_processing.time", new ExplicitBucketHistogramConfiguration
-            {
-                Boundaries = [5, 10, 15, 20]
-            });
-        },
+        configureMetrics: metricsBuilder => metricsBuilder
+            .AddHistogramView(appConfig.MetricNamePrefix, "test_processing.time", 5, 10, 15, 20),
         configureTracing: tracingBuilder =>
         {
             tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
@@ -40,7 +36,7 @@ try
     #region standard services + feature flags
 
     var mcpBuilder = builder.Services.AddMcpServer()
-        .WithHttpTransport(options => options.IdleTimeout = Timeout.InfiniteTimeSpan)
+        .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
         //.WithToolsFromAssembly()
         ;
 
@@ -223,7 +219,9 @@ try
         options.DefaultApiVersion = new ApiVersion(1.0);
         options.AssumeDefaultVersionWhenUnspecified = true;
         options.ReportApiVersions = true;
+        options.ApiVersionReader = new QueryStringApiVersionReader();
     })
+    .AddMvc()
     .AddApiExplorer(options =>
     {
         options.GroupNameFormat = "'v'VVV";
