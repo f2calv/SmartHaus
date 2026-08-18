@@ -1,6 +1,7 @@
 using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
+using ModelContextProtocol.AspNetCore;
 using Serilog;
 using StackExchange.Redis;
 
@@ -35,7 +36,7 @@ try
     #region standard services + feature flags
 
     var mcpBuilder = builder.Services.AddMcpServer()
-        .WithHttpTransport(options => options.IdleTimeout = Timeout.InfiniteTimeSpan)
+        .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
         //.WithToolsFromAssembly()
         ;
 
@@ -218,7 +219,9 @@ try
         options.DefaultApiVersion = new ApiVersion(1.0);
         options.AssumeDefaultVersionWhenUnspecified = true;
         options.ReportApiVersions = true;
+        options.ApiVersionReader = new QueryStringApiVersionReader();
     })
+    .AddMvc()
     .AddApiExplorer(options =>
     {
         options.GroupNameFormat = "'v'VVV";
