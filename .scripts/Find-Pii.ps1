@@ -137,7 +137,7 @@ try {
         'windows.net', 'core.windows.net', 'microsoft.com', 'azure.com', 'visualstudio.com',
         'github.com', 'githubusercontent.com', 'nuget.org', 'w3.org', 'schemas.microsoft.com',
         'cluster.local', 'svc.cluster.local', 'localhost', 'shelly.cloud', 'thingscloud.it',
-        'gravatar.com', 'googleapis.com', 'gstatic.com', 'example.com', 'example.net', 'example.org'
+        'gravatar.com', 'googleapis.com', 'gstatic.com', 'miele.com', 'example.com', 'example.net', 'example.org'
     ) | ForEach-Object { $_.ToLowerInvariant() }
 
     function Test-Allowlisted {
@@ -218,7 +218,13 @@ try {
         'UserPath'     = [regex]'(?i)[a-z]:\\Users\\[^\\/"<>:|?*\s]+'
     }
     foreach ($s in $seeds) {
-        $matchers["Seed:$s"] = [regex]("(?i)" + [regex]::Escape($s))
+        $escapedSeed = [regex]::Escape($s)
+        $matchers["Seed:$s"] = if ($s -match '^\d{1,3}(?:\.\d{1,3}){3}$') {
+            [regex]("(?i)(?<![0-9.])$escapedSeed(?![0-9.])")
+        }
+        else {
+            [regex]("(?i)$escapedSeed")
+        }
     }
 
     # ----------------------------------------------------------------------------------

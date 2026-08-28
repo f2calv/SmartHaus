@@ -18,6 +18,7 @@ Detailed conventions live in scoped instruction files under `.github/instruction
 | `csharp.mcp.instructions.md` | `**/*.cs` | MCP server tool attributes, descriptions, naming |
 | `csharp.azure.instructions.md` | `**/*.cs` | Azure Table Storage & Redis key naming |
 | `dotnet.instructions.md` | `**/*.csproj`, `*.slnx`, `Directory.*.props` | Central build/package config, solution format, SDK pinning |
+| `helm.instructions.md` | `charts/**` | Helm chart authoring conventions, values.schema.json, dependency wiring |
 | `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
 | `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
 | `documentation.instructions.md` | `**/*.md` | README consistency & Mermaid diagrams |
@@ -62,6 +63,13 @@ Every f2calv repository follows a consistent layout, regardless of language:
 ## Project-Specific Overrides
 
 <!-- This section is excluded from cross-repository sync. Place any repo-specific rules below. -->
+
+### Public Deployment Boundary
+
+This public repository stops at building and publishing application, package,
+and Helm artifacts. Do not include deployment-environment identifiers, manifest
+locations, environment or namespace names, cluster state, deployed versions,
+or operational procedures in tracked files or public pull requests.
 
 ### Configuration File Strategy
 

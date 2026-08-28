@@ -25,71 +25,76 @@ appVersion: "1.16.0"
 
 dependencies:
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: buderus
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: doorbird
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: fronius
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: knx
-  
+
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: edgehardware
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: edge-cpu
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: edge-gpu
-  
+
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: ffmpeg
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: signalrhub
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: comms
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: wiz
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: shelly
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: ubiquiti
 
   - name: workload
-    version: 0.1.0
-    repository: file://../workload
+    version: 1.0.2
+    repository: oci://ghcr.io/f2calv/charts
     alias: sicce
+
+  - name: dashboards
+    version: 0.1.0
+    repository: file://../dashboards
+    condition: dashboards.enabled

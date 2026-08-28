@@ -219,7 +219,8 @@ try
         options.DefaultApiVersion = new ApiVersion(1.0);
         options.AssumeDefaultVersionWhenUnspecified = true;
         options.ReportApiVersions = true;
-        options.ApiVersionReader = new QueryStringApiVersionReader();
+        //versioned routes carry {version:apiVersion}, so the segment is the only source
+        options.ApiVersionReader = new UrlSegmentApiVersionReader();
     })
     .AddMvc()
     .AddApiExplorer(options =>

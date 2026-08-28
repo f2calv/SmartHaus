@@ -9,7 +9,7 @@ public sealed record UbiquitiConfig : IAppConfig, IAzTableStorageConfig, IMetric
     public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(UbiquitiConfig)}";
 
     /// <summary>
-    /// The base address of the UniFi Protect controller (e.g. "https://192.168.1.1").
+    /// The base address of the UniFi Protect controller (e.g. "https://192.168.1.100").
     /// </summary>
     [Required, Url]
     public required string BaseAddress { get; init; }

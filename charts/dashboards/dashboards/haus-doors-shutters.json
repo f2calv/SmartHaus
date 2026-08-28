@@ -1,0 +1,430 @@
+{
+    "id": null,
+    "uid": "haus-doors-shutters",
+    "title": "Haus Doors, Windows & Shutters",
+    "description": "KNX binary contact states (doors and windows open/closed), shutter positions, slat positions and movement direction.",
+    "tags": [
+        "haus",
+        "knx",
+        "contacts",
+        "shutters"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "templating": {
+        "list": []
+    },
+    "panels": [
+        {
+            "id": 1,
+            "type": "stat",
+            "title": "Doors & Windows — Current",
+            "description": "Current open/closed state of each KNX binary contact (ContactFunction = STATE).",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 24,
+                "h": 5
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Closed",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Open",
+                                    "color": "semi-dark-orange",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_contact_state",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "state-timeline",
+            "title": "Doors & Windows — History",
+            "description": "State timeline showing when doors and windows were opened or closed.",
+            "gridPos": {
+                "x": 0,
+                "y": 5,
+                "w": 24,
+                "h": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Closed",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Open",
+                                    "color": "semi-dark-orange",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "custom": {
+                        "fillOpacity": 80,
+                        "lineWidth": 0
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "showValue": "auto",
+                "alignValue": "center",
+                "mergeValues": true,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "rowHeight": 0.8
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_contact_state",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Shutter Position",
+            "description": "Shutter/blind position percentage from KNX group addresses (ShutterFunction = POS_FB). 0% = fully open, 100% = fully closed.",
+            "gridPos": {
+                "x": 0,
+                "y": 12,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_shutter_pos_fb_percent",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "timeseries",
+            "title": "Slat Position",
+            "description": "Shutter slat/louvre angle percentage from KNX group addresses (ShutterFunction = POSSLATS_FB). 0% = fully open, 100% = fully closed.",
+            "gridPos": {
+                "x": 12,
+                "y": 12,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_shutter_posslats_fb_percent",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "type": "stat",
+            "title": "Shutter Direction — Current",
+            "description": "Current shutter movement direction per group address (ShutterFunction = DIRECTION).",
+            "gridPos": {
+                "x": 0,
+                "y": 20,
+                "w": 12,
+                "h": 5
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Down ▼",
+                                    "color": "semi-dark-blue",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Up ▲",
+                                    "color": "semi-dark-purple",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "blue",
+                                "value": null
+                            },
+                            {
+                                "color": "purple",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_shutter_direction",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "state-timeline",
+            "title": "Shutter Direction — History",
+            "description": "State timeline showing shutter movement direction changes over time.",
+            "gridPos": {
+                "x": 12,
+                "y": 20,
+                "w": 12,
+                "h": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Down ▼",
+                                    "color": "semi-dark-blue",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Up ▲",
+                                    "color": "semi-dark-purple",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "custom": {
+                        "fillOpacity": 80,
+                        "lineWidth": 0
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "showValue": "auto",
+                "alignValue": "center",
+                "mergeValues": true,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "rowHeight": 0.8
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_shutter_direction",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        }
+    ]
+}

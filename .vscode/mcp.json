@@ -22,20 +22,12 @@
       "type": "http",
       "url": "${input:grafana-mcp-url}"
     },
-    "hausBuderusDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/buderus"
-    },
     "hausBuderus": {
       "type": "http",
       "url": "${input:haus-base-url}/mcp/buderus",
       "headers": {
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
-    },
-    "hausDoorBirdDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/doorbird"
     },
     "hausDoorBird": {
       "type": "http",
@@ -44,20 +36,12 @@
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
     },
-    "hausFroniusDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/fronius"
-    },
     "hausFronius": {
       "type": "http",
       "url": "${input:haus-base-url}/mcp/fronius",
       "headers": {
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
-    },
-    "hausKnxDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/knx"
     },
     "hausKnx": {
       "type": "http",
@@ -66,20 +50,12 @@
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
     },
-    "hausShellyDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/shelly"
-    },
     "hausShelly": {
       "type": "http",
       "url": "${input:haus-base-url}/mcp/shelly",
       "headers": {
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
-    },
-    "hausSicceDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/sicce"
     },
     "hausSicce": {
       "type": "http",
@@ -88,20 +64,12 @@
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
     },
-    "hausUbiquitiDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/ubiquiti"
-    },
     "hausUbiquiti": {
       "type": "http",
       "url": "${input:haus-base-url}/mcp/ubiquiti",
       "headers": {
         "Authorization": "Basic ${input:haus-basic-auth}"
       }
-    },
-    "hausWizDev": {
-      "type": "http",
-      "url": "http://localhost:8080/mcp/wiz"
     },
     "hausWiz": {
       "type": "http",

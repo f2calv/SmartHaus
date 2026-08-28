@@ -1,13 +1,60 @@
 # ── Shared defaults ──────────────────────────────────────────────────
 # Each alias key maps to a dependency in Chart.yaml. Values here serve
-# as defaults; ArgoCD valuesObject provides all envVars and overrides
+# as defaults; deployment values provide all envVars and override
 # only what differs per workload (extra volumes, etc.).
 #
 # Workloads with replicaCount: 0 are disabled by default and must be
-# enabled explicitly in the ArgoCD application manifest.
+# enabled explicitly in deployment values.
 # ─────────────────────────────────────────────────────────────────────
 
+dashboards:
+  enabled: true
+  dashboardFolder: SmartHaus
+  datasources:
+    prometheus: prometheus
+
+image: &image
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "1.16.0"
+
 _shared: &shared
+  image: *image
+  service:
+    enabled: true
+    name: http
+    type: ClusterIP
+    port: 80
+    containerPort: 8080
+    protocol: TCP
+    annotations: {}
+  envFieldRef:
+    AppConfig__NodeName: spec.nodeName
+    AppConfig__PodName: metadata.name
+    AppConfig__Namespace: metadata.namespace
+    AppConfig__PodIp: status.podIP
+    AppConfig__ServiceAccountName: spec.serviceAccountName
+  startupProbe:
+    httpGet:
+      path: /healthz/startup
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 20
+    failureThreshold: 5
+  readinessProbe:
+    httpGet:
+      path: /healthz/ready
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 60
+    failureThreshold: 10
+  livenessProbe:
+    httpGet:
+      path: /healthz/live
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 60
+    failureThreshold: 10
   resources:
     requests:
       cpu: 100m
@@ -16,7 +63,7 @@ _shared: &shared
       cpu: 200m
       memory: 256Mi
   # imagePullSecrets, volumes, volumeMounts, envSecrets and envVarsFrom
-  # are deployment-specific — configure via ArgoCD valuesObject or your
+  # are deployment-specific — configure via deployment overrides or your
   # own values file.
   # imagePullSecrets:
   #   - name: my-registry-pull-secret
@@ -36,7 +83,7 @@ _shared: &shared
 
 # ── Workload defaults ───────────────────────────────────────────────
 # Ingress is disabled by default in the workload subchart. To enable,
-# provide the full ingress block per workload via ArgoCD valuesObject
+# provide the full ingress block per workload via deployment values
 # or your own values override file. Example:
 #
 # doorbird:
@@ -74,7 +121,7 @@ edge-cpu:
   strategy:
     type: Recreate
   # Node affinity and anti-affinity are deployment-specific — configure
-  # via ArgoCD valuesObject with your real node hostnames.
+  # via deployment values with your real node hostnames.
   # affinity:
   #   nodeAffinity:
   #     requiredDuringSchedulingIgnoredDuringExecution:
@@ -97,7 +144,7 @@ edge-gpu:
   runtimeClassName: nvidia
   securityContext:
     privileged: true
-  # nodeSelector is deployment-specific — set via ArgoCD valuesObject.
+  # nodeSelector is deployment-specific — set via deployment values.
   # nodeSelector:
   #   kubernetes.io/hostname: my-gpu-node
 
@@ -125,19 +172,4 @@ mcp:
   replicaCount: 0
 
 ffmpeg:
-  replicaCount: 0
-
-cctv-nord-ost:
-  replicaCount: 0
-
-cctv-nord-west:
-  replicaCount: 0
-
-cctv-sud-ost:
-  replicaCount: 0
-
-cctv-sud-west:
-  replicaCount: 0
-
-cctv-doorbird:
   replicaCount: 0

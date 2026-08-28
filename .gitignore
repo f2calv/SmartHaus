@@ -436,6 +436,7 @@ FodyWeavers.xsd
 !.docker/redis.conf
 *.tgz
 *.lock
+!charts/smarthaus/Chart.lock
 manifest*
 appsettings.Local.json
 appsettings.Local.*.json

@@ -58,7 +58,7 @@ flowchart TD
 {
   "CasCap": {
     "UbiquitiConfig": {
-      "BaseAddress": "https://192.168.1.1",
+      "BaseAddress": "https://192.168.1.100",
       "Username": "<controller-username>",
       "Password": "<controller-password>",
       "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
@@ -80,7 +80,7 @@ flowchart TD
   "CasCap": {
     "UbiquitiConfig": {
       "IsEnabled": true,
-      "BaseAddress": "https://192.168.1.1",
+      "BaseAddress": "https://192.168.1.100",
       "Username": "<controller-username>",
       "Password": "<controller-password>",
       "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
