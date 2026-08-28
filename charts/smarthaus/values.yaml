@@ -7,6 +7,13 @@
 # enabled explicitly in the ArgoCD application manifest.
 # ─────────────────────────────────────────────────────────────────────
 
+dashboards:
+  enabled: true
+  dashboardFolder: SmartHaus
+  datasources:
+    prometheus: prometheus
+    loki: P8E80F9AEF21F6940
+
 image: &image
   repository: nginx
   pullPolicy: IfNotPresent

@@ -1,0 +1,40 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "enabled",
+    "dashboardFolder",
+    "datasources"
+  ],
+  "properties": {
+    "enabled": {
+      "type": "boolean"
+    },
+    "dashboardFolder": {
+      "type": "string",
+      "minLength": 1
+    },
+    "datasources": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "prometheus",
+        "loki"
+      ],
+      "properties": {
+        "prometheus": {
+          "type": "string",
+          "minLength": 1
+        },
+        "loki": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "global": {
+      "type": "object"
+    }
+  }
+}

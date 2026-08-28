@@ -1,3 +1,6 @@
+# Controls whether dashboard ConfigMaps are rendered.
+enabled: true
+
 # Grafana folder selected by the sidecar's `grafana_folder` annotation.
 dashboardFolder: SmartHaus
 

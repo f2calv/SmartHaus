@@ -93,3 +93,8 @@ dependencies:
     version: 1.0.2
     repository: oci://ghcr.io/f2calv/charts
     alias: sicce
+
+  - name: dashboards
+    version: 0.1.0
+    repository: file://../dashboards
+    condition: dashboards.enabled
