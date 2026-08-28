@@ -7,7 +7,48 @@
 # enabled explicitly in the ArgoCD application manifest.
 # ─────────────────────────────────────────────────────────────────────
 
+image: &image
+  repository: nginx
+  pullPolicy: IfNotPresent
+  tag: "1.16.0"
+
 _shared: &shared
+  image: *image
+  service:
+    enabled: true
+    name: http
+    type: ClusterIP
+    port: 80
+    containerPort: 8080
+    protocol: TCP
+    annotations: {}
+  envFieldRef:
+    AppConfig__NodeName: spec.nodeName
+    AppConfig__PodName: metadata.name
+    AppConfig__Namespace: metadata.namespace
+    AppConfig__PodIp: status.podIP
+    AppConfig__ServiceAccountName: spec.serviceAccountName
+  startupProbe:
+    httpGet:
+      path: /healthz/startup
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 20
+    failureThreshold: 5
+  readinessProbe:
+    httpGet:
+      path: /healthz/ready
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 60
+    failureThreshold: 10
+  livenessProbe:
+    httpGet:
+      path: /healthz/live
+      port: 8080
+    periodSeconds: 10
+    initialDelaySeconds: 60
+    failureThreshold: 10
   resources:
     requests:
       cpu: 100m

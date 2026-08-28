@@ -1,6 +1,0 @@
-apiVersion: v2
-name: workload
-description: A generic Helm chart for deploying workloads as Kubernetes Deployments, ScaledObjects, ScaledJobs, or CronJobs.
-type: application
-version: 0.1.0
-appVersion: "1.16.0"

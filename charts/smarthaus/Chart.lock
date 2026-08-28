@@ -1,0 +1,45 @@
+dependencies:
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+- name: workload
+  repository: oci://ghcr.io/f2calv/charts
+  version: 1.0.1
+digest: sha256:908753896238a924631606b8c79e2cb801661288af5cf044c02a9d97a5e201d5
+generated: "2026-08-28T13:29:41.4388925+02:00"

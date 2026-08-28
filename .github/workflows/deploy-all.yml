@@ -80,31 +80,12 @@ jobs:
           ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"deps/CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
         ]
 
-  pkg-chart-workload:
-    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
-    permissions:
-      packages: write #for pushing helm artifact
-      contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
-    needs: [versioning, build, containerize]
-    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
-    with:
-      image-registry: ghcr.io
-      image-repository: ${{ github.repository_owner }}/smarthaus
-      chart-registry: ghcr.io
-      chart-registry-username: ${{ github.repository_owner }}
-      #chart-registry-password: ${{ secrets.GITHUB_TOKEN }} #Note: this doesnt work
-      chart-repository: ${{ github.repository_owner }}/charts/workload
-      chart-path: charts/workload
-      tag: ${{ needs.versioning.outputs.version }}
-      chart-testing-cli-command: skip #because helm charts not completed
-    secrets: inherit
-
   pkg-chart-smarthaus:
     uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
     permissions:
       packages: write #for pushing helm artifact
       contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
-    needs: [versioning, build, containerize, pkg-chart-workload]
+    needs: [versioning, build, containerize]
     if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
     with:
       tag: ${{ needs.versioning.outputs.version }}
@@ -116,11 +97,10 @@ jobs:
       chart-repository: ${{ github.repository_owner }}/charts/smarthaus
       chart-path: charts/smarthaus
       chart-testing-cli-command: skip #because helm charts not completed
-      chart-dependency-name: workload
     secrets: inherit
 
   gitops:
-    needs: [versioning, build, containerize, pkg-chart-workload, pkg-chart-smarthaus]
+    needs: [versioning, build, containerize, pkg-chart-smarthaus]
     if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
     uses: ./.github/workflows/_gitops-helm-update.yml
     with:
@@ -138,7 +118,7 @@ jobs:
     secrets: inherit
 
   release:
-    needs: [versioning, build, containerize, pkg-chart-workload, pkg-chart-smarthaus]
+    needs: [versioning, build, containerize, pkg-chart-smarthaus]
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     permissions:
