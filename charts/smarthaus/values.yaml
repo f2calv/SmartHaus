@@ -173,18 +173,3 @@ mcp:
 
 ffmpeg:
   replicaCount: 0
-
-cctv-nord-ost:
-  replicaCount: 0
-
-cctv-nord-west:
-  replicaCount: 0
-
-cctv-sud-ost:
-  replicaCount: 0
-
-cctv-sud-west:
-  replicaCount: 0
-
-cctv-doorbird:
-  replicaCount: 0

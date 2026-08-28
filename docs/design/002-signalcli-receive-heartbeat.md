@@ -6,7 +6,13 @@
 
 The [`CasCap.Api.SignalCli`](../../src/CasCap.Api.SignalCli) JSON-RPC transport ([`SignalCliJsonRpcClientService`](../../src/CasCap.Api.SignalCli/Services/SignalCliJsonRpcClientService.cs)) holds a long-lived WebSocket to the signal-cli REST API, which in turn bridges to the Java `signal-cli` daemon. A known failure mode (see [001](001-signalcli-audit-remediation.md) and the upstream issue drafts) leaves **outbound sending healthy while inbound delivery silently stops** — e.g. a poisoned `msg-cache` envelope kills only the daemon's receive thread. The WebSocket stays open, the process stays alive, and nothing detects the outage.
 
-A **passive** watchdog (`ReceiveStalenessTimeoutMs`) was added as a cheap backstop: it forces a reconnect when no inbound frame arrives within a timeout. Its fatal limitation is that it cannot distinguish *"the receive path is dead"* from *"nobody has messaged this account."* For a low-traffic account (SmartHaus is queried every 3–5 days) the timeout would have to exceed the longest legitimate quiet period (~7 days), making detection so slow it is nearly worthless. An account with no inbound integration at all has no organic traffic, so the passive watchdog is permanently disabled there.
+A **passive** watchdog (`ReceiveStalenessTimeoutMs`) was added as a cheap
+backstop: it forces a reconnect when no inbound frame arrives within a timeout.
+Its fatal limitation is that it cannot distinguish *"the receive path is dead"*
+from *"nobody has messaged this account."* For a low-traffic account, the
+timeout must exceed the longest legitimate quiet period, making detection too
+slow to be useful. An account with no inbound integration has no organic
+traffic, so the passive watchdog remains disabled there.
 
 An **active heartbeat** removes this ambiguity by *generating* inbound traffic on a schedule and verifying it round-trips, giving minutes-level detection latency regardless of organic traffic — and working identically for quiet accounts and zero-inbound accounts.
 
@@ -151,7 +157,7 @@ overrides are maintained outside this public repository. The existing
 
 | Account | `ReceiveStalenessTimeoutMs` | `HeartbeatIntervalMs` | Rationale |
 | --- | --- | --- | --- |
-| **SmartHaus** | `0` (passive watchdog useless at 3–5 day cadence) | ~`1800000` (30 min) once Phase 0 passes | Active heartbeat is the only viable detector for a quiet account. |
+| **Low-traffic account** | `0` | Enable after validation | Active heartbeat is the viable detector when organic traffic is sparse. |
 | **Zero-inbound account** | `0` | `0` for now (no inbound integration) → enable if/when inbound is added | Nothing receives inbound yet; revisit when integration lands. |
 | **High-traffic account** (hypothetical) | non-zero (e.g. a few hours) | `0` | Organic traffic makes the cheap passive watchdog sufficient. |
 
@@ -162,7 +168,8 @@ overrides are maintained outside this public repository. The existing
 - [ ] **`HB-2`** — Implement the heartbeat sender loop and echo detection in `SignalCliJsonRpcClientService`, reusing the existing `PeriodicTimer`/abort-reconnect pattern.
 - [ ] **`HB-3`** — Implement `SignalCliReceiveHeartbeatHealthCheck` (model on the staleness-health-check pattern) and wire it via `KubernetesProbeTypes`/`GetTags()`.
 - [ ] **`HB-4`** — Unit tests (fake `TimeProvider`, simulated missed/late/on-time echoes) + a manually-run integration test against the live demo daemon.
-- [ ] **`HB-5`** — Enable on SmartHaus (`HeartbeatIntervalMs` ~30 min, `HeartbeatHealthCheck = Liveness`); leave zero-inbound accounts disabled.
+- [ ] **`HB-5`** — Enable for validated low-traffic accounts; leave
+    zero-inbound accounts disabled.
 
 ## Open Questions
 

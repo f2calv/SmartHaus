@@ -67,10 +67,9 @@ Every f2calv repository follows a consistent layout, regardless of language:
 ### Public Deployment Boundary
 
 This public repository stops at building and publishing application, package,
-and Helm artifacts. Do not reference external deployment repositories,
-manifest paths, environment or namespace names, cluster state, deployed
-versions, or rollout and cutover procedures in tracked files or public pull
-requests. Keep deployment operations outside this repository.
+and Helm artifacts. Do not include deployment-environment identifiers, manifest
+locations, environment or namespace names, cluster state, deployed versions,
+or operational procedures in tracked files or public pull requests.
 
 ### Configuration File Strategy
 

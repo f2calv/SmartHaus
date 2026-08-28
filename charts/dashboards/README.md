@@ -9,8 +9,8 @@ Standalone Grafana dashboard JSON files live under `dashboards/`, one per
 dashboard. `templates/dashboards.yaml` emits one sidecar-discoverable ConfigMap
 per file. The file basename determines the ConfigMap name and data key, while
 the dashboard's internal `uid` remains unchanged. The Fronius dashboard retains
-its historical ConfigMap name and data key so the replacement matches the
-legacy resource exactly.
+its established ConfigMap name and data key so dashboard identity remains
+stable.
 
 Set `enabled: false` to render no dashboard resources. The standalone chart
 defaults to `enabled: true` for direct rendering and validation.
