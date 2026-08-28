@@ -8,4 +8,3 @@ dashboardFolder: SmartHaus
 # never be passed through `tpl` because Grafana legend tokens also use {{ }}.
 datasources:
   prometheus: prometheus
-  loki: P8E80F9AEF21F6940

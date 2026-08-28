@@ -447,9 +447,9 @@ Same additions.
 
 #### 6.3 Update Helm values (if applicable)
 
-File: `charts/smarthaus/values.yaml` — add feature to enabled features list if deploying to K8s.
-
-Also check the KNX_K8S repo: `src/workloads/smarthaus.yaml` — ArgoCD Application manifest may need the feature enabled.
+File: `charts/smarthaus/values.yaml` — add the feature to the enabled features
+list when it belongs in the public deployment defaults. Keep environment-specific
+deployment configuration outside this repository.
 
 ---
 

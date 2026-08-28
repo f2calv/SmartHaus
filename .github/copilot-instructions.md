@@ -64,6 +64,14 @@ Every f2calv repository follows a consistent layout, regardless of language:
 
 <!-- This section is excluded from cross-repository sync. Place any repo-specific rules below. -->
 
+### Public Deployment Boundary
+
+This public repository stops at building and publishing application, package,
+and Helm artifacts. Do not reference external deployment repositories,
+manifest paths, environment or namespace names, cluster state, deployed
+versions, or rollout and cutover procedures in tracked files or public pull
+requests. Keep deployment operations outside this repository.
+
 ### Configuration File Strategy
 
 This repository has two tiers of `appsettings` files:

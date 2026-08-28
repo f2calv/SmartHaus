@@ -34,7 +34,7 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 - **Azure Key Vault** — optional [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/) integration for secrets management (disabled via `KeyVaultName=skip` for local development)
 - **Standalone NuGet client libraries** — device-specific API libraries (Fronius, Buderus, KNX, DoorBird, and more) are designed to be 100% standalone and published as individual [NuGet](https://www.nuget.org/) packages — use them independently of SmartHaus in your own projects. *Some libraries are not yet published and require further work before release.*
 - **Real-time event streaming** — [SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/) hub, [Redis Streams](https://redis.io/docs/latest/develop/data-types/streams/), and [OpenTelemetry](https://opentelemetry.io/) metrics for observability
-- **GitOps-ready** — Kubernetes deployment via [Helm](https://helm.sh/) and [ArgoCD](https://argo-cd.readthedocs.io/), with CI/CD through [GitHub Actions](https://github.com/features/actions). The `smarthaus` umbrella consumes the public [universal `workload` chart](https://github.com/f2calv/helm-charts/tree/main/charts/workload), using sensible framework-neutral defaults for each feature pod instead of duplicating a large chart per service
+- **Kubernetes-ready** — deployment through [Helm](https://helm.sh/), with image and chart publishing through [GitHub Actions](https://github.com/features/actions). The `smarthaus` umbrella consumes the public [universal `workload` chart](https://github.com/f2calv/helm-charts/tree/main/charts/workload), using sensible framework-neutral defaults for each feature pod instead of duplicating a large chart per service
 
 ## Quick Start
 
@@ -498,8 +498,8 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`
 
 Additional workflows:
 
-- `deploy-all.yml` — Triggers GitOps Helm manifest updates for Kubernetes deployment
-- `_gitops-helm-update.yml` — Reusable workflow for updating Helm chart image tags
+- `deploy-all.yml` — Builds and publishes the application image, NuGet packages,
+  and Helm umbrella chart
 
 ## Making Changes
 

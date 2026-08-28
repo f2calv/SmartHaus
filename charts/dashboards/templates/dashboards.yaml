@@ -15,7 +15,6 @@
 {{- end }}
 {{- $json := $.Files.Get $path }}
 {{- $json = $json | replace "{{ .Values.datasources.prometheus }}" $.Values.datasources.prometheus }}
-{{- $json = $json | replace "{{ .Values.datasources.loki }}" $.Values.datasources.loki }}
 ---
 apiVersion: v1
 kind: ConfigMap

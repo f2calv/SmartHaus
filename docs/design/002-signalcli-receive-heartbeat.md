@@ -140,7 +140,12 @@ flowchart LR
 | `HeartbeatFailureThreshold` | `int` | `3` | Consecutive missed echoes before the health check reports `Unhealthy`. |
 | `HeartbeatHealthCheck` | `KubernetesProbeTypes` | `None` | Probe tags for the heartbeat health check; `None` until Phase 0 passes, then `Liveness`. |
 
-All four follow the existing `IAppConfig` conventions (validation attributes, `<see cref>` deep links to the consuming service) and must be synced across the five config layers (`appsettings.json`, `appsettings.Development.json`, the gitignored Local tiers, and the prod ConfigMap [`haus-appsettings.yaml`](../../../KNX_K8S/src/workloads/configmaps/prd-k3s/haus-appsettings.yaml)). The existing `ReceiveStalenessTimeoutMs` passive watchdog remains and can coexist (belt-and-braces for high-traffic accounts).
+All four follow the existing `IAppConfig` conventions (validation attributes,
+`<see cref>` deep links to the consuming service) and must be synced across the
+tracked appsettings files and gitignored Local tiers. Production deployment
+overrides are maintained outside this public repository. The existing
+`ReceiveStalenessTimeoutMs` passive watchdog remains and can coexist
+(belt-and-braces for high-traffic accounts).
 
 ### Recommended Settings by Account
 

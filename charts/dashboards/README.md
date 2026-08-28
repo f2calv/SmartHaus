@@ -19,7 +19,6 @@ Datasource UIDs are injected through exact string replacement of these fixed
 placeholders:
 
 * `{{ .Values.datasources.prometheus }}`
-* `{{ .Values.datasources.loki }}`
 
 The template must not run dashboard JSON through Helm `tpl`. Grafana
 `{{label}}` legend tokens share the same double-brace syntax and must remain
@@ -31,19 +30,6 @@ Edit dashboard JSON in this chart. The `smarthaus` umbrella includes this chart
 as a local dependency and enables it through `dashboards.enabled`. Umbrella
 values own the Grafana folder and datasource UIDs used by the deployed
 dashboards.
-
-## Reversible cutover
-
-The legacy dashboard ConfigMaps in the `KNX_K8S` GitOps repository remain active
-until an umbrella release containing this dependency is deployed. Deploy the
-replacement umbrella first, confirm all nine dashboards are discovered in the
-`SmartHaus` folder, and only then remove the legacy ConfigMaps in the separate
-cutover step.
-
-Until that removal is complete, rollback is limited to setting
-`dashboards.enabled: false` and redeploying the umbrella. After legacy removal,
-restore those manifests before disabling the umbrella dashboards if a rollback
-is required. This ordering avoids a period with no dashboard provider.
 
 ## Dashboards
 
