@@ -1,0 +1,996 @@
+{
+    "id": null,
+    "uid": "haus-overview",
+    "title": "Haus Overview",
+    "description": "High-level operational overview: DoorBird and Ubiquiti security events, CPU and GPU hardware metrics.",
+    "tags": [
+        "haus",
+        "overview",
+        "doorbird",
+        "ubiquiti",
+        "hardware"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 2,
+    "refresh": "30s",
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "templating": {
+        "list": []
+    },
+    "panels": [
+        {
+            "id": 1,
+            "type": "stat",
+            "title": "Doorbell Events",
+            "description": "Total doorbell ring events recorded since the DoorBird service last started.",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "blue"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_doorbell_count",
+                    "legendFormat": "Doorbell",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "stat",
+            "title": "Motion Events",
+            "description": "Total motion sensor events recorded since the DoorBird service last started.",
+            "gridPos": {
+                "x": 6,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "orange"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_motion_count",
+                    "legendFormat": "Motion",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "stat",
+            "title": "RFID Events",
+            "description": "Total RFID key/tag events recorded since the DoorBird service last started.",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "purple"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_rfid_count",
+                    "legendFormat": "RFID",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "stat",
+            "title": "Door Relay Triggers",
+            "description": "Total door relay (door open) triggers recorded since the DoorBird service last started.",
+            "gridPos": {
+                "x": 18,
+                "y": 0,
+                "w": 6,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "teal"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_relay_count",
+                    "legendFormat": "Relay",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "type": "timeseries",
+            "title": "DoorBird Event Counts",
+            "description": "Cumulative DoorBird security event counts since the service last started.",
+            "gridPos": {
+                "x": 0,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 5
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_doorbell_count",
+                    "legendFormat": "Doorbell",
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_motion_count",
+                    "legendFormat": "Motion",
+                    "refId": "B"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_rfid_count",
+                    "legendFormat": "RFID",
+                    "refId": "C"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_doorbird_relay_count",
+                    "legendFormat": "Door Relay",
+                    "refId": "D"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "timeseries",
+            "title": "CPU Temperature",
+            "description": "CPU temperature readings from Raspberry Pi nodes running the Haus services.",
+            "gridPos": {
+                "x": 12,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 60
+                            },
+                            {
+                                "color": "red",
+                                "value": 75
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_hw_temperature_celsius",
+                    "legendFormat": "{{instance}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "type": "stat",
+            "title": "Ubiquiti Motion",
+            "description": "Total motion detection events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 0,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "orange"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_motion_count",
+                    "legendFormat": "Motion",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "type": "stat",
+            "title": "Ubiquiti Person",
+            "description": "Total smart detection person events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 4,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "green"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_person_count",
+                    "legendFormat": "Person",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "type": "stat",
+            "title": "Ubiquiti Vehicle",
+            "description": "Total smart detection vehicle events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 8,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "yellow"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_vehicle_count",
+                    "legendFormat": "Vehicle",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "type": "stat",
+            "title": "Ubiquiti Animal",
+            "description": "Total smart detection animal events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 12,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "light-green"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_animal_count",
+                    "legendFormat": "Animal",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "type": "stat",
+            "title": "Ubiquiti Package",
+            "description": "Total smart detection package events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 16,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "light-purple"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_package_count",
+                    "legendFormat": "Package",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "type": "stat",
+            "title": "Ubiquiti Ring",
+            "description": "Total doorbell ring events from Ubiquiti cameras since the service last started.",
+            "gridPos": {
+                "x": 20,
+                "y": 12,
+                "w": 4,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "color": {
+                        "mode": "fixed",
+                        "fixedColor": "blue"
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_ring_count",
+                    "legendFormat": "Ring",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "type": "timeseries",
+            "title": "Ubiquiti Event Counts",
+            "description": "Cumulative Ubiquiti security event counts since the service last started.",
+            "gridPos": {
+                "x": 0,
+                "y": 16,
+                "w": 24,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "short",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 5
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_motion_count",
+                    "legendFormat": "Motion",
+                    "refId": "A"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_person_count",
+                    "legendFormat": "Person",
+                    "refId": "B"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_vehicle_count",
+                    "legendFormat": "Vehicle",
+                    "refId": "C"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_animal_count",
+                    "legendFormat": "Animal",
+                    "refId": "D"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_smart_package_count",
+                    "legendFormat": "Package",
+                    "refId": "E"
+                },
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_ubiquiti_ring_count",
+                    "legendFormat": "Ring",
+                    "refId": "F"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "type": "timeseries",
+            "title": "GPU Temperature",
+            "description": "GPU temperature readings from NVIDIA GPUs on edge nodes.",
+            "gridPos": {
+                "x": 0,
+                "y": 24,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 60
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_gpu_temperature_celsius",
+                    "legendFormat": "{{NodeName}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 15,
+            "type": "timeseries",
+            "title": "GPU Power Draw",
+            "description": "GPU power consumption in Watts from NVIDIA GPUs on edge nodes.",
+            "gridPos": {
+                "x": 12,
+                "y": 24,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_gpu_power_watts",
+                    "legendFormat": "{{NodeName}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "type": "timeseries",
+            "title": "GPU Utilization",
+            "description": "GPU compute utilization percentage from NVIDIA GPUs on edge nodes.",
+            "gridPos": {
+                "x": 0,
+                "y": 32,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_gpu_utilization_percent",
+                    "legendFormat": "{{NodeName}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 17,
+            "type": "timeseries",
+            "title": "GPU Memory Used",
+            "description": "GPU memory usage in MiB from NVIDIA GPUs on edge nodes.",
+            "gridPos": {
+                "x": 12,
+                "y": 32,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "decmbytes",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_gpu_memory_used_mebibytes",
+                    "legendFormat": "{{NodeName}}",
+                    "refId": "A"
+                }
+            ]
+        }
+    ]
+}

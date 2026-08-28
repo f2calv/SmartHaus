@@ -1,0 +1,586 @@
+{
+    "id": null,
+    "uid": "haus-hvac",
+    "title": "Haus HVAC",
+    "description": "KNX HVAC sensor readings (temperature, setpoint, humidity, valve output, valve feedback, window contacts) and Buderus boiler temperatures.",
+    "tags": [
+        "haus",
+        "hvac",
+        "knx",
+        "buderus"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 2,
+    "refresh": "30s",
+    "time": {
+        "from": "now-3h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "templating": {
+        "list": []
+    },
+    "panels": [
+        {
+            "id": 1,
+            "type": "timeseries",
+            "title": "KNX Room Temperatures",
+            "description": "Actual temperature readings from KNX group addresses (HvacFunction = TEMP).",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_temp_celsius",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "timeseries",
+            "title": "KNX Temperature Setpoints",
+            "description": "Target temperature setpoints from KNX group addresses (HvacFunction = SETP).",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_setp_celsius",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "KNX Room Humidity",
+            "description": "Relative humidity readings from KNX group addresses (HvacFunction = HUMIDITY).",
+            "gridPos": {
+                "x": 0,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_humidity_percent",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "timeseries",
+            "title": "KNX Valve Output",
+            "description": "Heating valve/actuator output percentage from KNX group addresses (HvacFunction = OUTPUT).",
+            "gridPos": {
+                "x": 12,
+                "y": 8,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_output_percent",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "type": "stat",
+            "title": "Valve Feedback — Current",
+            "description": "Current underfloor heating valve state per group address (Active = heating, Inactive = idle).",
+            "gridPos": {
+                "x": 0,
+                "y": 16,
+                "w": 12,
+                "h": 5
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Inactive",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Active",
+                                    "color": "semi-dark-orange",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "orange",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_fb",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 6,
+            "type": "stat",
+            "title": "Window Contacts — Current",
+            "description": "Current HVAC window contact state per group address (Open = window open, Closed = window closed).",
+            "gridPos": {
+                "x": 12,
+                "y": 16,
+                "w": 12,
+                "h": 5
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Closed",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Open",
+                                    "color": "semi-dark-yellow",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 1
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "none",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_window",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 7,
+            "type": "state-timeline",
+            "title": "Valve Feedback — History",
+            "description": "State timeline showing when underfloor heating valves were active or inactive.",
+            "gridPos": {
+                "x": 0,
+                "y": 21,
+                "w": 12,
+                "h": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Inactive",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Active",
+                                    "color": "semi-dark-orange",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "custom": {
+                        "fillOpacity": 80,
+                        "lineWidth": 0
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "showValue": "auto",
+                "alignValue": "center",
+                "mergeValues": true,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "rowHeight": 0.8
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_fb",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "type": "state-timeline",
+            "title": "Window Contacts — History",
+            "description": "State timeline showing when HVAC-monitored windows were open or closed.",
+            "gridPos": {
+                "x": 12,
+                "y": 21,
+                "w": 12,
+                "h": 7
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "mappings": [
+                        {
+                            "type": "value",
+                            "options": {
+                                "0": {
+                                    "text": "Closed",
+                                    "color": "semi-dark-green",
+                                    "index": 0
+                                },
+                                "1": {
+                                    "text": "Open",
+                                    "color": "semi-dark-yellow",
+                                    "index": 1
+                                }
+                            }
+                        }
+                    ],
+                    "custom": {
+                        "fillOpacity": 80,
+                        "lineWidth": 0
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "showValue": "auto",
+                "alignValue": "center",
+                "mergeValues": true,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom"
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "rowHeight": 0.8
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_knx_hvac_window",
+                    "legendFormat": "{{group_address_name}}",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 9,
+            "type": "timeseries",
+            "title": "Boiler Temperatures (Buderus KM200)",
+            "description": "Heating system temperatures from the Buderus KM200 boiler gateway, differentiated by datapoint.",
+            "gridPos": {
+                "x": 0,
+                "y": 28,
+                "w": 24,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "right",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_hvac_temperature_celsius",
+                    "legendFormat": "{{datapoint_id}}",
+                    "refId": "A"
+                }
+            ]
+        }
+    ]
+}

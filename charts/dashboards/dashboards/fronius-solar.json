@@ -1,0 +1,1142 @@
+{
+    "id": null,
+    "uid": "fronius-solar-overview",
+    "title": "Haus Energy (Fronius)",
+    "description": "Real-time monitoring of Fronius solar inverter — PV production, grid, battery and household consumption",
+    "tags": [
+        "fronius",
+        "solar",
+        "energy"
+    ],
+    "style": "dark",
+    "timezone": "browser",
+    "editable": true,
+    "graphTooltip": 2,
+    "refresh": "30s",
+    "schemaVersion": 39,
+    "version": 0,
+    "links": [],
+    "time": {
+        "from": "now-24h",
+        "to": "now"
+    },
+    "timepicker": {
+        "refresh_intervals": [
+            "5s",
+            "10s",
+            "30s",
+            "1m",
+            "5m",
+            "15m",
+            "30m",
+            "1h"
+        ],
+        "time_options": [
+            "5m",
+            "15m",
+            "1h",
+            "6h",
+            "12h",
+            "24h",
+            "2d",
+            "7d",
+            "30d"
+        ]
+    },
+    "templating": {
+        "list": []
+    },
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "panels": [
+        {
+            "id": 1,
+            "title": "",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 0
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "id": 2,
+            "title": "Solar Production",
+            "description": "Current PV power output",
+            "type": "stat",
+            "gridPos": {
+                "h": 6,
+                "w": 6,
+                "x": 0,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "dark-blue"
+                            },
+                            {
+                                "value": 100,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 1000,
+                                "color": "light-yellow"
+                            },
+                            {
+                                "value": 3000,
+                                "color": "super-light-yellow"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_pv_power_watts)",
+                    "legendFormat": "PV Production"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "title": "Grid Power",
+            "description": "Power from/to grid (positive = importing, negative = exporting)",
+            "type": "stat",
+            "gridPos": {
+                "h": 6,
+                "w": 6,
+                "x": 6,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            },
+                            {
+                                "value": 0,
+                                "color": "green"
+                            },
+                            {
+                                "value": 500,
+                                "color": "orange"
+                            },
+                            {
+                                "value": 2000,
+                                "color": "red"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_grid_power_watts)",
+                    "legendFormat": "Grid"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "title": "House Consumption",
+            "description": "Current household power consumption",
+            "type": "stat",
+            "gridPos": {
+                "h": 6,
+                "w": 6,
+                "x": 12,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "super-light-blue"
+                            },
+                            {
+                                "value": 500,
+                                "color": "light-blue"
+                            },
+                            {
+                                "value": 2000,
+                                "color": "blue"
+                            },
+                            {
+                                "value": 5000,
+                                "color": "dark-blue"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "orientation": "auto",
+                "textMode": "auto",
+                "wideLayout": true,
+                "colorMode": "background_solid",
+                "graphMode": "area",
+                "justifyMode": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "abs(max(haus_inverter_load_power_watts))",
+                    "legendFormat": "Consumption"
+                }
+            ]
+        },
+        {
+            "id": 5,
+            "title": "Battery SoC",
+            "description": "Battery state of charge",
+            "type": "gauge",
+            "gridPos": {
+                "h": 6,
+                "w": 6,
+                "x": 18,
+                "y": 1
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "red"
+                            },
+                            {
+                                "value": 10,
+                                "color": "orange"
+                            },
+                            {
+                                "value": 30,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 60,
+                                "color": "green"
+                            },
+                            {
+                                "value": 90,
+                                "color": "dark-green"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true,
+                "orientation": "auto",
+                "sizing": "auto"
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_soc)",
+                    "legendFormat": "SoC"
+                }
+            ]
+        },
+        {
+            "id": 10,
+            "title": "",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 7
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "id": 6,
+            "title": "Energy Flow — All Sources",
+            "description": "Combined view of solar production, grid, battery and consumption over time",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 10,
+                "w": 24,
+                "x": 0,
+                "y": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 25,
+                        "gradientMode": "opacity",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisCenteredZero": true,
+                        "axisLabel": "Power (W)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": [
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Solar PV"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "yellow",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Grid"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "orange",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Consumption"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "blue",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byName",
+                            "options": "Battery"
+                        },
+                        "properties": [
+                            {
+                                "id": "color",
+                                "value": {
+                                    "fixedColor": "purple",
+                                    "mode": "fixed"
+                                }
+                            }
+                        ]
+                    }
+                ]
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "multi",
+                    "sort": "desc"
+                },
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "min",
+                        "max",
+                        "mean",
+                        "lastNotNull"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_pv_power_watts)",
+                    "legendFormat": "Solar PV"
+                },
+                {
+                    "refId": "B",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_grid_power_watts)",
+                    "legendFormat": "Grid"
+                },
+                {
+                    "refId": "C",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "abs(max(haus_inverter_load_power_watts))",
+                    "legendFormat": "Consumption"
+                },
+                {
+                    "refId": "D",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_battery_power_watts)",
+                    "legendFormat": "Battery"
+                }
+            ]
+        },
+        {
+            "id": 11,
+            "title": "",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 18
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "id": 7,
+            "title": "Solar Production",
+            "description": "PV power generation over time",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 19
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 40,
+                        "gradientMode": "scheme",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisLabel": "Power (W)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "area"
+                        }
+                    },
+                    "color": {
+                        "mode": "continuous-yellows"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "transparent"
+                            },
+                            {
+                                "value": 0,
+                                "color": "yellow"
+                            }
+                        ]
+                    },
+                    "mappings": [],
+                    "min": 0
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "max",
+                        "mean"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_pv_power_watts)",
+                    "legendFormat": "Solar PV"
+                }
+            ]
+        },
+        {
+            "id": 8,
+            "title": "Grid Exchange",
+            "description": "Power imported from / exported to grid",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 19
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 30,
+                        "gradientMode": "scheme",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisCenteredZero": true,
+                        "axisLabel": "Power (W)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "area"
+                        }
+                    },
+                    "color": {
+                        "mode": "continuous-GrYlRd"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            },
+                            {
+                                "value": 0,
+                                "color": "green"
+                            },
+                            {
+                                "value": 500,
+                                "color": "orange"
+                            },
+                            {
+                                "value": 2000,
+                                "color": "red"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "max",
+                        "mean"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_grid_power_watts)",
+                    "legendFormat": "Grid"
+                }
+            ]
+        },
+        {
+            "id": 12,
+            "title": "",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 27
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "id": 9,
+            "title": "Battery State of Charge",
+            "description": "Battery SoC ratio over time",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 28
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1,
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 30,
+                        "gradientMode": "scheme",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisLabel": "SoC",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "area"
+                        }
+                    },
+                    "color": {
+                        "mode": "continuous-GrYlRd"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "red"
+                            },
+                            {
+                                "value": 10,
+                                "color": "orange"
+                            },
+                            {
+                                "value": 30,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 60,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "min",
+                        "max",
+                        "lastNotNull"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_soc)",
+                    "legendFormat": "Battery SoC"
+                }
+            ]
+        },
+        {
+            "id": 13,
+            "title": "Battery Power",
+            "description": "Battery charge/discharge power (positive = charging, negative = discharging)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 28
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 30,
+                        "gradientMode": "scheme",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisCenteredZero": true,
+                        "axisLabel": "Power (W)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "color": {
+                        "fixedColor": "purple",
+                        "mode": "fixed"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "min",
+                        "max",
+                        "mean"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "max(haus_inverter_battery_power_watts)",
+                    "legendFormat": "Battery Power"
+                }
+            ]
+        },
+        {
+            "id": 14,
+            "title": "",
+            "type": "row",
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 36
+            },
+            "collapsed": false,
+            "panels": []
+        },
+        {
+            "id": 15,
+            "title": "Self-Sufficiency Rate",
+            "description": "Percentage of consumption covered by solar + battery (not grid)",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 37
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percent",
+                    "min": 0,
+                    "max": 100,
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 20,
+                        "gradientMode": "opacity",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisLabel": "Self-Sufficiency (%)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "area"
+                        }
+                    },
+                    "color": {
+                        "fixedColor": "dark-green",
+                        "mode": "fixed"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "red"
+                            },
+                            {
+                                "value": 50,
+                                "color": "yellow"
+                            },
+                            {
+                                "value": 80,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "mean",
+                        "lastNotNull"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "clamp_min(clamp_max((1 - (clamp_min(max(haus_inverter_grid_power_watts), 0) / clamp_min(abs(max(haus_inverter_load_power_watts)), 1))) * 100, 100), 0)",
+                    "legendFormat": "Self-Sufficiency"
+                }
+            ]
+        },
+        {
+            "id": 16,
+            "title": "House Consumption",
+            "description": "Household power consumption over time",
+            "type": "timeseries",
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 37
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "watt",
+                    "custom": {
+                        "drawStyle": "line",
+                        "lineInterpolation": "smooth",
+                        "lineWidth": 2,
+                        "fillOpacity": 30,
+                        "gradientMode": "scheme",
+                        "showPoints": "never",
+                        "spanNulls": false,
+                        "axisBorderShow": false,
+                        "axisLabel": "Power (W)",
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "stacking": {
+                            "mode": "none",
+                            "group": "A"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "color": {
+                        "fixedColor": "blue",
+                        "mode": "fixed"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "value": null,
+                                "color": "green"
+                            }
+                        ]
+                    },
+                    "mappings": [],
+                    "min": 0
+                },
+                "overrides": []
+            },
+            "options": {
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "calcs": [
+                        "max",
+                        "mean"
+                    ],
+                    "showLegend": true
+                }
+            },
+            "targets": [
+                {
+                    "refId": "A",
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "abs(max(haus_inverter_load_power_watts))",
+                    "legendFormat": "Consumption"
+                }
+            ]
+        }
+    ]
+}

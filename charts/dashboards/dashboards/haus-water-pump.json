@@ -1,0 +1,295 @@
+{
+    "id": null,
+    "uid": "haus-water-pump",
+    "title": "Haus Water Pump",
+    "description": "Sicce water pump metrics: temperature and power level.",
+    "tags": [
+        "haus",
+        "sicce",
+        "water-pump"
+    ],
+    "timezone": "browser",
+    "schemaVersion": 38,
+    "version": 1,
+    "refresh": "30s",
+    "time": {
+        "from": "now-6h",
+        "to": "now"
+    },
+    "timepicker": {},
+    "annotations": {
+        "list": [
+            {
+                "builtIn": 1,
+                "datasource": {
+                    "type": "grafana",
+                    "uid": "-- Grafana --"
+                },
+                "enable": true,
+                "hide": true,
+                "iconColor": "rgba(0, 211, 255, 1)",
+                "name": "Annotations & Alerts",
+                "type": "dashboard"
+            }
+        ]
+    },
+    "templating": {
+        "list": []
+    },
+    "panels": [
+        {
+            "id": 1,
+            "type": "stat",
+            "title": "Current Temperature",
+            "description": "Current Sicce water pump temperature reading.",
+            "gridPos": {
+                "x": 0,
+                "y": 0,
+                "w": 12,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 30
+                            },
+                            {
+                                "color": "red",
+                                "value": 40
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "colorMode": "background",
+                "graphMode": "area",
+                "textMode": "auto"
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_sicce_temperature_celsius",
+                    "legendFormat": "Temperature",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "type": "gauge",
+            "title": "Current Power Level",
+            "description": "Current Sicce pump power level as a dimensionless ratio (1.0 = 100%, 0.05 = 5%).",
+            "gridPos": {
+                "x": 12,
+                "y": 0,
+                "w": 12,
+                "h": 4
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1,
+                    "color": {
+                        "mode": "thresholds"
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 0.7
+                            },
+                            {
+                                "color": "red",
+                                "value": 0.9
+                            }
+                        ]
+                    },
+                    "mappings": []
+                },
+                "overrides": []
+            },
+            "options": {
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ]
+                },
+                "orientation": "auto",
+                "showThresholdLabels": false,
+                "showThresholdMarkers": true
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_sicce_power",
+                    "legendFormat": "Power Level",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "type": "timeseries",
+            "title": "Pump Temperature",
+            "description": "Sicce water pump temperature over time in Celsius.",
+            "gridPos": {
+                "x": 0,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "celsius",
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    },
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "yellow",
+                                "value": 30
+                            },
+                            {
+                                "color": "red",
+                                "value": 40
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_sicce_temperature_celsius",
+                    "legendFormat": "Temperature",
+                    "refId": "A"
+                }
+            ]
+        },
+        {
+            "id": 4,
+            "type": "timeseries",
+            "title": "Pump Power Level",
+            "description": "Sicce pump power level ratio over time (1.0 = 100%, 0.05 = 5%).",
+            "gridPos": {
+                "x": 12,
+                "y": 4,
+                "w": 12,
+                "h": 8
+            },
+            "datasource": {
+                "type": "prometheus",
+                "uid": "{{ .Values.datasources.prometheus }}"
+            },
+            "fieldConfig": {
+                "defaults": {
+                    "unit": "percentunit",
+                    "min": 0,
+                    "max": 1,
+                    "custom": {
+                        "lineWidth": 2,
+                        "fillOpacity": 10
+                    }
+                },
+                "overrides": []
+            },
+            "options": {
+                "legend": {
+                    "displayMode": "table",
+                    "placement": "bottom",
+                    "calcs": [
+                        "lastNotNull",
+                        "min",
+                        "max"
+                    ]
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "{{ .Values.datasources.prometheus }}"
+                    },
+                    "expr": "haus_sicce_power",
+                    "legendFormat": "Power Level",
+                    "refId": "A"
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,8 @@
+# Grafana folder selected by the sidecar's `grafana_folder` annotation.
+dashboardFolder: SmartHaus
+
+# Datasource UIDs injected through exact string replacements. Dashboard JSON must
+# never be passed through `tpl` because Grafana legend tokens also use {{ }}.
+datasources:
+  prometheus: prometheus
+  loki: P8E80F9AEF21F6940
