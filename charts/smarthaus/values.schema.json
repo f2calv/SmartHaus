@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "buderus": {
+      "type": "object"
+    },
+    "doorbird": {
+      "type": "object"
+    },
+    "fronius": {
+      "type": "object"
+    },
+    "knx": {
+      "type": "object"
+    },
+    "edgehardware": {
+      "type": "object"
+    },
+    "edge-cpu": {
+      "type": "object"
+    },
+    "edge-gpu": {
+      "type": "object"
+    },
+    "ffmpeg": {
+      "type": "object"
+    },
+    "signalrhub": {
+      "type": "object"
+    },
+    "comms": {
+      "type": "object"
+    },
+    "wiz": {
+      "type": "object"
+    },
+    "shelly": {
+      "type": "object"
+    },
+    "ubiquiti": {
+      "type": "object"
+    },
+    "sicce": {
+      "type": "object"
+    },
+    "dashboards": {
+      "type": "object"
+    },
+    "image": {
+      "type": "object"
+    },
+    "_shared": {
+      "type": "object"
+    }
+  }
+}
