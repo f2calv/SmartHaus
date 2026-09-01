@@ -35,6 +35,13 @@ jobs:
           fi
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
 
+      - name: jq empty dashboard JSON
+        shell: bash
+        run: |
+          for dashboard in charts/dashboards/dashboards/*.json; do
+            jq empty "$dashboard"
+          done
+
   package:
     needs: version
     uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1

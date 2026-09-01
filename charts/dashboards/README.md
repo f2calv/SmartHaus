@@ -38,6 +38,14 @@ packaged dashboard behaviour changes. For local iteration, `deploy.ps1
 -OnlyCharts` validates and publishes a disposable development version without
 building or rolling application pods.
 
+The deployment job reads private GitOps coordinates from these repository
+variables:
+
+* `GITOPS_REPOSITORY`
+* `SMARTHAUS_DASHBOARD_MANIFEST_PATH`
+* `SMARTHAUS_DASHBOARD_NAMESPACE`
+* `SMARTHAUS_DASHBOARD_ENVIRONMENT`
+
 ## Dashboards
 
 | File                           | Title                          | Source                                      |
