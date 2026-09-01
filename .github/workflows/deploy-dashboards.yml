@@ -45,7 +45,7 @@ jobs:
 
   package:
     needs: version
-    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@f2calv/2026-09-updates
+    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
     permissions:
       contents: read
       packages: write
@@ -65,7 +65,7 @@ jobs:
   deploy:
     needs: [version, package]
     if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
-    uses: f2calv/gha-workflows/.github/workflows/gitops-helm-update.yml@f2calv/2026-09-updates
+    uses: f2calv/gha-workflows/.github/workflows/gitops-helm-update.yml@v1
     permissions:
       contents: read
       packages: read
