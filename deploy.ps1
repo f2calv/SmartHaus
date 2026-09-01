@@ -18,20 +18,26 @@
     ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -Chart
 .EXAMPLE
     ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -SkipBuild -Chart
+.EXAMPLE
+    ./deploy.ps1 -OnlyCharts -ManifestRepo <path-to-gitops-repo> -DashboardManifestPath <dashboard-manifest-path>
 #>
 [CmdletBinding()]
 param(
     [string]$Tag = "latest-dev",
     [string]$Platforms = "linux/arm64",
     [Parameter(Mandatory)][string]$ManifestRepo,
-    [Parameter(Mandatory)][string]$ManifestPath,
+    [string]$ManifestPath,
     [string]$ImageRepository = "ghcr.io/f2calv/smarthaus",
     [switch]$SkipBuild,
     [switch]$NoCommit,
     [switch]$Chart,
+    [Alias("OnlyDashboards")][switch]$OnlyCharts,
     [string]$ChartPath = "charts/smarthaus",
     [string]$ChartRegistry = "ghcr.io",
     [string]$ChartRepository = "f2calv/charts/smarthaus",
+    [string]$DashboardChartPath = "charts/dashboards",
+    [string]$DashboardChartRepository = "f2calv/charts/dashboards",
+    [string]$DashboardManifestPath,
     [string]$ChartVersion,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
 )
@@ -59,7 +65,12 @@ if ($Rest.Count -gt 0) {
 }
 
 $REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
-$manifest = Join-Path $ManifestRepo $ManifestPath
+$manifestPathToPatch = if ($OnlyCharts) { $DashboardManifestPath } else { $ManifestPath }
+if ([string]::IsNullOrWhiteSpace($manifestPathToPatch)) {
+    $requiredParameter = if ($OnlyCharts) { "DashboardManifestPath" } else { "ManifestPath" }
+    throw "-$requiredParameter is required for this deployment mode."
+}
+$manifest = Join-Path $ManifestRepo $manifestPathToPatch
 
 if (-not (Get-Command yq -ErrorAction SilentlyContinue)) {
     throw "yq not found. Install it (e.g. winget install MikeFarah.yq) - required to patch the GitOps manifest."
@@ -92,17 +103,26 @@ function Connect-HelmRegistry {
 
 $ts = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
 
-if (-not $SkipBuild) {
+if (-not $SkipBuild -and -not $OnlyCharts) {
     & "$PSScriptRoot/build.ps1" -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
     if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed with exit code $LASTEXITCODE" }
 }
 else {
-    Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
+    if ($OnlyCharts) {
+        Write-Host "Skipping image build/push (-OnlyCharts)." -ForegroundColor Yellow
+    }
+    else {
+        Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
+    }
 }
 
-if ($Chart) {
+if ($Chart -or $OnlyCharts) {
     if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
         throw "helm not found. Install Helm to use -Chart."
+    }
+    if ($OnlyCharts) {
+        $ChartPath = $DashboardChartPath
+        $ChartRepository = $DashboardChartRepository
     }
     if (-not $ChartVersion) { $ChartVersion = "0.0.0-dev.$ts" }
     $chartDir = Join-Path $REPO_ROOT $ChartPath
@@ -112,6 +132,17 @@ if ($Chart) {
     $chartName = Split-Path $ChartPath -Leaf
     $ociTarget = "oci://$ChartRegistry/$($ChartRepository -replace '/[^/]+$', '')"
 
+    if ($OnlyCharts) {
+        Get-ChildItem (Join-Path $chartDir "dashboards/*.json") | ForEach-Object {
+            try { $null = Get-Content $_.FullName -Raw | ConvertFrom-Json }
+            catch { throw "Invalid dashboard JSON '$($_.FullName)': $($_.Exception.Message)" }
+        }
+        helm lint $chartDir
+        if ($LASTEXITCODE -ne 0) { throw "helm lint failed for '$chartDir'." }
+        $null = helm template $chartName $chartDir
+        if ($LASTEXITCODE -ne 0) { throw "helm template failed for '$chartDir'." }
+    }
+
     Connect-HelmRegistry -Registry $ChartRegistry
 
     $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "smarthaus-chart-$ts"
@@ -120,7 +151,8 @@ if ($Chart) {
         Write-Host "Packaging $chartName $ChartVersion (appVersion=$Tag) from $ChartPath" -ForegroundColor Cyan
         helm dependency update $chartDir
         if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed." }
-        helm package $chartDir --version $ChartVersion --app-version $Tag --destination $pkgDir
+        $appVersion = if ($OnlyCharts) { $ChartVersion } else { $Tag }
+        helm package $chartDir --version $ChartVersion --app-version $appVersion --destination $pkgDir
         if ($LASTEXITCODE -ne 0) { throw "helm package failed." }
         $tgz = Join-Path $pkgDir "$chartName-$ChartVersion.tgz"
         Write-Host "Pushing $tgz -> $ociTarget" -ForegroundColor Cyan
@@ -131,6 +163,31 @@ if ($Chart) {
         Remove-Item $pkgDir -Recurse -Force -ErrorAction SilentlyContinue
     }
     Write-Host "Pushed chart: ${ChartRegistry}/${ChartRepository}:${ChartVersion}" -ForegroundColor Green
+}
+
+if ($OnlyCharts) {
+    $env:SMARTHAUS_DASHBOARD_CHART_VERSION = $ChartVersion
+    Write-Host "Patching $manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
+    yq -i '.spec.template.spec.source.targetRevision = strenv(SMARTHAUS_DASHBOARD_CHART_VERSION)' $manifest
+    if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
+
+    git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
+    if ($NoCommit) {
+        Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo add -- $manifestPathToPatch
+    git -C $ManifestRepo commit -m "deploy(smarthaus-dashboards): chart=${ChartVersion}"
+    if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
+    git -C $ManifestRepo push
+    if ($LASTEXITCODE -ne 0) { throw "git push failed." }
+    Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+    return
 }
 
 $stamp = "$(Get-GitVersion)+$ts"
@@ -155,17 +212,17 @@ $yqExpr = $assignments -join ' | '
 yq -i $yqExpr $manifest
 if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
 
-git -C $ManifestRepo diff --quiet -- $ManifestPath
+git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
 if ($LASTEXITCODE -eq 0) {
     Write-Host "No manifest changes detected - nothing to commit." -ForegroundColor Yellow
     return
 }
-git -C $ManifestRepo --no-pager diff --stat -- $ManifestPath
+git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
 if ($NoCommit) {
     Write-Host "Manifest patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
     return
 }
-git -C $ManifestRepo add -- $ManifestPath
+git -C $ManifestRepo add -- $manifestPathToPatch
 $commitMsg = if ($Chart) { "deploy(smarthaus): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy(smarthaus): ${Tag} ${stamp}" }
 git -C $ManifestRepo commit -m $commitMsg
 if ($LASTEXITCODE -ne 0) { throw "git commit failed." }

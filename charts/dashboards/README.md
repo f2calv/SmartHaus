@@ -26,10 +26,17 @@ unchanged.
 
 ## Authoring flow
 
-Edit dashboard JSON in this chart. The `smarthaus` umbrella includes this chart
-as a local dependency and enables it through `dashboards.enabled`. Umbrella
-values own the Grafana folder and datasource UIDs used by the deployed
-dashboards.
+Edit dashboard JSON in this chart. The chart is published as the independent
+`charts/dashboards` OCI artifact and deployed by a dedicated ArgoCD
+ApplicationSet. The `smarthaus` application umbrella does not own Grafana
+ConfigMaps.
+
+Pull requests validate the chart without publishing it. A main-branch change
+under `charts/dashboards/` publishes the immutable version from `Chart.yaml` and
+updates the dashboard ApplicationSet revision. Bump the chart version whenever
+packaged dashboard behaviour changes. For local iteration, `deploy.ps1
+-OnlyCharts` validates and publishes a disposable development version without
+building or rolling application pods.
 
 ## Dashboards
 

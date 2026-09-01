@@ -1,0 +1,76 @@
+name: deploy-dashboards
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - charts/dashboards/**
+  pull_request:
+    paths:
+      - charts/dashboards/**
+
+permissions: {}
+
+jobs:
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      chart-version: ${{ steps.chart.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 1
+
+      - name: read dashboard chart version
+        id: chart
+        shell: bash
+        run: |
+          VERSION=$(awk '$1 == "version:" { print $2; exit }' charts/dashboards/Chart.yaml | tr -d '"')
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error file=charts/dashboards/Chart.yaml::Invalid chart version '$VERSION'."
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+  package:
+    needs: version
+    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
+    permissions:
+      contents: read
+      packages: write
+    with:
+      tag: ${{ needs.version.outputs.chart-version }}
+      image-registry: ghcr.io
+      image-repository: ${{ github.repository_owner }}/smarthaus
+      chart-registry: ghcr.io
+      chart-registry-username: ${{ github.repository_owner }}
+      chart-repository: ${{ github.repository_owner }}/charts/dashboards
+      chart-path: charts/dashboards
+      has-image: false
+      push-chart: ${{ github.event_name != 'pull_request' }}
+      chart-testing-cli-command: skip
+    secrets: inherit
+
+  deploy:
+    needs: [version, package]
+    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
+    uses: f2calv/gha-workflows/.github/workflows/gitops-helm-update.yml@v1
+    permissions:
+      contents: read
+      packages: read
+    with:
+      tag: ${{ needs.version.outputs.chart-version }}
+      image-registry: ghcr.io/${{ github.repository_owner }}
+      image-repository: smarthaus/dashboards
+      chart-registry: ghcr.io/${{ github.repository_owner }}
+      chart-registry-username: ${{ github.repository_owner }}
+      chart-repository: charts/dashboards
+      gitops-repo: ${{ vars.GITOPS_REPOSITORY }}
+      gitops-repo-update: true
+      manifest-paths: ${{ vars.SMARTHAUS_DASHBOARD_MANIFEST_PATH }}
+      namespace: ${{ vars.SMARTHAUS_DASHBOARD_NAMESPACE }}
+      environment: ${{ vars.SMARTHAUS_DASHBOARD_ENVIRONMENT }}
+    secrets: inherit
