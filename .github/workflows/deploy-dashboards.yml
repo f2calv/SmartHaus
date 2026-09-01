@@ -3,9 +3,10 @@ name: deploy-dashboards
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, f2calv/2026-09-updates]
     paths:
       - charts/dashboards/**
+      - .github/workflows/deploy-dashboards.yml
   pull_request:
     paths:
       - charts/dashboards/**
@@ -44,7 +45,7 @@ jobs:
 
   package:
     needs: version
-    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
+    uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@f2calv/2026-09-updates
     permissions:
       contents: read
       packages: write
@@ -64,7 +65,7 @@ jobs:
   deploy:
     needs: [version, package]
     if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
-    uses: f2calv/gha-workflows/.github/workflows/gitops-helm-update.yml@v1
+    uses: f2calv/gha-workflows/.github/workflows/gitops-helm-update.yml@f2calv/2026-09-updates
     permissions:
       contents: read
       packages: read
