@@ -16,4 +16,11 @@ public sealed record UnitValue
     /// </summary>
     [Description("The measured value.")]
     public double? Value { get; init; }
+
+    /// <summary>
+    /// Measured values keyed by inverter device ID.
+    /// </summary>
+    /// <remarks>Newer firmware returns this property for system-scoped inverter data; older firmware may return <see cref="Value"/>.</remarks>
+    [Description("Measured values keyed by inverter device ID.")]
+    public Dictionary<string, double?>? Values { get; init; }
 }

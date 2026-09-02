@@ -3,9 +3,28 @@ namespace CasCap.Tests;
 /// <summary>
 /// Integration tests for <see cref="FroniusClientService"/> against a real Fronius inverter.
 /// </summary>
-public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(output)
+public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
+    [Theory]
+    [InlineData("solar_api/v1/GetPowerFlowRealtimeData.fcgi", typeof(ApiWrapper<PowerFlowRealtimeData>))]
+    [InlineData("solar_api/v1/GetInverterRealtimeData.cgi?Datacollection=CommonInverterData", typeof(ApiWrapper<CommonInverterData>))]
+    [InlineData("solar_api/v1/GetInverterRealtimeData.cgi?Datacollection=3PInverterData", typeof(ApiWrapper<CommonInverterData>))]
+    [InlineData("solar_api/v1/GetInverterRealtimeData.cgi?Datacollection=CumulationInverterData", typeof(ApiWrapper<CommonInverterData>))]
+    [InlineData("solar_api/v1/GetInverterInfo.cgi", typeof(ApiWrapper<Dictionary<string, InverterInfoEntry>>))]
+    [InlineData("solar_api/v1/GetActiveDeviceInfo.cgi", typeof(ApiWrapper<ActiveDeviceInfoData>))]
+    [InlineData("solar_api/v1/GetMeterRealtimeData.cgi?Scope=System", typeof(ApiWrapper<Dictionary<string, MeterRealtimeData>>))]
+    [InlineData("solar_api/v1/GetStorageRealtimeData.cgi?Scope=System", typeof(ApiWrapper<Dictionary<string, StorageRealtimeData>>))]
+    [Trait("Category", "Integration")]
+    public async Task ApiPayloadMatchesDtoContract(string requestUri, Type dtoType)
+    {
+        var rawResponse = await svc.Client.GetStringAsync(requestUri, TestContext.Current.CancellationToken);
+        var unmappedProperties = JsonContractAuditor.FindUnmappedProperties(rawResponse, dtoType);
+
+        Assert.Empty(unmappedProperties);
+    }
+
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetPowerFlowRealtimeData_ReturnsData()
     {
         var result = await svc.GetPowerFlowRealtimeData();
@@ -24,6 +43,7 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetInverterRealtimeData_CommonInverterData_ReturnsData()
     {
         var result = await svc.GetInverterRealtimeData("CommonInverterData");
@@ -31,11 +51,15 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
         Assert.NotNull(result.Head);
         Assert.NotNull(result.Body?.Data);
         Assert.NotNull(result.Body.Data.PAC);
+        Assert.True(result.Body.Data.PAC.Value.HasValue || result.Body.Data.PAC.Values is { Count: > 0 });
 
-        _output.WriteLine($"PAC={result.Body.Data.PAC.Value}{result.Body.Data.PAC.Unit}, DAY_ENERGY={result.Body.Data.DAY_ENERGY?.Value}{result.Body.Data.DAY_ENERGY?.Unit}");
+        var pac = result.Body.Data.PAC.Value ?? result.Body.Data.PAC.Values?.Values.FirstOrDefault();
+        var dayEnergy = result.Body.Data.DAY_ENERGY?.Value ?? result.Body.Data.DAY_ENERGY?.Values?.Values.FirstOrDefault();
+        _output.WriteLine($"PAC={pac}{result.Body.Data.PAC.Unit}, DAY_ENERGY={dayEnergy}{result.Body.Data.DAY_ENERGY?.Unit}");
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetInverterInfo_ReturnsDeviceInfo()
     {
         var result = await svc.GetInverterInfo();
@@ -49,6 +73,7 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetActiveDeviceInfo_ReturnsDevices()
     {
         var result = await svc.GetActiveDeviceInfo();
@@ -60,6 +85,7 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
     }
 
     [Fact(Skip = "planned in 1.13")]
+    [Trait("Category", "Integration")]
     public async Task GetMeterRealtimeData_ReturnsData()
     {
         var result = await svc.GetMeterRealtimeData();
@@ -72,12 +98,9 @@ public class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(outp
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GetStorageRealtimeData_ReturnsData()
     {
-        // Debug: fetch raw JSON to inspect the response shape
-        var rawResponse = await svc.Client.GetStringAsync("solar_api/v1/GetStorageRealtimeData.cgi?Scope=System", TestContext.Current.CancellationToken);
-        _output.WriteLine($"Raw response: {rawResponse}");
-
         var result = await svc.GetStorageRealtimeData();
         Assert.NotNull(result);
         Assert.NotNull(result.Head);

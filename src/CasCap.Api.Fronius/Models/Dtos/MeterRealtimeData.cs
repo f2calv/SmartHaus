@@ -67,6 +67,18 @@ public sealed record MeterRealtimeData
     public double EnergyReal_WAC_Sum_Produced { get; init; }
 
     /// <summary>
+    /// Total reactive energy consumed in volt-ampere reactive hours.
+    /// </summary>
+    [Description("Total reactive energy consumed in volt-ampere reactive hours.")]
+    public double EnergyReactive_VArAC_Sum_Consumed { get; init; }
+
+    /// <summary>
+    /// Total reactive energy produced in volt-ampere reactive hours.
+    /// </summary>
+    [Description("Total reactive energy produced in volt-ampere reactive hours.")]
+    public double EnergyReactive_VArAC_Sum_Produced { get; init; }
+
+    /// <summary>
     /// Average frequency across all phases in Hz.
     /// </summary>
     [Description("Average frequency across all phases in Hz.")]
