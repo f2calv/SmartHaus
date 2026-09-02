@@ -5,15 +5,23 @@
 .DESCRIPTION
     Builds a Debug image with local sibling dependencies, optionally packages the
     smarthaus umbrella chart, and patches a caller-supplied GitOps ApplicationSet
-    manifest. The
-    manifest repository and path are mandatory so deployment topology remains
-    outside this public application repository.
+    manifest. When ConfigMapPath is supplied, the script also copies the private
+    local appsettings file into that GitOps ConfigMap. The manifest repository and
+    paths are caller-supplied so deployment topology remains outside this public
+    application repository.
 
     The mutable latest-dev image tag requires a unique pod annotation to force a
     rollout. The script updates the shared annotation and every alias-local
     podAnnotations map so workloads with additional network annotations also roll.
+.PARAMETER ConfigMapPath
+    Optional path, relative to ManifestRepo, of the ConfigMap whose
+    data.appsettings.Local.json value is sourced from LocalAppSettingsPath.
+.PARAMETER LocalAppSettingsPath
+    Private appsettings file copied into the caller-supplied ConfigMap.
 .EXAMPLE
     ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path>
+.EXAMPLE
+    ./deploy.ps1 -SkipBuild -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -ConfigMapPath <configmap-path>
 .EXAMPLE
     ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -Chart
 .EXAMPLE
@@ -27,6 +35,8 @@ param(
     [string]$Platforms = "linux/arm64",
     [Parameter(Mandatory)][string]$ManifestRepo,
     [string]$ManifestPath,
+    [string]$ConfigMapPath,
+    [string]$LocalAppSettingsPath = (Join-Path $PSScriptRoot "appsettings.Local.json"),
     [string]$ImageRepository = "ghcr.io/f2calv/smarthaus",
     [switch]$SkipBuild,
     [switch]$NoCommit,
@@ -71,12 +81,19 @@ if ([string]::IsNullOrWhiteSpace($manifestPathToPatch)) {
     throw "-$requiredParameter is required for this deployment mode."
 }
 $manifest = Join-Path $ManifestRepo $manifestPathToPatch
+$configMap = if ([string]::IsNullOrWhiteSpace($ConfigMapPath)) { $null } else { Join-Path $ManifestRepo $ConfigMapPath }
 
 if (-not (Get-Command yq -ErrorAction SilentlyContinue)) {
     throw "yq not found. Install it (e.g. winget install MikeFarah.yq) - required to patch the GitOps manifest."
 }
 if (-not (Test-Path $manifest)) {
     throw "GitOps manifest not found at '$manifest'."
+}
+if ($configMap -and -not (Test-Path $configMap)) {
+    throw "GitOps ConfigMap not found at '$configMap'."
+}
+if ($configMap -and -not (Test-Path $LocalAppSettingsPath)) {
+    throw "Local appsettings file not found at '$LocalAppSettingsPath'."
 }
 
 function Get-GitVersion {
@@ -190,6 +207,16 @@ if ($OnlyCharts) {
     return
 }
 
+$gitOpsPaths = [System.Collections.Generic.List[string]]::new()
+$gitOpsPaths.Add($manifestPathToPatch)
+if ($configMap) {
+    Write-Host "Syncing $LocalAppSettingsPath -> $configMap" -ForegroundColor Cyan
+    $env:SMARTHAUS_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
+    yq -i '.data."appsettings.Local.json" = strenv(SMARTHAUS_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
+    if ($LASTEXITCODE -ne 0) { throw "yq failed to update the appsettings ConfigMap." }
+    $gitOpsPaths.Add($ConfigMapPath)
+}
+
 $stamp = "$(Get-GitVersion)+$ts"
 $patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
 if ($Chart) { $patchMsg += ", targetRevision=$ChartVersion" }
@@ -212,17 +239,17 @@ $yqExpr = $assignments -join ' | '
 yq -i $yqExpr $manifest
 if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
 
-git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
+git -C $ManifestRepo diff --quiet -- $gitOpsPaths
 if ($LASTEXITCODE -eq 0) {
-    Write-Host "No manifest changes detected - nothing to commit." -ForegroundColor Yellow
+    Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
     return
 }
-git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
+git -C $ManifestRepo --no-pager diff --stat -- $gitOpsPaths
 if ($NoCommit) {
-    Write-Host "Manifest patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
+    Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
     return
 }
-git -C $ManifestRepo add -- $manifestPathToPatch
+git -C $ManifestRepo add -- $gitOpsPaths
 $commitMsg = if ($Chart) { "deploy(smarthaus): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy(smarthaus): ${Tag} ${stamp}" }
 git -C $ManifestRepo commit -m $commitMsg
 if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
