@@ -12,10 +12,23 @@ public sealed record PowerFlowRealtimeData
     public Dictionary<string, PowerFlowInverter>? Inverters { get; init; }
 
     /// <summary>
+    /// Secondary meters keyed by device ID.
+    /// </summary>
+    /// <remarks>The device-specific payload is preserved because its shape depends on the connected meter model.</remarks>
+    [Description("Secondary meters keyed by device ID.")]
+    public Dictionary<string, JsonElement>? SecondaryMeters { get; init; }
+
+    /// <summary>
     /// Site-level power flow summary.
     /// </summary>
     [Description("Site-level power flow summary.")]
     public PowerFlowSite? Site { get; init; }
+
+    /// <summary>
+    /// Smart-load devices grouped by device family.
+    /// </summary>
+    [Description("Smart-load devices grouped by device family.")]
+    public Smartloads? Smartloads { get; init; }
 
     /// <summary>
     /// The API version string.

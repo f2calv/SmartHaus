@@ -7,12 +7,6 @@
 # enabled explicitly in deployment values.
 # ─────────────────────────────────────────────────────────────────────
 
-dashboards:
-  enabled: true
-  dashboardFolder: SmartHaus
-  datasources:
-    prometheus: prometheus
-
 image: &image
   repository: nginx
   pullPolicy: IfNotPresent

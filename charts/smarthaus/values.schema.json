@@ -45,9 +45,6 @@
     "sicce": {
       "type": "object"
     },
-    "dashboards": {
-      "type": "object"
-    },
     "image": {
       "type": "object"
     },

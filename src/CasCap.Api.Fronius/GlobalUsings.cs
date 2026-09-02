@@ -24,3 +24,4 @@ global using System.ComponentModel.DataAnnotations;
 global using System.Diagnostics.Metrics;
 global using System.Reflection;
 global using System.Runtime.CompilerServices;
+global using System.Text.Json;
