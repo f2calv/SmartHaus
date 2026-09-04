@@ -18,6 +18,10 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddSignalCli(this IServiceCollection services, IConfiguration configuration,
         Action<SignalCliConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the named client configuration and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(SignalCliRestClientService)))
+            return services;
+
         var config = services.AddAndGetCasCapConfiguration<SignalCliConfig>(configuration, configure);
 
         services.AddHttpClient(nameof(SignalCliConnectionHealthCheck), (sp, client) =>

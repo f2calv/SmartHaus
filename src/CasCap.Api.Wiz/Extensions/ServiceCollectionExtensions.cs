@@ -10,6 +10,10 @@ public static class ServiceCollectionExtensions
     public static void AddWiz(this IServiceCollection services, IConfiguration configuration,
         Action<WizConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(WizQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<WizConfig>(configuration, configure);
 
         services.AddSingleton<WizClientService>();

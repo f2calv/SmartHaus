@@ -18,6 +18,10 @@ public static class ServiceCollectionExtensions
     public static void AddUbiquiti(this IServiceCollection services, IConfiguration configuration, bool lite = false,
         Action<UbiquitiConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(UbiquitiQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<UbiquitiConfig>(configuration, configure);
 
         // Auto-register all sinks decorated with [SinkType] whose type is enabled

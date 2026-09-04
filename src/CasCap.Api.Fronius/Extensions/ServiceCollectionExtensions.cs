@@ -19,6 +19,10 @@ public static class ServiceCollectionExtensions
     public static void AddFronius(this IServiceCollection services, IConfiguration configuration, bool lite = false,
         Action<FroniusConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the named client configuration and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(FroniusQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<FroniusConfig>(configuration, configure);
 
         //named HttpClient is shared between the client and the healthcheck

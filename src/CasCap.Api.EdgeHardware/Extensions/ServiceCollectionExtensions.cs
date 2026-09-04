@@ -25,6 +25,10 @@ public static class EdgeHardwareServiceCollectionExtensions
     public static bool AddEdgeHardware(this IServiceCollection services, IConfiguration configuration,
         bool lite = false, bool cpuEnabled = false)
     {
+        //First call wins; repeating it would duplicate every singleton and background service below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(EdgeHardwareQueryService)))
+            return !lite && DetectNvidiaGpu();
+
         var config = services.AddAndGetCasCapConfiguration<EdgeHardwareConfig>(configuration);
 
         // Lightweight projection of the AppConfig section for Kubernetes node identity (used by metrics sink)
