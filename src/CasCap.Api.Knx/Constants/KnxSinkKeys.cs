@@ -1,4 +1,4 @@
-namespace CasCap.Models;
+namespace CasCap.Constants;
 
 /// <summary>
 /// Setting keys specific to the KNX feature sinks.

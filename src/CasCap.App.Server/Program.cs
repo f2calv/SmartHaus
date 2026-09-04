@@ -1,4 +1,5 @@
 using CasCap.Common.Authentication;
+using CasCap.Constants;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using ModelContextProtocol.AspNetCore;

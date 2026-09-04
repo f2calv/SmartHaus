@@ -1,3 +1,5 @@
+using CasCap.Constants;
+
 namespace CasCap.Models;
 
 /// <summary>Strongly-typed configuration for the comma-separated feature-flag string.</summary>

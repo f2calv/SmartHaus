@@ -1,7 +1,8 @@
-﻿global using CasCap.Common.Abstractions;
+global using CasCap.Common.Abstractions;
 global using CasCap.Common.Extensions;
 global using CasCap.Common.Models;
 global using CasCap.Common.Services;
+global using CasCap.Constants;
 global using CasCap.Models;
 global using CasCap.Services;
 global using Microsoft.Extensions.Configuration;
