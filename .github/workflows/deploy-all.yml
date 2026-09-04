@@ -68,8 +68,6 @@ jobs:
     with:
       registry: ghcr.io/${{ github.repository_owner }}
       tag: ${{ needs.versioning.outputs.version }}
-      tag-major: ${{ needs.versioning.outputs.major }}
-      tag-minor: ${{ needs.versioning.outputs.minor }}
       dockerfile: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'Dockerfile.Debug' || 'Dockerfile' }}
       args: --build-arg WORKLOAD=CasCap.App.Server ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && '--build-arg CONFIGURATION=Debug' || '' }}
       push-image: ${{ github.actor != 'copilot[bot]' }}
