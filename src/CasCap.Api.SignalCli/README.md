@@ -10,14 +10,16 @@ dotnet add package CasCap.Api.SignalCli
 
 ## Transport Modes
 
-The library supports two transport modes, controlled by the `TransportMode` configuration setting:
+`TransportMode` has four values, mirroring the `MODE` environment variable of the signal-cli REST API server, and **must match whatever the server is running**. Client-side there are only two behaviours: `Normal` and `Native` poll over HTTP, while `JsonRpc` and `JsonRpcNative` receive pushed frames over a WebSocket. The performance and memory characteristics below are properties of the server mode, not of this client.
 
-| Mode | Service | Message reception | Description |
-| --- | --- | --- | --- |
-| `Normal` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Standard REST-based polling. Slowest performance, normal memory usage. |
-| `Native` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Native REST API with polling-based message reception. Medium performance, normal memory usage. |
-| `JsonRpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Persistent WebSocket connection for real-time message delivery. All non-receive operations delegate to the underlying `SignalCliRestClientService`. Requires the signal-cli server to run in `json-rpc` mode. Features automatic reconnection with exponential backoff (2 s → 2 min, up to 10 attempts). Faster performance, increased memory usage. |
-| `JsonRpcNative` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Native JSON-RPC mode with WebSocket-based push. Fastest performance, normal memory usage. |
+| Mode | Server `MODE` | Service | Message reception | Server characteristics |
+| --- | --- | --- | --- | --- |
+| `Normal` | `normal` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Slowest, normal memory |
+| `Native` | `native` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Medium, normal memory |
+| `JsonRpc` | `json-rpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Faster, increased memory |
+| `JsonRpcNative` | `json-rpc-native` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Fastest, normal memory |
+
+On the WebSocket transports the connection is persistent and reconnects automatically with exponential backoff (2 s → 2 min, up to 10 attempts); every non-receive operation still goes over HTTP via the underlying `SignalCliRestClientService`. Registration, verification and device-linking endpoints are unavailable while the server runs in either JSON-RPC mode, per upstream documentation.
 
 ## Receiving Messages
 
