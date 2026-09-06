@@ -24,7 +24,7 @@ The library supports two transport modes, controlled by the `TransportMode` conf
 Both transports implement `ISignalCliReceiver`, so inbound messages are consumed the same way regardless of `TransportMode`. Switching between HTTP polling and the WebSocket push stream is a configuration change, not a code change.
 
 ```csharp
-public sealed class EchoWorker(ISignalCliReceiver receiver, SignalCliRestClientService client,
+public sealed class EchoWorker(ISignalCliReceiver receiver, ISignalCliClient client,
     IOptions<SignalCliConfig> options) : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -54,7 +54,7 @@ Calling `ConnectAsync` first is optional but surfaces connection failures at sta
 
 ## Controller
 
-`SignalCliController` exposes read-only query endpoints for the signal-cli service via the Haus internal Web API:
+`SignalCliController` exposes read-only query endpoints for the signal-cli service via the Haus internal Web API. It depends on `ISignalCliClient`:
 
 | Method | Route | Description |
 | --- | --- | --- |
@@ -70,7 +70,11 @@ Calling `ConnectAsync` first is optional but surfaces connection failures at sta
 
 ## Purpose
 
-`SignalCliRestClientService` is an `HttpClient`-backed service that covers the full signal-cli REST API surface:
+`ISignalCliClient` is the abstraction over the full signal-cli REST API surface. Depend on it rather than the concrete `SignalCliRestClientService` so the client can be substituted with a fake in tests. It resolves to `SignalCliRestClientService` in every transport mode, since only message reception differs between them.
+
+Every method returns `null` or `false` on failure and logs the cause; failures are not thrown. The exception is caller-requested cancellation, which propagates as `OperationCanceledException` so an abandoned call is never mistaken for an API error.
+
+`SignalCliRestClientService` is the `HttpClient`-backed implementation:
 
 ### General
 
@@ -256,9 +260,19 @@ classDiagram
 
     HttpClientBase <|-- SignalCliRestClientService
     HttpEndpointCheckBase <|-- SignalCliConnectionHealthCheck
+    ISignalCliClient <|.. SignalCliRestClientService
     ISignalCliReceiver <|.. SignalCliRestClientService
     ISignalCliReceiver <|.. SignalCliJsonRpcClientService
     SignalCliJsonRpcClientService ..> SignalCliRestClientService : delegates
+
+    class ISignalCliClient {
+        <<interface>>
+        +GetAbout(CancellationToken) SignalAbout?
+        +SendMessage(SignalMessageRequest, CancellationToken) SignalMessageResponse?
+        +ReceiveMessages(number, CancellationToken) SignalReceivedMessage[]?
+        +ListGroups(number, CancellationToken) SignalGroup[]?
+        +ListContacts(number, allRecipients, CancellationToken) SignalContact[]?
+    }
 
     class ISignalCliReceiver {
         <<interface>>
@@ -327,6 +341,7 @@ classDiagram
 flowchart LR
     A["AddSignalCli()"] --> B["Bind SignalCliConfig"]
     A --> C["Register HttpClient"]
+    A --> J["ISignalCliClient \u2192 SignalCliRestClientService"]
     A --> D{"TransportMode?"}
     A --> E["Register SignalCliConnectionHealthCheck"]
     D -->|Normal / Native| F["INotifier + ISignalCliReceiver \u2192 SignalCliRestClientService"]

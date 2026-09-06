@@ -8,68 +8,68 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public sealed class SignalCliController(SignalCliRestClientService signalCliRestClientSvc) : ControllerBase
+public sealed class SignalCliController(ISignalCliClient signalCliClient) : ControllerBase
 {
-    /// <inheritdoc cref="SignalCliRestClientService.GetAbout"/>
+    /// <inheritdoc cref="ISignalCliClient.GetAbout"/>
     [HttpGet("about")]
-    public async Task<Results<Ok<SignalAbout>, NotFound>> GetAbout()
-        => await signalCliRestClientSvc.GetAbout() is { } result
+    public async Task<Results<Ok<SignalAbout>, NotFound>> GetAbout(CancellationToken cancellationToken)
+        => await signalCliClient.GetAbout(cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.GetConfiguration"/>
+    /// <inheritdoc cref="ISignalCliClient.GetConfiguration"/>
     [HttpGet("configuration")]
-    public async Task<Results<Ok<SignalConfiguration>, NotFound>> GetConfiguration()
-        => await signalCliRestClientSvc.GetConfiguration() is { } result
+    public async Task<Results<Ok<SignalConfiguration>, NotFound>> GetConfiguration(CancellationToken cancellationToken)
+        => await signalCliClient.GetConfiguration(cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListAccounts"/>
+    /// <inheritdoc cref="ISignalCliClient.ListAccounts"/>
     [HttpGet("accounts")]
-    public async Task<Results<Ok<string[]>, NotFound>> ListAccounts()
-        => await signalCliRestClientSvc.ListAccounts() is { } result
+    public async Task<Results<Ok<string[]>, NotFound>> ListAccounts(CancellationToken cancellationToken)
+        => await signalCliClient.ListAccounts(cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListContacts"/>
+    /// <inheritdoc cref="ISignalCliClient.ListContacts"/>
     [HttpGet("contacts")]
-    public async Task<Results<Ok<SignalContact[]>, NotFound>> ListContacts([FromQuery] string number)
-        => await signalCliRestClientSvc.ListContacts(number) is { } result
+    public async Task<Results<Ok<SignalContact[]>, NotFound>> ListContacts([FromQuery] string number, CancellationToken cancellationToken)
+        => await signalCliClient.ListContacts(number, cancellationToken: cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListGroups"/>
+    /// <inheritdoc cref="ISignalCliClient.ListGroups"/>
     [HttpGet("groups")]
-    public async Task<Results<Ok<SignalGroup[]>, NotFound>> ListGroups([FromQuery] string number)
-        => await signalCliRestClientSvc.ListGroups(number) is { } result
+    public async Task<Results<Ok<SignalGroup[]>, NotFound>> ListGroups([FromQuery] string number, CancellationToken cancellationToken)
+        => await signalCliClient.ListGroups(number, cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListLinkedDevices"/>
+    /// <inheritdoc cref="ISignalCliClient.ListLinkedDevices"/>
     [HttpGet("devices")]
-    public async Task<Results<Ok<SignalDevice[]>, NotFound>> ListLinkedDevices([FromQuery] string number)
-        => await signalCliRestClientSvc.ListLinkedDevices(number) is { } result
+    public async Task<Results<Ok<SignalDevice[]>, NotFound>> ListLinkedDevices([FromQuery] string number, CancellationToken cancellationToken)
+        => await signalCliClient.ListLinkedDevices(number, cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListIdentities"/>
+    /// <inheritdoc cref="ISignalCliClient.ListIdentities"/>
     [HttpGet("identities")]
-    public async Task<Results<Ok<SignalIdentity[]>, NotFound>> ListIdentities([FromQuery] string number)
-        => await signalCliRestClientSvc.ListIdentities(number) is { } result
+    public async Task<Results<Ok<SignalIdentity[]>, NotFound>> ListIdentities([FromQuery] string number, CancellationToken cancellationToken)
+        => await signalCliClient.ListIdentities(number, cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListAttachments"/>
+    /// <inheritdoc cref="ISignalCliClient.ListAttachments"/>
     [HttpGet("attachments")]
-    public async Task<Results<Ok<string[]>, NotFound>> ListAttachments()
-        => await signalCliRestClientSvc.ListAttachments() is { } result
+    public async Task<Results<Ok<string[]>, NotFound>> ListAttachments(CancellationToken cancellationToken)
+        => await signalCliClient.ListAttachments(cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 
-    /// <inheritdoc cref="SignalCliRestClientService.ListStickerPacks"/>
+    /// <inheritdoc cref="ISignalCliClient.ListStickerPacks"/>
     [HttpGet("sticker-packs")]
-    public async Task<Results<Ok<SignalStickerPack[]>, NotFound>> ListStickerPacks([FromQuery] string number)
-        => await signalCliRestClientSvc.ListStickerPacks(number) is { } result
+    public async Task<Results<Ok<SignalStickerPack[]>, NotFound>> ListStickerPacks([FromQuery] string number, CancellationToken cancellationToken)
+        => await signalCliClient.ListStickerPacks(number, cancellationToken) is { } result
             ? TypedResults.Ok(result)
             : TypedResults.NotFound();
 }

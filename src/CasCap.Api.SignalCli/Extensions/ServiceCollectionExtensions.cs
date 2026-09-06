@@ -7,6 +7,8 @@ public static class ServiceCollectionExtensions
 {
     /// <summary>
     /// Registers the signal-cli client, health check, and configuration.
+    /// <see cref="ISignalCliClient"/> always resolves to <see cref="SignalCliRestClientService"/>, since the
+    /// REST surface is identical in every transport mode.
     /// When <see cref="SignalCliConfig.TransportMode"/> is <see cref="SignalCliTransport.JsonRpc"/> or
     /// <see cref="SignalCliTransport.JsonRpcNative"/>, the <see cref="SignalCliJsonRpcClientService"/>
     /// (WebSocket-based receive) is registered as <see cref="INotifier"/> and
@@ -39,6 +41,7 @@ public static class ServiceCollectionExtensions
         .AddStandardResilience(nameof(SignalCliConnectionHealthCheck));
 
         services.AddSingleton<SignalCliRestClientService>();
+        services.AddSingleton<ISignalCliClient>(sp => sp.GetRequiredService<SignalCliRestClientService>());
 
         if (config.TransportMode is SignalCliTransport.JsonRpc or SignalCliTransport.JsonRpcNative)
         {
