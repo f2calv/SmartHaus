@@ -19,6 +19,39 @@ The library supports two transport modes, controlled by the `TransportMode` conf
 | `JsonRpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Persistent WebSocket connection for real-time message delivery. All non-receive operations delegate to the underlying `SignalCliRestClientService`. Requires the signal-cli server to run in `json-rpc` mode. Features automatic reconnection with exponential backoff (2 s → 2 min, up to 10 attempts). Faster performance, increased memory usage. |
 | `JsonRpcNative` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Native JSON-RPC mode with WebSocket-based push. Fastest performance, normal memory usage. |
 
+## Receiving Messages
+
+Both transports implement `ISignalCliReceiver`, so inbound messages are consumed the same way regardless of `TransportMode`. Switching between HTTP polling and the WebSocket push stream is a configuration change, not a code change.
+
+```csharp
+public sealed class EchoWorker(ISignalCliReceiver receiver, SignalCliRestClientService client,
+    IOptions<SignalCliConfig> options) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var account = options.Value.PhoneNumber;
+        await foreach (var msg in receiver.StreamMessagesAsync(stoppingToken))
+        {
+            var sender = msg.Envelope.Source;
+            var text = msg.Envelope.DataMessage?.Message;
+            if (sender is null || string.IsNullOrWhiteSpace(text))
+                continue;
+
+            await client.SendMessage(new SignalMessageRequest
+            {
+                Number = account,
+                Recipients = [sender],
+                Message = $"echo: {text}"
+            }, stoppingToken);
+        }
+    }
+}
+```
+
+`StreamMessagesAsync` is a cold stream: enumeration starts the transport (connecting the WebSocket where applicable) and abandoning the enumerator stops it. Cancelling the token ends the stream by throwing `OperationCanceledException`, per the usual `IAsyncEnumerable` convention. Only one active enumeration per instance is expected; concurrent consumers compete for messages rather than each receiving a copy.
+
+Calling `ConnectAsync` first is optional but surfaces connection failures at startup instead of on the first message. On the REST transport it is a no-op.
+
 ## Controller
 
 `SignalCliController` exposes read-only query endpoints for the signal-cli service via the Haus internal Web API:
@@ -165,6 +198,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 | `PhoneNumberDebug` | `string?` | `null` | — | Optional recipient number for debug/diagnostic messages ("Note to Self" feed) |
 | `SendTimeoutMs` | `int` | `180000` | — | Per-request timeout in milliseconds for `POST /v2/send` |
 | `ChannelCapacity` | `int` | `256` | — | Bounded capacity of the internal message channel (back-pressure when full) |
+| `ReceivePollIntervalMs` | `int` | `1000` | — | Delay between `GET /v1/receive/{number}` polls when streaming over the REST transport; ignored by the JSON-RPC transports |
 | `MaxReconnectAttempts` | `int` | `10` | — | Maximum number of WebSocket reconnection attempts before giving up |
 | `InitialReconnectDelayMs` | `int` | `2000` | — | Initial backoff delay in milliseconds for WebSocket reconnection |
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
@@ -200,6 +234,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
       "PhoneNumberDebug": "+49151...",
       "SendTimeoutMs": 180000,
       "ChannelCapacity": 256,
+      "ReceivePollIntervalMs": 1000,
       "MaxReconnectAttempts": 10,
       "InitialReconnectDelayMs": 2000,
       "MaxReconnectDelayMs": 120000,
@@ -221,7 +256,15 @@ classDiagram
 
     HttpClientBase <|-- SignalCliRestClientService
     HttpEndpointCheckBase <|-- SignalCliConnectionHealthCheck
+    ISignalCliReceiver <|.. SignalCliRestClientService
+    ISignalCliReceiver <|.. SignalCliJsonRpcClientService
     SignalCliJsonRpcClientService ..> SignalCliRestClientService : delegates
+
+    class ISignalCliReceiver {
+        <<interface>>
+        +ConnectAsync(CancellationToken) Task
+        +StreamMessagesAsync(CancellationToken) IAsyncEnumerable~SignalReceivedMessage~
+    }
 
     class SignalCliRestClientService {
         -SignalCliConfig _config
@@ -248,6 +291,7 @@ classDiagram
         -SignalCliRestClientService _restClient
         -ClientWebSocket? _webSocket
         +ConnectAsync(CancellationToken) Task
+        +StreamMessagesAsync(CancellationToken) IAsyncEnumerable~SignalReceivedMessage~
         -ReceiveLoopWithReconnectAsync(CancellationToken) Task
         +BuildWebSocketUri(baseAddress, phoneNumber)$ Uri
     }
@@ -265,6 +309,7 @@ classDiagram
         +PhoneNumber string
         +PhoneNumberDebug string?
         +ChannelCapacity int
+        +ReceivePollIntervalMs int
         +MaxReconnectAttempts int
         +InitialReconnectDelayMs int
         +MaxReconnectDelayMs int
@@ -284,8 +329,8 @@ flowchart LR
     A --> C["Register HttpClient"]
     A --> D{"TransportMode?"}
     A --> E["Register SignalCliConnectionHealthCheck"]
-    D -->|Normal / Native| F["INotifier \u2192 SignalCliRestClientService"]
-    D -->|JsonRpc / JsonRpcNative| G["INotifier \u2192 SignalCliJsonRpcClientService"]
+    D -->|Normal / Native| F["INotifier + ISignalCliReceiver \u2192 SignalCliRestClientService"]
+    D -->|JsonRpc / JsonRpcNative| G["INotifier + ISignalCliReceiver \u2192 SignalCliJsonRpcClientService"]
     G --> H["delegates non-receive ops"]
     H --> F2["SignalCliRestClientService"]
     C --> I["IHttpClientFactory"]

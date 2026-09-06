@@ -80,6 +80,18 @@ public sealed record SignalCliConfig : IAppConfig, IHealthCheckConfig
     [Range(1, int.MaxValue)]
     public int ChannelCapacity { get; init; } = 256;
 
+    /// <summary>
+    /// Delay in milliseconds between successive <c>GET /v1/receive/{number}</c> polls when streaming
+    /// messages over the REST transport. Defaults to <c>1000</c> ms.
+    /// </summary>
+    /// <remarks>
+    /// Only applies to <see cref="SignalCliTransport.Normal"/> and <see cref="SignalCliTransport.Native"/>;
+    /// the JSON-RPC transports receive pushed frames and never poll.
+    /// Used by <see cref="CasCap.Services.SignalCliRestClientService"/>.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int ReceivePollIntervalMs { get; init; } = 1_000;
+
     /// <summary>Maximum number of WebSocket reconnection attempts before giving up.</summary>
     /// <remarks>
     /// Defaults to <c>10</c>.

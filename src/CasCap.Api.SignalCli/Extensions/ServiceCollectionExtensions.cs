@@ -9,8 +9,9 @@ public static class ServiceCollectionExtensions
     /// Registers the signal-cli client, health check, and configuration.
     /// When <see cref="SignalCliConfig.TransportMode"/> is <see cref="SignalCliTransport.JsonRpc"/> or
     /// <see cref="SignalCliTransport.JsonRpcNative"/>, the <see cref="SignalCliJsonRpcClientService"/>
-    /// (WebSocket-based receive) is registered as <see cref="INotifier"/>; otherwise the polling-based
-    /// <see cref="SignalCliRestClientService"/> is used.
+    /// (WebSocket-based receive) is registered as <see cref="INotifier"/> and
+    /// <see cref="ISignalCliReceiver"/>; otherwise the polling-based
+    /// <see cref="SignalCliRestClientService"/> is used for both.
     /// </summary>
     /// <param name="services">The service collection.</param>
     /// <param name="configuration">The application configuration.</param>
@@ -41,7 +42,7 @@ public static class ServiceCollectionExtensions
 
         if (config.TransportMode is SignalCliTransport.JsonRpc or SignalCliTransport.JsonRpcNative)
         {
-            services.AddSingleton<INotifier>(sp =>
+            services.AddSingleton(sp =>
             {
                 Action<System.Net.WebSockets.ClientWebSocket>? configureWebSocket = null;
                 if (config.BasicAuthEnabled)
@@ -55,9 +56,14 @@ public static class ServiceCollectionExtensions
                     sp.GetRequiredService<SignalCliRestClientService>(),
                     configureWebSocket);
             });
+            services.AddSingleton<INotifier>(sp => sp.GetRequiredService<SignalCliJsonRpcClientService>());
+            services.AddSingleton<ISignalCliReceiver>(sp => sp.GetRequiredService<SignalCliJsonRpcClientService>());
         }
         else
-            services.AddSingleton<INotifier, SignalCliRestClientService>();
+        {
+            services.AddSingleton<INotifier>(sp => sp.GetRequiredService<SignalCliRestClientService>());
+            services.AddSingleton<ISignalCliReceiver>(sp => sp.GetRequiredService<SignalCliRestClientService>());
+        }
 
         services.AddSingleton<SignalCliConnectionHealthCheck>();
 

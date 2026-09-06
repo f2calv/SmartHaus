@@ -24,7 +24,7 @@ namespace CasCap.Services;
 /// <see href="https://github.com/bbernhard/signal-cli-rest-api/discussions/160"/> for JSON-RPC details.
 /// </para>
 /// </remarks>
-public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
+public sealed class SignalCliJsonRpcClientService : ISignalCliReceiver, INotifier, IAsyncDisposable
 {
     private readonly ILogger<SignalCliJsonRpcClientService> _logger;
     private readonly SignalCliConfig _config;
@@ -149,6 +149,20 @@ public sealed class SignalCliJsonRpcClientService : INotifier, IAsyncDisposable
             _connectLock.Release();
         }
     }
+
+    #region ISignalCliReceiver
+
+    /// <inheritdoc/>
+    public async IAsyncEnumerable<SignalReceivedMessage> StreamMessagesAsync(
+        [EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        await ConnectAsync(cancellationToken).ConfigureAwait(false);
+
+        await foreach (var message in _channel.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
+            yield return message;
+    }
+
+    #endregion
 
     #region INotifier
 
