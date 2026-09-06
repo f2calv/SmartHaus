@@ -31,11 +31,8 @@ public static class ServiceCollectionExtensions
         {
             var opts = sp.GetRequiredService<IOptions<SignalCliConfig>>().Value;
             client.BaseAddress = new Uri(opts.BaseAddress);
-            if (opts.BasicAuthEnabled)
-            {
-                var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
-                client.SetBasicAuth(authOpts.Username, authOpts.Password);
-            }
+            if (ResolveBasicAuth(sp, opts) is { } auth)
+                client.SetBasicAuth(auth.username, auth.password);
         })
         .SetHandlerLifetime(Timeout.InfiniteTimeSpan)
         .AddStandardResilience(nameof(SignalCliConnectionHealthCheck));
@@ -47,15 +44,13 @@ public static class ServiceCollectionExtensions
         {
             services.AddSingleton(sp =>
             {
+                var opts = sp.GetRequiredService<IOptions<SignalCliConfig>>();
                 Action<System.Net.WebSockets.ClientWebSocket>? configureWebSocket = null;
-                if (config.BasicAuthEnabled)
-                {
-                    var authOpts = sp.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
-                    configureWebSocket = ws => ws.SetBasicAuth(authOpts.Username, authOpts.Password);
-                }
+                if (ResolveBasicAuth(sp, opts.Value) is { } auth)
+                    configureWebSocket = ws => ws.SetBasicAuth(auth.username, auth.password);
                 return new SignalCliJsonRpcClientService(
                     sp.GetRequiredService<ILoggerFactory>().CreateLogger<SignalCliJsonRpcClientService>(),
-                    sp.GetRequiredService<IOptions<SignalCliConfig>>(),
+                    opts,
                     sp.GetRequiredService<SignalCliRestClientService>(),
                     configureWebSocket);
             });
@@ -75,5 +70,32 @@ public static class ServiceCollectionExtensions
                 .AddCheck<SignalCliConnectionHealthCheck>(nameof(SignalCliConnectionHealthCheck), tags: config.HealthCheck.GetTags());
 
         return services;
+    }
+
+    /// <summary>
+    /// Resolves the HTTP Basic credentials to attach to signal-cli requests, or <see langword="null"/>
+    /// when <see cref="SignalCliConfig.BasicAuthEnabled"/> is not set.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Basic auth is enabled but no credentials were found in either configuration section.
+    /// </exception>
+    private static (string username, string password)? ResolveBasicAuth(IServiceProvider sp, SignalCliConfig config)
+    {
+        if (!config.BasicAuthEnabled)
+            return null;
+
+        if (!string.IsNullOrWhiteSpace(config.Username) && !string.IsNullOrWhiteSpace(config.Password))
+            return (config.Username, config.Password);
+
+        //Hosts that bind one set of ingress credentials for every API they call get them for free.
+        var shared = sp.GetService<IOptions<ApiAuthConfig>>()?.Value;
+        if (!string.IsNullOrWhiteSpace(shared?.Username) && !string.IsNullOrWhiteSpace(shared.Password))
+            return (shared.Username, shared.Password);
+
+        throw new InvalidOperationException(
+            $"{SignalCliConfig.ConfigurationSectionName}:{nameof(SignalCliConfig.BasicAuthEnabled)} is true but no credentials were found. " +
+            $"Set {SignalCliConfig.ConfigurationSectionName}:{nameof(SignalCliConfig.Username)} and " +
+            $"{SignalCliConfig.ConfigurationSectionName}:{nameof(SignalCliConfig.Password)}, or register " +
+            $"{nameof(ApiAuthConfig)} from the {ApiAuthConfig.ConfigurationSectionName} section.");
     }
 }

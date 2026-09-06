@@ -143,11 +143,23 @@ public sealed record SignalCliConfig : IAppConfig, IHealthCheckConfig
     [Range(0, int.MaxValue)]
     public int ReceiveStalenessTimeoutMs { get; init; }
 
-    /// <summary>Whether to attach HTTP Basic credentials from <see cref="ApiAuthConfig"/> to outgoing requests.</summary>
+    /// <summary>Whether to attach HTTP Basic credentials to outgoing requests.</summary>
     /// <remarks>
     /// Defaults to <see langword="false"/>. Set to <see langword="true"/> when the signal-cli REST API is
     /// exposed behind a reverse proxy with Basic authentication (e.g. cross-cluster access via an ingress).
+    /// Credentials come from <see cref="Username"/> and <see cref="Password"/>.
     /// Used by <see cref="CasCap.Extensions.ServiceCollectionExtensions"/>.
     /// </remarks>
     public bool BasicAuthEnabled { get; init; }
+
+    /// <summary>Username sent as HTTP Basic credentials when <see cref="BasicAuthEnabled"/> is set.</summary>
+    /// <remarks>
+    /// Falls back to <see cref="ApiAuthConfig"/> when left unset, for hosts that already bind a single
+    /// set of ingress credentials for every API they call.
+    /// </remarks>
+    public string? Username { get; init; }
+
+    /// <summary>Password sent as HTTP Basic credentials when <see cref="BasicAuthEnabled"/> is set.</summary>
+    /// <inheritdoc cref="Username"/>
+    public string? Password { get; init; }
 }

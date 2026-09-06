@@ -54,19 +54,7 @@ Calling `ConnectAsync` first is optional but surfaces connection failures at sta
 
 ## Controller
 
-`SignalCliController` exposes read-only query endpoints for the signal-cli service via the Haus internal Web API. It depends on `ISignalCliClient`:
-
-| Method | Route | Description |
-| --- | --- | --- |
-| `GetAbout` | `GET /api/v1/signalcli/about` | Returns signal-cli version and build info |
-| `GetConfiguration` | `GET /api/v1/signalcli/configuration` | Retrieves the signal-cli configuration |
-| `ListAccounts` | `GET /api/v1/signalcli/accounts` | Lists all registered accounts |
-| `ListContacts` | `GET /api/v1/signalcli/contacts?number=` | Lists contacts for an account |
-| `ListGroups` | `GET /api/v1/signalcli/groups?number=` | Lists groups for an account |
-| `ListLinkedDevices` | `GET /api/v1/signalcli/devices?number=` | Lists linked devices for an account |
-| `ListIdentities` | `GET /api/v1/signalcli/identities?number=` | Lists known identities for an account |
-| `ListAttachments` | `GET /api/v1/signalcli/attachments` | Lists all stored attachment identifiers |
-| `ListStickerPacks` | `GET /api/v1/signalcli/sticker-packs?number=` | Lists installed sticker packs for an account |
+The MVC controller lives in a separate package, [CasCap.Api.SignalCli.AspNetCore](../CasCap.Api.SignalCli.AspNetCore), so that worker services, console apps and daemons can consume this library without taking a dependency on MVC or API versioning.
 
 ## Purpose
 
@@ -208,6 +196,14 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
 | `ReceiveStalenessTimeoutMs` | `int` | `0` | — | Max silent period (ms) on the receive stream before the watchdog logs an error and forces a reconnect; `0` disables it. Tune above your longest expected inbound gap to avoid false positives on quiet accounts |
 | `BasicAuthEnabled` | `bool` | `false` | — | Whether to attach HTTP Basic credentials to outgoing requests (cross-cluster access via ingress) |
+| `Username` | `string?` | `null` | — | Basic auth username, required when `BasicAuthEnabled` is set unless `ApiAuthConfig` supplies one |
+| `Password` | `string?` | `null` | — | Basic auth password, required when `BasicAuthEnabled` is set unless `ApiAuthConfig` supplies one |
+
+### Basic authentication
+
+When the signal-cli REST API sits behind an authenticating reverse proxy, set `BasicAuthEnabled` and supply `Username` and `Password`. The credentials are applied to both the `HttpClient` and the JSON-RPC WebSocket handshake.
+
+If `Username` and `Password` are left unset, the library falls back to `CasCap:ApiAuthConfig`, which suits hosts that already bind a single set of ingress credentials for every API they call. When neither source yields credentials, registration throws an `InvalidOperationException` naming both configuration keys rather than failing later with an opaque `401`.
 
 ## Configuration Examples
 
@@ -328,6 +324,8 @@ classDiagram
         +InitialReconnectDelayMs int
         +MaxReconnectDelayMs int
         +BasicAuthEnabled bool
+        +Username string?
+        +Password string?
     }
 
     SignalCliRestClientService ..> SignalCliConfig : reads
@@ -360,8 +358,6 @@ flowchart LR
 
 | Package | Purpose |
 | --- | --- |
-| [Asp.Versioning.Mvc](https://www.nuget.org/packages/asp.versioning.mvc) | API versioning for controllers |
-| [Microsoft.AspNetCore.Http.Abstractions](https://www.nuget.org/packages/microsoft.aspnetcore.http.abstractions) | HTTP abstractions for middleware/controller support |
 | [Microsoft.Extensions.Http](https://www.nuget.org/packages/microsoft.extensions.http) | `HttpClient` factory |
 | [Microsoft.Extensions.Diagnostics.HealthChecks](https://www.nuget.org/packages/microsoft.extensions.diagnostics.healthchecks) | Health check abstractions |
 | [CasCap.Common.Configuration](https://www.nuget.org/packages/cascap.common.configuration) | Configuration binding helpers |
