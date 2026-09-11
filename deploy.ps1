@@ -3,23 +3,23 @@
 .SYNOPSIS
     Fast inner-loop deploy: build and push a Debug image, then roll it out through ArgoCD.
 .DESCRIPTION
-    Builds a Debug image with local sibling dependencies, optionally packages the
-    smarthaus umbrella chart, and patches a caller-supplied GitOps ApplicationSet
-    manifest. When ConfigMapPath is supplied, the script also copies the private
-    local appsettings file into that GitOps ConfigMap. The manifest repository and
-    paths are caller-supplied so deployment topology remains outside this public
-    application repository.
+    Builds a Debug image with local sibling dependencies, optionally packages its
+    umbrella chart, and patches a GitOps ApplicationSet manifest. Deployment-specific
+    defaults can be stored in the gitignored deploy.local.psd1 file; explicit command
+    line parameters override those defaults.
 
     The mutable latest-dev image tag requires a unique pod annotation to force a
     rollout. The script updates the shared annotation and every alias-local
     podAnnotations map so workloads with additional network annotations also roll.
+.PARAMETER DeployConfigPath
+    Local PowerShell data file containing default parameter values.
 .PARAMETER ConfigMapPath
     Optional path, relative to ManifestRepo, of the ConfigMap whose
     data.appsettings.Local.json value is sourced from LocalAppSettingsPath.
 .PARAMETER LocalAppSettingsPath
     Private appsettings file copied into the caller-supplied ConfigMap.
 .EXAMPLE
-    ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path>
+    ./deploy.ps1
 .EXAMPLE
     ./deploy.ps1 -SkipBuild -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -ConfigMapPath <configmap-path>
 .EXAMPLE
@@ -33,28 +33,52 @@
 param(
     [string]$Tag = "latest-dev",
     [string]$Platforms = "linux/arm64",
-    [Parameter(Mandatory)][string]$ManifestRepo,
+    [string]$DeployConfigPath = (Join-Path $PSScriptRoot "deploy.local.psd1"),
+    [string]$ManifestRepo,
     [string]$ManifestPath,
     [string]$ConfigMapPath,
     [string]$LocalAppSettingsPath = (Join-Path $PSScriptRoot "appsettings.Local.json"),
-    [string]$ImageRepository = "ghcr.io/f2calv/smarthaus",
+    [string]$ImageRepository,
     [switch]$SkipBuild,
     [switch]$NoCommit,
+    [switch]$SkipMigrationCheck,
     [switch]$Chart,
     [Alias("OnlyDashboards")][switch]$OnlyCharts,
-    [string]$ChartPath = "charts/smarthaus",
+    [string]$ChartPath,
     [string]$ChartRegistry = "ghcr.io",
-    [string]$ChartRepository = "f2calv/charts/smarthaus",
-    [string]$DashboardChartPath = "charts/dashboards",
-    [string]$DashboardChartRepository = "f2calv/charts/dashboards",
+    [string]$ChartRepository,
+    [string]$DashboardChartPath,
+    [string]$DashboardChartRepository,
     [string]$DashboardManifestPath,
     [string]$ChartVersion,
+    [string]$DeploymentName,
+    [string]$PodAnnotationName,
+    [string]$MigrationProject,
+    [string]$MigrationContext,
+    [string]$MigrationConnectionStringEnvironmentVariable,
+    [string]$MigrationConnectionString,
     [Parameter(ValueFromRemainingArguments = $true)][string[]]$Rest
 )
 
 Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
 $PSNativeCommandUseErrorActionPreference = $false
+
+$REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
+if (Test-Path $DeployConfigPath) {
+    $deployConfig = Import-PowerShellDataFile $DeployConfigPath
+    foreach ($setting in $deployConfig.GetEnumerator()) {
+        if (-not $PSBoundParameters.ContainsKey($setting.Key)) {
+            Set-Variable -Name $setting.Key -Value $setting.Value
+        }
+    }
+}
+$repositoryName = Split-Path $REPO_ROOT -Leaf
+if ([string]::IsNullOrWhiteSpace($DeploymentName)) { $DeploymentName = $repositoryName.ToLowerInvariant() }
+if ([string]::IsNullOrWhiteSpace($ImageRepository)) { $ImageRepository = "ghcr.io/f2calv/$($repositoryName.ToLowerInvariant())" }
+if (-not $OnlyCharts -and [string]::IsNullOrWhiteSpace($PodAnnotationName)) {
+    throw "-PodAnnotationName is required. Supply it explicitly or in '$DeployConfigPath'."
+}
 
 $Rest = @($Rest | Where-Object { $null -ne $_ })
 if ($Rest.Count -gt 0) {
@@ -74,11 +98,13 @@ if ($Rest.Count -gt 0) {
     $Rest = $filtered.ToArray()
 }
 
-$REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
+if ([string]::IsNullOrWhiteSpace($ManifestRepo)) {
+    throw "-ManifestRepo is required. Supply it explicitly or in '$DeployConfigPath'."
+}
 $manifestPathToPatch = if ($OnlyCharts) { $DashboardManifestPath } else { $ManifestPath }
 if ([string]::IsNullOrWhiteSpace($manifestPathToPatch)) {
     $requiredParameter = if ($OnlyCharts) { "DashboardManifestPath" } else { "ManifestPath" }
-    throw "-$requiredParameter is required for this deployment mode."
+    throw "-$requiredParameter is required for this deployment mode. Supply it explicitly or in '$DeployConfigPath'."
 }
 $manifest = Join-Path $ManifestRepo $manifestPathToPatch
 $configMap = if ([string]::IsNullOrWhiteSpace($ConfigMapPath)) { $null } else { Join-Path $ManifestRepo $ConfigMapPath }
@@ -118,7 +144,73 @@ function Connect-HelmRegistry {
     if ($LASTEXITCODE -ne 0) { throw "helm registry login $Registry failed." }
 }
 
+function Update-ManifestRepository {
+    $workingTreeChanges = @(git -C $ManifestRepo status --porcelain)
+    if ($LASTEXITCODE -ne 0) { throw "git status failed for '$ManifestRepo'." }
+    if ($workingTreeChanges.Count -gt 0) {
+        throw "GitOps repository '$ManifestRepo' has local changes. Commit, stash, or discard them before deploying."
+    }
+
+    Write-Host "Refreshing GitOps repository '$ManifestRepo'..." -ForegroundColor Cyan
+    git -C $ManifestRepo fetch --prune
+    if ($LASTEXITCODE -ne 0) { throw "git fetch failed for '$ManifestRepo'." }
+    $upstream = "$(git -C $ManifestRepo rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')".Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($upstream)) {
+        throw "The current GitOps branch has no upstream branch."
+    }
+    git -C $ManifestRepo merge --ff-only $upstream
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitOps branch could not be fast-forwarded to '$upstream'. Resolve its branch state before deploying."
+    }
+}
+
+function Assert-NoModelDrift {
+    if ([string]::IsNullOrWhiteSpace($MigrationProject)) { return }
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        throw "dotnet not found - required for the EF model-drift check."
+    }
+    Write-Host "Checking EF model/migration drift..." -ForegroundColor Cyan
+    $previousArtifactsPath = $env:ArtifactsPath
+    $previousBaseOutputPath = $env:BaseOutputPath
+    $previousConnectionString = if ($MigrationConnectionStringEnvironmentVariable) {
+        [Environment]::GetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable)
+    }
+    $driftOutputPath = Join-Path ([IO.Path]::GetTempPath()) "ef-output-$PID-$([Guid]::NewGuid().ToString('N'))"
+    $env:ArtifactsPath = $null
+    $env:BaseOutputPath = Join-Path $driftOutputPath "bin\"
+    if ($MigrationConnectionStringEnvironmentVariable) {
+        [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $MigrationConnectionString)
+    }
+    $dataProject = Join-Path $REPO_ROOT $MigrationProject
+    Push-Location $REPO_ROOT
+    try {
+        dotnet tool restore | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "dotnet tool restore failed (needed for dotnet-ef)." }
+        dotnet restore $dataProject | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed for the EF model-drift check." }
+        $efArguments = @("ef", "migrations", "has-pending-model-changes", "--project", $dataProject, "--startup-project", $dataProject)
+        if ($MigrationContext) { $efArguments += @("--context", $MigrationContext) }
+        & dotnet @efArguments
+        if ($LASTEXITCODE -ne 0) {
+            throw "EF model/migration drift check failed. Review the dotnet ef output above; add a migration only when it reports pending model changes."
+        }
+    }
+    finally {
+        Pop-Location
+        $env:ArtifactsPath = $previousArtifactsPath
+        $env:BaseOutputPath = $previousBaseOutputPath
+        if ($MigrationConnectionStringEnvironmentVariable) {
+            [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $previousConnectionString)
+        }
+        Remove-Item $driftOutputPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Update-ManifestRepository
+
 $ts = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
+
+if (-not $SkipMigrationCheck -and -not $OnlyCharts) { Assert-NoModelDrift }
 
 if (-not $SkipBuild -and -not $OnlyCharts) {
     & "$PSScriptRoot/build.ps1" -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
@@ -141,6 +233,9 @@ if ($Chart -or $OnlyCharts) {
         $ChartPath = $DashboardChartPath
         $ChartRepository = $DashboardChartRepository
     }
+    if ([string]::IsNullOrWhiteSpace($ChartPath) -or [string]::IsNullOrWhiteSpace($ChartRepository)) {
+        throw "ChartPath and ChartRepository are required for chart deployment. Supply them explicitly or in '$DeployConfigPath'."
+    }
     if (-not $ChartVersion) { $ChartVersion = "0.0.0-dev.$ts" }
     $chartDir = Join-Path $REPO_ROOT $ChartPath
     if (-not (Test-Path (Join-Path $chartDir 'Chart.yaml'))) {
@@ -162,7 +257,7 @@ if ($Chart -or $OnlyCharts) {
 
     Connect-HelmRegistry -Registry $ChartRegistry
 
-    $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "smarthaus-chart-$ts"
+    $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "$DeploymentName-chart-$ts"
     New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
     try {
         Write-Host "Packaging $chartName $ChartVersion (appVersion=$Tag) from $ChartPath" -ForegroundColor Cyan
@@ -183,9 +278,9 @@ if ($Chart -or $OnlyCharts) {
 }
 
 if ($OnlyCharts) {
-    $env:SMARTHAUS_DASHBOARD_CHART_VERSION = $ChartVersion
+    $env:DEPLOY_DASHBOARD_CHART_VERSION = $ChartVersion
     Write-Host "Patching $manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
-    yq -i '.spec.template.spec.source.targetRevision = strenv(SMARTHAUS_DASHBOARD_CHART_VERSION)' $manifest
+    yq -i '.spec.template.spec.source.targetRevision = strenv(DEPLOY_DASHBOARD_CHART_VERSION)' $manifest
     if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
 
     git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
@@ -199,7 +294,7 @@ if ($OnlyCharts) {
         return
     }
     git -C $ManifestRepo add -- $manifestPathToPatch
-    git -C $ManifestRepo commit -m "deploy(smarthaus-dashboards): chart=${ChartVersion}"
+    git -C $ManifestRepo commit -m "deploy($DeploymentName-dashboards): chart=${ChartVersion}"
     if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
     git -C $ManifestRepo push
     if ($LASTEXITCODE -ne 0) { throw "git push failed." }
@@ -211,8 +306,8 @@ $gitOpsPaths = [System.Collections.Generic.List[string]]::new()
 $gitOpsPaths.Add($manifestPathToPatch)
 if ($configMap) {
     Write-Host "Syncing $LocalAppSettingsPath -> $configMap" -ForegroundColor Cyan
-    $env:SMARTHAUS_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
-    yq -i '.data."appsettings.Local.json" = strenv(SMARTHAUS_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
+    $env:DEPLOY_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
+    yq -i '.data."appsettings.Local.json" = strenv(DEPLOY_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
     if ($LASTEXITCODE -ne 0) { throw "yq failed to update the appsettings ConfigMap." }
     $gitOpsPaths.Add($ConfigMapPath)
 }
@@ -222,19 +317,20 @@ $patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-
 if ($Chart) { $patchMsg += ", targetRevision=$ChartVersion" }
 Write-Host "Patching $manifest ($patchMsg)" -ForegroundColor Cyan
 
-$env:SMARTHAUS_IMG_REPO = $ImageRepository
-$env:SMARTHAUS_IMG_TAG = $Tag
-$env:SMARTHAUS_DEPLOY_STAMP = $stamp
+$env:DEPLOY_IMG_REPO = $ImageRepository
+$env:DEPLOY_IMG_TAG = $Tag
+$env:DEPLOY_STAMP = $stamp
 $assignments = [System.Collections.Generic.List[string]]::new()
 if ($Chart) {
-    $env:SMARTHAUS_CHART_VERSION = $ChartVersion
-    $assignments.Add('.spec.template.spec.source.targetRevision = strenv(SMARTHAUS_CHART_VERSION)')
+    $env:DEPLOY_CHART_VERSION = $ChartVersion
+    $assignments.Add('.spec.template.spec.source.targetRevision = strenv(DEPLOY_CHART_VERSION)')
 }
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.repository = strenv(SMARTHAUS_IMG_REPO)')
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.tag = strenv(SMARTHAUS_IMG_TAG)')
+$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.repository = strenv(DEPLOY_IMG_REPO)')
+$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.tag = strenv(DEPLOY_IMG_TAG)')
 $assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.pullPolicy = "Always"')
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.podAnnotations["smarthaus.f2calv.io/deployed-version"] = strenv(SMARTHAUS_DEPLOY_STAMP)')
-$assignments.Add('(.spec.template.spec.source.helm.valuesObject[] | select(has("podAnnotations")).podAnnotations["smarthaus.f2calv.io/deployed-version"]) = strenv(SMARTHAUS_DEPLOY_STAMP)')
+$env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
+$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.podAnnotations[strenv(DEPLOY_POD_ANNOTATION)] = strenv(DEPLOY_STAMP)')
+$assignments.Add('(.spec.template.spec.source.helm.valuesObject[] | select(has("podAnnotations")).podAnnotations[strenv(DEPLOY_POD_ANNOTATION)]) = strenv(DEPLOY_STAMP)')
 $yqExpr = $assignments -join ' | '
 yq -i $yqExpr $manifest
 if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
@@ -250,7 +346,7 @@ if ($NoCommit) {
     return
 }
 git -C $ManifestRepo add -- $gitOpsPaths
-$commitMsg = if ($Chart) { "deploy(smarthaus): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy(smarthaus): ${Tag} ${stamp}" }
+$commitMsg = if ($Chart) { "deploy($DeploymentName): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy($DeploymentName): ${Tag} ${stamp}" }
 git -C $ManifestRepo commit -m $commitMsg
 if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
 git -C $ManifestRepo push
