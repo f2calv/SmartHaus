@@ -24,6 +24,10 @@ public static class ServiceCollectionExtensions
         Action<KnxConfig>? configure = null,
         params Assembly[] additionalSinkAssemblies)
     {
+        //First call wins; repeating it would duplicate every singleton and background service below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(KnxQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<KnxConfig>(configuration, c =>
         {
             configure?.Invoke(c);

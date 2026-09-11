@@ -8,8 +8,8 @@ param(
     [string]$Tag,
     # Target platform(s). Single-arch (e.g. linux/arm64) is much faster for the inner loop.
     [string]$Platforms = "linux/amd64,linux/arm64,linux/arm/v7",
-    # Image repository name under $REGISTRY. "smarthaus" matches the CI/CD image.
-    [string]$ImageName = "smarthaus",
+    # Image repository name under $REGISTRY. Defaults to the repository directory name.
+    [string]$ImageName = ([IO.Path]::GetFileName($PSScriptRoot).ToLowerInvariant()),
     [string]$WorkloadName = "CasCap.App.Server"
 )
 
@@ -26,11 +26,19 @@ $GITHUB_WORKFLOW = "local"
 $GITHUB_RUN_ID = 0
 $GITHUB_RUN_NUMBER = 0
 
-$BUILDER_NAME = "smarthaus1"
+$BUILDER_NAME = "${ImageName}1"
 
 # Sibling repositories copied into deps/ for Debug (Dockerfile.Debug) builds, so a
-# fix/feature can be verified without first publishing those repos.
-$DEP_REPOS = @("CasCap.Common", "CasCap.Api.Azure")
+# fix/feature can be verified without first publishing those repos. Dockerfile.Debug
+# is authoritative because every copied dependency must also exist in the build context.
+$dockerfileDebug = Join-Path $REPO_ROOT "Dockerfile.Debug"
+$DEP_REPOS = @([regex]::Matches(
+        [IO.File]::ReadAllText($dockerfileDebug),
+        '(?m)^\s*COPY\s+deps/([^/\s]+)\s+/'
+    ) | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
+if ($DEP_REPOS.Count -eq 0) {
+    throw "No sibling dependencies were found in '$dockerfileDebug'."
+}
 
 function Resolve-Tag {
     if ($Tag) { return $Tag.ToLower() }
@@ -39,6 +47,7 @@ function Resolve-Tag {
             Write-Host "dotnet-gitversion not found. Installing GitVersion.Tool globally..." -ForegroundColor Cyan
             dotnet tool install -g GitVersion.Tool
             if ($LASTEXITCODE -ne 0) { throw "Failed to install GitVersion.Tool. Run: dotnet tool install -g GitVersion.Tool" }
+            # Ensure the global tools path is on PATH for the current session.
             $toolsPath = Join-Path $HOME ".dotnet/tools"
             if ($env:PATH -notlike "*$toolsPath*") { $env:PATH = "$toolsPath$([IO.Path]::PathSeparator)$env:PATH" }
         }
@@ -75,6 +84,7 @@ function Sync-Deps {
             throw "Refusing to mirror '$resolvedSource' into its own descendant '$resolvedDestination'."
         }
         Write-Host "Syncing $repo -> deps/$repo" -ForegroundColor Cyan
+        # /MIR mirrors (incremental). Exclude build output, VCS, and local-only secrets.
         & robocopy $src $dst /MIR `
             /XD bin obj .git .vs node_modules deps `
             /XF "appsettings.Local*.json" "*.user" `

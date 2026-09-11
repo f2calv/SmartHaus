@@ -10,34 +10,61 @@ dotnet add package CasCap.Api.SignalCli
 
 ## Transport Modes
 
-The library supports two transport modes, controlled by the `TransportMode` configuration setting:
+`TransportMode` has four values, mirroring the `MODE` environment variable of the signal-cli REST API server, and **must match whatever the server is running**. Client-side there are only two behaviours: `Normal` and `Native` poll over HTTP, while `JsonRpc` and `JsonRpcNative` receive pushed frames over a WebSocket. The performance and memory characteristics below are properties of the server mode, not of this client.
 
-| Mode | Service | Message reception | Description |
-| --- | --- | --- | --- |
-| `Normal` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Standard REST-based polling. Slowest performance, normal memory usage. |
-| `Native` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Native REST API with polling-based message reception. Medium performance, normal memory usage. |
-| `JsonRpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Persistent WebSocket connection for real-time message delivery. All non-receive operations delegate to the underlying `SignalCliRestClientService`. Requires the signal-cli server to run in `json-rpc` mode. Features automatic reconnection with exponential backoff (2 s → 2 min, up to 10 attempts). Faster performance, increased memory usage. |
-| `JsonRpcNative` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Native JSON-RPC mode with WebSocket-based push. Fastest performance, normal memory usage. |
+| Mode | Server `MODE` | Service | Message reception | Server characteristics |
+| --- | --- | --- | --- | --- |
+| `Normal` | `normal` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Slowest, normal memory |
+| `Native` | `native` | `SignalCliRestClientService` | HTTP polling (`GET /v1/receive/{number}`) | Medium, normal memory |
+| `JsonRpc` | `json-rpc` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Faster, increased memory |
+| `JsonRpcNative` | `json-rpc-native` | `SignalCliJsonRpcClientService` | WebSocket push (`ws://host/v1/receive/{number}`) | Fastest, normal memory |
+
+On the WebSocket transports the connection is persistent and reconnects automatically with exponential backoff (2 s → 2 min, up to 10 attempts); every non-receive operation still goes over HTTP via the underlying `SignalCliRestClientService`. Registration, verification and device-linking endpoints are unavailable while the server runs in either JSON-RPC mode, per upstream documentation.
+
+## Receiving Messages
+
+Both transports implement `ISignalCliReceiver`, so inbound messages are consumed the same way regardless of `TransportMode`. Switching between HTTP polling and the WebSocket push stream is a configuration change, not a code change.
+
+```csharp
+public sealed class EchoWorker(ISignalCliReceiver receiver, ISignalCliClient client,
+    IOptions<SignalCliConfig> options) : BackgroundService
+{
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        var account = options.Value.PhoneNumber;
+        await foreach (var msg in receiver.StreamMessagesAsync(stoppingToken))
+        {
+            var sender = msg.Envelope.Source;
+            var text = msg.Envelope.DataMessage?.Message;
+            if (sender is null || string.IsNullOrWhiteSpace(text))
+                continue;
+
+            await client.SendMessage(new SignalMessageRequest
+            {
+                Number = account,
+                Recipients = [sender],
+                Message = $"echo: {text}"
+            }, stoppingToken);
+        }
+    }
+}
+```
+
+`StreamMessagesAsync` is a cold stream: enumeration starts the transport (connecting the WebSocket where applicable) and abandoning the enumerator stops it. Cancelling the token ends the stream by throwing `OperationCanceledException`, per the usual `IAsyncEnumerable` convention. Only one active enumeration per instance is expected; concurrent consumers compete for messages rather than each receiving a copy.
+
+Calling `ConnectAsync` first is optional but surfaces connection failures at startup instead of on the first message. On the REST transport it is a no-op.
 
 ## Controller
 
-`SignalCliController` exposes read-only query endpoints for the signal-cli service via the Haus internal Web API:
-
-| Method | Route | Description |
-| --- | --- | --- |
-| `GetAbout` | `GET /api/v1/signalcli/about` | Returns signal-cli version and build info |
-| `GetConfiguration` | `GET /api/v1/signalcli/configuration` | Retrieves the signal-cli configuration |
-| `ListAccounts` | `GET /api/v1/signalcli/accounts` | Lists all registered accounts |
-| `ListContacts` | `GET /api/v1/signalcli/contacts?number=` | Lists contacts for an account |
-| `ListGroups` | `GET /api/v1/signalcli/groups?number=` | Lists groups for an account |
-| `ListLinkedDevices` | `GET /api/v1/signalcli/devices?number=` | Lists linked devices for an account |
-| `ListIdentities` | `GET /api/v1/signalcli/identities?number=` | Lists known identities for an account |
-| `ListAttachments` | `GET /api/v1/signalcli/attachments` | Lists all stored attachment identifiers |
-| `ListStickerPacks` | `GET /api/v1/signalcli/sticker-packs?number=` | Lists installed sticker packs for an account |
+The MVC controller lives in a separate package, [CasCap.Api.SignalCli.AspNetCore](../CasCap.Api.SignalCli.AspNetCore), so that worker services, console apps and daemons can consume this library without taking a dependency on MVC or API versioning.
 
 ## Purpose
 
-`SignalCliRestClientService` is an `HttpClient`-backed service that covers the full signal-cli REST API surface:
+`ISignalCliClient` is the abstraction over the full signal-cli REST API surface. Depend on it rather than the concrete `SignalCliRestClientService` so the client can be substituted with a fake in tests. It resolves to `SignalCliRestClientService` in every transport mode, since only message reception differs between them.
+
+Every method returns `null` or `false` on failure and logs the cause; failures are not thrown. The exception is caller-requested cancellation, which propagates as `OperationCanceledException` so an abandoned call is never mistaken for an API error.
+
+`SignalCliRestClientService` is the `HttpClient`-backed implementation:
 
 ### General
 
@@ -165,11 +192,20 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
 | `PhoneNumberDebug` | `string?` | `null` | — | Optional recipient number for debug/diagnostic messages ("Note to Self" feed) |
 | `SendTimeoutMs` | `int` | `180000` | — | Per-request timeout in milliseconds for `POST /v2/send` |
 | `ChannelCapacity` | `int` | `256` | — | Bounded capacity of the internal message channel (back-pressure when full) |
+| `ReceivePollIntervalMs` | `int` | `1000` | — | Delay between `GET /v1/receive/{number}` polls when streaming over the REST transport; ignored by the JSON-RPC transports |
 | `MaxReconnectAttempts` | `int` | `10` | — | Maximum number of WebSocket reconnection attempts before giving up |
 | `InitialReconnectDelayMs` | `int` | `2000` | — | Initial backoff delay in milliseconds for WebSocket reconnection |
 | `MaxReconnectDelayMs` | `int` | `120000` | — | Maximum backoff delay in milliseconds for WebSocket reconnection |
 | `ReceiveStalenessTimeoutMs` | `int` | `0` | — | Max silent period (ms) on the receive stream before the watchdog logs an error and forces a reconnect; `0` disables it. Tune above your longest expected inbound gap to avoid false positives on quiet accounts |
 | `BasicAuthEnabled` | `bool` | `false` | — | Whether to attach HTTP Basic credentials to outgoing requests (cross-cluster access via ingress) |
+| `Username` | `string?` | `null` | — | Basic auth username, required when `BasicAuthEnabled` is set unless `ApiAuthConfig` supplies one |
+| `Password` | `string?` | `null` | — | Basic auth password, required when `BasicAuthEnabled` is set unless `ApiAuthConfig` supplies one |
+
+### Basic authentication
+
+When the signal-cli REST API sits behind an authenticating reverse proxy, set `BasicAuthEnabled` and supply `Username` and `Password`. The credentials are applied to both the `HttpClient` and the JSON-RPC WebSocket handshake.
+
+If `Username` and `Password` are left unset, the library falls back to `CasCap:ApiAuthConfig`, which suits hosts that already bind a single set of ingress credentials for every API they call. When neither source yields credentials, registration throws an `InvalidOperationException` naming both configuration keys rather than failing later with an opaque `401`.
 
 ## Configuration Examples
 
@@ -200,6 +236,7 @@ Registered via `IServiceCollection.AddSignalCli()`. Configuration section: `CasC
       "PhoneNumberDebug": "+49151...",
       "SendTimeoutMs": 180000,
       "ChannelCapacity": 256,
+      "ReceivePollIntervalMs": 1000,
       "MaxReconnectAttempts": 10,
       "InitialReconnectDelayMs": 2000,
       "MaxReconnectDelayMs": 120000,
@@ -221,7 +258,25 @@ classDiagram
 
     HttpClientBase <|-- SignalCliRestClientService
     HttpEndpointCheckBase <|-- SignalCliConnectionHealthCheck
+    ISignalCliClient <|.. SignalCliRestClientService
+    ISignalCliReceiver <|.. SignalCliRestClientService
+    ISignalCliReceiver <|.. SignalCliJsonRpcClientService
     SignalCliJsonRpcClientService ..> SignalCliRestClientService : delegates
+
+    class ISignalCliClient {
+        <<interface>>
+        +GetAbout(CancellationToken) SignalAbout?
+        +SendMessage(SignalMessageRequest, CancellationToken) SignalMessageResponse?
+        +ReceiveMessages(number, CancellationToken) SignalReceivedMessage[]?
+        +ListGroups(number, CancellationToken) SignalGroup[]?
+        +ListContacts(number, allRecipients, CancellationToken) SignalContact[]?
+    }
+
+    class ISignalCliReceiver {
+        <<interface>>
+        +ConnectAsync(CancellationToken) Task
+        +StreamMessagesAsync(CancellationToken) IAsyncEnumerable~SignalReceivedMessage~
+    }
 
     class SignalCliRestClientService {
         -SignalCliConfig _config
@@ -248,6 +303,7 @@ classDiagram
         -SignalCliRestClientService _restClient
         -ClientWebSocket? _webSocket
         +ConnectAsync(CancellationToken) Task
+        +StreamMessagesAsync(CancellationToken) IAsyncEnumerable~SignalReceivedMessage~
         -ReceiveLoopWithReconnectAsync(CancellationToken) Task
         +BuildWebSocketUri(baseAddress, phoneNumber)$ Uri
     }
@@ -265,10 +321,13 @@ classDiagram
         +PhoneNumber string
         +PhoneNumberDebug string?
         +ChannelCapacity int
+        +ReceivePollIntervalMs int
         +MaxReconnectAttempts int
         +InitialReconnectDelayMs int
         +MaxReconnectDelayMs int
         +BasicAuthEnabled bool
+        +Username string?
+        +Password string?
     }
 
     SignalCliRestClientService ..> SignalCliConfig : reads
@@ -282,10 +341,11 @@ classDiagram
 flowchart LR
     A["AddSignalCli()"] --> B["Bind SignalCliConfig"]
     A --> C["Register HttpClient"]
+    A --> J["ISignalCliClient \u2192 SignalCliRestClientService"]
     A --> D{"TransportMode?"}
     A --> E["Register SignalCliConnectionHealthCheck"]
-    D -->|Normal / Native| F["INotifier \u2192 SignalCliRestClientService"]
-    D -->|JsonRpc / JsonRpcNative| G["INotifier \u2192 SignalCliJsonRpcClientService"]
+    D -->|Normal / Native| F["INotifier + ISignalCliReceiver \u2192 SignalCliRestClientService"]
+    D -->|JsonRpc / JsonRpcNative| G["INotifier + ISignalCliReceiver \u2192 SignalCliJsonRpcClientService"]
     G --> H["delegates non-receive ops"]
     H --> F2["SignalCliRestClientService"]
     C --> I["IHttpClientFactory"]
@@ -300,8 +360,6 @@ flowchart LR
 
 | Package | Purpose |
 | --- | --- |
-| [Asp.Versioning.Mvc](https://www.nuget.org/packages/asp.versioning.mvc) | API versioning for controllers |
-| [Microsoft.AspNetCore.Http.Abstractions](https://www.nuget.org/packages/microsoft.aspnetcore.http.abstractions) | HTTP abstractions for middleware/controller support |
 | [Microsoft.Extensions.Http](https://www.nuget.org/packages/microsoft.extensions.http) | `HttpClient` factory |
 | [Microsoft.Extensions.Diagnostics.HealthChecks](https://www.nuget.org/packages/microsoft.extensions.diagnostics.healthchecks) | Health check abstractions |
 | [CasCap.Common.Configuration](https://www.nuget.org/packages/cascap.common.configuration) | Configuration binding helpers |

@@ -17,6 +17,10 @@ public static class ServiceCollectionExtensions
     public static void AddSicce(this IServiceCollection services, IConfiguration configuration, bool lite = false,
         Action<SicceConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the Vendor-Key header and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(SicceQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<SicceConfig>(configuration, configure);
 
         //named HttpClient is shared between the client and the healthcheck

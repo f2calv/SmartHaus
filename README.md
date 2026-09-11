@@ -16,6 +16,10 @@
 [cascap.api.knx-url]: https://nuget.org/packages/CasCap.Api.Knx
 [cascap.api.knx.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Knx.Sinks?color=blue
 [cascap.api.knx.sinks-url]: https://nuget.org/packages/CasCap.Api.Knx.Sinks
+[cascap.api.signalcli-badge]: https://img.shields.io/nuget/v/CasCap.Api.SignalCli?color=blue
+[cascap.api.signalcli-url]: https://nuget.org/packages/CasCap.Api.SignalCli
+[cascap.api.signalcli.aspnetcore-badge]: https://img.shields.io/nuget/v/CasCap.Api.SignalCli.AspNetCore?color=blue
+[cascap.api.signalcli.aspnetcore-url]: https://nuget.org/packages/CasCap.Api.SignalCli.AspNetCore
 
 > **Early proof-of-concept / first public release.** This project is under active development — expect rough edges, breaking changes, and missing documentation. Bugs are expected and the project is **fully unsupported**. Contributions and feedback are welcome, but please set expectations accordingly.
 >
@@ -260,6 +264,7 @@ graph TD
             EDGE_SINKS["Api.EdgeHardware.Sinks"]
         end
         SIGNAL["Api.SignalCli"]
+        SIGNAL_WEB["Api.SignalCli.AspNetCore"]
         DDNS["Api.DDns"]
     end
 
@@ -345,6 +350,8 @@ graph TD
 
     EDGE_SINKS --> EDGE
 
+    SIGNAL_WEB --> SIGNAL
+
     %% ── Foundation edges ────────────────────────────────────────────────────
     HAUS --> ABS
 
@@ -368,7 +375,7 @@ graph TD
 
     class SERVER,CONSOLE appNode
     class APP,EXT2,HAUS coreNode
-    class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,SIGNAL,DDNS featureNode
+    class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,SIGNAL,SIGNAL_WEB,DDNS featureNode
     class HAUS_AI mcpNode
     class BUD_SINKS,DB_SINKS,FRO_SINKS,KNX_SINKS,MIE_SINKS,SIC_SINKS,WIZ_SINKS,SHEL_SINKS,UBI_SINKS,EDGE_SINKS sinkNode
     class ABS foundationNode
@@ -389,6 +396,8 @@ Standalone device API libraries published from this repository. *Some libraries 
 | CasCap.Api.Fronius.Sinks | [![Nuget][cascap.api.fronius.sinks-badge]][cascap.api.fronius.sinks-url] |
 | CasCap.Api.Knx | [![Nuget][cascap.api.knx-badge]][cascap.api.knx-url] |
 | CasCap.Api.Knx.Sinks | [![Nuget][cascap.api.knx.sinks-badge]][cascap.api.knx.sinks-url] |
+| CasCap.Api.SignalCli | [![Nuget][cascap.api.signalcli-badge]][cascap.api.signalcli-url] |
+| CasCap.Api.SignalCli.AspNetCore | [![Nuget][cascap.api.signalcli.aspnetcore-badge]][cascap.api.signalcli.aspnetcore-url] |
 
 ## Prerequisites
 

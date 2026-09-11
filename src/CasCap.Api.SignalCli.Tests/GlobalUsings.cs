@@ -1,4 +1,6 @@
+global using CasCap.Abstractions;
 global using CasCap.Common.Abstractions;
+global using CasCap.Common.Diagnostics.HealthChecks;
 global using CasCap.Common.Exceptions;
 global using CasCap.Common.Extensions;
 global using CasCap.Extensions;
@@ -9,5 +11,7 @@ global using CasCap.Services;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;
 global using Microsoft.Extensions.Logging;
+global using Microsoft.Extensions.Logging.Abstractions;
 global using Microsoft.Extensions.Options;
+global using System.Text;
 global using Xunit;

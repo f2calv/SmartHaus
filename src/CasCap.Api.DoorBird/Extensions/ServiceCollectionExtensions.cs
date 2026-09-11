@@ -20,6 +20,10 @@ public static class ServiceCollectionExtensions
     public static void AddDoorBird(this IServiceCollection services, IConfiguration configuration, bool lite = false,
         Action<DoorBirdConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the named client configuration and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(DoorBirdQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<DoorBirdConfig>(configuration, configure);
 
         //named HttpClient is shared between the client and the healthcheck

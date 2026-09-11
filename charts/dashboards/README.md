@@ -1,7 +1,4 @@
----
-title: SmartHaus Grafana dashboards
-description: Authoring and provisioning guidance for the SmartHaus dashboards Helm chart
----
+# SmartHaus Grafana dashboards
 
 ## Chart behaviour
 

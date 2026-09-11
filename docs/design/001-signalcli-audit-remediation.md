@@ -65,7 +65,7 @@ The highest-risk findings. The current buffer + counting-semaphore + drain desig
 
 ## 6. Controller
 
-- [x] **`CTL-1` (Medium)** — Null mapped to `Ok` instead of `NotFound`. [`SignalCliController`](../../src/CasCap.Api.SignalCli/Controllers/SignalCliController.cs) wraps nullable service results (`SignalAbout?`, etc.) in `Ok<T>`, producing `200 OK` with a `null` body. Per the "Nullable returns for NotFound patterns" convention, use `Results<Ok<T>, NotFound>` with pattern matching. (Otherwise the controllers are correctly thin pass-throughs with `<inheritdoc cref>` — good.)
+- [x] **`CTL-1` (Medium)** — Null mapped to `Ok` instead of `NotFound`. [`SignalCliController`](../../src/CasCap.Api.SignalCli.AspNetCore/Controllers/SignalCliController.cs) wraps nullable service results (`SignalAbout?`, etc.) in `Ok<T>`, producing `200 OK` with a `null` body. Per the "Nullable returns for NotFound patterns" convention, use `Results<Ok<T>, NotFound>` with pattern matching. (Otherwise the controllers are correctly thin pass-throughs with `<inheritdoc cref>` — good.) The controller has since moved to its own `CasCap.Api.SignalCli.AspNetCore` package.
 
 ## 7. Test Project — Convention Violations
 

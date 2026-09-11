@@ -1,4 +1,4 @@
-namespace CasCap.Models;
+namespace CasCap.Constants;
 
 /// <summary>Well-known constants for <c>AIConfig.Agents</c> configuration paths.</summary>
 /// <remarks>

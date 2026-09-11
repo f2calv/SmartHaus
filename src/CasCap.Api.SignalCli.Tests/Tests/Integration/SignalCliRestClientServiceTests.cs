@@ -49,7 +49,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.General)]
     public async Task GetAbout_ReturnsVersionInfo()
     {
-        var result = await _svc.GetAbout();
+        var result = await _svc.GetAbout(TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result.Version));
         _output.WriteLine($"Version={result.Version}, Build={result.Build}, Mode={result.Mode}");
@@ -63,7 +63,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.General)]
     public async Task GetConfiguration_ReturnsConfiguration()
     {
-        var result = await _svc.GetConfiguration();
+        var result = await _svc.GetConfiguration(TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Logging.Level={result.Logging?.Level ?? "(null)"}");
     }
@@ -76,7 +76,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         {
             Logging = new LoggingConfiguration { Level = "INFO" }
         };
-        var result = await _svc.SetConfiguration(config);
+        var result = await _svc.SetConfiguration(config, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"SetConfiguration={result}");
     }
@@ -97,7 +97,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Recipients = [_config.PhoneNumber]
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result.Timestamp));
         _output.WriteLine($"Timestamp={result.Timestamp}");
@@ -112,7 +112,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         var pending = await _svc.ReceiveMessages(_config.PhoneNumber, TestContext.Current.CancellationToken);
         _output.WriteLine($"FlushedMessages={pending?.Length ?? 0}");
 
-        var groups = await _svc.ListGroups(_config.PhoneNumber);
+        var groups = await _svc.ListGroups(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(groups);
         var smartHaus = groups.FirstOrDefault(g => g.Name == _groupName);
         Assert.NotNull(smartHaus);
@@ -125,10 +125,11 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         // current Sender Keys for members who joined after the last session.
         foreach (var member in smartHaus.Members.Where(m => m != _config.PhoneNumber))
         {
-            var trusted = await _svc.TrustIdentity(_config.PhoneNumber, member, trustAllKnownKeys: true);
+            var trusted = await _svc.TrustIdentity(_config.PhoneNumber, member, trustAllKnownKeys: true,
+                cancellationToken: TestContext.Current.CancellationToken);
             _output.WriteLine($"TrustIdentity {member}={trusted}");
         }
-        var synced = await _svc.SyncContacts(_config.PhoneNumber);
+        var synced = await _svc.SyncContacts(_config.PhoneNumber, TestContext.Current.CancellationToken);
         _output.WriteLine($"SyncContacts={synced}");
 
         var msg = new SignalMessageRequest
@@ -139,7 +140,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Recipients = [smartHaus.Id]
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result.Timestamp));
         _output.WriteLine($"Timestamp={result.Timestamp}");
@@ -151,7 +152,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     {
         // Diagnostic: test direct 1:1 delivery to the second group member
         // to isolate whether the issue is group-specific or general.
-        var groups = await _svc.ListGroups(_config.PhoneNumber);
+        var groups = await _svc.ListGroups(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(groups);
         var smartHaus = groups.FirstOrDefault(g => g.Name == _groupName);
         Assert.NotNull(smartHaus);
@@ -163,7 +164,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         Assert.NotNull(otherMember);
         _output.WriteLine($"TargetMember={otherMember}");
 
-        var trusted = await _svc.TrustIdentity(_config.PhoneNumber, otherMember, trustAllKnownKeys: true);
+        var trusted = await _svc.TrustIdentity(_config.PhoneNumber, otherMember, trustAllKnownKeys: true,
+            cancellationToken: TestContext.Current.CancellationToken);
         _output.WriteLine($"TrustIdentity={trusted}");
 
         var msg = new SignalMessageRequest
@@ -174,7 +176,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Recipients = [otherMember]
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.False(string.IsNullOrWhiteSpace(result.Timestamp));
         _output.WriteLine($"Timestamp={result.Timestamp}");
@@ -193,7 +195,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             TextMode = "styled"
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Timestamp={result.Timestamp}");
     }
@@ -218,7 +220,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Mentions = [mention]
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Timestamp={result.Timestamp}");
     }
@@ -242,7 +244,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             LinkPreview = preview
         };
 
-        var result = await _svc.SendMessage(msg);
+        var result = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Timestamp={result.Timestamp}");
     }
@@ -251,7 +253,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task ShowTypingIndicator_ReturnsTrue()
     {
-        var result = await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber);
+        var result = await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine("Typing indicator shown");
     }
@@ -260,8 +262,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Messaging)]
     public async Task HideTypingIndicator_ReturnsTrue()
     {
-        await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber);
-        var result = await _svc.HideTypingIndicator(_config.PhoneNumber, _config.PhoneNumber);
+        await _svc.ShowTypingIndicator(_config.PhoneNumber, _config.PhoneNumber, TestContext.Current.CancellationToken);
+        var result = await _svc.HideTypingIndicator(_config.PhoneNumber, _config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine("Typing indicator hidden");
     }
@@ -308,12 +310,12 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Number = _config.PhoneNumber,
             Recipients = [_config.PhoneNumber]
         };
-        var sent = await _svc.SendMessage(msg);
+        var sent = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(sent);
 
         var timestamp = long.Parse(sent.Timestamp);
-        var result = await _svc.SendReaction(_config.PhoneNumber, _config.PhoneNumber, "👍",
-            _config.PhoneNumber, timestamp);
+        var result = await _svc.SendReaction(_config.PhoneNumber, _config.PhoneNumber, "\U0001F44D",
+            _config.PhoneNumber, timestamp, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"SendReaction={result}");
     }
@@ -329,14 +331,14 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Number = _config.PhoneNumber,
             Recipients = [_config.PhoneNumber]
         };
-        var sent = await _svc.SendMessage(msg);
+        var sent = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(sent);
 
         var timestamp = long.Parse(sent.Timestamp);
-        await _svc.SendReaction(_config.PhoneNumber, _config.PhoneNumber, "👍",
-            _config.PhoneNumber, timestamp);
-        var result = await _svc.RemoveReaction(_config.PhoneNumber, _config.PhoneNumber, "👍",
-            _config.PhoneNumber, timestamp);
+        await _svc.SendReaction(_config.PhoneNumber, _config.PhoneNumber, "\U0001F44D",
+            _config.PhoneNumber, timestamp, TestContext.Current.CancellationToken);
+        var result = await _svc.RemoveReaction(_config.PhoneNumber, _config.PhoneNumber, "\U0001F44D",
+            _config.PhoneNumber, timestamp, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"RemoveReaction={result}");
     }
@@ -352,11 +354,11 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Number = _config.PhoneNumber,
             Recipients = [_config.PhoneNumber]
         };
-        var sent = await _svc.SendMessage(msg);
+        var sent = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(sent);
 
         var timestamp = long.Parse(sent.Timestamp);
-        var result = await _svc.SendReceipt(_config.PhoneNumber, _config.PhoneNumber, "read", timestamp);
+        var result = await _svc.SendReceipt(_config.PhoneNumber, _config.PhoneNumber, "read", timestamp, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"SendReceipt={result}");
     }
@@ -372,11 +374,11 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Number = _config.PhoneNumber,
             Recipients = [_config.PhoneNumber]
         };
-        var sent = await _svc.SendMessage(msg);
+        var sent = await _svc.SendMessage(msg, TestContext.Current.CancellationToken);
         Assert.NotNull(sent);
 
         var timestamp = long.Parse(sent.Timestamp);
-        var result = await _svc.RemoteDelete(_config.PhoneNumber, _config.PhoneNumber, timestamp);
+        var result = await _svc.RemoteDelete(_config.PhoneNumber, _config.PhoneNumber, timestamp, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"RemoteDelete timestamp={result.Timestamp}");
     }
@@ -389,7 +391,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task RegisterNumber_RequiresDedicatedTestNumber()
     {
-        var result = await _svc.RegisterNumber("+10000000000");
+        var result = await _svc.RegisterNumber("+10000000000", cancellationToken: TestContext.Current.CancellationToken);
         _output.WriteLine($"RegisterNumber={result}");
     }
 
@@ -397,7 +399,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task VerifyNumber_RequiresDedicatedTestNumber()
     {
-        var result = await _svc.VerifyNumber("+10000000000", "000000");
+        var result = await _svc.VerifyNumber("+10000000000", "000000", TestContext.Current.CancellationToken);
         _output.WriteLine($"VerifyNumber={result}");
     }
 
@@ -405,7 +407,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Registration)]
     public async Task UnregisterNumber_RequiresDedicatedTestNumber()
     {
-        var result = await _svc.UnregisterNumber("+10000000000");
+        var result = await _svc.UnregisterNumber("+10000000000", cancellationToken: TestContext.Current.CancellationToken);
         _output.WriteLine($"UnregisterNumber={result}");
     }
 
@@ -417,7 +419,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task ListAccounts_ReturnsAccounts()
     {
-        var result = await _svc.ListAccounts();
+        var result = await _svc.ListAccounts(TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Accounts={string.Join(", ", result)}");
     }
@@ -426,12 +428,12 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SetPin_ReturnsTrue()
     {
-        var result = await _svc.SetPin(_config.PhoneNumber, "123456");
+        var result = await _svc.SetPin(_config.PhoneNumber, "123456", TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"SetPin={result}");
 
         // Clean up
-        await _svc.RemovePin(_config.PhoneNumber);
+        await _svc.RemovePin(_config.PhoneNumber, TestContext.Current.CancellationToken);
     }
 
     [Fact]
@@ -439,8 +441,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     public async Task RemovePin_ReturnsTrue()
     {
         // Set then remove
-        await _svc.SetPin(_config.PhoneNumber, "654321");
-        var result = await _svc.RemovePin(_config.PhoneNumber);
+        await _svc.SetPin(_config.PhoneNumber, "654321", TestContext.Current.CancellationToken);
+        var result = await _svc.RemovePin(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"RemovePin={result}");
     }
@@ -449,7 +451,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SubmitRateLimitChallenge_RequiresRealToken()
     {
-        var result = await _svc.SubmitRateLimitChallenge(_config.PhoneNumber, "token", "captcha");
+        var result = await _svc.SubmitRateLimitChallenge(_config.PhoneNumber, "token", "captcha", TestContext.Current.CancellationToken);
         _output.WriteLine($"SubmitRateLimitChallenge={result}");
     }
 
@@ -457,7 +459,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task UpdateAccountSettings_ReturnsTrue()
     {
-        var result = await _svc.UpdateAccountSettings(_config.PhoneNumber, discoverableByNumber: true);
+        var result = await _svc.UpdateAccountSettings(_config.PhoneNumber, discoverableByNumber: true,
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"UpdateAccountSettings={result}");
     }
@@ -466,12 +469,13 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Accounts)]
     public async Task SetAndRemoveUsername_RoundTrip()
     {
-        var setResult = await _svc.SetUsername(_config.PhoneNumber, $"testuser_{DateTime.UtcNow:yyyyMMddHHmmss}");
+        var setResult = await _svc.SetUsername(_config.PhoneNumber, $"testuser_{DateTime.UtcNow:yyyyMMddHHmmss}",
+            TestContext.Current.CancellationToken);
         Assert.NotNull(setResult);
         Assert.False(string.IsNullOrWhiteSpace(setResult.Username));
         _output.WriteLine($"SetUsername: username={setResult.Username}, link={setResult.UsernameLink}");
 
-        var removeResult = await _svc.RemoveUsername(_config.PhoneNumber);
+        var removeResult = await _svc.RemoveUsername(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.True(removeResult);
         _output.WriteLine($"RemoveUsername={removeResult}");
     }
@@ -484,7 +488,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task ListContacts_ReturnsContacts()
     {
-        var result = await _svc.ListContacts(_config.PhoneNumber);
+        var result = await _svc.ListContacts(_config.PhoneNumber, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Contacts={result.Length}");
         foreach (var contact in result)
@@ -509,7 +513,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task UpdateContact_ReturnsTrue()
     {
-        var result = await _svc.UpdateContact(_config.PhoneNumber, _config.PhoneNumber, name: "Test Self");
+        var result = await _svc.UpdateContact(_config.PhoneNumber, _config.PhoneNumber, name: "Test Self",
+            cancellationToken: TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"UpdateContact={result}");
     }
@@ -518,7 +523,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Contacts)]
     public async Task SyncContacts_ReturnsTrue()
     {
-        var result = await _svc.SyncContacts(_config.PhoneNumber);
+        var result = await _svc.SyncContacts(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"SyncContacts={result}");
     }
@@ -531,7 +536,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task ListLinkedDevices_ReturnsDevices()
     {
-        var result = await _svc.ListLinkedDevices(_config.PhoneNumber);
+        var result = await _svc.ListLinkedDevices(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"LinkedDevices={result.Length}");
         foreach (var device in result)
@@ -543,7 +548,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task GetQrCodeLink_ReturnsBytesOrNull()
     {
-        var bytes = await _svc.GetQrCodeLink("test-device");
+        var bytes = await _svc.GetQrCodeLink("test-device", TestContext.Current.CancellationToken);
         _output.WriteLine(bytes is not null
             ? $"QR code size={bytes.Length} bytes"
             : "QR code endpoint returned null (expected when already linked)");
@@ -553,7 +558,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task GetQrCodeLinkRaw_ReturnsUriOrNull()
     {
-        var result = await _svc.GetQrCodeLinkRaw("test-device-raw");
+        var result = await _svc.GetQrCodeLinkRaw("test-device-raw", TestContext.Current.CancellationToken);
         _output.WriteLine(result?.DeviceLinkUri is not null
             ? $"DeviceLinkUri={result.DeviceLinkUri}"
             : "QR code raw endpoint returned null (expected when already linked)");
@@ -563,7 +568,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task AddDevice_RequiresRealUri()
     {
-        var result = await _svc.AddDevice(_config.PhoneNumber, "sgnl://linkdevice?uuid=test&pub_key=test");
+        var result = await _svc.AddDevice(_config.PhoneNumber, "sgnl://linkdevice?uuid=test&pub_key=test",
+            TestContext.Current.CancellationToken);
         _output.WriteLine($"AddDevice={result}");
     }
 
@@ -571,7 +577,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task RemoveLinkedDevice_RequiresSpareDevice()
     {
-        var result = await _svc.RemoveLinkedDevice(_config.PhoneNumber, 99);
+        var result = await _svc.RemoveLinkedDevice(_config.PhoneNumber, 99, TestContext.Current.CancellationToken);
         _output.WriteLine($"RemoveLinkedDevice={result}");
     }
 
@@ -579,7 +585,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Devices)]
     public async Task DeleteLocalAccountData_Destructive()
     {
-        var result = await _svc.DeleteLocalAccountData(_config.PhoneNumber);
+        var result = await _svc.DeleteLocalAccountData(_config.PhoneNumber, cancellationToken: TestContext.Current.CancellationToken);
         _output.WriteLine($"DeleteLocalAccountData={result}");
     }
 
@@ -591,7 +597,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task ListGroups_ReturnsGroups()
     {
-        var result = await _svc.ListGroups(_config.PhoneNumber);
+        var result = await _svc.ListGroups(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Groups={result.Length}");
         foreach (var group in result)
@@ -622,7 +628,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             }
         };
 
-        var created = await _svc.CreateGroup(_config.PhoneNumber, createRequest);
+        var created = await _svc.CreateGroup(_config.PhoneNumber, createRequest, TestContext.Current.CancellationToken);
         Assert.NotNull(created);
         Assert.False(string.IsNullOrWhiteSpace(created.Id));
         _output.WriteLine($"Created group id={created.Id}, name={groupName}");
@@ -646,7 +652,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             }
         };
 
-        var created = await _svc.CreateGroup(_config.PhoneNumber, createRequest);
+        var created = await _svc.CreateGroup(_config.PhoneNumber, createRequest, TestContext.Current.CancellationToken);
         Assert.NotNull(created);
         Assert.False(string.IsNullOrWhiteSpace(created.Id));
         _output.WriteLine($"Created group id={created.Id}, name={groupName}");
@@ -654,7 +660,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
         try
         {
             // GetGroup
-            var fetched = await _svc.GetGroup(_config.PhoneNumber, created.Id);
+            var fetched = await _svc.GetGroup(_config.PhoneNumber, created.Id, TestContext.Current.CancellationToken);
             Assert.NotNull(fetched);
             _output.WriteLine($"GetGroup id={fetched.Id}, name={fetched.Name}");
 
@@ -664,14 +670,14 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
                 Name = $"{groupName}_Updated",
                 Description = "Updated description"
             };
-            var updated = await _svc.UpdateGroup(_config.PhoneNumber, created.Id, updateRequest);
+            var updated = await _svc.UpdateGroup(_config.PhoneNumber, created.Id, updateRequest, TestContext.Current.CancellationToken);
             _output.WriteLine($"UpdateGroup={updated}");
         }
         finally
         {
             // Deterministic teardown — always delete the group even if an assertion
             // above fails mid-test, so we never leak orphaned TestGroup_* groups.
-            var deleted = await _svc.DeleteGroup(_config.PhoneNumber, created.Id);
+            var deleted = await _svc.DeleteGroup(_config.PhoneNumber, created.Id, TestContext.Current.CancellationToken);
             Assert.True(deleted);
             _output.WriteLine($"Deleted group id={created.Id}");
         }
@@ -681,9 +687,9 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task AddAndRemoveGroupMembers_RequiresSecondNumber()
     {
-        var added = await _svc.AddGroupMembers(_config.PhoneNumber, "group-id", ["+10000000001"]);
+        var added = await _svc.AddGroupMembers(_config.PhoneNumber, "group-id", ["+10000000001"], TestContext.Current.CancellationToken);
         _output.WriteLine($"AddGroupMembers={added}");
-        var removed = await _svc.RemoveGroupMembers(_config.PhoneNumber, "group-id", ["+10000000001"]);
+        var removed = await _svc.RemoveGroupMembers(_config.PhoneNumber, "group-id", ["+10000000001"], TestContext.Current.CancellationToken);
         _output.WriteLine($"RemoveGroupMembers={removed}");
     }
 
@@ -691,9 +697,9 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task AddAndRemoveGroupAdmins_RequiresSecondNumber()
     {
-        var added = await _svc.AddGroupAdmins(_config.PhoneNumber, "group-id", ["+10000000001"]);
+        var added = await _svc.AddGroupAdmins(_config.PhoneNumber, "group-id", ["+10000000001"], TestContext.Current.CancellationToken);
         _output.WriteLine($"AddGroupAdmins={added}");
-        var removed = await _svc.RemoveGroupAdmins(_config.PhoneNumber, "group-id", ["+10000000001"]);
+        var removed = await _svc.RemoveGroupAdmins(_config.PhoneNumber, "group-id", ["+10000000001"], TestContext.Current.CancellationToken);
         _output.WriteLine($"RemoveGroupAdmins={removed}");
     }
 
@@ -701,7 +707,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task JoinGroup_RequiresInviteLink()
     {
-        var result = await _svc.JoinGroup(_config.PhoneNumber, "group-id");
+        var result = await _svc.JoinGroup(_config.PhoneNumber, "group-id", TestContext.Current.CancellationToken);
         _output.WriteLine($"JoinGroup={result}");
     }
 
@@ -709,7 +715,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task QuitGroup_Destructive()
     {
-        var result = await _svc.QuitGroup(_config.PhoneNumber, "group-id");
+        var result = await _svc.QuitGroup(_config.PhoneNumber, "group-id", TestContext.Current.CancellationToken);
         _output.WriteLine($"QuitGroup={result}");
     }
 
@@ -717,7 +723,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task BlockGroup_Destructive()
     {
-        var result = await _svc.BlockGroup(_config.PhoneNumber, "group-id");
+        var result = await _svc.BlockGroup(_config.PhoneNumber, "group-id", TestContext.Current.CancellationToken);
         _output.WriteLine($"BlockGroup={result}");
     }
 
@@ -725,14 +731,14 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Groups)]
     public async Task GetGroupAvatar_ReturnsNullForNoAvatar()
     {
-        var groups = await _svc.ListGroups(_config.PhoneNumber);
+        var groups = await _svc.ListGroups(_config.PhoneNumber, TestContext.Current.CancellationToken);
         if (groups is null || groups.Length == 0)
         {
             _output.WriteLine("Skipped: No groups available");
             return;
         }
 
-        var avatar = await _svc.GetGroupAvatar(_config.PhoneNumber, groups[0].Id);
+        var avatar = await _svc.GetGroupAvatar(_config.PhoneNumber, groups[0].Id, TestContext.Current.CancellationToken);
         _output.WriteLine(avatar is not null
             ? $"GroupAvatar size={avatar.Length} bytes"
             : "GroupAvatar returned null (no avatar set)");
@@ -746,7 +752,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Identities)]
     public async Task ListIdentities_ReturnsIdentities()
     {
-        var result = await _svc.ListIdentities(_config.PhoneNumber);
+        var result = await _svc.ListIdentities(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Identities={result.Length}");
         foreach (var identity in result)
@@ -759,7 +765,8 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Identities)]
     public async Task TrustIdentity_RequiresUntrustedIdentity()
     {
-        var result = await _svc.TrustIdentity(_config.PhoneNumber, "+10000000001", trustAllKnownKeys: true);
+        var result = await _svc.TrustIdentity(_config.PhoneNumber, "+10000000001", trustAllKnownKeys: true,
+            cancellationToken: TestContext.Current.CancellationToken);
         _output.WriteLine($"TrustIdentity={result}");
     }
 
@@ -771,7 +778,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task ListAttachments_ReturnsAttachments()
     {
-        var result = await _svc.ListAttachments();
+        var result = await _svc.ListAttachments(TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"Attachments={result.Length}");
         foreach (var attachment in result)
@@ -782,7 +789,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task GetAttachment_ReturnsNullForMissingId()
     {
-        var result = await _svc.GetAttachment("nonexistent-attachment-id");
+        var result = await _svc.GetAttachment("nonexistent-attachment-id", TestContext.Current.CancellationToken);
         Assert.Null(result);
         _output.WriteLine("GetAttachment returned null for nonexistent id (expected)");
     }
@@ -791,7 +798,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Attachments)]
     public async Task DeleteAttachment_ReturnsFalseForMissingId()
     {
-        var result = await _svc.DeleteAttachment("nonexistent-attachment-id");
+        var result = await _svc.DeleteAttachment("nonexistent-attachment-id", TestContext.Current.CancellationToken);
         Assert.False(result);
         _output.WriteLine($"DeleteAttachment for nonexistent id={result}");
     }
@@ -809,7 +816,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
             Name = "Test Profile",
             About = "Integration test"
         };
-        var result = await _svc.UpdateProfile(_config.PhoneNumber, profile);
+        var result = await _svc.UpdateProfile(_config.PhoneNumber, profile, TestContext.Current.CancellationToken);
         Assert.True(result);
         _output.WriteLine($"UpdateProfile={result}");
     }
@@ -822,7 +829,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.Search)]
     public async Task SearchNumbers_ReturnsResults()
     {
-        var result = await _svc.SearchNumbers(_config.PhoneNumber, [_config.PhoneNumber]);
+        var result = await _svc.SearchNumbers(_config.PhoneNumber, [_config.PhoneNumber], TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"SearchResults={result.Length}");
         foreach (var r in result)
@@ -837,7 +844,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.StickerPacks)]
     public async Task ListStickerPacks_ReturnsPacks()
     {
-        var result = await _svc.ListStickerPacks(_config.PhoneNumber);
+        var result = await _svc.ListStickerPacks(_config.PhoneNumber, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         _output.WriteLine($"StickerPacks={result.Length}");
         foreach (var pack in result)
@@ -849,7 +856,7 @@ public class SignalCliRestClientServiceTests(ITestOutputHelper output) : TestBas
     [Trait(SignalCliTraits.Feature, SignalCliTraits.StickerPacks)]
     public async Task AddStickerPack_RequiresPackInfo()
     {
-        var result = await _svc.AddStickerPack(_config.PhoneNumber, "pack-id", "pack-key");
+        var result = await _svc.AddStickerPack(_config.PhoneNumber, "pack-id", "pack-key", TestContext.Current.CancellationToken);
         _output.WriteLine($"AddStickerPack={result}");
     }
 

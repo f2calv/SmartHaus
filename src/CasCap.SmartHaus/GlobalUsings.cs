@@ -4,6 +4,7 @@ global using CasCap.Common.Exceptions;
 global using CasCap.Common.Extensions;
 global using CasCap.Common.Models;
 global using CasCap.Common.Services;
+global using CasCap.Constants;
 global using CasCap.Extensions;
 global using CasCap.Hubs;
 global using CasCap.Models;

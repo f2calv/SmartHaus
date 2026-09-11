@@ -63,6 +63,7 @@
     <Project Path="src/CasCap.Api.Shelly/CasCap.Api.Shelly.csproj" />
     <Project Path="src/CasCap.Api.Sicce.Sinks/CasCap.Api.Sicce.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Sicce/CasCap.Api.Sicce.csproj" />
+    <Project Path="src/CasCap.Api.SignalCli.AspNetCore/CasCap.Api.SignalCli.AspNetCore.csproj" />
     <Project Path="src/CasCap.Api.SignalCli.Tests/CasCap.Api.SignalCli.Tests.csproj" />
     <Project Path="src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
     <Project Path="src/CasCap.Api.Ubiquiti.Sinks/CasCap.Api.Ubiquiti.Sinks.csproj" />

@@ -10,6 +10,10 @@ public static class ServiceCollectionExtensions
     public static void AddMiele(this IServiceCollection services, IConfiguration configuration,
         Action<MieleConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the named client configuration and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(MieleQueryService)))
+            return;
+
         var config = services.AddAndGetCasCapConfiguration<MieleConfig>(configuration, configure);
 
         services.AddHttpClient(nameof(MieleConnectionHealthCheck), (sp, client) =>

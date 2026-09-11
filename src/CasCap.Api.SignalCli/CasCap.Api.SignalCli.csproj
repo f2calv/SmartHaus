@@ -13,10 +13,7 @@
   <ItemGroup>
     <InternalsVisibleTo Include="CasCap.Api.SignalCli.Tests" />
   </ItemGroup>
-
   <ItemGroup>
-    <PackageReference Include="Asp.Versioning.Mvc" />
-    <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Http" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
   </ItemGroup>

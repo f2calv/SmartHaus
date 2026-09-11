@@ -1,6 +1,6 @@
 using System.Reflection;
 
-namespace CasCap.Models;
+namespace CasCap.Constants;
 
 /// <summary>
 /// Well-known feature name constants for <see cref="CasCap.Common.Abstractions.IBgFeature.FeatureName"/>

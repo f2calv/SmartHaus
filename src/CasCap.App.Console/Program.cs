@@ -1,3 +1,5 @@
+using CasCap.Constants;
+
 Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Warning()
     .MinimumLevel.Override("CasCap", LogEventLevel.Information)

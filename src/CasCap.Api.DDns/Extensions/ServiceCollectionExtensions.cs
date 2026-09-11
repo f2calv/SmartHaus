@@ -17,6 +17,10 @@ public static class DDnsServiceCollectionExtensions
     public static void AddDDns(this IServiceCollection services, IConfiguration configuration, bool lite = false,
         Action<DDnsConfig>? configure = null)
     {
+        //First call wins; repeating it would duplicate the named client configuration and every singleton below.
+        if (services.Any(descriptor => descriptor.ServiceType == typeof(DDnsQueryService)))
+            return;
+
         services.AddAndGetCasCapConfiguration<DDnsConfig>(configuration, configure);
 
         services.AddHttpClient(nameof(DDnsFindMyIpClientService), (sp, client) =>
