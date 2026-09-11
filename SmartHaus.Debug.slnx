@@ -20,6 +20,9 @@
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Auth/CasCap.Api.Azure.Auth.csproj" />
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Storage/CasCap.Api.Azure.Storage.csproj" />
   </Folder>
+  <Folder Name="/CasCap.Api.SignalCli/">
+    <Project Path="../CasCap.Api.SignalCli/src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
+  </Folder>
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />
@@ -63,9 +66,6 @@
     <Project Path="src/CasCap.Api.Shelly/CasCap.Api.Shelly.csproj" />
     <Project Path="src/CasCap.Api.Sicce.Sinks/CasCap.Api.Sicce.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Sicce/CasCap.Api.Sicce.csproj" />
-    <Project Path="src/CasCap.Api.SignalCli.AspNetCore/CasCap.Api.SignalCli.AspNetCore.csproj" />
-    <Project Path="src/CasCap.Api.SignalCli.Tests/CasCap.Api.SignalCli.Tests.csproj" />
-    <Project Path="src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
     <Project Path="src/CasCap.Api.Ubiquiti.Sinks/CasCap.Api.Ubiquiti.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Ubiquiti/CasCap.Api.Ubiquiti.csproj" />
     <Project Path="src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj" />
