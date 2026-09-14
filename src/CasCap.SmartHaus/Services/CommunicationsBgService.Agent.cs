@@ -11,7 +11,7 @@ public sealed partial class CommunicationsBgService
         {
             _logger.LogInformation("{ClassName} running agent inference, promptLength={PromptLength}, hasAttachment={HasAttachment}, model={Model}",
                 nameof(CommunicationsBgService), prompt.Length,
-                binaryContent is not null, _commandHandler.ModelOverride ?? _commsAgent!.Provider);
+                binaryContent is not null, _commandHandler.GetModelOverride(_commsAgent!.Name) ?? _commsAgent!.Provider);
 
             AgentSession? session = null;
             if (!bypassSession)
@@ -45,8 +45,8 @@ public sealed partial class CommunicationsBgService
             var message = AgentExtensions.BuildChatMessage(prompt,
                 binaryContent: binaryContent, mimeType: mimeType);
             var chatOptions = AgentExtensions.BuildChatOptions(_commsAgent!, _resolvedInstructions!);
-            _commandHandler.ApplyModelOverride(chatOptions);
-            _commandHandler.ApplyInstructionsOverride(chatOptions, _aiConfig);
+            _commandHandler.ApplyModelOverride(chatOptions, _commsAgent!.Name);
+            _commandHandler.ApplyInstructionsOverride(chatOptions, _commsAgent!.Name, _aiConfig);
 
             // Accumulate debug steps across the full agent pipeline.
             var debugSteps = new List<CommsDebugStep>();
@@ -54,7 +54,7 @@ public sealed partial class CommunicationsBgService
 
             debugSteps.Add(new CommsDebugStep(
                 $"\U0001F680 {_commsAgent!.Name}",
-                $"{_commandHandler.ModelOverride ?? _commsAgent.Provider} ({_provider!.ModelName})",
+                $"{_commandHandler.GetModelOverride(_commsAgent.Name) ?? _commsAgent.Provider} ({_provider!.ModelName})",
                 TimeSpan.Zero));
 
             // Wire ambient delegation callback so sub-agent invocations notify the chat.
