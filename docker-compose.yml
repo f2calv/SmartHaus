@@ -44,12 +44,12 @@ services:
   # ---------- Infrastructure (always started) ----------
 
   redis:
-    image: redis
+    image: redis:8.10
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     ports:
       - 6379:6379
     volumes:
-      - ./.docker/redis.conf:/usr/local/etc/redis/redis.conf
+      - ./.docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
       test: [ "CMD", "redis-cli", "ping" ]
       interval: 5s
@@ -57,24 +57,26 @@ services:
       retries: 10
 
   p3x:
-    image: patrikx3/p3x-redis-ui
+    # Upstream recommends the latest tag; pinned anyway so a local run is reproducible.
+    image: patrikx3/p3x-redis-ui:2026.10.100
     ports:
       - 7843:7843
     volumes:
-      - ./.docker/p3x.json:/settings/.p3xrs-redis-ui.json
+      - ./.docker/p3x.json:/settings/.p3xrs-conns.json:ro
     depends_on:
-      - redis
+      redis:
+        condition: service_healthy
 
   otelcol:
-    image: otel/opentelemetry-collector
+    image: otel/opentelemetry-collector:0.160.0
     ports:
       - 4317:4317
       - 4318:4318
     volumes:
-      - ./.docker/otelcol.yaml:/etc/otelcol/config.yaml
+      - ./.docker/otelcol.yaml:/etc/otelcol/config.yaml:ro
 
   azurite:
-    image: mcr.microsoft.com/azure-storage/azurite
+    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
     command: azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
     ports:
       - 10000:10000
@@ -87,7 +89,7 @@ services:
 
   ollama:
     profiles: [ demo ]
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.34.0
     ports:
       - 11434:11434
     volumes:
@@ -115,7 +117,7 @@ services:
   # Monitor progress: docker compose --profile demo logs ollama-init -f
   ollama-init:
     profiles: [ demo ]
-    image: ollama/ollama:latest
+    image: ollama/ollama:0.34.0
     depends_on:
       ollama:
         condition: service_healthy
@@ -133,7 +135,9 @@ services:
   #   GET  http://localhost:8081/v1/qrcodelink?device_name=haus-demo
   signalcli:
     profiles: [ demo ]
-    image: bbernhard/signal-cli-rest-api:latest
+    # 0.100 bundles signal-cli 0.14.5, which fixes the sealed-sender receive NullPointerException
+    # that broke all inbound reception on 0.14.1-0.14.4.1.
+    image: bbernhard/signal-cli-rest-api:0.100
     ports:
       - 8081:8080
     environment:
