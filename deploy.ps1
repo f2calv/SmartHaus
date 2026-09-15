@@ -144,6 +144,14 @@ function Connect-HelmRegistry {
     if ($LASTEXITCODE -ne 0) { throw "helm registry login $Registry failed." }
 }
 
+function Remove-LocalDependencies {
+    $dependenciesPath = Join-Path $REPO_ROOT "deps"
+    if (-not (Test-Path -LiteralPath $dependenciesPath)) { return }
+
+    Write-Host "Removing local build dependencies from '$dependenciesPath'..." -ForegroundColor Cyan
+    Remove-Item -LiteralPath $dependenciesPath -Recurse -Force
+}
+
 function Update-ManifestRepository {
     $workingTreeChanges = @(git -C $ManifestRepo status --porcelain)
     if ($LASTEXITCODE -ne 0) { throw "git status failed for '$ManifestRepo'." }
@@ -286,11 +294,13 @@ if ($OnlyCharts) {
     git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
     if ($LASTEXITCODE -eq 0) {
         Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
+        Remove-LocalDependencies
         return
     }
     git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
     if ($NoCommit) {
         Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
+        Remove-LocalDependencies
         return
     }
     git -C $ManifestRepo add -- $manifestPathToPatch
@@ -299,6 +309,7 @@ if ($OnlyCharts) {
     git -C $ManifestRepo push
     if ($LASTEXITCODE -ne 0) { throw "git push failed." }
     Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+    Remove-LocalDependencies
     return
 }
 
@@ -338,11 +349,13 @@ if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
 git -C $ManifestRepo diff --quiet -- $gitOpsPaths
 if ($LASTEXITCODE -eq 0) {
     Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
+    Remove-LocalDependencies
     return
 }
 git -C $ManifestRepo --no-pager diff --stat -- $gitOpsPaths
 if ($NoCommit) {
     Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
+    Remove-LocalDependencies
     return
 }
 git -C $ManifestRepo add -- $gitOpsPaths
@@ -352,3 +365,4 @@ if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
 git -C $ManifestRepo push
 if ($LASTEXITCODE -ne 0) { throw "git push failed." }
 Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
+Remove-LocalDependencies
