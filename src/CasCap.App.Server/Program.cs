@@ -173,7 +173,8 @@ try
             // (e.g. DoorBirdQueryService → SecurityAgentSinkCommsStreamService → AIAgent → DoorBirdQueryService).
             var tools = AgentExtensions.CreateToolsForAgent(sp, agentConfig, aiConfig,
                 deferResolution: true, isDevelopment: builder.Environment.IsDevelopment(),
-                instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly);
+                instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly,
+                logger: sp.GetService<ILoggerFactory>()?.CreateLogger(nameof(AgentExtensions)));
 
             var (_, agent, _) = builder.CreateAgent(provider, agentConfig, sp, tools, otelSourceName, aiConfig: aiConfig);
             return agent;

@@ -176,7 +176,8 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                 message,
                 chatOptions,
                 session: session,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                logger: logger);
 
             logger.LogInformation("{ClassName} {AgentKey} completed in {Duration}",
                 nameof(MediaBgService), agentKey, result.Elapsed);

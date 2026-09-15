@@ -120,7 +120,8 @@ public sealed partial class CommunicationsBgService
                     message,
                     chatOptions,
                     session: session,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken,
+                    logger: _logger);
 
                 // Snapshot GPU power after inference and populate energy metrics.
                 var postSnapshots = _edgeHardwareQuerySvc is not null ? await _edgeHardwareQuerySvc.GetLatestSnapshots() : null;
@@ -194,7 +195,7 @@ public sealed partial class CommunicationsBgService
                 && !mimeType.Equals("audio/wav", StringComparison.OrdinalIgnoreCase)
                 && !mimeType.Equals("audio/x-wav", StringComparison.OrdinalIgnoreCase))
             {
-                var transcoded = await AgentExtensions.TranscodeToWavAsync(audioBytes, cancellationToken);
+                var transcoded = await AgentExtensions.TranscodeToWavAsync(audioBytes, cancellationToken, _logger);
                 if (transcoded is not null)
                 {
                     _logger.LogInformation("{ClassName} transcoded {OriginalSize} byte {OriginalMimeType} \u2192 {TranscodedSize} byte WAV",
@@ -221,7 +222,8 @@ public sealed partial class CommunicationsBgService
                 _audioAgentConfig,
                 message,
                 chatOptions,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                logger: _logger);
 
             _logger.LogInformation("{ClassName} audio transcription completed in {Duration}, outputLength={OutputLength}",
                 nameof(CommunicationsBgService), result.Elapsed, result.OutputText?.Length ?? 0);
