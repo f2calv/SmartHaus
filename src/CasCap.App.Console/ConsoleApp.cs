@@ -63,7 +63,8 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
             // ── Gather tools and prompts ────────────────────────────────────
             var tools = AgentExtensions.CreateToolsForAgent(serviceProvider, agentConfig, aiConfig.Value,
                 deferResolution: true, isDevelopment: true, instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly);
-            var prompts = AgentExtensions.CreatePromptsForAgent(agentConfig, isDevelopment: true);
+            var prompts = AgentExtensions.CreatePromptsForAgent(agentConfig, isDevelopment: true,
+                registry: serviceProvider.GetService<AgentTypeRegistry>());
             var mcpClients = new List<McpClient>();
             var endpointToolSources = agentConfig.Tools.Where(s => s.Endpoint is not null).ToList();
             var endpointPromptSources = agentConfig.Prompts.Where(s => s.Endpoint is not null).ToList();

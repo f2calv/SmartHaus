@@ -161,6 +161,10 @@ try
     if (enabledFeatures.Contains(FeatureNames.Comms))
         builder.AddComms();
 
+    // Index tool service and prompt types by name so agent config resolves them deterministically,
+    // rather than scanning every loaded assembly. Must run after the AddXxxMcp registrations above.
+    builder.Services.AddAgentTypeRegistry(typeof(SystemMcpQueryService).Assembly);
+
     // Register all AI agent profiles with deferred tool resolution
     var otelSourceName = AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix);
     foreach (var (agentName, agentConfig) in aiConfig.Agents.Where(a => a.Value.Enabled))
