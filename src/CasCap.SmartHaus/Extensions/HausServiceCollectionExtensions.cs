@@ -108,7 +108,8 @@ public static class HausServiceCollectionExtensions
             tokenCredential: tokenCredential,
             // Spans carry prompt and response content when enabled, which for this system means
             // household activity and Signal message text — development only.
-            enableSensitiveTelemetryData: builder.Environment.IsDevelopment());
+            enableSensitiveTelemetryData: builder.Environment.IsDevelopment(),
+            loggerFactory: serviceProvider.GetService<ILoggerFactory>());
     }
 
     /// <summary>
