@@ -1,0 +1,5 @@
+@{
+    ManifestRepo      = 'C:\path\to\gitops-repository'
+    ManifestPath      = 'path/to/application-set.yaml'
+    PodAnnotationName = 'example.com/deployed-version'
+}
