@@ -172,6 +172,36 @@ function Update-ManifestRepository {
     }
 }
 
+function Push-ManifestRepository {
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        git -C $ManifestRepo push
+        if ($LASTEXITCODE -eq 0) { return }
+        if ($attempt -eq 3) { throw "git push failed after $attempt attempts." }
+
+        $upstream = "$(git -C $ManifestRepo rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')".Trim()
+        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($upstream)) {
+            throw "git push failed and the current GitOps branch has no upstream branch."
+        }
+        $upstreamBeforeFetch = "$(git -C $ManifestRepo rev-parse $upstream)".Trim()
+        if ($LASTEXITCODE -ne 0) { throw "git push failed and '$upstream' could not be resolved." }
+
+        git -C $ManifestRepo fetch --prune
+        if ($LASTEXITCODE -ne 0) { throw "git push failed and the GitOps repository could not be refreshed." }
+        $upstreamAfterFetch = "$(git -C $ManifestRepo rev-parse $upstream)".Trim()
+        if ($LASTEXITCODE -ne 0) { throw "git push failed and refreshed upstream '$upstream' could not be resolved." }
+        if ($upstreamBeforeFetch -eq $upstreamAfterFetch) {
+            throw "git push failed without '$upstream' advancing; review the push error above."
+        }
+
+        Write-Host "Upstream advanced during deployment; rebasing and retrying the push..." -ForegroundColor Yellow
+        git -C $ManifestRepo rebase $upstream
+        if ($LASTEXITCODE -ne 0) {
+            git -C $ManifestRepo rebase --abort
+            throw "Automatic GitOps rebase failed. The rebase was aborted; reconcile '$upstream' manually."
+        }
+    }
+}
+
 function Assert-NoModelDrift {
     if ([string]::IsNullOrWhiteSpace($MigrationProject)) { return }
     if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
@@ -214,155 +244,152 @@ function Assert-NoModelDrift {
     }
 }
 
-Update-ManifestRepository
+try {
+    Update-ManifestRepository
 
-$ts = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
+    $ts = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
 
-if (-not $SkipMigrationCheck -and -not $OnlyCharts) { Assert-NoModelDrift }
+    if (-not $SkipMigrationCheck -and -not $OnlyCharts) { Assert-NoModelDrift }
 
-if (-not $SkipBuild -and -not $OnlyCharts) {
-    & "$PSScriptRoot/build.ps1" -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
-    if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed with exit code $LASTEXITCODE" }
-}
-else {
-    if ($OnlyCharts) {
-        Write-Host "Skipping image build/push (-OnlyCharts)." -ForegroundColor Yellow
+    if (-not $SkipBuild -and -not $OnlyCharts) {
+        & "$PSScriptRoot/build.ps1" -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
+        if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed with exit code $LASTEXITCODE" }
     }
     else {
-        Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
-    }
-}
-
-if ($Chart -or $OnlyCharts) {
-    if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
-        throw "helm not found. Install Helm to use -Chart."
-    }
-    if ($OnlyCharts) {
-        $ChartPath = $DashboardChartPath
-        $ChartRepository = $DashboardChartRepository
-    }
-    if ([string]::IsNullOrWhiteSpace($ChartPath) -or [string]::IsNullOrWhiteSpace($ChartRepository)) {
-        throw "ChartPath and ChartRepository are required for chart deployment. Supply them explicitly or in '$DeployConfigPath'."
-    }
-    if (-not $ChartVersion) { $ChartVersion = "0.0.0-dev.$ts" }
-    $chartDir = Join-Path $REPO_ROOT $ChartPath
-    if (-not (Test-Path (Join-Path $chartDir 'Chart.yaml'))) {
-        throw "Chart not found at '$chartDir' (expected Chart.yaml). Pass -ChartPath to override."
-    }
-    $chartName = Split-Path $ChartPath -Leaf
-    $ociTarget = "oci://$ChartRegistry/$($ChartRepository -replace '/[^/]+$', '')"
-
-    if ($OnlyCharts) {
-        Get-ChildItem (Join-Path $chartDir "dashboards/*.json") | ForEach-Object {
-            try { $null = Get-Content $_.FullName -Raw | ConvertFrom-Json }
-            catch { throw "Invalid dashboard JSON '$($_.FullName)': $($_.Exception.Message)" }
+        if ($OnlyCharts) {
+            Write-Host "Skipping image build/push (-OnlyCharts)." -ForegroundColor Yellow
         }
-        helm lint $chartDir
-        if ($LASTEXITCODE -ne 0) { throw "helm lint failed for '$chartDir'." }
-        $null = helm template $chartName $chartDir
-        if ($LASTEXITCODE -ne 0) { throw "helm template failed for '$chartDir'." }
+        else {
+            Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
+        }
     }
 
-    Connect-HelmRegistry -Registry $ChartRegistry
+    if ($Chart -or $OnlyCharts) {
+        if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
+            throw "helm not found. Install Helm to use -Chart."
+        }
+        if ($OnlyCharts) {
+            $ChartPath = $DashboardChartPath
+            $ChartRepository = $DashboardChartRepository
+        }
+        if ([string]::IsNullOrWhiteSpace($ChartPath) -or [string]::IsNullOrWhiteSpace($ChartRepository)) {
+            throw "ChartPath and ChartRepository are required for chart deployment. Supply them explicitly or in '$DeployConfigPath'."
+        }
+        if (-not $ChartVersion) { $ChartVersion = "0.0.0-dev.$ts" }
+        $chartDir = Join-Path $REPO_ROOT $ChartPath
+        if (-not (Test-Path (Join-Path $chartDir 'Chart.yaml'))) {
+            throw "Chart not found at '$chartDir' (expected Chart.yaml). Pass -ChartPath to override."
+        }
+        $chartName = Split-Path $ChartPath -Leaf
+        $ociTarget = "oci://$ChartRegistry/$($ChartRepository -replace '/[^/]+$', '')"
 
-    $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "$DeploymentName-chart-$ts"
-    New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
-    try {
-        Write-Host "Packaging $chartName $ChartVersion (appVersion=$Tag) from $ChartPath" -ForegroundColor Cyan
-        helm dependency update $chartDir
-        if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed." }
-        $appVersion = if ($OnlyCharts) { $ChartVersion } else { $Tag }
-        helm package $chartDir --version $ChartVersion --app-version $appVersion --destination $pkgDir
-        if ($LASTEXITCODE -ne 0) { throw "helm package failed." }
-        $tgz = Join-Path $pkgDir "$chartName-$ChartVersion.tgz"
-        Write-Host "Pushing $tgz -> $ociTarget" -ForegroundColor Cyan
-        helm push $tgz $ociTarget
-        if ($LASTEXITCODE -ne 0) { throw "helm push failed." }
+        if ($OnlyCharts) {
+            Get-ChildItem (Join-Path $chartDir "dashboards/*.json") | ForEach-Object {
+                try { $null = Get-Content $_.FullName -Raw | ConvertFrom-Json }
+                catch { throw "Invalid dashboard JSON '$($_.FullName)': $($_.Exception.Message)" }
+            }
+            helm lint $chartDir
+            if ($LASTEXITCODE -ne 0) { throw "helm lint failed for '$chartDir'." }
+            $null = helm template $chartName $chartDir
+            if ($LASTEXITCODE -ne 0) { throw "helm template failed for '$chartDir'." }
+        }
+
+        Connect-HelmRegistry -Registry $ChartRegistry
+
+        $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "$DeploymentName-chart-$ts"
+        New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
+        try {
+            Write-Host "Packaging $chartName $ChartVersion (appVersion=$Tag) from $ChartPath" -ForegroundColor Cyan
+            helm dependency update $chartDir
+            if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed." }
+            $appVersion = if ($OnlyCharts) { $ChartVersion } else { $Tag }
+            helm package $chartDir --version $ChartVersion --app-version $appVersion --destination $pkgDir
+            if ($LASTEXITCODE -ne 0) { throw "helm package failed." }
+            $tgz = Join-Path $pkgDir "$chartName-$ChartVersion.tgz"
+            Write-Host "Pushing $tgz -> $ociTarget" -ForegroundColor Cyan
+            helm push $tgz $ociTarget
+            if ($LASTEXITCODE -ne 0) { throw "helm push failed." }
+        }
+        finally {
+            Remove-Item $pkgDir -Recurse -Force -ErrorAction SilentlyContinue
+        }
+        Write-Host "Pushed chart: ${ChartRegistry}/${ChartRepository}:${ChartVersion}" -ForegroundColor Green
     }
-    finally {
-        Remove-Item $pkgDir -Recurse -Force -ErrorAction SilentlyContinue
+
+    if ($OnlyCharts) {
+        $env:DEPLOY_DASHBOARD_CHART_VERSION = $ChartVersion
+        Write-Host "Patching $manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
+        yq -i '.spec.template.spec.source.targetRevision = strenv(DEPLOY_DASHBOARD_CHART_VERSION)' $manifest
+        if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
+
+        git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
+            return
+        }
+        git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
+        if ($NoCommit) {
+            Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
+            return
+        }
+        git -C $ManifestRepo add -- $manifestPathToPatch
+        git -C $ManifestRepo commit -m "deploy($DeploymentName-dashboards): chart=${ChartVersion}"
+        if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
+        Push-ManifestRepository
+        Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+        return
     }
-    Write-Host "Pushed chart: ${ChartRegistry}/${ChartRepository}:${ChartVersion}" -ForegroundColor Green
-}
 
-if ($OnlyCharts) {
-    $env:DEPLOY_DASHBOARD_CHART_VERSION = $ChartVersion
-    Write-Host "Patching $manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
-    yq -i '.spec.template.spec.source.targetRevision = strenv(DEPLOY_DASHBOARD_CHART_VERSION)' $manifest
-    if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
+    $gitOpsPaths = [System.Collections.Generic.List[string]]::new()
+    $gitOpsPaths.Add($manifestPathToPatch)
+    if ($configMap) {
+        Write-Host "Syncing $LocalAppSettingsPath -> $configMap" -ForegroundColor Cyan
+        $env:DEPLOY_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
+        yq -i '.data."appsettings.Local.json" = strenv(DEPLOY_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
+        if ($LASTEXITCODE -ne 0) { throw "yq failed to update the appsettings ConfigMap." }
+        $gitOpsPaths.Add($ConfigMapPath)
+    }
 
-    git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
+    $stamp = "$(Get-GitVersion)+$ts"
+    $patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
+    if ($Chart) { $patchMsg += ", targetRevision=$ChartVersion" }
+    Write-Host "Patching $manifest ($patchMsg)" -ForegroundColor Cyan
+
+    $env:DEPLOY_IMG_REPO = $ImageRepository
+    $env:DEPLOY_IMG_TAG = $Tag
+    $env:DEPLOY_STAMP = $stamp
+    $assignments = [System.Collections.Generic.List[string]]::new()
+    if ($Chart) {
+        $env:DEPLOY_CHART_VERSION = $ChartVersion
+        $assignments.Add('.spec.template.spec.source.targetRevision = strenv(DEPLOY_CHART_VERSION)')
+    }
+    $assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.repository = strenv(DEPLOY_IMG_REPO)')
+    $assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.tag = strenv(DEPLOY_IMG_TAG)')
+    $assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.pullPolicy = "Always"')
+    $env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
+    $assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.podAnnotations[strenv(DEPLOY_POD_ANNOTATION)] = strenv(DEPLOY_STAMP)')
+    $assignments.Add('(.spec.template.spec.source.helm.valuesObject[] | select(has("podAnnotations")).podAnnotations[strenv(DEPLOY_POD_ANNOTATION)]) = strenv(DEPLOY_STAMP)')
+    $yqExpr = $assignments -join ' | '
+    yq -i $yqExpr $manifest
+    if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
+
+    git -C $ManifestRepo diff --quiet -- $gitOpsPaths
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
-        Remove-LocalDependencies
+        Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
         return
     }
-    git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
+    git -C $ManifestRepo --no-pager diff --stat -- $gitOpsPaths
     if ($NoCommit) {
-        Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
-        Remove-LocalDependencies
+        Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
         return
     }
-    git -C $ManifestRepo add -- $manifestPathToPatch
-    git -C $ManifestRepo commit -m "deploy($DeploymentName-dashboards): chart=${ChartVersion}"
+    git -C $ManifestRepo add -- $gitOpsPaths
+    $commitMsg = if ($Chart) { "deploy($DeploymentName): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy($DeploymentName): ${Tag} ${stamp}" }
+    git -C $ManifestRepo commit -m $commitMsg
     if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
-    git -C $ManifestRepo push
-    if ($LASTEXITCODE -ne 0) { throw "git push failed." }
-    Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+    Push-ManifestRepository
+    Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
+}
+finally {
     Remove-LocalDependencies
-    return
 }
-
-$gitOpsPaths = [System.Collections.Generic.List[string]]::new()
-$gitOpsPaths.Add($manifestPathToPatch)
-if ($configMap) {
-    Write-Host "Syncing $LocalAppSettingsPath -> $configMap" -ForegroundColor Cyan
-    $env:DEPLOY_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
-    yq -i '.data."appsettings.Local.json" = strenv(DEPLOY_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
-    if ($LASTEXITCODE -ne 0) { throw "yq failed to update the appsettings ConfigMap." }
-    $gitOpsPaths.Add($ConfigMapPath)
-}
-
-$stamp = "$(Get-GitVersion)+$ts"
-$patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
-if ($Chart) { $patchMsg += ", targetRevision=$ChartVersion" }
-Write-Host "Patching $manifest ($patchMsg)" -ForegroundColor Cyan
-
-$env:DEPLOY_IMG_REPO = $ImageRepository
-$env:DEPLOY_IMG_TAG = $Tag
-$env:DEPLOY_STAMP = $stamp
-$assignments = [System.Collections.Generic.List[string]]::new()
-if ($Chart) {
-    $env:DEPLOY_CHART_VERSION = $ChartVersion
-    $assignments.Add('.spec.template.spec.source.targetRevision = strenv(DEPLOY_CHART_VERSION)')
-}
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.repository = strenv(DEPLOY_IMG_REPO)')
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.tag = strenv(DEPLOY_IMG_TAG)')
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.image.pullPolicy = "Always"')
-$env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
-$assignments.Add('.spec.template.spec.source.helm.valuesObject._shared.podAnnotations[strenv(DEPLOY_POD_ANNOTATION)] = strenv(DEPLOY_STAMP)')
-$assignments.Add('(.spec.template.spec.source.helm.valuesObject[] | select(has("podAnnotations")).podAnnotations[strenv(DEPLOY_POD_ANNOTATION)]) = strenv(DEPLOY_STAMP)')
-$yqExpr = $assignments -join ' | '
-yq -i $yqExpr $manifest
-if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
-
-git -C $ManifestRepo diff --quiet -- $gitOpsPaths
-if ($LASTEXITCODE -eq 0) {
-    Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
-    Remove-LocalDependencies
-    return
-}
-git -C $ManifestRepo --no-pager diff --stat -- $gitOpsPaths
-if ($NoCommit) {
-    Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
-    Remove-LocalDependencies
-    return
-}
-git -C $ManifestRepo add -- $gitOpsPaths
-$commitMsg = if ($Chart) { "deploy($DeploymentName): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy($DeploymentName): ${Tag} ${stamp}" }
-git -C $ManifestRepo commit -m $commitMsg
-if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
-git -C $ManifestRepo push
-if ($LASTEXITCODE -ne 0) { throw "git push failed." }
-Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
-Remove-LocalDependencies
