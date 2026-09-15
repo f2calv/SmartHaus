@@ -105,7 +105,11 @@ public static class HausServiceCollectionExtensions
             instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly,
             aiConfig: aiConfig,
             otelSourceName: otelSourceName,
-            tokenCredential: tokenCredential);
+            tokenCredential: tokenCredential,
+            // Spans carry prompt and response content when enabled, which for this system means
+            // household activity and Signal message text — development only.
+            enableSensitiveTelemetryData: builder.Environment.IsDevelopment(),
+            loggerFactory: serviceProvider.GetService<ILoggerFactory>());
     }
 
     /// <summary>

@@ -48,7 +48,7 @@ Clone the repo and run the self-contained demo — no external hardware or Azure
 
 ```bash
 git clone https://github.com/f2calv/SmartHaus.git
-cd KNX
+cd SmartHaus
 docker compose --profile demo up --build
 ```
 
@@ -493,7 +493,7 @@ Additional services started by the `demo` profile:
 
 ### Suppressed Warnings
 
-Configured in `Directory.Build.props`: `IDE1006`, `IDE0079`, `IDE0042`, `CS0162`, `CS1574`, `S125`, `NETSDK1233`, `NU1901`, `NU1902`, `NU1903`
+Configured in `Directory.Build.props`: `IDE1006`, `IDE0042`, `CS1574`, `NETSDK1233`, `NU1901`, `NU1902`, `NU1903`
 
 ## CI/CD Pipeline
 

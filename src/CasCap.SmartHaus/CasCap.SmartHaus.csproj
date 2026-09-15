@@ -29,10 +29,12 @@
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
     <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Auth\CasCap.Api.Azure.Auth.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Storage\CasCap.Api.Azure.Storage.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Api.SignalCli\src\CasCap.Api.SignalCli\CasCap.Api.SignalCli.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
     <PackageReference Include="CasCap.Api.Azure.Auth" />
     <PackageReference Include="CasCap.Api.Azure.Storage" />
+    <PackageReference Include="CasCap.Api.SignalCli" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
@@ -56,7 +58,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CasCap.Api.DDns\CasCap.Api.DDns.csproj" />
-    <ProjectReference Include="..\CasCap.Api.SignalCli\CasCap.Api.SignalCli.csproj" />
     <ProjectReference Include="..\CasCap.Api.Buderus.Sinks\CasCap.Api.Buderus.Sinks.csproj" />
     <ProjectReference Include="..\CasCap.Api.DoorBird.Sinks\CasCap.Api.DoorBird.Sinks.csproj" />
     <ProjectReference Include="..\CasCap.Api.Fronius.Sinks\CasCap.Api.Fronius.Sinks.csproj" />

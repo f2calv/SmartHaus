@@ -91,6 +91,10 @@ try
     builder.Services.AddSingleton<InMemorySessionStore>();
     builder.Services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<InMemorySessionStore>());
     builder.Services.AddSingleton<AgentCommandHandler>();
+    // Index tool service and prompt types by name so agent config resolves them deterministically.
+    // Must run after the AddXxxMcp registrations above.
+    builder.Services.AddAgentTypeRegistry(typeof(HausServiceCollectionExtensions).Assembly);
+
     builder.Services.AddSingleton<ConsoleApp>();
 
     using var host = builder.Build();

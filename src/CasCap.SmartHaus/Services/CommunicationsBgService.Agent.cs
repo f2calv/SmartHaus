@@ -11,7 +11,7 @@ public sealed partial class CommunicationsBgService
         {
             _logger.LogInformation("{ClassName} running agent inference, promptLength={PromptLength}, hasAttachment={HasAttachment}, model={Model}",
                 nameof(CommunicationsBgService), prompt.Length,
-                binaryContent is not null, _commandHandler.ModelOverride ?? _commsAgent!.Provider);
+                binaryContent is not null, _commandHandler.GetModelOverride(_commsAgent!.Name) ?? _commsAgent!.Provider);
 
             AgentSession? session = null;
             if (!bypassSession)
@@ -45,8 +45,8 @@ public sealed partial class CommunicationsBgService
             var message = AgentExtensions.BuildChatMessage(prompt,
                 binaryContent: binaryContent, mimeType: mimeType);
             var chatOptions = AgentExtensions.BuildChatOptions(_commsAgent!, _resolvedInstructions!);
-            _commandHandler.ApplyModelOverride(chatOptions);
-            _commandHandler.ApplyInstructionsOverride(chatOptions, _aiConfig);
+            _commandHandler.ApplyModelOverride(chatOptions, _commsAgent!.Name);
+            _commandHandler.ApplyInstructionsOverride(chatOptions, _commsAgent!.Name, _aiConfig);
 
             // Accumulate debug steps across the full agent pipeline.
             var debugSteps = new List<CommsDebugStep>();
@@ -54,59 +54,63 @@ public sealed partial class CommunicationsBgService
 
             debugSteps.Add(new CommsDebugStep(
                 $"\U0001F680 {_commsAgent!.Name}",
-                $"{_commandHandler.ModelOverride ?? _commsAgent.Provider} ({_provider!.ModelName})",
+                $"{_commandHandler.GetModelOverride(_commsAgent.Name) ?? _commsAgent.Provider} ({_provider!.ModelName})",
                 TimeSpan.Zero));
 
-            // Wire ambient delegation callback so sub-agent invocations notify the chat.
-            AgentExtensions.SetDelegationCallback(async (agentKey, depth, subProvider, ct) =>
+            // Per-run scope carrying the host callbacks; replaces the ambient Set*/Clear* pairs,
+            // so there is no longer any process-wide state to leak if this method exits early.
+            var runScope = new AgentRunScope
             {
-                var depthLabel = depth switch { 1 => "sub-agent", 2 => "sub-sub-agent", _ => $"depth-{depth} agent" };
-                _logger.LogInformation("{ClassName} delegation callback fired for {AgentKey} ({DepthLabel}), provider={ProviderModel}",
-                    nameof(CommunicationsBgService), agentKey, depthLabel, $"{subProvider.Type}:{subProvider.ModelName}");
-
-                debugSteps.Add(new CommsDebugStep(
-                    $"\U0001F500 {agentKey} ({depthLabel})",
-                    $"{subProvider.Type}:{subProvider.ModelName}",
-                    pipelineSw.Elapsed));
-
-                // Option A: send a separate status message (toggleable via config).
-                if (_commsAgentConfig.DelegationMessagesEnabled)
+                OnDelegation = async (agentKey, depth, subProvider, ct) =>
                 {
-                    var statusMsg = new SignalMessageRequest
+                    var depthLabel = depth switch { 1 => "sub-agent", 2 => "sub-sub-agent", _ => $"depth-{depth} agent" };
+                    _logger.LogInformation("{ClassName} delegating to {AgentKey} ({DepthLabel}), provider={ProviderModel}",
+                        nameof(CommunicationsBgService), agentKey, depthLabel, $"{subProvider.Type}:{subProvider.ModelName}");
+
+                    debugSteps.Add(new CommsDebugStep(
+                        $"\U0001F500 {agentKey} ({depthLabel})",
+                        $"{subProvider.Type}:{subProvider.ModelName}",
+                        pipelineSw.Elapsed));
+
+                    // Option A: send a separate status message (toggleable via config).
+                    if (_commsAgentConfig.DelegationMessagesEnabled)
                     {
-                        Message = $"\U0001F500 Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}",
-                        Number = _signalCliConfig.PhoneNumber,
-                        Recipients = [_groupId!],
-                    };
-                    await _notifier.SendAsync(statusMsg, ct);
-                }
+                        var statusMsg = new SignalMessageRequest
+                        {
+                            Message = $"\U0001F500 Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}",
+                            Number = _signalCliConfig.PhoneNumber,
+                            Recipients = [_groupId!],
+                        };
+                        await _notifier.SendAsync(statusMsg, ct);
+                    }
 
-                // Option B: swap reaction to twisted-arrows to indicate delegation.
-                if (sender is not null && timestamp is not null)
-                    await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\U0001F500", sender, timestamp.Value);
-            });
+                    // Option B: swap reaction to twisted-arrows to indicate delegation.
+                    if (sender is not null && timestamp is not null)
+                        await _notifier.SendProgressUpdateAsync(
+                            _signalCliConfig.PhoneNumber, _groupId!, "\U0001F500", sender, timestamp.Value);
+                },
 
-            // Wire ambient completion callback so sub-agent results are collected.
-            AgentExtensions.SetCompletionCallback((agentKey, depth, subResult, ct) =>
-            {
-                debugSteps.Add(new CommsDebugStep(
-                    $"\u2705 {agentKey}",
-                    null,
-                    pipelineSw.Elapsed,
-                    subResult));
-                return Task.CompletedTask;
-            });
+                OnCompletion = (agentKey, depth, subResult, ct) =>
+                {
+                    debugSteps.Add(new CommsDebugStep(
+                        $"\u2705 {agentKey}",
+                        null,
+                        pipelineSw.Elapsed,
+                        subResult));
+                    return Task.CompletedTask;
+                },
 
-            // Wire ambient compaction callback so session compaction events are posted to debug.
-            AgentExtensions.SetCompactionCallback((inputCount, outputCount, toolDropped, windowTrimmed, target) =>
-            {
-                _logger.LogInformation(
-                    "{ClassName} session compaction: {InputCount} \u2192 {OutputCount} (tool dropped={ToolDropped}, window trimmed={WindowTrimmed}, target={Target})",
-                    nameof(CommunicationsBgService), inputCount, outputCount, toolDropped, windowTrimmed, target);
+                OnCompaction = stats =>
+                {
+                    _logger.LogInformation(
+                        "{ClassName} session compaction: {InputCount} \u2192 {OutputCount} (tool dropped={ToolDropped}, window trimmed={WindowTrimmed}, target={Target})",
+                        nameof(CommunicationsBgService), stats.InputCount, stats.OutputCount,
+                        stats.ToolDropped, stats.WindowTrimmed, stats.Target);
 
-                _ = _debugNotifier.SendCompactionDebugAsync(inputCount, outputCount, toolDropped, windowTrimmed, target, cancellationToken);
-            });
+                    _ = _debugNotifier.SendCompactionDebugAsync(stats.InputCount, stats.OutputCount,
+                        stats.ToolDropped, stats.WindowTrimmed, stats.Target, cancellationToken);
+                },
+            };
 
             try
             {
@@ -120,7 +124,9 @@ public sealed partial class CommunicationsBgService
                     message,
                     chatOptions,
                     session: session,
-                    cancellationToken: cancellationToken);
+                    cancellationToken: cancellationToken,
+                    logger: _logger,
+                    scope: runScope);
 
                 // Snapshot GPU power after inference and populate energy metrics.
                 var postSnapshots = _edgeHardwareQuerySvc is not null ? await _edgeHardwareQuerySvc.GetLatestSnapshots() : null;
@@ -155,9 +161,8 @@ public sealed partial class CommunicationsBgService
             }
             finally
             {
-                AgentExtensions.ClearDelegationCallback();
-                AgentExtensions.ClearCompletionCallback();
-                AgentExtensions.ClearCompactionCallback();
+                // Delegation, completion and compaction callbacks now live on the run scope and
+                // fall out of use with it — only the audio debug artifacts remain ambient.
                 AgentExtensions.ClearAmbientAudioDebug();
             }
         }
@@ -194,7 +199,7 @@ public sealed partial class CommunicationsBgService
                 && !mimeType.Equals("audio/wav", StringComparison.OrdinalIgnoreCase)
                 && !mimeType.Equals("audio/x-wav", StringComparison.OrdinalIgnoreCase))
             {
-                var transcoded = await AgentExtensions.TranscodeToWavAsync(audioBytes, cancellationToken);
+                var transcoded = await AgentExtensions.TranscodeToWavAsync(audioBytes, cancellationToken, _logger);
                 if (transcoded is not null)
                 {
                     _logger.LogInformation("{ClassName} transcoded {OriginalSize} byte {OriginalMimeType} \u2192 {TranscodedSize} byte WAV",
@@ -221,7 +226,8 @@ public sealed partial class CommunicationsBgService
                 _audioAgentConfig,
                 message,
                 chatOptions,
-                cancellationToken: cancellationToken);
+                cancellationToken: cancellationToken,
+                logger: _logger);
 
             _logger.LogInformation("{ClassName} audio transcription completed in {Duration}, outputLength={OutputLength}",
                 nameof(CommunicationsBgService), result.Elapsed, result.OutputText?.Length ?? 0);

@@ -2,11 +2,6 @@
   "inputs": [
     {
       "type": "promptString",
-      "id": "grafana-mcp-url",
-      "description": "Grafana MCP SSE endpoint URL (e.g. https://grafana-mcp.example.com/sse)"
-    },
-    {
-      "type": "promptString",
       "id": "haus-base-url",
       "description": "Haus API base URL (e.g. https://haus.example.com)"
     },
@@ -18,10 +13,6 @@
     }
   ],
   "servers": {
-    "grafana": {
-      "type": "http",
-      "url": "${input:grafana-mcp-url}"
-    },
     "hausBuderus": {
       "type": "http",
       "url": "${input:haus-base-url}/mcp/buderus",

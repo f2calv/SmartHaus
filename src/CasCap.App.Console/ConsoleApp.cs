@@ -63,7 +63,8 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
             // ── Gather tools and prompts ────────────────────────────────────
             var tools = AgentExtensions.CreateToolsForAgent(serviceProvider, agentConfig, aiConfig.Value,
                 deferResolution: true, isDevelopment: true, instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly);
-            var prompts = AgentExtensions.CreatePromptsForAgent(agentConfig, isDevelopment: true);
+            var prompts = AgentExtensions.CreatePromptsForAgent(agentConfig, isDevelopment: true,
+                registry: serviceProvider.GetService<AgentTypeRegistry>());
             var mcpClients = new List<McpClient>();
             var endpointToolSources = agentConfig.Tools.Where(s => s.Endpoint is not null).ToList();
             var endpointPromptSources = agentConfig.Prompts.Where(s => s.Endpoint is not null).ToList();
@@ -185,8 +186,8 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
                             session = await commandHandler.LoadSessionAsync(agent, agentConfig.Name);
 
                             // Keep chatOptions in sync with model and instructions overrides.
-                            commandHandler.ApplyModelOverride(chatOptions);
-                            commandHandler.ApplyInstructionsOverride(chatOptions, aiConfig.Value);
+                            commandHandler.ApplyModelOverride(chatOptions, agentConfig.Name);
+                            commandHandler.ApplyInstructionsOverride(chatOptions, agentConfig.Name, aiConfig.Value);
                         }
 
                         AnsiConsole.WriteLine();
