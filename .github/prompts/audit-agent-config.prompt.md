@@ -1,3 +1,8 @@
+---
+description: "Audit and synchronise AI agent configurations in appsettings files against repository conventions"
+agent: "agent"
+---
+
 # Audit Agent Config
 
 Audit and synchronise all AI agent configurations in `appsettings*.json` to ensure
