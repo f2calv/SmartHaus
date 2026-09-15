@@ -1,6 +1,6 @@
 ---
-description: 'Dockerfile conventions — multi-architecture builds, stage structure, layer caching, provenance, image hardening.'
-applyTo: '**/Dockerfile,**/Dockerfile.*,**/*.dockerfile,**/.dockerignore'
+description: 'Dockerfile and Compose conventions — multi-architecture builds, stage structure, layer caching, provenance, image hardening, volume taxonomy.'
+applyTo: '**/Dockerfile,**/Dockerfile.*,**/*.dockerfile,**/.dockerignore,**/docker-compose*.yml,**/docker-compose*.yaml,**/compose*.yml,**/compose*.yaml'
 ---
 
 # Dockerfiles
@@ -9,7 +9,7 @@ These conventions describe the single-file, multi-architecture, cross-compiling
 image build shared by every f2calv repository that ships a container. A Dockerfile
 here is expected to be readable as documentation, not just executable as a recipe.
 
-Compose files are out of scope.
+Compose conventions are covered by the `## Compose` section at the end.
 
 ## File Header
 
@@ -259,3 +259,123 @@ Compose files are out of scope.
 - Registry, repository and tag values must be lowercase.
 - Build the image after any change to the Dockerfile or to packaging, and validate each declared
   platform before claiming multi-architecture support.
+
+## Compose
+
+Compose describes the **local development and demo environment**. It is never the deployment
+target — that is Kubernetes, via a chart in the GitOps repository. A compose file therefore
+optimises for "clone and run", not for production fidelity.
+
+- One `docker-compose.yml` per repository, in the root. Do not split into
+  `docker-compose.override.yml` or per-environment files; use profiles instead.
+- Never include the obsolete top-level `version:` key. Modern Compose warns on it.
+- Start the file with a header comment block listing, in order: what the default
+  `docker compose up` starts, each profile and its command, and the published endpoints.
+  The header is the first thing a new contributor reads — keep it accurate.
+
+### Volume Taxonomy
+
+This is the rule that matters most, because getting it wrong silently pollutes the
+repository with runtime state.
+
+- **Tracked configuration** a container reads (`redis.conf`, `otelcol.yaml`, connection
+  JSON) lives in `.docker/` and is bind-mounted **read-only**:
+
+  ```yaml
+  volumes:
+    - ./.docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
+  ```
+
+- **Volatile or regenerable data** (databases, model caches, emulator state, downloaded
+  artifacts) uses a **named volume**, never a bind mount:
+
+  ```yaml
+  volumes:
+    - postgres_data:/var/lib/postgresql
+  ```
+
+- **Host fixtures** the application only reads (sample media, test inputs) are bind-mounted
+  read-only from a gitignored directory.
+- A container must **never** be able to write into the repository working tree. Every bind
+  mount is `:ro` unless there is a written reason it cannot be, and that reason belongs in a
+  comment next to the mount. Services that persist their own settings (Redis GUIs, emulators)
+  will otherwise rewrite tracked files or drop runtime state into `.docker/`.
+- Prefer an explicit relative path over a variable default that widens the mount. A default
+  such as `${AUDIO_DIR:-.}` mounts the entire repository; scope it to a subdirectory.
+- Name volumes `snake_case`, prefixed with the owning service: `signalcli_data`,
+  `whisper_cache`, `postgres_data`. Never a bare `data`.
+
+### .docker/ Is Allow-Listed
+
+`.docker/` holds tracked configuration only, and `.gitignore` enforces that with the same
+deny-everything-then-allow form used by `.dockerignore`:
+
+```gitignore
+.docker/*
+!.docker/otelcol.yaml
+!.docker/redis.conf
+```
+
+- Add the `!` entry in the **same change** as the compose mount that consumes the file.
+  A mounted-but-unlisted file survives only until someone re-clones or re-adds it.
+- Never widen the deny rule to silence runtime droppings. If a service writes into `.docker/`,
+  the mount is wrong — move that path to a named volume.
+
+### Images
+
+- **Pin every image**, exactly as `FROM` is pinned. A floating tag in compose is how a bug
+  you already pinned away from elsewhere gets back in.
+- Pin to the narrowest tag that still receives patch updates (`redis:8.10`, `postgres:18`),
+  matching the base-image rule.
+- Untagged is `latest`. `image: redis` is a defect, not a shorthand.
+- Where upstream publishes no versioned tag, pin by digest and say why in a comment. This is
+  the one place a digest pin is correct; it is the only immutable reference available.
+- Where upstream explicitly supports only `latest`, pin the newest version-specific tag anyway
+  and record the upstream position in a comment, so the exception is a decision rather than an
+  oversight.
+- Keep an image used both locally and in the cluster on the **same version** in compose and in
+  the chart. The point of running it locally is to exercise what production runs.
+
+### Service Dependencies
+
+- Give every service a `healthcheck` when another service depends on it, or when "is it ready
+  yet?" is a question a developer would otherwise answer by staring at logs.
+- Depend on readiness, not start order:
+
+  ```yaml
+  depends_on:
+    postgres:
+      condition: service_healthy
+  ```
+
+  Bare `depends_on: [x]` only orders container start; the dependent service will race a slow
+  first-run model download or migration.
+- One-shot initialisation containers use `restart: "no"`; long-lived services use
+  `restart: unless-stopped`.
+
+### Profiles
+
+- The default `docker compose up` starts **infrastructure only**. The application under
+  development runs from the IDE or `dotnet run` against it.
+- Anything that builds from source, needs a GPU, pulls a large model, or exists only for a
+  demo goes behind a named profile, documented in the header comment.
+- Name profiles for what they deliver (`demo`, `harness`), not for what they contain.
+
+### Secrets
+
+- Only well-known public development constants may appear inline — the Azurite
+  `devstoreaccount1` key, a local `postgres/demo` password. Nothing that would matter if the
+  repository were public.
+- Real values come from a gitignored mount or `env_file`, with a safe default so a clone still
+  starts:
+
+  ```yaml
+  - ${USER_SECRETS_DIR:-./.secrets}:/path/in/container:ro
+  ```
+
+- Never commit a `.env`. Add it to `.gitignore` alongside the secrets directory.
+
+### Dead Configuration
+
+Commented-out services and volumes are dead code and are deleted, not parked. Git history is
+the archive. A compose file whose bulk is commented out no longer documents anything.
