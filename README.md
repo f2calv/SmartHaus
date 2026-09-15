@@ -48,7 +48,7 @@ Clone the repo and run the self-contained demo — no external hardware or Azure
 
 ```bash
 git clone https://github.com/f2calv/SmartHaus.git
-cd KNX
+cd SmartHaus
 docker compose --profile demo up --build
 ```
 
