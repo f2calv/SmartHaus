@@ -1,6 +1,5 @@
 using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.AI;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection;
@@ -56,6 +55,31 @@ public static class HausServiceCollectionExtensions
             builder.Services.AddSingleton<IBgFeature, CommunicationsBgService>();
             builder.Services.AddSingleton<IBgFeature, MediaBgService>();
         }
+    }
+
+    /// <summary>
+    /// Registers <see cref="SpeechToTextConfig"/>, the named <see cref="HttpClient"/> used to reach
+    /// the transcription backend, the <see cref="WhisperAsrSpeechToTextClient"/> adapter and the
+    /// bounded <see cref="VoiceMessageTranscriptionService"/> policy.
+    /// </summary>
+    /// <remarks>
+    /// Not called by <see cref="AddComms"/>; the Signal receive path is wired separately so voice
+    /// support can be enabled independently of the text pipeline.
+    /// </remarks>
+    /// <param name="services">The service collection.</param>
+    public static void AddSpeechToText(this IServiceCollection services)
+    {
+        services.AddCasCapConfiguration<SpeechToTextConfig>();
+        services.AddHttpClient(WhisperAsrSpeechToTextClient.HttpClientName, (sp, client) =>
+        {
+            //The adapter builds an absolute request URI, so no BaseAddress is set here.
+            client.Timeout = TimeSpan.FromMilliseconds(
+                sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.TimeoutMs);
+        });
+#pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
+        services.TryAddSingleton<ISpeechToTextClient, WhisperAsrSpeechToTextClient>();
+#pragma warning restore MEAI001
+        services.TryAddSingleton<VoiceMessageTranscriptionService>();
     }
 
     /// <summary>

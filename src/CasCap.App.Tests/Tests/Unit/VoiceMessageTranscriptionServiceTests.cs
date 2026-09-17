@@ -1,0 +1,336 @@
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging.Abstractions;
+using System.Net;
+using System.Text;
+
+namespace CasCap.Tests.Unit;
+
+//ISpeechToTextClient is published as experimental (MEAI001); see WhisperAsrSpeechToTextClient.
+#pragma warning disable MEAI001
+
+/// <summary>
+/// Policy and failure-path tests for <see cref="VoiceMessageTranscriptionService"/>. Every fixture is
+/// synthesised in-process; no recording is committed and no ffmpeg binary is required.
+/// </summary>
+[Trait("Category", "SpeechToText")]
+public class VoiceMessageTranscriptionServiceTests
+{
+    private const string _wav = "audio/wav";
+    private const string _ogg = "audio/ogg";
+    private const string _missingFfmpeg = "ffmpeg-not-installed-for-tests";
+
+    [Theory]
+    [InlineData("audio/basic")]
+    [InlineData("image/png")]
+    [InlineData("application/octet-stream")]
+    [InlineData("")]
+    public async Task Transcribe_UnsupportedMediaType(string mediaType)
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateWav(), mediaType, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Unsupported, result.Outcome);
+        Assert.Null(result.Text);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_EmptyPayload()
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe([], _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Invalid, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Theory]
+    [InlineData(_wav)]
+    [InlineData("audio/aac")]
+    [InlineData("audio/flac")]
+    [InlineData("audio/mp4")]
+    public async Task Transcribe_SignatureContradictsDeclaredMediaType(string mediaType)
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateOgg(), mediaType, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Invalid, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_CompressedBytesOverLimit()
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt, new SpeechToTextConfig { MaxCompressedBytes = 64 });
+
+        var result = await svc.Transcribe(CreateWav(seconds: 1), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Oversized, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_DecodedBytesOverLimit()
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt, new SpeechToTextConfig { MaxDecodedBytes = 64 });
+
+        var result = await svc.Transcribe(CreateWav(seconds: 1), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Oversized, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_DurationOverLimit()
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt, new SpeechToTextConfig { MaxDurationSeconds = 2 });
+
+        var result = await svc.Transcribe(CreateWav(seconds: 5), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Oversized, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Theory]
+    [InlineData(_ogg, 16_000)]
+    [InlineData(_wav, 44_100)]
+    public async Task Transcribe_ConversionFailed(string mediaType, int sampleRate)
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt, new SpeechToTextConfig { FfmpegPath = _missingFfmpeg });
+        var audio = mediaType is _ogg ? CreateOgg() : CreateWav(sampleRate: sampleRate);
+
+        var result = await svc.Transcribe(audio, mediaType, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.ConversionFailed, result.Outcome);
+        Assert.Equal(0, stt.CallCount);
+    }
+
+    [Theory]
+    [InlineData("hello there", "hello there")]
+    [InlineData("  hello   there  ", "hello there")]
+    [InlineData("hello\r\n\tthere", "hello there")]
+    public async Task Transcribe_NormalisesTranscript(string backendText, string expected)
+    {
+        var stt = new StubSpeechToTextClient { Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse(backendText)) };
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, result.Outcome);
+        Assert.True(result.TranscriptAvailable);
+        Assert.Equal(expected, result.Text);
+        Assert.Equal(1, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_SendsNormalisedWavMetadataToBackend()
+    {
+        var stt = new StubSpeechToTextClient { Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse("ok")) };
+        using var svc = CreateService(stt, new SpeechToTextConfig { Language = "de" });
+
+        await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal("de", stt.LastOptions!.SpeechLanguage);
+        Assert.True(stt.LastOptions.AdditionalProperties!
+            .TryGetValue(WhisperAsrSpeechToTextClient.MediaTypePropertyKey, out var mediaType));
+        Assert.Equal(WhisperAsrSpeechToTextClient.WavMediaType, mediaType);
+    }
+
+    [Theory]
+    [InlineData("")]
+    [InlineData("   ")]
+    [InlineData("\r\n\t")]
+    public async Task Transcribe_EmptyTranscript(string backendText)
+    {
+        var stt = new StubSpeechToTextClient { Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse(backendText)) };
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.EmptyTranscript, result.Outcome);
+        Assert.Null(result.Text);
+    }
+
+    [Theory]
+    [InlineData(HttpStatusCode.BadRequest)]
+    [InlineData(HttpStatusCode.ServiceUnavailable)]
+    public async Task Transcribe_BackendFailure(HttpStatusCode statusCode)
+    {
+        var stt = new StubSpeechToTextClient
+        {
+            Responder = (_, _, _) => throw new HttpRequestException("backend failed", null, statusCode),
+        };
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.BackendFailed, result.Outcome);
+        Assert.Null(result.Text);
+    }
+
+    [Fact]
+    public async Task Transcribe_TimeoutReleasesAdmission()
+    {
+        var stt = new StubSpeechToTextClient
+        {
+            Responder = async (_, _, ct) =>
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+                return new SpeechToTextResponse("unreachable");
+            },
+        };
+        using var svc = CreateService(stt, new SpeechToTextConfig { TimeoutMs = 200 });
+
+        var timedOut = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+        Assert.Equal(VoiceTranscriptionOutcome.TimedOut, timedOut.Outcome);
+
+        //A second attempt proves the semaphore was released by the timed-out one.
+        stt.Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse("recovered"));
+        var second = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, second.Outcome);
+        Assert.Equal("recovered", second.Text);
+    }
+
+    [Fact]
+    public async Task Transcribe_CallerCancellationPropagatesAndReleasesAdmission()
+    {
+        var stt = new StubSpeechToTextClient
+        {
+            Responder = async (_, _, ct) =>
+            {
+                await Task.Delay(Timeout.Infinite, ct);
+                return new SpeechToTextResponse("unreachable");
+            },
+        };
+        using var svc = CreateService(stt);
+        using var cts = new CancellationTokenSource();
+
+        var pending = svc.Transcribe(CreateWav(), _wav, cts.Token);
+        await cts.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() => pending);
+
+        stt.Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse("recovered"));
+        var second = await svc.Transcribe(CreateWav(), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, second.Outcome);
+    }
+
+    [Fact]
+    public async Task Transcribe_SerialisesConcurrentRequests()
+    {
+        var stt = new StubSpeechToTextClient
+        {
+            Responder = async (_, _, ct) =>
+            {
+                await Task.Delay(50, ct);
+                return new SpeechToTextResponse("ok");
+            },
+        };
+        using var svc = CreateService(stt);
+        var audio = CreateWav();
+        var token = TestContext.Current.CancellationToken;
+
+        var results = await Task.WhenAll(
+            svc.Transcribe(audio, _wav, token),
+            svc.Transcribe(audio, _wav, token),
+            svc.Transcribe(audio, _wav, token));
+
+        Assert.All(results, r => Assert.Equal(VoiceTranscriptionOutcome.Success, r.Outcome));
+        Assert.Equal(3, stt.CallCount);
+        Assert.Equal(1, stt.MaxConcurrency);
+    }
+
+    #region Private helpers
+
+    private static VoiceMessageTranscriptionService CreateService(ISpeechToTextClient stt, SpeechToTextConfig? config = null) =>
+        new(NullLogger<VoiceMessageTranscriptionService>.Instance, Options.Create(config ?? new SpeechToTextConfig()), stt);
+
+    /// <summary>Builds a synthetic silent RIFF/WAVE payload with the requested format.</summary>
+    private static byte[] CreateWav(int sampleRate = 16_000, short channels = 1, short bitsPerSample = 16, double seconds = 1)
+    {
+        var blockAlign = (short)(channels * bitsPerSample / 8);
+        var byteRate = sampleRate * blockAlign;
+        var dataLength = (int)(byteRate * seconds);
+
+        using var buffer = new MemoryStream();
+        using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
+        writer.Write("RIFF"u8);
+        writer.Write(36 + dataLength);
+        writer.Write("WAVE"u8);
+        writer.Write("fmt "u8);
+        writer.Write(16);
+        writer.Write((short)1);
+        writer.Write(channels);
+        writer.Write(sampleRate);
+        writer.Write(byteRate);
+        writer.Write(blockAlign);
+        writer.Write(bitsPerSample);
+        writer.Write("data"u8);
+        writer.Write(dataLength);
+        writer.Write(new byte[dataLength]);
+        writer.Flush();
+        return buffer.ToArray();
+    }
+
+    private static byte[] CreateOgg()
+    {
+        var payload = new byte[256];
+        "OggS"u8.CopyTo(payload);
+        return payload;
+    }
+
+    /// <summary>Records invocation counts and peak concurrency so admission control can be asserted.</summary>
+    private sealed class StubSpeechToTextClient : ISpeechToTextClient
+    {
+        private int _inFlight;
+
+        public Func<Stream, SpeechToTextOptions?, CancellationToken, Task<SpeechToTextResponse>> Responder { get; set; } =
+            (_, _, _) => Task.FromResult(new SpeechToTextResponse("transcript"));
+
+        public int CallCount { get; private set; }
+
+        public int MaxConcurrency { get; private set; }
+
+        public SpeechToTextOptions? LastOptions { get; private set; }
+
+        public async Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
+            SpeechToTextOptions? options = null, CancellationToken cancellationToken = default)
+        {
+            CallCount++;
+            LastOptions = options;
+            var inFlight = Interlocked.Increment(ref _inFlight);
+            MaxConcurrency = Math.Max(MaxConcurrency, inFlight);
+            try
+            {
+                return await Responder(audioSpeechStream, options, cancellationToken);
+            }
+            finally
+            {
+                Interlocked.Decrement(ref _inFlight);
+            }
+        }
+
+        public IAsyncEnumerable<SpeechToTextResponseUpdate> GetStreamingTextAsync(Stream audioSpeechStream,
+            SpeechToTextOptions? options = null, CancellationToken cancellationToken = default) =>
+            throw new NotSupportedException();
+
+        public object? GetService(Type serviceType, object? serviceKey = null) => null;
+
+        public void Dispose() { }
+    }
+
+    #endregion
+}
+
+#pragma warning restore MEAI001
