@@ -159,7 +159,7 @@ public sealed partial class CommunicationsBgService
             catch { /* JsonPayload is not a MediaCommsPayload — that's fine, skip attachment */ }
         }
 
-        EnqueueReply(prompt, extraBase64Attachments: extraAttachments);
+        await EnqueueReplyAsync(prompt, extraBase64Attachments: extraAttachments, cancellationToken: cancellationToken);
     }
 
     private CommsEvent DeserializeStreamEntry(StreamEntry entry)

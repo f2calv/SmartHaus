@@ -39,6 +39,7 @@ public static class HausServiceCollectionExtensions
     {
         builder.Services.AddCasCapConfiguration<CommsAgentConfig>();
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
+        builder.Services.AddCasCapConfiguration<SpeechToTextConfig>();
         builder.Services.AddMediaStreamSink();
         builder.Services.AddSignalCli(builder.Configuration);
         builder.Services.AddMessagingMcp(
@@ -49,6 +50,8 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddSingleton<AgentCommandHandler>();
 
         builder.Services.AddSingleton<CommsDebugNotifier>();
+        builder.Services.TryAddSingleton<ISignalAttachmentCleaner, SignalAttachmentCleaner>();
+        builder.Services.TryAddSingleton<ISignalMessageDeduplicator, RedisSignalMessageDeduplicator>();
 
         if (!lite)
         {

@@ -124,6 +124,22 @@ public sealed partial class CommunicationsBgService
         Message = "{ClassName} poll {PollId} not tracked, ignoring vote")]
     private static partial void LogPollNotTracked(ILogger logger, string className, string pollId);
 
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} duplicate message from {Sender} suppressed, already reserved")]
+    private static partial void LogDuplicateSuppressed(ILogger logger, string className, string? sender);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "{ClassName} attachment cleanup left {RemainingCount} attachment(s) on the server, suppressing transcription and agent turn")]
+    private static partial void LogAttachmentCleanupFailed(ILogger logger, string className, int remainingCount);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice message rejected, voice processing is disabled")]
+    private static partial void LogVoiceRejected(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice message acquired but no agent turn produced, mode={VoiceProcessingMode}")]
+    private static partial void LogVoiceTurnSuppressed(ILogger logger, string className, string voiceProcessingMode);
+
     // ── Messaging partial (reply queue) ──────────────────────────────────
 
     [LoggerMessage(Level = LogLevel.Information,

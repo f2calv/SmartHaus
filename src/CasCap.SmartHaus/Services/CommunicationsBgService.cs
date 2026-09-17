@@ -33,7 +33,11 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly SignalCliConfig _signalCliConfig;
     private readonly CommsAgentConfig _commsAgentConfig;
     private readonly AIConfig _aiConfig;
+    private readonly SpeechToTextConfig _speechToTextConfig;
     private readonly INotifier _notifier;
+    private readonly ISignalCliClient _signalCliClient;
+    private readonly ISignalAttachmentCleaner _attachmentCleaner;
+    private readonly ISignalMessageDeduplicator _deduplicator;
     private readonly AgentCommandHandler _commandHandler;
     private readonly IDatabase _db;
     private readonly IServiceProvider _serviceProvider;
@@ -69,10 +73,14 @@ public sealed partial class CommunicationsBgService : IBgFeature
         IOptions<CommsAgentConfig> commsAgentConfig,
         IOptions<AIConfig> aiConfig,
         IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+        IOptions<SpeechToTextConfig> speechToTextConfig,
         TimeProvider timeProvider,
         IHostEnvironment env,
         CommsDebugNotifier debugNotifier,
         INotifier notifier,
+        ISignalCliClient signalCliClient,
+        ISignalAttachmentCleaner attachmentCleaner,
+        ISignalMessageDeduplicator deduplicator,
         AgentCommandHandler commandHandler,
         IRemoteCache remoteCache,
         IEventSink<CommsEvent> commsSink,
@@ -87,9 +95,13 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _commsAgentConfig = commsAgentConfig.Value;
         _aiConfig = aiConfig.Value;
         _edgeHardwareConfig = edgeHardwareConfig.Value;
+        _speechToTextConfig = speechToTextConfig.Value;
         _env = env;
         _debugNotifier = debugNotifier;
         _notifier = notifier;
+        _signalCliClient = signalCliClient;
+        _attachmentCleaner = attachmentCleaner;
+        _deduplicator = deduplicator;
         _commandHandler = commandHandler;
         _db = remoteCache.Db;
         _serviceProvider = serviceProvider;
@@ -98,12 +110,13 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _edgeHardwareQuerySvc = edgeHardwareQuerySvc;
 
         // Bound the outbound reply queue so a producer flood cannot grow an unbounded backlog
-        // that signal-cli drip-feeds for hours; the oldest queued reply is discarded when full.
+        // that signal-cli drip-feeds for hours. Producers wait for capacity rather than having an
+        // already-accepted reply evicted behind their back.
         _replyChannel = Channel.CreateBounded<ReplyRequest>(
             new BoundedChannelOptions(_commsAgentConfig.ReplyQueueCapacity)
             {
                 SingleReader = true,
-                FullMode = BoundedChannelFullMode.DropOldest,
+                FullMode = BoundedChannelFullMode.Wait,
             });
 
         // Token-bucket gate for producer-driven stream events (see ProcessCommsEventAsync).
@@ -184,13 +197,15 @@ public sealed partial class CommunicationsBgService : IBgFeature
             // message arrives, so cap the flush with a short timeout to avoid stalling
             // the startup sequence when no envelopes are queued.
             _logger.LogInformation("{ClassName} flushing pending envelopes", nameof(CommunicationsBgService));
+            IReceivedNotification[]? startupEnvelopes = null;
             using (var flushCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
             {
                 flushCts.CancelAfter(TimeSpan.FromMilliseconds(_commsAgentConfig.FlushTimeoutMs));
                 try
                 {
-                    await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, flushCts.Token);
-                    _logger.LogInformation("{ClassName} pending envelopes flushed", nameof(CommunicationsBgService));
+                    startupEnvelopes = await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, flushCts.Token);
+                    _logger.LogInformation("{ClassName} pending envelopes flushed, count={EnvelopeCount}",
+                        nameof(CommunicationsBgService), startupEnvelopes?.Length ?? 0);
                 }
                 catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
                 {
@@ -239,6 +254,10 @@ public sealed partial class CommunicationsBgService : IBgFeature
                 nameof(CommunicationsBgService), _notifier.GetType().Name);
 
             var replyTask = DrainReplyQueueAsync(cancellationToken);
+
+            // Envelopes drained by the startup flush are real inbound messages; process them through
+            // the normal path now that the group is resolved, rather than discarding them.
+            await ProcessEnvelopesAsync(startupEnvelopes, cancellationToken);
 
             _logger.LogInformation("{ClassName} polling for group messages on {PhoneNumber} via {Transport}",
                 nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber(), _signalCliConfig.TransportMode);
