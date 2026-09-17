@@ -12,6 +12,7 @@ namespace CasCap.Tests.Unit;
 public class CommunicationsBgServiceTests
 {
     private const string Eyes = "\U0001F440";
+    private const string Ear = "\U0001F442";
 
     [Theory]
     [InlineData(VoiceProcessingMode.Disabled)]
@@ -179,7 +180,38 @@ public class CommunicationsBgServiceTests
 
         Assert.Equal(["voice-3"], fixture.Notifier.AttachmentFetches);
         Assert.Equal(["voice-3"], fixture.Cleaner.LastCall);
-        Assert.Equal(1, fixture.Notifier.ReactionCount(Eyes));
+        //A voice note is acknowledged with an ear, not the eyes used for a text message.
+        Assert.Equal(1, fixture.Notifier.ReactionCount(Ear));
+        Assert.Equal(0, fixture.Notifier.ReactionCount(Eyes));
+    }
+
+    [Fact]
+    public async Task TranscriptIsNotEchoedToTheDebugChatByDefault()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
+        await fixture.StartAsync();
+
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_301, ("voice-4", "audio/wav")));
+
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
+        await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(() => !fixture.Notifier.Sent.IsEmpty);
+    }
+
+    [Fact]
+    public async Task EnabledEchoSendsTheTranscriptToTheDebugRecipientOnly()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled,
+            echoTranscriptToDebugChat: true);
+        fixture.SpeechToText.Transcript = "turn the kitchen lights off";
+        await fixture.StartAsync();
+
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", "audio/wav")));
+
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Notifier.Sent.IsEmpty);
+
+        var debugMsg = Assert.Single(fixture.Notifier.Sent);
+        Assert.Equal([CommunicationsBgServiceTestFixture.DebugRecipient], debugMsg.Recipients);
+        Assert.Contains("turn the kitchen lights off", debugMsg.Message, StringComparison.Ordinal);
     }
 
     [Fact]

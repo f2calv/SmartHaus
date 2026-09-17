@@ -22,6 +22,9 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <summary>A group member who sends the envelopes under test.</summary>
     public const string Sender = "+10000000001";
 
+    /// <summary>The operator-controlled recipient of debug output.</summary>
+    public const string DebugRecipient = "+10000000002";
+
     /// <summary>The display name of the configured group.</summary>
     public const string GroupName = "haus-test";
 
@@ -103,7 +106,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     public CommunicationsBgServiceTestFixture(
         VoiceProcessingMode voiceMode = VoiceProcessingMode.Enabled,
         bool agentAvailable = true,
-        int replyQueueCapacity = 100)
+        int replyQueueCapacity = 100,
+        bool echoTranscriptToDebugChat = false)
     {
         Notifier.Groups.Add(new FakeNotificationGroup { Id = GroupId, Name = GroupName, Members = [Account, Sender] });
 
@@ -111,6 +115,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         {
             BaseAddress = "http://localhost:8080",
             PhoneNumber = Account,
+            //Only set when the test exercises the debug chat; otherwise the debug notifier short-circuits.
+            PhoneNumberDebug = echoTranscriptToDebugChat ? DebugRecipient : null,
             TransportMode = SignalCliTransport.JsonRpc,
         });
         var commsAgentConfig = Options.Create(new CommsAgentConfig
@@ -133,7 +139,11 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             HealthCheckAzureTableStorage = KubernetesProbeTypes.None,
             Sinks = new SinkConfig { AvailableSinks = new Dictionary<string, SinkConfigParams>() },
         });
-        var speechToTextConfig = Options.Create(new SpeechToTextConfig { Mode = voiceMode });
+        var speechToTextConfig = Options.Create(new SpeechToTextConfig
+        {
+            Mode = voiceMode,
+            EchoTranscriptToDebugChat = echoTranscriptToDebugChat,
+        });
 
         var services = new ServiceCollection();
         if (agentAvailable)

@@ -65,6 +65,17 @@ public sealed record SpeechToTextConfig : IAppConfig
     [Required, MinLength(1)]
     public string FfmpegPath { get; init; } = "ffmpeg";
 
+    /// <summary>Whether the transcript is echoed to the debug Signal chat before the agent turn.</summary>
+    /// <remarks>
+    /// Defaults to <see langword="false"/>. An operator debugging a misheard command needs the text
+    /// the agent actually received; a hash or a character count cannot show why it was misread. The
+    /// transcript goes only to <c>PhoneNumberDebug</c> and never to a log sink, metric label or
+    /// trace attribute. Note that a voice message may come from another household member, so enable
+    /// this only on a debug recipient you control. Used by
+    /// <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// </remarks>
+    public bool EchoTranscriptToDebugChat { get; init; }
+
     /// <inheritdoc cref="VoiceProcessingMode" path="/summary"/>
     /// <remarks>
     /// Defaults to <see cref="VoiceProcessingMode.Disabled"/> so voice remains inert until the

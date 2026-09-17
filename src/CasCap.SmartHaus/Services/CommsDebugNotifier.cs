@@ -63,6 +63,38 @@ public sealed class CommsDebugNotifier(
     }
 
     /// <summary>
+    /// Sends the transcript of an inbound voice message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// so a misheard command can be diagnosed against what the agent actually received.
+    /// </summary>
+    /// <param name="transcript">The normalised transcript about to be given to the agent.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <remarks>
+    /// Only called when <see cref="SpeechToTextConfig.EchoTranscriptToDebugChat"/> is enabled. The
+    /// transcript goes to the debug recipient alone and never to a log sink or telemetry.
+    /// </remarks>
+    public async Task SendVoiceTranscriptDebugAsync(string transcript, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+            return;
+
+        try
+        {
+            var debugMsg = new SignalMessageRequest
+            {
+                Message = $"\U0001F442 Processing audio prompt: \u201C{transcript}\u201D",
+                Number = signalCliConfig.Value.PhoneNumber,
+                Recipients = [signalCliConfig.Value.PhoneNumberDebug]
+            };
+            await notifier.SendAsync(debugMsg, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to {PhoneNumberDebug}",
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+        }
+    }
+
+    /// <summary>
     /// Sends a copy of an incoming stream event to <see cref="SignalCliConfig.PhoneNumberDebug"/>
     /// so automated sensor messages can be observed alongside the agent's response.
     /// </summary>

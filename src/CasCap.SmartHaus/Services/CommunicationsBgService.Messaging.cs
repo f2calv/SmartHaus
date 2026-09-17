@@ -148,7 +148,11 @@ public sealed partial class CommunicationsBgService
 
         // A successful transcript replaces the prompt; the audio itself is never forwarded.
         if (!string.IsNullOrWhiteSpace(transcript))
+        {
             prompt = transcript;
+            if (_speechToTextConfig.EchoTranscriptToDebugChat)
+                await _debugNotifier.SendVoiceTranscriptDebugAsync(transcript, cancellationToken);
+        }
 
         // A voice message the pipeline could not transcribe gets one concise reply and no agent
         // turn, so nothing is persisted to the conversation.
@@ -201,10 +205,12 @@ public sealed partial class CommunicationsBgService
             return;
         }
 
-        // Acknowledge the sender's message with an eyes reaction to confirm it has been seen.
+        // Acknowledge the sender's message: an ear for a voice note the service is listening to,
+        // otherwise eyes for a message it has seen.
         if (notification.Timestamp is not null)
             await _notifier.SendProgressUpdateAsync(
-                _signalCliConfig.PhoneNumber, _groupId!, "\U0001F440", notification.Sender, notification.Timestamp.Value);
+                _signalCliConfig.PhoneNumber, _groupId!, voiceOutcome is not null ? "\U0001F442" : "\U0001F440",
+                notification.Sender, notification.Timestamp.Value);
 
         await EnqueueReplyAsync(prompt, binaryContent, mimeType, sender: notification.Sender,
             timestamp: notification.Timestamp, bypassSession: false, cancellationToken: cancellationToken);
