@@ -109,6 +109,10 @@ public sealed partial class CommunicationsBgService
     private static partial void LogAttachmentDownloaded(ILogger logger, string className, string attachmentId, string? contentType, int size);
 
     [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice transcription outcome={Outcome}, transcriptChars={TranscriptChars}")]
+    private static partial void LogVoiceTranscription(ILogger logger, string className, string outcome, int transcriptChars);
+
+    [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} processing slash command {Command} from {Sender}")]
     private static partial void LogSlashCommand(ILogger logger, string className, ChatCommand command, string? sender);
 

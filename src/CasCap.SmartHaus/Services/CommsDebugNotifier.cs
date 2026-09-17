@@ -237,15 +237,11 @@ public sealed class CommsDebugNotifier(
             if (result.FinishReason is { Length: > 0 })
                 sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
 
-            // Attach original + transcoded audio files when available for pipeline debugging.
-            var audioAttachments = BuildAudioDebugAttachments(originalBinaryContent, originalMimeType);
-
             var debugMsg = new SignalMessageRequest
             {
                 Message = sb.ToString().TrimEnd(),
                 Number = signalCliConfig.Value.PhoneNumber,
                 Recipients = [signalCliConfig.Value.PhoneNumberDebug],
-                Base64Attachments = audioAttachments,
             };
             await notifier.SendAsync(debugMsg, cancellationToken);
             logger.LogDebug("{ClassName} debug stats sent to {PhoneNumberDebug}",
@@ -256,33 +252,6 @@ public sealed class CommsDebugNotifier(
             logger.LogWarning(ex, "{ClassName} failed to send debug stats to {PhoneNumberDebug}",
                 nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
-    }
-
-    /// <summary>
-    /// Builds base64 data-URI attachments for the original audio and the transcoded WAV
-    /// so both can be inspected via the debug Signal message.
-    /// </summary>
-    /// <returns>An array of data-URI strings, or <see langword="null"/> when no audio content is available.</returns>
-    internal static string[]? BuildAudioDebugAttachments(byte[]? originalBinaryContent, string? originalMimeType)
-    {
-        if (originalBinaryContent is null || originalMimeType is null
-            || !originalMimeType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        var attachments = new List<string>();
-
-        // Derive a short extension from the MIME type (e.g. "audio/aac" → "aac", "audio/ogg" → "ogg").
-        var ext = originalMimeType.AsSpan()[(originalMimeType.IndexOf('/') + 1)..].ToString();
-        attachments.Add(
-            $"data:{originalMimeType};filename=original.{ext};base64,{Convert.ToBase64String(originalBinaryContent)}");
-
-        // Check for transcoded WAV from the sub-agent delegation pipeline.
-        var audioDebug = AgentExtensions.GetAmbientAudioDebug();
-        if (audioDebug?.TranscodedWav is { } wavBytes)
-            attachments.Add(
-                $"data:audio/wav;filename=transcoded.wav;base64,{Convert.ToBase64String(wavBytes)}");
-
-        return attachments.Count > 0 ? [.. attachments] : null;
     }
 
     /// <summary>

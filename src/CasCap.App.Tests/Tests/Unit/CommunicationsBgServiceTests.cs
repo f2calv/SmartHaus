@@ -72,7 +72,7 @@ public class CommunicationsBgServiceTests
         await fixture.StartAsync();
 
         fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(4_001,
-            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", "audio/aac")));
+            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", "audio/wav")));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
 
@@ -140,7 +140,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Disabled);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", "audio/aac")));
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", "audio/wav")));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
@@ -156,7 +156,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Shadow);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", "audio/aac")));
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", "audio/wav")));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
@@ -173,7 +173,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", "audio/aac")));
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", "audio/wav")));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
 

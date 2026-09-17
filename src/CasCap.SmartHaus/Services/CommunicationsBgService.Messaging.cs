@@ -108,11 +108,18 @@ public sealed partial class CommunicationsBgService
         byte[]? binaryContent = null;
         string? mimeType = null;
         var voiceSuppressed = false;
+        string? transcript = null;
+        VoiceTranscriptionOutcome? voiceOutcome = null;
         AttachmentCleanupResult? cleanup = null;
         try
         {
             if (agentAvailable && attachmentIds.Count > 0)
-                (binaryContent, mimeType, voiceSuppressed) = await AcquireAttachmentAsync(notification, cancellationToken);
+            {
+                var acquisition = await AcquireAttachmentAsync(notification, cancellationToken);
+                (binaryContent, mimeType, voiceSuppressed) =
+                    (acquisition.Content, acquisition.MimeType, acquisition.VoiceSuppressed);
+                (transcript, voiceOutcome) = (acquisition.Transcript, acquisition.Outcome);
+            }
         }
         finally
         {
@@ -138,6 +145,19 @@ public sealed partial class CommunicationsBgService
         }
 
         var prompt = notification.Message ?? _commsAgent!.Prompt;
+
+        // A successful transcript replaces the prompt; the audio itself is never forwarded.
+        if (!string.IsNullOrWhiteSpace(transcript))
+            prompt = transcript;
+
+        // A voice message the pipeline could not transcribe gets one concise reply and no agent
+        // turn, so nothing is persisted to the conversation.
+        if (voiceOutcome is not null and not VoiceTranscriptionOutcome.Success
+            && _speechToTextConfig.Mode is VoiceProcessingMode.Enabled)
+        {
+            await SendVoiceFailureReplyAsync(cancellationToken);
+            return;
+        }
 
         // ── Slash-command handling ────────────────────────────────────────────
         if (ChatCommandParser.TryParseCommand(prompt, out var chatCmd, out var cmdArg))
@@ -198,7 +218,7 @@ public sealed partial class CommunicationsBgService
     /// The downloaded bytes and media type, plus whether a voice payload was withheld from the
     /// agent turn by the configured mode.
     /// </returns>
-    private async Task<(byte[]? Content, string? MimeType, bool VoiceSuppressed)> AcquireAttachmentAsync(
+    private async Task<AttachmentAcquisition> AcquireAttachmentAsync(
         IReceivedNotification notification, CancellationToken cancellationToken)
     {
         var attachments = notification.Attachments!;
@@ -208,24 +228,61 @@ public sealed partial class CommunicationsBgService
         // Deterministic selection: the first attachment carrying an identifier.
         var attachment = attachments.FirstOrDefault(a => !string.IsNullOrWhiteSpace(a.Id));
         if (attachment is null)
-            return (null, null, false);
+            return new(null, null, false, null, null);
 
         var isVoice = IsAudio(attachment.ContentType);
         if (isVoice && _speechToTextConfig.Mode is VoiceProcessingMode.Disabled)
         {
             LogVoiceRejected(_logger, nameof(CommunicationsBgService));
-            return (null, null, true);
+            return new(null, null, true, null, null);
         }
 
         var content = await _notifier.GetAttachmentAsync(attachment.Id!, cancellationToken);
         if (content is not null)
             LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachment.Id!, attachment.ContentType, content.Length);
 
-        // Shadow acquires and cleans up but never reaches the agent or the group.
-        if (isVoice && _speechToTextConfig.Mode is VoiceProcessingMode.Shadow)
-            return (null, null, true);
+        if (!isVoice)
+            return new(content, attachment.ContentType, false, null, null);
 
-        return (content, attachment.ContentType, false);
+        if (content is null)
+            return new(null, null, true, null, VoiceTranscriptionOutcome.Invalid);
+
+        // Raw audio never reaches the agent: it is replaced by the normalised transcript, or the
+        // turn is abandoned. Shadow transcribes for measurement but stops short of the agent.
+        var result = await _transcriptionSvc.Transcribe(content, attachment.ContentType!, cancellationToken);
+        LogVoiceTranscription(_logger, nameof(CommunicationsBgService), result.Outcome.ToString(),
+            result.Text?.Length ?? 0);
+
+        if (_speechToTextConfig.Mode is VoiceProcessingMode.Shadow)
+            return new(null, null, true, null, result.Outcome);
+
+        return result.TranscriptAvailable
+            ? new(null, null, false, result.Text, result.Outcome)
+            : new(null, null, true, null, result.Outcome);
+    }
+
+    /// <summary>The outcome of acquiring, and where applicable transcribing, one attachment.</summary>
+    /// <param name="Content">Non-audio attachment bytes passed to the agent, or <see langword="null"/>.</param>
+    /// <param name="MimeType">The media type of <paramref name="Content"/>.</param>
+    /// <param name="VoiceSuppressed">Whether a voice payload was withheld from the agent turn.</param>
+    /// <param name="Transcript">The normalised transcript that replaces the audio, when successful.</param>
+    /// <param name="Outcome">The transcription outcome, or <see langword="null"/> for non-audio.</param>
+    private sealed record AttachmentAcquisition(byte[]? Content, string? MimeType, bool VoiceSuppressed,
+        string? Transcript, VoiceTranscriptionOutcome? Outcome);
+
+    /// <summary>Sends the single generic failure reply used when a voice message could not be transcribed.</summary>
+    /// <remarks>Carries no transcript, no audio and no identifier.</remarks>
+    private async Task SendVoiceFailureReplyAsync(CancellationToken cancellationToken)
+    {
+        if (_groupId is null)
+            return;
+        var reply = new SignalMessageRequest
+        {
+            Message = "\U0001F507 Sorry, I could not understand that voice message.",
+            Number = _signalCliConfig.PhoneNumber,
+            Recipients = [_groupId]
+        };
+        await _notifier.SendAsync(reply, cancellationToken);
     }
 
     /// <summary>Sends the single generic failure reply used when attachment cleanup could not complete.</summary>

@@ -4,13 +4,12 @@
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Resources\SecurityAgent.instructions.md" />
+
     <EmbeddedResource Include="Resources\HeatingAgent.instructions.md" />
     <EmbeddedResource Include="Resources\EnergyAgent.instructions.md" />
     <EmbeddedResource Include="Resources\HomeControlAgent.instructions.md" />
     <EmbeddedResource Include="Resources\CommsAgent.instructions.md" />
     <EmbeddedResource Include="Resources\InfraAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\AudioAgent.instructions.md" />
     <EmbeddedResource Include="Resources\AppliancesAgent.instructions.md" />
   </ItemGroup>
 

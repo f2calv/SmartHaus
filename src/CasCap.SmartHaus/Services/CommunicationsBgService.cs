@@ -51,9 +51,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly AIAgent? _agent;
     private readonly ProviderConfig? _provider;
     private readonly AgentConfig? _commsAgent;
-    private readonly AIAgent? _audioAgent;
-    private readonly ProviderConfig? _audioProvider;
-    private readonly AgentConfig? _audioAgentConfig;
+    private readonly VoiceMessageTranscriptionService _transcriptionSvc;
 
     private string? _groupId;
     private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -81,6 +79,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         ISignalCliClient signalCliClient,
         ISignalAttachmentCleaner attachmentCleaner,
         ISignalMessageDeduplicator deduplicator,
+        VoiceMessageTranscriptionService transcriptionSvc,
         AgentCommandHandler commandHandler,
         IRemoteCache remoteCache,
         IEventSink<CommsEvent> commsSink,
@@ -102,6 +101,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _signalCliClient = signalCliClient;
         _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
+        _transcriptionSvc = transcriptionSvc;
         _commandHandler = commandHandler;
         //Resolved lazily rather than captured here, so an unreachable cache cannot stop the feature
         //being constructed; only the stream path needs it.
@@ -137,21 +137,6 @@ public sealed partial class CommunicationsBgService : IBgFeature
                 _provider = provider;
             _resolvedInstructions = AgentExtensions.ResolveInstructions(commsAgent,
                 typeof(HausServiceCollectionExtensions).Assembly, _aiConfig);
-        }
-
-        if (_aiConfig.Agents.TryGetValue(AgentKeys.AudioAgent, out var audioAgent) && audioAgent.Enabled)
-        {
-            _audioAgentConfig = audioAgent;
-            _audioAgent = serviceProvider.GetKeyedService<AIAgent>(AgentKeys.AudioAgent);
-            if (_aiConfig.Providers.TryGetValue(audioAgent.Provider, out var audioProvider))
-                _audioProvider = audioProvider;
-
-            if (_audioAgent is not null && _audioProvider is not null)
-                _logger.LogInformation("{ClassName} audio agent resolved, model={ModelName}",
-                    nameof(CommunicationsBgService), _audioProvider.ModelName);
-            else
-                _logger.LogWarning("{ClassName} audio agent profile {ProfileKey} not fully configured, audio transcription disabled",
-                    nameof(CommunicationsBgService), AgentKeys.AudioAgent);
         }
 
         if (_agent is null || _commsAgent is null || _provider is null)

@@ -1,6 +1,7 @@
 using CasCap.HealthChecks;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Text;
 
 namespace CasCap.Tests.Unit;
 
@@ -50,6 +51,45 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
 
     /// <summary>The poll tracker fake.</summary>
     public FakePollTracker PollTracker { get; } = new();
+
+    /// <summary>The speech-to-text backend behind the transcription service.</summary>
+    public FakeSpeechToTextClient SpeechToText { get; } = new();
+
+    /// <summary>
+    /// Builds a silent 16 kHz mono signed 16-bit PCM WAV, which is what the transcription service
+    /// accepts without invoking ffmpeg.
+    /// </summary>
+    /// <param name="sampleCount">Number of silent samples to emit.</param>
+    /// <remarks>
+    /// The media policy validates the file signature before transmitting anything, so an arbitrary
+    /// byte array would be rejected as invalid rather than reaching the backend.
+    /// </remarks>
+    public static byte[] SyntheticWav(int sampleCount = 1_600)
+    {
+        const int sampleRate = 16_000;
+        const short channels = 1;
+        const short bitsPerSample = 16;
+        var dataBytes = sampleCount * channels * (bitsPerSample / 8);
+
+        using var buffer = new MemoryStream();
+        using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
+        writer.Write("RIFF"u8);
+        writer.Write(36 + dataBytes);
+        writer.Write("WAVE"u8);
+        writer.Write("fmt "u8);
+        writer.Write(16);
+        writer.Write((short)1);
+        writer.Write(channels);
+        writer.Write(sampleRate);
+        writer.Write(sampleRate * channels * (bitsPerSample / 8));
+        writer.Write((short)(channels * (bitsPerSample / 8)));
+        writer.Write(bitsPerSample);
+        writer.Write("data"u8);
+        writer.Write(dataBytes);
+        writer.Write(new byte[dataBytes]);
+        writer.Flush();
+        return buffer.ToArray();
+    }
 
     /// <summary>The service under test.</summary>
     public CommunicationsBgService Service { get; }
@@ -101,12 +141,17 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         var serviceProvider = services.BuildServiceProvider();
 
         var env = new FakeHostEnvironment();
+        Notifier.AttachmentContent = SyntheticWav();
         var debugNotifier = new CommsDebugNotifier(NullLogger<CommsDebugNotifier>.Instance, signalCliConfig,
             edgeHardwareConfig, Notifier, serviceProvider);
         var commandHandler = new AgentCommandHandler(NullLogger<AgentCommandHandler>.Instance, aiConfig,
             new FakeSessionStore());
         var healthCheck = new SignalCliConnectionHealthCheck(NullLogger<SignalCliConnectionHealthCheck>.Instance,
             signalCliConfig, env, new StubHttpClientFactory());
+#pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
+        var transcriptionSvc = new VoiceMessageTranscriptionService(
+            NullLogger<VoiceMessageTranscriptionService>.Instance, speechToTextConfig, SpeechToText);
+#pragma warning restore MEAI001
 
         Service = new CommunicationsBgService(
             NullLogger<CommunicationsBgService>.Instance,
@@ -122,6 +167,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             new FakeSignalCliClient(),
             Cleaner,
             Deduplicator,
+            transcriptionSvc,
             commandHandler,
             new StubRemoteCache(),
             EventSink,

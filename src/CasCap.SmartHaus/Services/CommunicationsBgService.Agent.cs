@@ -25,23 +25,6 @@ public sealed partial class CommunicationsBgService
             else
                 _logger.LogInformation("{ClassName} bypassing session for this request", nameof(CommunicationsBgService));
 
-            // Transcribe audio attachments via the STT agent before passing to the comms agent.
-            if (binaryContent is not null && mimeType is not null && mimeType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
-            {
-                var transcription = await TranscribeAudioAsync(binaryContent, mimeType, cancellationToken);
-                if (!string.IsNullOrWhiteSpace(transcription))
-                {
-                    prompt = $"[AUDIO TRANSCRIPTION] The user sent an audio clip. Transcribed text: \"{transcription}\"\n\nOriginal prompt: {prompt}";
-                    binaryContent = null;
-                    mimeType = null;
-                    _logger.LogInformation("{ClassName} audio transcribed, {TranscriptionLength} chars",
-                        nameof(CommunicationsBgService), transcription.Length);
-                }
-                else
-                    _logger.LogWarning("{ClassName} audio transcription returned empty, passing raw audio to agent",
-                        nameof(CommunicationsBgService));
-            }
-
             var message = AgentExtensions.BuildChatMessage(prompt,
                 binaryContent: binaryContent, mimeType: mimeType);
             var chatOptions = AgentExtensions.BuildChatOptions(_commsAgent!, _resolvedInstructions!);
@@ -170,74 +153,6 @@ public sealed partial class CommunicationsBgService
         {
             _logger.LogError(ex, "{ClassName} agent inference failed", nameof(CommunicationsBgService));
             return (null, []);
-        }
-    }
-
-    /// <summary>
-    /// Transcribes audio content using the dedicated <see cref="AgentKeys.AudioAgent"/> (Whisper model).
-    /// </summary>
-    /// <returns>The transcribed text, or <see langword="null"/> if the STT agent is not configured or transcription fails.</returns>
-    private async Task<string?> TranscribeAudioAsync(byte[] audioBytes, string mimeType, CancellationToken cancellationToken)
-    {
-        if (_audioAgent is null || _audioAgentConfig is null || _audioProvider is null)
-        {
-            _logger.LogWarning("{ClassName} audio agent not configured, skipping audio transcription",
-                nameof(CommunicationsBgService));
-            return null;
-        }
-
-        try
-        {
-            _logger.LogInformation("{ClassName} transcribing {Size} byte audio ({MimeType}) via audio agent, model={ModelName}",
-                nameof(CommunicationsBgService), audioBytes.Length, mimeType, _audioProvider.ModelName);
-
-            // Transcode non-WAV audio to WAV (matching the sub-agent delegation path)
-            // so the Whisper model receives decoded PCM and we capture both files for debug.
-            var wavBytes = audioBytes;
-            var wavMimeType = mimeType;
-            if (mimeType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase)
-                && !mimeType.Equals("audio/wav", StringComparison.OrdinalIgnoreCase)
-                && !mimeType.Equals("audio/x-wav", StringComparison.OrdinalIgnoreCase))
-            {
-                var transcoded = await AgentExtensions.TranscodeToWavAsync(audioBytes, cancellationToken, _logger);
-                if (transcoded is not null)
-                {
-                    _logger.LogInformation("{ClassName} transcoded {OriginalSize} byte {OriginalMimeType} \u2192 {TranscodedSize} byte WAV",
-                        nameof(CommunicationsBgService), audioBytes.Length, mimeType, transcoded.Length);
-                    wavBytes = transcoded;
-                    wavMimeType = "audio/wav";
-                    AgentExtensions.SetAmbientAudioDebug(audioBytes, mimeType, transcoded);
-                }
-                else
-                {
-                    _logger.LogWarning("{ClassName} ffmpeg transcode failed, sending original {MimeType} to audio agent",
-                        nameof(CommunicationsBgService), mimeType);
-                    AgentExtensions.SetAmbientAudioDebug(audioBytes, mimeType, transcodedWav: null);
-                }
-            }
-
-            var message = AgentExtensions.BuildChatMessage(_audioAgentConfig.Prompt,
-                binaryContent: wavBytes, mimeType: wavMimeType);
-            var chatOptions = AgentExtensions.BuildChatOptions(_audioAgentConfig,
-                _audioAgentConfig.Instructions ?? string.Empty);
-
-            var result = await _audioAgent.RunAnalysisAsync(
-                _audioProvider,
-                _audioAgentConfig,
-                message,
-                chatOptions,
-                cancellationToken: cancellationToken,
-                logger: _logger);
-
-            _logger.LogInformation("{ClassName} audio transcription completed in {Duration}, outputLength={OutputLength}",
-                nameof(CommunicationsBgService), result.Elapsed, result.OutputText?.Length ?? 0);
-
-            return result.OutputText;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "{ClassName} audio transcription failed", nameof(CommunicationsBgService));
-            return null;
         }
     }
 
