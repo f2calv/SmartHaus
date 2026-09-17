@@ -445,7 +445,7 @@ deploy.local.psd1
 # local sibling repos synced in for Debug (Dockerfile.Debug) container builds
 deps/
 
-# PII scan reports (.scripts/Find-Pii.ps1 -OutFile) - may contain extracted secrets
+# PII scan reports (Find-Pii.ps1 -OutFile) - may contain extracted secrets
 pii-report*.csv
 
 # HVE / Copilot runtime artefacts
