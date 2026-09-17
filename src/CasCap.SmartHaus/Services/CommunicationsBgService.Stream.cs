@@ -4,6 +4,8 @@ namespace CasCap.Services;
 
 public sealed partial class CommunicationsBgService
 {
+    /// <summary>The Redis database backing the comms stream, resolved on first use.</summary>
+    private IDatabase _db => _remoteCache.Db;
     private async Task EnsureConsumerGroupAsync()
     {
         try

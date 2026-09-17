@@ -39,7 +39,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly ISignalAttachmentCleaner _attachmentCleaner;
     private readonly ISignalMessageDeduplicator _deduplicator;
     private readonly AgentCommandHandler _commandHandler;
-    private readonly IDatabase _db;
+    private readonly IRemoteCache _remoteCache;
     private readonly IServiceProvider _serviceProvider;
     private readonly SignalCliConnectionHealthCheck _signalCliHealthCheck;
     private readonly IHostEnvironment _env;
@@ -103,7 +103,9 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
         _commandHandler = commandHandler;
-        _db = remoteCache.Db;
+        //Resolved lazily rather than captured here, so an unreachable cache cannot stop the feature
+        //being constructed; only the stream path needs it.
+        _remoteCache = remoteCache;
         _serviceProvider = serviceProvider;
         _signalCliHealthCheck = signalCliHealthCheck;
         _pollTracker = pollTracker;
