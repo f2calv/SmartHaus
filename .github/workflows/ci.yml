@@ -5,7 +5,6 @@ on:
   push:
     paths-ignore:
       - .github/copilot-instructions.md
-      - .github/dependabot.yml
       - LICENSE
       - README.md
   pull_request:
@@ -13,7 +12,14 @@ on:
     types: [opened, synchronize, reopened]
 permissions: {} #Note: deny all permissions at the workflow level; individual jobs declare only what they need (principle of least privilege)
 jobs:
+  lint:
+    uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+    permissions:
+      contents: read
+
   release:
+    needs: [lint]
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       tag-prefix: ''
