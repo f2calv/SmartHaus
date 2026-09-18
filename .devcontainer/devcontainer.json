@@ -10,7 +10,9 @@
         "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
         "ghcr.io/devcontainers/features/azure-cli:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
-        // "ghcr.io/devcontainers/features/powershell:1": {},
+        "ghcr.io/devcontainers/features/powershell:2": {
+            "modules": "Pester==5.7.1"
+        },
         // "ghcr.io/devcontainers/features/node:1": {
         //   "version": "lts"
         // },
@@ -49,6 +51,10 @@
                 "mutantdino.resourcemonitor",
                 "usernamehw.errorlens",
                 "davidanson.vscode-markdownlint",
+                "redhat.vscode-yaml",
+                "github.vscode-github-actions",
+                "humao.rest-client",
+                "tim-koehler.helm-intellisense",
                 "ms-dotnettools.csharp"
             ]
         }
