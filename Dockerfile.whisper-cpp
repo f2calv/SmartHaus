@@ -61,12 +61,17 @@ EOF
 # --- Compile --------------------------------------------------------------------
 # GGML_NATIVE=OFF stops ggml probing the builder's CPU, and -mcpu=cortex-a76 pins the
 # instruction set to what the Pi 5 implements. Together these are the fix for SIGILL.
+#
+# Shared libraries are required, not a preference: ggml's backends self-register from a
+# static initialiser, and linking them as static archives lets the linker discard that
+# object because nothing references it. The Vulkan backend then silently vanishes and
+# whisper falls back to the CPU.
 RUN --mount=type=cache,target=/src/build,sharing=locked,id=whisper-cpp-build-arm64 <<EOF
 set -eux
 cmake -S . -B build \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX=/opt/whisper \
-    -DBUILD_SHARED_LIBS=OFF \
+    -DBUILD_SHARED_LIBS=ON \
     -DGGML_NATIVE=OFF \
     -DGGML_VULKAN=1 \
     -DWHISPER_BUILD_TESTS=OFF \
@@ -106,7 +111,8 @@ EOF
 
 COPY --link --from=build /opt/whisper /opt/whisper
 
-ENV PATH=/opt/whisper/bin:$PATH
+ENV PATH=/opt/whisper/bin:$PATH \
+    LD_LIBRARY_PATH=/opt/whisper/lib
 
 ARG GIT_REPOSITORY=n/a
 ENV GIT_REPOSITORY=$GIT_REPOSITORY
