@@ -21,6 +21,9 @@
 # builder's own CPU does not affect the output.
 # ------------------------------------------------------------------------------
 
+# Used twice: the revision to compile, and the tag of the runtime base built from it.
+ARG WHISPER_CPP_COMMIT=64d57d3df5c8dacee098577257edcaa154bf5ef3
+
 # ------------------------------------------------------------------------------
 # Stage 1 of 2: build
 #
@@ -49,7 +52,7 @@ EOF
 # --- Source ---------------------------------------------------------------------
 # Pinned to a commit rather than a branch so the build is reproducible. This is the
 # same commit as the upstream image that proved the Vulkan path works.
-ARG WHISPER_CPP_COMMIT=64d57d3df5c8dacee098577257edcaa154bf5ef3
+ARG WHISPER_CPP_COMMIT
 RUN <<EOF
 set -eux
 git init
@@ -85,29 +88,24 @@ EOF
 # ------------------------------------------------------------------------------
 # Stage 2 of 2: final
 #
-# Runtime image alternatives, smallest first:
-#   distroless  - rejected, the model download helper needs a shell, curl and ffmpeg.
-#   ubuntu:24.04-slim - not published; Ubuntu ships no slim variant.
-#   ubuntu:24.04 - chosen, matches the build stage's glibc and Vulkan loader.
+# Based on the upstream image rather than a bare Ubuntu, which is deliberate and
+# empirical. On ubuntu:24.04 with libvulkan1 the NVIDIA ICD refuses to return a
+# vkCreateInstance to the loader and no GPU is found, while the upstream image on the
+# same node enumerates the card. Both carry the same loader, the same 42 injected
+# driver libraries and the same ICD manifest, so the difference is elsewhere in the
+# runtime environment. Upstream's environment is known good and only its binaries are
+# unusable on a Cortex-A76, so keep the environment and replace the binaries.
 #
-# mesa-vulkan-drivers is deliberately NOT installed. Upstream ships it, which lets a
-# missing NVIDIA ICD fall back silently to llvmpipe and transcribe on the CPU while
-# appearing to work. Without it, a broken GPU setup fails loudly instead.
+# The tag is architecture-specific because whisper.cpp publishes per-architecture tags
+# rather than a manifest list. This image is therefore linux/arm64 only.
 # ------------------------------------------------------------------------------
-FROM ubuntu:24.04 AS final
+FROM ghcr.io/ggml-org/whisper.cpp:main-vulkan-arm64-${WHISPER_CPP_COMMIT} AS final
 
 WORKDIR /app
 
-RUN <<EOF
-set -eux
-apt-get update
-apt-get install -y --no-install-recommends \
-    ca-certificates \
-    curl \
-    ffmpeg \
-    libvulkan1
-rm -rf /var/lib/apt/lists/*
-EOF
+# The upstream binaries abort with SIGILL on a Cortex-A76; drop them so that a stale
+# PATH entry cannot reach them.
+RUN rm -rf /app/build/bin
 
 COPY --link --from=build /opt/whisper /opt/whisper
 
@@ -128,7 +126,7 @@ ARG GITHUB_RUN_ID=0
 ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
 ARG GITHUB_RUN_NUMBER=0
 ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
-ARG WHISPER_CPP_COMMIT=n/a
+ARG WHISPER_CPP_COMMIT
 ENV WHISPER_CPP_COMMIT=$WHISPER_CPP_COMMIT
 
 LABEL org.opencontainers.image.title="whisper-cpp" \
