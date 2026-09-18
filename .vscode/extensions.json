@@ -1,10 +1,12 @@
 {
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=827846
   "recommendations": [
-    "ms-dotnettools.csharp",
+    "ms-dotnettools.csdevkit",
+    "ms-ossdata.vscode-pgsql",
+    "ms-azuretools.vscode-azure-mcp-server",
     "ms-vscode.powershell",
     "ms-vscode.azurecli",
-    "ms-azuretools.vscode-docker",
+    "ms-azuretools.vscode-containers",
     "ms-vscode-remote.vscode-remote-extensionpack",
     "mutantdino.resourcemonitor",
     "usernamehw.errorlens",
