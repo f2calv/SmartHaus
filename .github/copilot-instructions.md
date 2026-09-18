@@ -31,22 +31,21 @@ or operational procedures in tracked files or public pull requests.
 
 ## Configuration File Strategy
 
-This repository has two tiers of `appsettings` files:
+SmartHaus follows the standard provider order and options-synchronisation rules in
+`dotnet.configuration.instructions.md`. Its repository-specific split is:
 
 | File | Git-tracked | Purpose |
 | --- | --- | --- |
-| `appsettings.json` | Yes | Base/production configuration with **generic placeholder values** (no PII). Serves as a reference for open-source consumers to understand the full configuration surface and clone-and-run after a few tweaks. |
-| `appsettings.Development.json` | Yes | Development/docker-compose overrides with **demo-friendly defaults** (e.g. `demo` credentials, Azurite connection strings, `HealthCheck: "None"`, `KeyVaultName: "skip"`). Allows `docker compose --profile demo up` to work out of the box. |
-| `appsettings.Local.json` | No (`.gitignored`) | **Real production** secrets and configuration (Azure Key Vault names, storage account keys, device IPs, phone numbers, API tokens). Never committed. |
-| `appsettings.Local.Development.json` | No (`.gitignored`) | **Real development** secrets and configuration (actual device passwords, real service endpoints). Never committed. |
+| `appsettings.json` | Yes | Base and production reference configuration with public-safe placeholders |
+| `appsettings.Development.json` | Yes | Demo-safe local and container-development overrides |
+| `appsettings.Local.json` | No | Private values shared by local environments and used as production deployment input |
+| `appsettings.Local.Development.json` | No | Private overrides used only in Development |
 
-**Loading order** (later files override earlier ones): `appsettings.json` → `appsettings.{env}.json` → `appsettings.Local.json` → `appsettings.Local.{env}.json` → Azure Key Vault.
-
-**When adding, renaming, or removing an `IAppConfig` property**, update all four files:
-
-1. `appsettings.json` — add/rename/remove the key with a generic placeholder value.
-2. `appsettings.Development.json` — add/rename/remove with a demo-safe default if the property needs an override for local docker-compose runs.
-3. `appsettings.Local.json` — add/rename/remove with the real production value.
-4. `appsettings.Local.Development.json` — add/rename/remove with the real development value.
-
-**PII rules**: The git-tracked files (`appsettings.json`, `appsettings.Development.json`) must **never** contain real IP addresses, hostnames, passwords, API keys, phone numbers, tenant IDs, storage account names, or any other personally identifiable information. Use generic placeholders (`192.168.1.100`, `example.com`, `mystorageaccount`, `+10000000000`, `demo`, `00000000-0000-0000-0000-000000000000`). Real values belong exclusively in the `.gitignored` Local files.
+- Keep tracked configuration clone-and-run friendly and free of real identifiers, endpoints and
+  credentials. Use synthetic placeholders.
+- Keep real private values in the gitignored local files. Azure Key Vault is added as the final
+  application-specific provider and remains the authority for deployment credentials.
+- When a bindable property changes, follow the central synchronisation rule across all four existing
+  tiers; environment and local files restate only values that differ from earlier providers.
+- After changing `appsettings.Local.json` for production deployment, synchronize it through the
+  private GitOps repository's application-configuration skill.

@@ -1,5 +1,4 @@
 using System.Net.Http.Headers;
-using System.Text.Json;
 
 namespace CasCap.Services;
 
@@ -18,11 +17,18 @@ namespace CasCap.Services;
 /// pass. The adapter carries no Signal types and no deployment coordinates, and never logs multipart
 /// bodies, part filenames, audio bytes or transcripts.
 /// </remarks>
-public sealed partial class WhisperAsrSpeechToTextClient(
-    ILogger<WhisperAsrSpeechToTextClient> logger,
-    IOptions<SpeechToTextConfig> options,
-    IHttpClientFactory httpClientFactory) : ISpeechToTextClient
+public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpeechToTextClient
 {
+    private readonly IOptions<SpeechToTextConfig> _options;
+
+    /// <summary>Initializes a new instance of the <see cref="WhisperAsrSpeechToTextClient"/> class.</summary>
+    public WhisperAsrSpeechToTextClient(ILogger<WhisperAsrSpeechToTextClient> logger,
+        IOptions<SpeechToTextConfig> options, IHttpClientFactory httpClientFactory)
+        : base(logger, httpClientFactory.CreateClient(HttpClientName))
+    {
+        _options = options;
+    }
+
     /// <summary>The named <see cref="HttpClient"/> registration this adapter resolves.</summary>
     public const string HttpClientName = nameof(WhisperAsrSpeechToTextClient);
 
@@ -53,11 +59,11 @@ public sealed partial class WhisperAsrSpeechToTextClient(
         var mediaType = ResolveMediaType(speechToTextOptions);
         //encode=false skips the server-side ffmpeg pass; the caller has already produced the WAV it wants.
         var encode = !IsWav(mediaType);
-        var language = speechToTextOptions?.SpeechLanguage ?? options.Value.Language;
-        var requestUri = new Uri(
-            $"{options.Value.Endpoint.TrimEnd('/')}{RequestPath}" +
+        var language = speechToTextOptions?.SpeechLanguage ?? _options.Value.Language;
+        var requestUri =
+            $"{_options.Value.Endpoint.TrimEnd('/')}{RequestPath}" +
             $"?task=transcribe&language={Uri.EscapeDataString(language)}" +
-            $"&encode={(encode ? "true" : "false")}&output=json");
+            $"&encode={(encode ? "true" : "false")}&output=json";
 
         using var content = new MultipartFormDataContent();
         var file = new StreamContent(audioSpeechStream);
@@ -65,28 +71,25 @@ public sealed partial class WhisperAsrSpeechToTextClient(
             file.Headers.ContentType = parsedMediaType;
         content.Add(file, AudioFilePartName, ToPartFileName(mediaType));
 
-        var client = httpClientFactory.CreateClient(HttpClientName);
-        using var response = await client.PostAsync(requestUri, content, cancellationToken);
-        if (!response.IsSuccessStatusCode)
+        var (result, _, statusCode, _) = await PostMultipart<TranscriptionResponse, string>(
+            requestUri, content, cancellationToken: cancellationToken);
+
+        if (result is null)
         {
-            var statusCode = (int)response.StatusCode;
-            if (IsTransientStatusCode(response.StatusCode))
-                LogTranscriptionUnavailable(logger, statusCode);
+            var status = (int)statusCode;
+            if (IsTransientStatusCode(statusCode))
+                LogTranscriptionUnavailable(_logger, status);
             else
-                LogTranscriptionRejected(logger, statusCode);
+                LogTranscriptionRejected(_logger, status);
             throw new HttpRequestException(
-                $"{nameof(WhisperAsrSpeechToTextClient)} transcription request failed, StatusCode={statusCode}.",
-                inner: null, response.StatusCode);
+                $"{nameof(WhisperAsrSpeechToTextClient)} transcription request failed, StatusCode={status}.",
+                inner: null, statusCode);
         }
 
-        await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken);
-        var payload = await JsonSerializer.DeserializeAsync<TranscriptionResponse>(stream,
-            cancellationToken: cancellationToken);
-
-        return new SpeechToTextResponse(payload?.Text ?? string.Empty)
+        return new SpeechToTextResponse(result.Text ?? string.Empty)
         {
-            ModelId = speechToTextOptions?.ModelId ?? options.Value.ModelId,
-            RawRepresentation = payload,
+            ModelId = speechToTextOptions?.ModelId ?? _options.Value.ModelId,
+            RawRepresentation = result,
         };
     }
 

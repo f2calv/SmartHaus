@@ -228,71 +228,24 @@ public sealed partial class VoiceMessageTranscriptionService(
 
     private async Task<byte[]?> ToWav(byte[] audio, string ffmpegPath, CancellationToken cancellationToken)
     {
-        var startInfo = new ProcessStartInfo(ffmpegPath)
-        {
-            RedirectStandardInput = true,
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
-            UseShellExecute = false,
-            CreateNoWindow = true,
-        };
-        foreach (var argument in _ffmpegArguments)
-            startInfo.ArgumentList.Add(argument);
+        //Length-only capture: ffmpeg diagnostics echo container metadata, so the text is never retained.
+        var result = await ShellExtensions.RunProcessWithStdinAsync(ffmpegPath, _ffmpegArguments, audio,
+            ProcessErrorCapture.Length, cancellationToken);
 
-        using var process = new Process { StartInfo = startInfo };
-        try
+        if (result.ExitCode == -1)
         {
-            process.Start();
-        }
-        catch (Exception ex) when (ex is System.ComponentModel.Win32Exception or InvalidOperationException)
-        {
-            LogFfmpegUnavailable(logger, ex.GetType().Name);
+            LogFfmpegUnavailable(logger, nameof(ShellExtensions));
             return null;
         }
 
-        try
+        if (!result.Success)
         {
-            //Both output pipes must drain concurrently with the write, otherwise ffmpeg blocks on a full buffer.
-            var outputTask = ReadAllBytes(process.StandardOutput.BaseStream, cancellationToken);
-            var errorLengthTask = ReadLength(process.StandardError, cancellationToken);
-
-            await using (var input = process.StandardInput.BaseStream)
-                await input.WriteAsync(audio, cancellationToken);
-
-            var output = await outputTask;
-            var errorLength = await errorLengthTask;
-            await process.WaitForExitAsync(cancellationToken);
-
-            if (process.ExitCode != 0 || output.Length == 0)
-            {
-                LogConversionFailed(logger, process.ExitCode, output.Length, errorLength);
-                return null;
-            }
-
-            return output;
-        }
-        catch (IOException ex)
-        {
-            LogFfmpegUnavailable(logger, ex.GetType().Name);
+            LogConversionFailed(logger, result.ExitCode, result.Output.Length, result.ErrorLength);
             return null;
         }
-        finally
-        {
-            if (!process.HasExited)
-                process.Kill(entireProcessTree: true);
-        }
-    }
 
-    private static async Task<byte[]> ReadAllBytes(Stream stream, CancellationToken cancellationToken)
-    {
-        using var buffer = new MemoryStream();
-        await stream.CopyToAsync(buffer, cancellationToken);
-        return buffer.ToArray();
+        return result.Output;
     }
-
-    //Only the length is surfaced; ffmpeg diagnostics can echo container metadata and are never logged.
-    private static async Task<int> ReadLength(StreamReader reader, CancellationToken cancellationToken) =>
-        (await reader.ReadToEndAsync(cancellationToken)).Length;
 
     private static string Normalise(string? text) =>
         string.IsNullOrWhiteSpace(text) ? string.Empty : WhitespaceRegex().Replace(text, " ").Trim();
