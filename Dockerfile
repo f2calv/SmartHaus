@@ -70,19 +70,28 @@ EOF
 # ------------------------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-COPY --link --from=build /app/publish .
-COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Runtime dependencies ------------------------------------------------------
+# Installed before the application layers so editing source never re-runs this install.
 # ffmpeg is required, not optional: voice-message speech-to-text normalises every inbound
 # attachment through it, and ffmpeg-record.sh depends on it too.
+# libgpiod2t64 ships only libgpiod.so.2, but System.Device.Gpio P/Invokes the unversioned
+# "libgpiod" and .NET never probes a versioned soname, so the symlink that libgpiod-dev would
+# otherwise supply is recreated here rather than pulling headers and static libs into the image.
 RUN <<EOF
 set -eux
 apt-get update
-apt-get install -y --no-install-recommends curl libgpiod-dev ffmpeg
+apt-get install -y --no-install-recommends curl libgpiod2t64 ffmpeg
+for lib in /usr/lib/*/libgpiod.so.2; do
+    ln -sf "$(basename "$lib")" "$(dirname "$lib")/libgpiod.so"
+done
 rm -rf /var/lib/apt/lists/*
 ffmpeg -version
+test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.2)")/libgpiod.so"
 EOF
+
+COPY --link --from=build /app/publish .
+COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Temporary debug tooling ---------------------------------------------------
 # Uncomment a block to add a debugging dependency to the image, then remove it again once the
