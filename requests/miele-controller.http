@@ -2,7 +2,7 @@
 ### Base URL is the Haus application server
 
 @baseUrl = {{$dotenv HAUS_BASE_URL}}
-@deviceId = YOUR_MIELE_DEVICE_ID
+@deviceId = {{$dotenv MIELE_DEVICE_ID}}
 
 ### Get all devices
 GET {{baseUrl}}/api/v1/miele/devices
@@ -33,6 +33,7 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Execute device action (e.g. start)
+# @note
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -46,6 +47,7 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Start a program
+# @note
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json

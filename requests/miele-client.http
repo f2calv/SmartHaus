@@ -5,7 +5,7 @@
 
 @baseUrl = {{$dotenv MIELE_BASE_URL}}
 @token = {{$dotenv MIELE_AUTH_TOKEN}}
-@deviceId = YOUR_MIELE_DEVICE_ID
+@deviceId = {{$dotenv MIELE_DEVICE_ID}}
 
 ### Get all devices
 GET {{baseUrl}}/devices
@@ -37,6 +37,7 @@ GET {{baseUrl}}/devices/{{deviceId}}/actions
 Authorization: Bearer {{token}}
 
 ### Execute device action (e.g. start)
+# @note
 PUT {{baseUrl}}/devices/{{deviceId}}/actions
 Authorization: Bearer {{token}}
 Content-Type: application/json
@@ -51,6 +52,7 @@ Authorization: Bearer {{token}}
 Accept-Language: en
 
 ### Start a program
+# @note
 PUT {{baseUrl}}/devices/{{deviceId}}/programs
 Authorization: Bearer {{token}}
 Content-Type: application/json

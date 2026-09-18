@@ -465,7 +465,8 @@ Additional services started by the `demo` profile:
    curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
    ```
 
-   Or use the `ubiquiti-demo.http` file with the VS Code REST Client extension.
+    Or use [`requests/ubiquiti-demo.http`](requests/ubiquiti-demo.http) with the VS Code REST Client
+    extension.
 
 ## Project Configuration
 
@@ -487,7 +488,7 @@ Additional services started by the `demo` profile:
 | `.editorconfig` | Code style rules (4-space indent, LF line endings, full formatting rules) |
 | `global.json` | SDK constraint — stable releases only |
 | `docker-compose.yml` | Infrastructure services + `demo` profile for visitor demo |
-| `ubiquiti-demo.http` | REST Client test requests for the Ubiquiti demo webhook endpoints |
+| `requests/` | REST Client request collections and secret-safe local configuration template |
 | `GitVersion.yml` | Semantic versioning configuration (ContinuousDeployment mode) |
 
 ### Suppressed Warnings

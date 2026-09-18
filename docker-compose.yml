@@ -20,7 +20,7 @@
 #   After startup, wait for the Ollama model pull to finish:
 #     docker compose --profile demo logs ollama-init -f
 #
-#   Then send test events using ubiquiti-demo.http or curl:
+#   Then send test events using requests/ubiquiti-demo.http or curl:
 #     curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
 #
 #   Or query the EdgeHardware snapshot:

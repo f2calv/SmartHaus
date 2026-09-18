@@ -16,10 +16,12 @@ GET {{baseUrl}}/api/v1/doorbird/video
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Unlock front door relay
+# @note
 POST {{baseUrl}}/api/v1/doorbird/relay
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Turn light on
+# @note
 POST {{baseUrl}}/api/v1/doorbird/light
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
@@ -28,6 +30,7 @@ GET {{baseUrl}}/api/v1/doorbird/info
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Restart device
+# @note
 POST {{baseUrl}}/api/v1/doorbird/restart
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
@@ -56,10 +59,12 @@ GET {{baseUrl}}/api/v1/doorbird/notifications
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Subscribe to notification
+# @note
 POST {{baseUrl}}/api/v1/doorbird/notifications/subscribe?subscriberUrl=http://example.com/callback&eventType=doorbell
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Unsubscribe from notification
+# @note
 POST {{baseUrl}}/api/v1/doorbird/notifications/unsubscribe?subscriberUrl=http://example.com/callback&eventType=doorbell
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 

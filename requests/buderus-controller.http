@@ -16,6 +16,7 @@ GET {{baseUrl}}/api/v1/buderus/dhwCircuits
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set a datapoint value
+# @note
 PUT {{baseUrl}}/api/v1/buderus/heatingCircuits/hc1/temperatureRoomSetpoint
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json

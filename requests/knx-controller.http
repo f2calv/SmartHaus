@@ -49,6 +49,7 @@ GET {{baseUrl}}/api/v1/bus/validate/group/EG_Wohnzimmer_Licht
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Send command to KNX bus
+# @note
 POST {{baseUrl}}/api/v1/bus/state/send
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -75,6 +76,7 @@ GET {{baseUrl}}/api/v1/hvac/EG_Wohnzimmer_Heizung
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set HVAC state
+# @note
 POST {{baseUrl}}/api/v1/hvac
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -85,6 +87,7 @@ Content-Type: application/json
 }
 
 ### Set HVAC state (dry run)
+# @note
 POST {{baseUrl}}/api/v1/hvac?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -111,6 +114,7 @@ GET {{baseUrl}}/api/v1/lights/EG_Wohnzimmer_Licht
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set light state (on)
+# @note
 POST {{baseUrl}}/api/v1/lights/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -121,6 +125,7 @@ Content-Type: application/json
 }
 
 ### Set light state (dry run)
+# @note
 POST {{baseUrl}}/api/v1/lights/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -131,6 +136,7 @@ Content-Type: application/json
 }
 
 ### Turn all lights off
+# @note
 POST {{baseUrl}}/api/v1/lights/state/all-off
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
@@ -151,6 +157,7 @@ GET {{baseUrl}}/api/v1/poweroutlets/EG_Wohnzimmer_Steckdose
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set power outlet state
+# @note
 POST {{baseUrl}}/api/v1/poweroutlets/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -161,6 +168,7 @@ Content-Type: application/json
 }
 
 ### Set power outlet state (dry run)
+# @note
 POST {{baseUrl}}/api/v1/poweroutlets/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -187,6 +195,7 @@ GET {{baseUrl}}/api/v1/shutters/EG_Wohnzimmer_Jalousie
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set shutter state
+# @note
 POST {{baseUrl}}/api/v1/shutters/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -197,6 +206,7 @@ Content-Type: application/json
 }
 
 ### Set shutter state (dry run)
+# @note
 POST {{baseUrl}}/api/v1/shutters/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -207,9 +217,11 @@ Content-Type: application/json
 }
 
 ### Close all shutters
+# @note
 POST {{baseUrl}}/api/v1/shutters/state/all-close
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Open all shutters
+# @note
 POST {{baseUrl}}/api/v1/shutters/state/all-open
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
