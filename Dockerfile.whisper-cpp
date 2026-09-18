@@ -101,11 +101,16 @@ EOF
 # ------------------------------------------------------------------------------
 FROM ghcr.io/ggml-org/whisper.cpp:main-vulkan-arm64-${WHISPER_CPP_COMMIT} AS final
 
-WORKDIR /app
+WORKDIR /work
 
 # The upstream binaries abort with SIGILL on a Cortex-A76; drop them so that a stale
-# PATH entry cannot reach them.
-RUN rm -rf /app/build/bin
+# PATH entry cannot reach them. /work is owned by the runtime user because --convert
+# writes its temporary file into the working directory, and /app is root-owned.
+RUN <<EOF
+set -eux
+rm -rf /app/build/bin
+install -d -o 65532 -g 65532 /work
+EOF
 
 COPY --link --from=build /opt/whisper /opt/whisper
 
