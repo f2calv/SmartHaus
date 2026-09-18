@@ -76,8 +76,8 @@ centralized skill, run it with the application repository as the current directo
    escapes through a relative path, symbolic link, or reparse point.
 2. Load GitOps coordinates from the ignored deployment data or explicit parameters. The resolved
    ConfigMap must remain inside the configured GitOps checkout.
-3. Run the script with `-WhatIf` first. Stop on invalid JSON, credential-bearing values, path escapes,
-   wrong ConfigMap identity, a missing data key, unavailable `yq`, or an already-modified target.
+3. Run the script with `-WhatIf` first. Stop on invalid JSON, path escapes, wrong ConfigMap identity,
+   a missing data key, unavailable `yq`, or an already-modified target.
 4. Show only the source file name and the GitOps-relative target path. Never print, diff, summarize,
    or persist source values outside the target ConfigMap.
 5. Obtain approval before real synchronization because it changes GitOps desired state.
@@ -99,23 +99,20 @@ centralized skill, run it with the application repository as the current directo
 - The script passes only the source path to `yq` through a temporary process environment variable and
   removes that variable in a `finally` block. Source content is loaded directly from the file, so it
   is not constrained by Windows environment-variable size limits.
-- Before writing, the script recursively rejects non-placeholder values in credential-named
-  properties and secret-bearing connection strings. A failed write or verification restores the
-  original target bytes.
-- The target ConfigMap may contain non-secret private environment configuration and identifiers.
-  Credentials and secret values belong in the deployment secret store, not in a ConfigMap.
+- The script performs no property filtering or value rewriting. It embeds the complete source JSON
+   text in the configured ConfigMap key and verifies semantic equivalence afterward.
+- A failed write or verification restores the original target bytes.
 - Refuse to overwrite an existing uncommitted target change. Review or commit that change first.
 - Synchronization is not deployment. A successful write only updates the local GitOps worktree.
 
 ## Script Reference
 
 The script exits with code `0` when validation or synchronization succeeds and nonzero when an input,
-target, tool, Git state, credential, or semantic-equivalence check fails.
+target, tool, Git state, or semantic-equivalence check fails.
 
 It validates:
 
 - source JSON with comments and trailing commas enabled;
-- absence of credential-bearing values;
 - target containment within the configured GitOps checkout;
 - target `kind: ConfigMap`;
 - configured target `metadata.name`;
@@ -135,7 +132,6 @@ Run the synthetic Pester regression suite after changing the script:
 | Deployment data is missing | Copy `deploy.local.psd1.example`, then supply private local values |
 | `yq` is unavailable or wrong | Install the repository-supported Mike Farah `yq` binary and rerun `-WhatIf` |
 | Source JSON is invalid | Fix the local file; do not modify the ConfigMap manually |
-| Credential property is rejected | Move the value to the deployment secret store and keep a safe placeholder |
 | Target is already modified | Review the existing GitOps change before synchronizing again |
 | Semantic verification fails | Restore the target from Git and inspect the `yq` version and source syntax |
 | Argo CD does not reconcile | Commit and push through the normal GitOps workflow, then inspect the Application |

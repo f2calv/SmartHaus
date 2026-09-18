@@ -80,6 +80,27 @@ data:
         Test-Path Env:APPSETTINGS_CONFIGMAP_SOURCE_PATH | Should -BeFalse
     }
 
+    It 'copies every source property without filtering' {
+        [IO.File]::WriteAllText(
+            $script:SourcePath,
+            "{`n  `"ApiKey`": `"synthetic-value`",`n  `"ConnectionString`": `"Host=example.com;Password=synthetic`"`n}`n")
+
+        Sync-AppSettingsToConfigMap `
+            -SourcePath $script:SourcePath `
+            -SourceRoot $script:SourceRoot `
+            -TargetPath $script:TargetPath `
+            -RepositoryRoot $script:RepositoryRoot `
+            -ConfigMapName haus-appsettings `
+            -ConfigMapKey appsettings.Local.json `
+            -Confirm:$false
+
+        $EmbeddedJsonString = & yq -o=json -I=0 '.data."appsettings.Local.json"' $script:TargetPath
+        $Embedded = "$EmbeddedJsonString" | ConvertFrom-Json
+        $Parsed = $Embedded | ConvertFrom-Json
+        $Parsed.ApiKey | Should -BeExactly 'synthetic-value'
+        $Parsed.ConnectionString | Should -BeExactly 'Host=example.com;Password=synthetic'
+    }
+
     It 'refuses to overwrite an existing target change' {
         Add-Content -LiteralPath $script:TargetPath -Value '# existing change'
 
@@ -93,50 +114,6 @@ data:
                 -ConfigMapKey appsettings.Local.json `
                 -Confirm:$false
         } | Should -Throw '*already has an uncommitted change*'
-    }
-
-    It 'rejects credential-bearing <PropertyName> values without changing the target' -TestCases @(
-        @{ PropertyName = 'ApiKey' }
-        @{ PropertyName = 'AuthKey' }
-        @{ PropertyName = 'DeviceToken' }
-        @{ PropertyName = 'VendorKey' }
-        @{ PropertyName = 'Token' }
-        @{ PropertyName = 'Secret' }
-        @{ PropertyName = 'SasToken' }
-        @{ PropertyName = 'ClientKey' }
-        @{ PropertyName = 'ApiKeys' }
-        @{ PropertyName = 'AccessKey' }
-        @{ PropertyName = 'SecretAccessKey' }
-        @{ PropertyName = 'Authorization' }
-        @{ PropertyName = 'SigningKey' }
-        @{ PropertyName = 'EncryptionKey' }
-        @{ PropertyName = 'SasKey' }
-        @{ PropertyName = 'BasicAuth' }
-        @{ PropertyName = 'AuthorizationHeader' }
-        @{ PropertyName = 'SecretKey' }
-        @{ PropertyName = 'SubscriptionKey' }
-        @{ PropertyName = 'SharedSecret' }
-    ) {
-        param($PropertyName)
-
-        [IO.File]::WriteAllText(
-            $script:SourcePath,
-            "{`n  `"$PropertyName`": `"not-a-placeholder`"`n}`n")
-        $Before = [IO.File]::ReadAllText($script:TargetPath)
-
-        {
-            Sync-AppSettingsToConfigMap `
-                -SourcePath $script:SourcePath `
-                -SourceRoot $script:SourceRoot `
-                -TargetPath $script:TargetPath `
-                -RepositoryRoot $script:RepositoryRoot `
-                -ConfigMapName haus-appsettings `
-                -ConfigMapKey appsettings.Local.json `
-                -Confirm:$false
-        } | Should -Throw '*Credential-bearing configuration is not allowed*'
-
-        [IO.File]::ReadAllText($script:TargetPath) | Should -BeExactly $Before
-        @(git -C $script:RepositoryRoot status --porcelain).Count | Should -Be 0
     }
 
     It 'rejects a target outside the configured GitOps repository' {
@@ -155,36 +132,6 @@ data:
         } | Should -Throw '*target ConfigMap must be inside its configured repository*'
     }
 
-    It 'rejects secret-bearing connection format <Format>' -TestCases @(
-        @{ Format = 'key-value'; Value = 'Host=example.com;Password=secret' }
-        @{ Format = 'key-value-spaces'; Value = 'Host=example.com;Password = secret' }
-        @{ Format = 'client-secret'; Value = 'Endpoint=example.com;ClientSecret=secret' }
-        @{ Format = 'client-secret-snake'; Value = 'Endpoint=example.com;client_secret=secret' }
-        @{ Format = 'embedded-secret'; Value = 'Endpoint=example.com;Secret = secret' }
-        @{ Format = 'postgres-uri'; Value = 'postgresql://user:secret@example.com/database' }
-        @{ Format = 'redis-uri'; Value = 'rediss://:secret@example.com:6379' }
-        @{ Format = 'query-token'; Value = 'https://example.com/path?token=secret' }
-    ) {
-        param($Format, $Value)
-
-        [IO.File]::WriteAllText(
-            $script:SourcePath,
-            "{`n  `"ConnectionStrings`": {`n    `"Default`": `"$Value`"`n  }`n}`n")
-
-        {
-            Sync-AppSettingsToConfigMap `
-                -SourcePath $script:SourcePath `
-                -SourceRoot $script:SourceRoot `
-                -TargetPath $script:TargetPath `
-                -RepositoryRoot $script:RepositoryRoot `
-                -ConfigMapName haus-appsettings `
-                -ConfigMapKey appsettings.Local.json `
-                -Confirm:$false
-        } | Should -Throw '*Credential-bearing configuration is not allowed*'
-
-        @(git -C $script:RepositoryRoot status --porcelain).Count | Should -Be 0
-    }
-
     It 'rejects a source outside the SmartHaus repository' {
         $OutsideSource = Join-Path $TestDrive 'outside.json'
         Copy-Item -LiteralPath $script:SourcePath -Destination $OutsideSource
@@ -201,59 +148,4 @@ data:
         } | Should -Throw '*source appsettings file must be inside its configured repository*'
     }
 
-    It 'rejects secrets nested below credential container <ContainerName>' -TestCases @(
-        @{ ContainerName = 'ApiKeys'; ChildName = 'Service' }
-        @{ ContainerName = 'Credentials'; ChildName = 'Pass' }
-    ) {
-        param($ContainerName, $ChildName)
-
-        [IO.File]::WriteAllText(
-            $script:SourcePath,
-            "{`n  `"$ContainerName`": {`n    `"$ChildName`": `"secret`"`n  }`n}`n")
-
-        {
-            Sync-AppSettingsToConfigMap `
-                -SourcePath $script:SourcePath `
-                -SourceRoot $script:SourceRoot `
-                -TargetPath $script:TargetPath `
-                -RepositoryRoot $script:RepositoryRoot `
-                -ConfigMapName haus-appsettings `
-                -ConfigMapKey appsettings.Local.json `
-                -Confirm:$false
-        } | Should -Throw '*Credential-bearing configuration is not allowed*'
-    }
-
-    It 'rejects secrets nested below a credential-named array' {
-        [IO.File]::WriteAllText(
-            $script:SourcePath,
-            "{`n  `"Tokens`": [`"secret`"]`n}`n")
-
-        {
-            Sync-AppSettingsToConfigMap `
-                -SourcePath $script:SourcePath `
-                -SourceRoot $script:SourceRoot `
-                -TargetPath $script:TargetPath `
-                -RepositoryRoot $script:RepositoryRoot `
-                -ConfigMapName haus-appsettings `
-                -ConfigMapKey appsettings.Local.json `
-                -Confirm:$false
-        } | Should -Throw '*Credential-bearing configuration is not allowed*'
-    }
-
-    It 'rejects secret-form strings inside an ordinary array' {
-        [IO.File]::WriteAllText(
-            $script:SourcePath,
-            "{`n  `"Endpoints`": [`"postgresql://user:secret@example.com/database`"]`n}`n")
-
-        {
-            Sync-AppSettingsToConfigMap `
-                -SourcePath $script:SourcePath `
-                -SourceRoot $script:SourceRoot `
-                -TargetPath $script:TargetPath `
-                -RepositoryRoot $script:RepositoryRoot `
-                -ConfigMapName haus-appsettings `
-                -ConfigMapKey appsettings.Local.json `
-                -Confirm:$false
-        } | Should -Throw '*Credential-bearing configuration is not allowed*'
-    }
 }

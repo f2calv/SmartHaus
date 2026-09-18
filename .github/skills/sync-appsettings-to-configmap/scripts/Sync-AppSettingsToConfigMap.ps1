@@ -116,62 +116,6 @@ function Invoke-YqScalar {
     return "$Value".Trim()
 }
 
-function Assert-NoCredentialValues {
-    <#
-    .SYNOPSIS
-        Rejects credential-bearing values without writing their content to output.
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [Text.Json.JsonElement]$Element,
-
-        [Parameter(Mandatory = $false)]
-        [string]$Path = '$',
-
-        [Parameter(Mandatory = $false)]
-        [bool]$CredentialContext = $false
-    )
-
-    if ($Element.ValueKind -eq [Text.Json.JsonValueKind]::String) {
-        $Value = $Element.GetString()
-        $AllowedPlaceholder = [string]::IsNullOrWhiteSpace($Value) -or
-        $Value -in @('SET_VIA_ENV_OR_KEYVAULT', 'sk-no-key-required')
-        $SecretContent = $Value -match '(?i)(accountkey|sharedaccesskey|clientsecret|client_secret|secret|password|pwd|user id|username|uid|sig|token|apikey|api_key)\s*=\s*' -or
-        $Value -match '(?i)^[a-z][a-z0-9+.-]*://[^/@\s]*:[^/@\s]+@' -or
-        $Value -match '(?i)[?&](access_token|token|api_key|apikey|sig)=[^&\s]+'
-        if (-not $AllowedPlaceholder -and ($CredentialContext -or $SecretContent)) {
-            throw "Credential-bearing configuration is not allowed in the ConfigMap: $Path."
-        }
-
-        return
-    }
-
-    if ($Element.ValueKind -eq [Text.Json.JsonValueKind]::Object) {
-        foreach ($Property in $Element.EnumerateObject()) {
-            $PropertyPath = "$Path.$($Property.Name)"
-            $PropertyValue = $Property.Value
-            $PropertyCredentialContext = $CredentialContext -or
-                $Property.Name -match '(?i)(passwords?|passwds?|passphrases?|pass|usernames?|credentials?|secrets?|shared_?secrets?|tokens?|api_?keys?|auth_?keys?|basicauth|authorization(headers?)?|client(secrets?|_secret|_?keys?)|access(_?tokens?|_?keys?)|vendor_?keys?|private_?keys?|secret_?keys?|subscription_?keys?|signing_?keys?|encryption_?keys?|sas(_?tokens?|_?keys?)|sharedaccess_?keys?|account_?keys?)$'
-
-            Assert-NoCredentialValues `
-                -Element $PropertyValue `
-                -Path $PropertyPath `
-                -CredentialContext $PropertyCredentialContext
-        }
-    }
-    elseif ($Element.ValueKind -eq [Text.Json.JsonValueKind]::Array) {
-        $Index = 0
-        foreach ($Item in $Element.EnumerateArray()) {
-            Assert-NoCredentialValues `
-                -Element $Item `
-                -Path "$Path[$Index]" `
-                -CredentialContext $CredentialContext
-            $Index++
-        }
-    }
-}
-
 function Resolve-ContainedPath {
     <#
     .SYNOPSIS
@@ -288,16 +232,6 @@ function Sync-AppSettingsToConfigMap {
 
     $SourceContent = [IO.File]::ReadAllText($ResolvedSourcePath)
     $CanonicalSource = ConvertTo-CanonicalJson -Content $SourceContent
-    $DocumentOptions = [Text.Json.JsonDocumentOptions]::new()
-    $DocumentOptions.AllowTrailingCommas = $true
-    $DocumentOptions.CommentHandling = [Text.Json.JsonCommentHandling]::Skip
-    $SourceDocument = [Text.Json.JsonDocument]::Parse($SourceContent, $DocumentOptions)
-    try {
-        Assert-NoCredentialValues -Element $SourceDocument.RootElement
-    }
-    finally {
-        $SourceDocument.Dispose()
-    }
 
     if ((Invoke-YqScalar -Expression '.kind' -Path $ResolvedTargetPath) -ne 'ConfigMap') {
         throw 'The target manifest is not a ConfigMap.'
