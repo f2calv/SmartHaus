@@ -1,0 +1,137 @@
+# syntax=docker/dockerfile:1
+
+# ------------------------------------------------------------------------------
+# whisper.cpp speech-to-text server for Raspberry Pi 5 with NVIDIA GPU offload.
+#
+# Why this exists at all: the upstream arm64 images at ghcr.io/ggml-org/whisper.cpp
+# abort with SIGILL (exit 132) on a Cortex-A76, even for `whisper-cli -h`. They are
+# compiled for a newer Arm baseline than the Pi 5 provides - it has fp16 and dotprod
+# but no i8mm, bf16 or SVE. This file rebuilds the same upstream commit against an
+# explicit Cortex-A76 target so the binaries actually execute.
+#
+# Why Vulkan and not CUDA: upstream publishes no arm64 CUDA image for whisper.cpp,
+# only arm64 Vulkan. The NVIDIA driver supplies a Vulkan ICD, so the GPU is reached
+# through Vulkan instead. This is verified working - whisper.cpp enumerates the
+# RTX 3060 with KHR_coopmat when the NVIDIA container runtime injects the ICD.
+#
+# Build this on an arm64 host, not by cross-compiling: ggml's Vulkan backend generates
+# SPIR-V with a vulkan-shaders-gen binary that has to run on the build machine, so a
+# cross build needs a second native toolchain. The build stage is therefore not pinned
+# to $BUILDPLATFORM. GGML_NATIVE is off and the target is set explicitly, so the
+# builder's own CPU does not affect the output.
+# ------------------------------------------------------------------------------
+
+# ------------------------------------------------------------------------------
+# Stage 1 of 2: build
+#
+# Ubuntu 24.04 matches the upstream Vulkan image, so the Vulkan and SPIR-V toolchain
+# versions are the ones whisper.cpp is actually tested against.
+# ------------------------------------------------------------------------------
+FROM ubuntu:24.04 AS build
+
+WORKDIR /src
+
+# --- Dependencies ---------------------------------------------------------------
+RUN <<EOF
+set -eux
+apt-get update
+apt-get install -y --no-install-recommends \
+    build-essential \
+    ca-certificates \
+    cmake \
+    git \
+    glslc \
+    libvulkan-dev \
+    spirv-headers
+rm -rf /var/lib/apt/lists/*
+EOF
+
+# --- Source ---------------------------------------------------------------------
+# Pinned to a commit rather than a branch so the build is reproducible. This is the
+# same commit as the upstream image that proved the Vulkan path works.
+ARG WHISPER_CPP_COMMIT=64d57d3df5c8dacee098577257edcaa154bf5ef3
+RUN <<EOF
+set -eux
+git init
+git remote add origin https://github.com/ggml-org/whisper.cpp.git
+git fetch --depth 1 origin "${WHISPER_CPP_COMMIT}"
+git checkout FETCH_HEAD
+EOF
+
+# --- Compile --------------------------------------------------------------------
+# GGML_NATIVE=OFF stops ggml probing the builder's CPU, and -mcpu=cortex-a76 pins the
+# instruction set to what the Pi 5 implements. Together these are the fix for SIGILL.
+RUN --mount=type=cache,target=/src/build,sharing=locked,id=whisper-cpp-build-arm64 <<EOF
+set -eux
+cmake -S . -B build \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_INSTALL_PREFIX=/opt/whisper \
+    -DBUILD_SHARED_LIBS=OFF \
+    -DGGML_NATIVE=OFF \
+    -DGGML_VULKAN=1 \
+    -DWHISPER_BUILD_TESTS=OFF \
+    -DCMAKE_C_FLAGS="-mcpu=cortex-a76 -s" \
+    -DCMAKE_CXX_FLAGS="-mcpu=cortex-a76 -s"
+cmake --build build --config Release -j "$(nproc)"
+cmake --install build
+install -m 0755 models/download-ggml-model.sh /opt/whisper/bin/download-ggml-model.sh
+EOF
+
+# ------------------------------------------------------------------------------
+# Stage 2 of 2: final
+#
+# Runtime image alternatives, smallest first:
+#   distroless  - rejected, the model download helper needs a shell, curl and ffmpeg.
+#   ubuntu:24.04-slim - not published; Ubuntu ships no slim variant.
+#   ubuntu:24.04 - chosen, matches the build stage's glibc and Vulkan loader.
+#
+# mesa-vulkan-drivers is deliberately NOT installed. Upstream ships it, which lets a
+# missing NVIDIA ICD fall back silently to llvmpipe and transcribe on the CPU while
+# appearing to work. Without it, a broken GPU setup fails loudly instead.
+# ------------------------------------------------------------------------------
+FROM ubuntu:24.04 AS final
+
+WORKDIR /app
+
+RUN <<EOF
+set -eux
+apt-get update
+apt-get install -y --no-install-recommends \
+    ca-certificates \
+    curl \
+    ffmpeg \
+    libvulkan1
+rm -rf /var/lib/apt/lists/*
+EOF
+
+COPY --link --from=build /opt/whisper /opt/whisper
+
+ENV PATH=/opt/whisper/bin:$PATH
+
+ARG GIT_REPOSITORY=n/a
+ENV GIT_REPOSITORY=$GIT_REPOSITORY
+ARG GIT_BRANCH=n/a
+ENV GIT_BRANCH=$GIT_BRANCH
+ARG GIT_COMMIT=n/a
+ENV GIT_COMMIT=$GIT_COMMIT
+ARG GIT_TAG=n/a
+ENV GIT_TAG=$GIT_TAG
+ARG GITHUB_WORKFLOW=n/a
+ENV GITHUB_WORKFLOW=$GITHUB_WORKFLOW
+ARG GITHUB_RUN_ID=0
+ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
+ARG GITHUB_RUN_NUMBER=0
+ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
+ARG WHISPER_CPP_COMMIT=n/a
+ENV WHISPER_CPP_COMMIT=$WHISPER_CPP_COMMIT
+
+LABEL org.opencontainers.image.title="whisper-cpp" \
+    org.opencontainers.image.description="whisper.cpp server built for Cortex-A76 with Vulkan GPU offload" \
+    org.opencontainers.image.source="https://github.com/ggml-org/whisper.cpp" \
+    org.opencontainers.image.revision=$GIT_COMMIT \
+    org.opencontainers.image.version=$GIT_TAG
+
+# The model cache is a mounted volume; 65532 matches the fsGroup set by the manifest.
+USER 65532:65532
+
+ENTRYPOINT ["whisper-server"]
