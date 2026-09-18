@@ -5,15 +5,21 @@ namespace CasCap.Services;
 /// speech-to-text — as OpenTelemetry instruments.
 /// </summary>
 /// <remarks>
-/// The only dimension is the bounded <see cref="VoiceTranscriptionOutcome"/>. No sender, group,
+/// The dimensions are the bounded <see cref="VoiceTranscriptionOutcome"/> and the configured
+/// <see cref="SpeechToTextProvider"/>, which is what makes the backends comparable. No sender, group,
 /// attachment identifier, media type, filename or transcript is ever attached to a measurement.
 /// The speed instruments report a realtime factor: seconds of audio processed per second of wall
 /// clock, so a value above one means the stage ran faster than playback.
 /// </remarks>
 public sealed class VoiceTranscriptionMetrics
 {
-    /// <summary>The single dimension carried by every instrument.</summary>
+    /// <summary>The outcome dimension carried by every instrument.</summary>
     public const string OutcomeTagName = "outcome";
+
+    /// <summary>The speech-to-text backend dimension carried by every instrument.</summary>
+    public const string ProviderTagName = "provider";
+
+    private readonly string _provider;
 
     private readonly Counter<long> _transcriptions;
     private readonly Histogram<double> _audioDuration;
@@ -23,8 +29,11 @@ public sealed class VoiceTranscriptionMetrics
     private readonly Histogram<double> _transcriptionSpeed;
 
     /// <summary>Initializes a new instance of the <see cref="VoiceTranscriptionMetrics"/> class.</summary>
-    public VoiceTranscriptionMetrics(IOptions<EdgeHardwareConfig> edgeHardwareConfig, IMeterFactory meterFactory)
+    public VoiceTranscriptionMetrics(IOptions<EdgeHardwareConfig> edgeHardwareConfig,
+        IOptions<SpeechToTextConfig> speechToTextConfig, IMeterFactory meterFactory)
     {
+        //The provider cannot change without a restart, so it is resolved once rather than per measurement.
+        _provider = speechToTextConfig.Value.Provider.ToString();
         var prefix = edgeHardwareConfig.Value.MetricNamePrefix;
         var meter = meterFactory.Create(prefix);
 
@@ -54,30 +63,34 @@ public sealed class VoiceTranscriptionMetrics
     {
         ArgumentNullException.ThrowIfNull(result);
 
-        var outcome = new KeyValuePair<string, object?>(OutcomeTagName, result.Outcome.ToString());
-        _transcriptions.Add(1, outcome);
+        var tags = new TagList
+        {
+            { OutcomeTagName, result.Outcome.ToString() },
+            { ProviderTagName, _provider },
+        };
+        _transcriptions.Add(1, tags);
 
         if (result.AudioDuration is { } audio)
-            _audioDuration.Record(audio.TotalSeconds, outcome);
+            _audioDuration.Record(audio.TotalSeconds, tags);
 
         //A null transcode duration means the sender's audio was already a conforming WAV.
         if (result.TranscodeDuration is { } transcode)
         {
-            _transcodeDuration.Record(transcode.TotalSeconds, outcome);
-            RecordSpeed(_transcodeSpeed, result.AudioDuration, transcode, outcome);
+            _transcodeDuration.Record(transcode.TotalSeconds, tags);
+            RecordSpeed(_transcodeSpeed, result.AudioDuration, transcode, tags);
         }
 
         if (result.TranscriptionDuration is { } transcription)
         {
-            _transcriptionDuration.Record(transcription.TotalSeconds, outcome);
-            RecordSpeed(_transcriptionSpeed, result.AudioDuration, transcription, outcome);
+            _transcriptionDuration.Record(transcription.TotalSeconds, tags);
+            RecordSpeed(_transcriptionSpeed, result.AudioDuration, transcription, tags);
         }
     }
 
     private static void RecordSpeed(Histogram<double> histogram, TimeSpan? audioDuration, TimeSpan elapsed,
-        KeyValuePair<string, object?> outcome)
+        in TagList tags)
     {
         if (audioDuration is { } audio && elapsed > TimeSpan.Zero)
-            histogram.Record(audio.TotalSeconds / elapsed.TotalSeconds, outcome);
+            histogram.Record(audio.TotalSeconds / elapsed.TotalSeconds, tags);
     }
 }

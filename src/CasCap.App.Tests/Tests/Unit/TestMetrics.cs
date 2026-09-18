@@ -18,6 +18,6 @@ internal static class TestMetrics
         });
         var meterFactory = new ServiceCollection().AddMetrics().BuildServiceProvider()
             .GetRequiredService<IMeterFactory>();
-        return new(config, meterFactory);
+        return new(config, Options.Create(new SpeechToTextConfig()), meterFactory);
     }
 }

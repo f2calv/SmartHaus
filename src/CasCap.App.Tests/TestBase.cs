@@ -4,6 +4,7 @@ public abstract class TestBase
 {
     protected ITestOutputHelper _output;
     protected AIConfig _aiConfig;
+    protected IConfiguration _configuration;
 
     protected TestBase(ITestOutputHelper output)
     {
@@ -17,6 +18,8 @@ public abstract class TestBase
                 return (authConfig?.KeyVaultUri, authConfig?.TokenCredential);
             })
             .Build();
+
+        _configuration = configuration;
 
         //initiate ServiceCollection w/logging
         var services = new ServiceCollection()

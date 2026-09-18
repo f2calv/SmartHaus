@@ -16,7 +16,40 @@ public sealed record SpeechToTextConfig : IAppConfig
     /// Used by <see cref="CasCap.Services.WhisperAsrSpeechToTextClient"/>.
     /// </remarks>
     [Required, Url]
-    public string Endpoint { get; init; } = "http://localhost:9000";
+    public string WhisperAsrEndpoint { get; init; } = "http://localhost:9000";
+
+    /// <inheritdoc cref="SpeechToTextProvider" path="/summary"/>
+    /// <remarks>
+    /// Defaults to <see cref="SpeechToTextProvider.WhisperAsr"/>, which is the only provider that
+    /// needs no additional configuration.
+    /// </remarks>
+    public SpeechToTextProvider Provider { get; init; } = SpeechToTextProvider.WhisperAsr;
+
+    /// <summary>Base address of the whisper.cpp <c>whisper-server</c> deployment.</summary>
+    /// <remarks>
+    /// Required only when <see cref="Provider"/> is <see cref="SpeechToTextProvider.WhisperCpp"/>;
+    /// <see langword="null"/> otherwise. Used by <see cref="CasCap.Services.WhisperCppSpeechToTextClient"/>.
+    /// </remarks>
+    [Url]
+    public string? WhisperCppEndpoint { get; init; }
+
+    /// <summary>Resource endpoint of the Azure AI Speech account, such as <c>https://example.cognitiveservices.azure.com</c>.</summary>
+    /// <remarks>
+    /// Required only when <see cref="Provider"/> is <see cref="SpeechToTextProvider.Azure"/>;
+    /// <see langword="null"/> otherwise. Authentication uses the ambient token credential, so no key
+    /// is held here. Used by <see cref="CasCap.Services.AzureSpeechToTextClient"/>.
+    /// </remarks>
+    [Url]
+    public string? AzureEndpoint { get; init; }
+
+    /// <summary>Candidate locales passed to Azure, such as <c>en-GB</c> and <c>de-DE</c>.</summary>
+    /// <remarks>
+    /// <see langword="null"/> or empty lets the multilingual model identify the language itself, which
+    /// is the setting that serves English and German from one configuration. Azure requires a full
+    /// locale, not the bare language code carried by <see cref="Language"/>. Used by
+    /// <see cref="CasCap.Services.AzureSpeechToTextClient"/>.
+    /// </remarks>
+    public string[]? AzureLocales { get; init; }
 
     /// <summary>ISO 639-1 language code passed to the transcription backend.</summary>
     /// <remarks>Defaults to <c>en</c>. Used by <see cref="CasCap.Services.WhisperAsrSpeechToTextClient"/>.</remarks>

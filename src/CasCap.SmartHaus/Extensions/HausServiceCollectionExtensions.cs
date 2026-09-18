@@ -82,8 +82,34 @@ public static class HausServiceCollectionExtensions
             client.Timeout = TimeSpan.FromMilliseconds(
                 sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.TimeoutMs);
         });
+        services.AddHttpClient(WhisperCppSpeechToTextClient.HttpClientName, (sp, client) =>
+        {
+            client.Timeout = TimeSpan.FromMilliseconds(
+                sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.TimeoutMs);
+        });
+        //Resolved only when Azure is the selected provider, so the other providers need no Azure
+        //  endpoint and no credential.
+        services.TryAddSingleton<ISpeechService>(sp =>
+        {
+            var config = sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value;
+            var endpoint = config.AzureEndpoint
+                ?? throw new InvalidOperationException(
+                    $"{nameof(SpeechToTextConfig)}.{nameof(SpeechToTextConfig.AzureEndpoint)} is required when " +
+                    $"{nameof(SpeechToTextProvider.Azure)} is the selected provider.");
+            var credential = sp.GetRequiredService<IOptions<AzureAuthConfig>>().Value.TokenCredential
+                ?? throw new InvalidOperationException(
+                    $"{nameof(AzureAuthConfig)}.{nameof(AzureAuthConfig.TokenCredential)} is required when " +
+                    $"{nameof(SpeechToTextProvider.Azure)} is the selected provider.");
+            return new SpeechService(new Uri(endpoint), credential);
+        });
 #pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
-        services.TryAddSingleton<ISpeechToTextClient, WhisperAsrSpeechToTextClient>();
+        services.TryAddSingleton<ISpeechToTextClient>(sp =>
+            sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.Provider switch
+            {
+                SpeechToTextProvider.WhisperCpp => ActivatorUtilities.CreateInstance<WhisperCppSpeechToTextClient>(sp),
+                SpeechToTextProvider.Azure => ActivatorUtilities.CreateInstance<AzureSpeechToTextClient>(sp),
+                _ => ActivatorUtilities.CreateInstance<WhisperAsrSpeechToTextClient>(sp),
+            });
 #pragma warning restore MEAI001
         services.TryAddSingleton<VoiceTranscriptionMetrics>();
         services.TryAddSingleton<VoiceMessageTranscriptionService>();

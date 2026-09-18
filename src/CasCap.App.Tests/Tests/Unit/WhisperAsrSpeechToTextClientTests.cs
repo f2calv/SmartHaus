@@ -48,7 +48,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_UsesConfiguredLanguage(string language)
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler, new SpeechToTextConfig { Endpoint = _endpoint, Language = language });
+        using var client = CreateClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = _endpoint, Language = language });
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, OptionsFor("audio/wav"), TestContext.Current.CancellationToken);
@@ -60,7 +60,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_TrailingSlashEndpointDoesNotDoublePrefix()
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler, new SpeechToTextConfig { Endpoint = $"{_endpoint}/" });
+        using var client = CreateClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = $"{_endpoint}/" });
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, OptionsFor("audio/wav"), TestContext.Current.CancellationToken);
@@ -146,7 +146,7 @@ public class WhisperAsrSpeechToTextClientTests
 
     private static WhisperAsrSpeechToTextClient CreateClient(HttpMessageHandler handler, SpeechToTextConfig? config = null) =>
         new(NullLogger<WhisperAsrSpeechToTextClient>.Instance,
-            Options.Create(config ?? new SpeechToTextConfig { Endpoint = _endpoint }),
+            Options.Create(config ?? new SpeechToTextConfig { WhisperAsrEndpoint = _endpoint }),
             new StubHttpClientFactory(handler));
 
     private static SpeechToTextOptions OptionsFor(string mediaType) => new()

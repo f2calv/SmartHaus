@@ -26,6 +26,23 @@ public enum VoiceProcessingMode
     Enabled,
 }
 
+/// <summary>Selects which speech-to-text backend transcribes an inbound voice message.</summary>
+/// <remarks>
+/// The three are interchangeable behind <c>ISpeechToTextClient</c>, so switching provider is a
+/// configuration change rather than a code change.
+/// </remarks>
+public enum SpeechToTextProvider
+{
+    /// <summary>openai-whisper-asr-webservice, transcribing on the CPU.</summary>
+    WhisperAsr,
+
+    /// <summary>whisper.cpp <c>whisper-server</c>, able to offload to a GPU through Vulkan.</summary>
+    WhisperCpp,
+
+    /// <summary>The Azure AI Speech fast transcription API. The only provider that sends audio off the network.</summary>
+    Azure,
+}
+
 /// <summary>The terminal outcome of a bounded voice-message transcription attempt.</summary>
 public enum VoiceTranscriptionOutcome
 {

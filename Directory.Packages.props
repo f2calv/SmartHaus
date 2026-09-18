@@ -16,6 +16,7 @@
     <PackageVersion Include="Azure.Identity" Version="1.21.0" />
     <PackageVersion Include="Azure.ResourceManager.Dns" Version="1.1.1" />
     <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.5.5" />
+    <PackageVersion Include="CasCap.Api.Azure.CognitiveServices" Version="1.5.5" />
     <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.5.5" />
     <PackageVersion Include="CasCap.Api.SignalCli" Version="0.10.32" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.13.0" />

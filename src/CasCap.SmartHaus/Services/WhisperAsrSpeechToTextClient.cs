@@ -32,7 +32,7 @@ public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpee
     /// <summary>The named <see cref="HttpClient"/> registration this adapter resolves.</summary>
     public const string HttpClientName = nameof(WhisperAsrSpeechToTextClient);
 
-    /// <summary>The transcription route appended to <see cref="SpeechToTextConfig.Endpoint"/>.</summary>
+    /// <summary>The transcription route appended to <see cref="SpeechToTextConfig.WhisperAsrEndpoint"/>.</summary>
     public const string RequestPath = "/asr";
 
     /// <summary>The multipart field name the service reads the audio from.</summary>
@@ -61,7 +61,7 @@ public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpee
         var encode = !IsWav(mediaType);
         var language = speechToTextOptions?.SpeechLanguage ?? _options.Value.Language;
         var requestUri =
-            $"{_options.Value.Endpoint.TrimEnd('/')}{RequestPath}" +
+            $"{_options.Value.WhisperAsrEndpoint.TrimEnd('/')}{RequestPath}" +
             $"?task=transcribe&language={Uri.EscapeDataString(language)}" +
             $"&encode={(encode ? "true" : "false")}&output=json";
 
