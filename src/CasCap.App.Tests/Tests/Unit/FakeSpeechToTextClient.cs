@@ -21,14 +21,20 @@ public sealed class FakeSpeechToTextClient : ISpeechToTextClient
     /// <summary>The number of transcription requests received.</summary>
     public int Requests { get; private set; }
 
+    /// <summary>When set, <see cref="GetTextAsync"/> waits on it before returning.</summary>
+    /// <remarks>Lets a test observe what happens while transcription is still in flight.</remarks>
+    public TaskCompletionSource? Gate { get; set; }
+
     /// <inheritdoc/>
-    public Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
+    public async Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
         SpeechToTextOptions? speechToTextOptions = null, CancellationToken cancellationToken = default)
     {
         Requests++;
-        return Failure is not null
-            ? Task.FromException<SpeechToTextResponse>(Failure)
-            : Task.FromResult(new SpeechToTextResponse(Transcript));
+        if (Gate is not null)
+            await Gate.Task.WaitAsync(cancellationToken);
+        if (Failure is not null)
+            throw Failure;
+        return new SpeechToTextResponse(Transcript);
     }
 
     /// <inheritdoc/>

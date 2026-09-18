@@ -13,6 +13,53 @@ public class CommunicationsBgServiceTests
 {
     private const string Eyes = "\U0001F440";
     private const string Ear = "\U0001F442";
+    private const string Hourglass = "\u23F3";
+    private const string RedCross = "\u274C";
+
+    [Fact]
+    public async Task EarIsSentBeforeTranscriptionCompletes()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
+        var gate = new TaskCompletionSource();
+        fixture.SpeechToText.Gate = gate;
+        await fixture.StartAsync();
+
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_601, ("voice-6", "audio/wav")));
+
+        //The ear must land while the backend is still held, not after it returns.
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(Ear) == 1);
+        Assert.Equal(0, fixture.Notifier.ReactionCount(Hourglass));
+
+        gate.SetResult();
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
+    }
+
+    [Fact]
+    public async Task VoiceFailureIsMarkedWithARedCross()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
+        fixture.SpeechToText.Failure = new HttpRequestException("backend down");
+        await fixture.StartAsync();
+
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_701, ("voice-7", "audio/wav")));
+
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(RedCross) == 1);
+        var reply = Assert.Single(fixture.Notifier.Sent);
+        Assert.Contains("could not understand", reply.Message, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public async Task CleanupFailureIsMarkedWithARedCross()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture();
+        fixture.Cleaner.Complete = false;
+        await fixture.StartAsync();
+
+        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_801, ("residue-2", "image/jpeg")));
+
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(RedCross) == 1);
+        Assert.Equal(0, fixture.Notifier.ReactionCount(Hourglass));
+    }
 
     [Theory]
     [InlineData(VoiceProcessingMode.Disabled)]
@@ -98,7 +145,9 @@ public class CommunicationsBgServiceTests
         var reply = Assert.Single(fixture.Notifier.Sent);
         Assert.Equal(CommunicationsBgServiceTestFixture.CleanupFailureReply, reply.Message);
         Assert.DoesNotContain("residue-1", reply.Message);
-        Assert.Equal(0, fixture.Notifier.ReactionCount(Eyes));
+        //The sender is acknowledged on receipt, but the turn never reaches the agent.
+        Assert.Equal(1, fixture.Notifier.ReactionCount(Eyes));
+        Assert.Equal(0, fixture.Notifier.ReactionCount(Hourglass));
     }
 
     [Fact]
@@ -165,6 +214,8 @@ public class CommunicationsBgServiceTests
 
         Assert.Equal(["voice-2"], fixture.Notifier.AttachmentFetches);
         Assert.Equal(["voice-2"], fixture.Cleaner.LastCall);
+        //Shadow still acknowledges that the note was heard; it just never replies.
+        Assert.Equal(1, fixture.Notifier.ReactionCount(Ear));
         Assert.Equal(0, fixture.Notifier.ReactionCount(Eyes));
     }
 

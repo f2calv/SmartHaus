@@ -105,6 +105,18 @@ public sealed partial class CommunicationsBgService
         var attachmentIds = CollectAttachmentIds(notification);
         var agentAvailable = _agent is not null && _commsAgent is not null && _provider is not null;
 
+        // Acknowledge before the attachment is fetched: downloading and transcribing a voice note
+        // takes seconds, and the sender should see that it was heard immediately. The hourglass
+        // replaces this once the prompt reaches the agent.
+        if (notification.Timestamp is not null && agentAvailable)
+        {
+            var listening = CarriesAudio(notification)
+                && _speechToTextConfig.Mode is not VoiceProcessingMode.Disabled;
+            await _notifier.SendProgressUpdateAsync(
+                _signalCliConfig.PhoneNumber, _groupId!, listening ? "\U0001F442" : "\U0001F440",
+                notification.Sender, notification.Timestamp.Value);
+        }
+
         byte[]? binaryContent = null;
         string? mimeType = null;
         var voiceSuppressed = false;
@@ -133,12 +145,14 @@ public sealed partial class CommunicationsBgService
             // and would repeat the agent turn. Operator cleanup is required before promotion.
             LogAttachmentCleanupFailed(_logger, nameof(CommunicationsBgService), cleanup.Remaining.Count);
             await SendAttachmentCleanupFailureReplyAsync(cancellationToken);
+            await SendFailureReactionAsync(notification);
             return;
         }
 
         if (!agentAvailable)
         {
             LogNoAgentSkipping(_logger, nameof(CommunicationsBgService));
+            await SendFailureReactionAsync(notification);
             return;
         }
 
@@ -158,6 +172,7 @@ public sealed partial class CommunicationsBgService
             && _speechToTextConfig.Mode is VoiceProcessingMode.Enabled)
         {
             await SendVoiceFailureReplyAsync(cancellationToken);
+            await SendFailureReactionAsync(notification);
             return;
         }
 
@@ -202,13 +217,6 @@ public sealed partial class CommunicationsBgService
             LogVoiceTurnSuppressed(_logger, nameof(CommunicationsBgService), _speechToTextConfig.Mode.ToString());
             return;
         }
-
-        // Acknowledge the sender's message: an ear for a voice note the service is listening to,
-        // otherwise eyes for a message it has seen.
-        if (notification.Timestamp is not null)
-            await _notifier.SendProgressUpdateAsync(
-                _signalCliConfig.PhoneNumber, _groupId!, voice is not null ? "\U0001F442" : "\U0001F440",
-                notification.Sender, notification.Timestamp.Value);
 
         await EnqueueReplyAsync(prompt, binaryContent, mimeType, sender: notification.Sender,
             timestamp: notification.Timestamp, bypassSession: false, cancellationToken: cancellationToken);
@@ -302,6 +310,19 @@ public sealed partial class CommunicationsBgService
         await _notifier.SendAsync(reply, cancellationToken);
     }
 
+    /// <summary>Marks the sender's message as failed, matching the agent path's red cross.</summary>
+    /// <remarks>
+    /// Every abandoned turn has to reach this, otherwise the message keeps its acknowledgement
+    /// reaction and looks like it is still being worked on.
+    /// </remarks>
+    private async Task SendFailureReactionAsync(IReceivedNotification notification)
+    {
+        if (_groupId is null || notification.Timestamp is null)
+            return;
+        await _notifier.SendProgressUpdateAsync(
+            _signalCliConfig.PhoneNumber, _groupId, "\u274C", notification.Sender, notification.Timestamp.Value);
+    }
+
     /// <summary>Collects every attachment identifier carried by the envelope, selected or not.</summary>
     private static List<string> CollectAttachmentIds(IReceivedNotification notification) =>
         notification.Attachments is { Count: > 0 } attachments
@@ -327,6 +348,10 @@ public sealed partial class CommunicationsBgService
 
     private static bool IsAudio(string? contentType) =>
         contentType?.StartsWith("audio/", StringComparison.OrdinalIgnoreCase) == true;
+
+    //Read from the envelope so the sender can be acknowledged before anything is downloaded.
+    private static bool CarriesAudio(IReceivedNotification notification) =>
+        notification.Attachments?.Any(a => IsAudio(a.ContentType)) == true;
 
     /// <summary>
     /// Checks whether the received message is a poll vote update and, if so, records the
