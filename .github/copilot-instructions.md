@@ -47,5 +47,5 @@ SmartHaus follows the standard provider order and options-synchronisation rules 
   application-specific provider and remains the authority for deployment credentials.
 - When a bindable property changes, follow the central synchronisation rule across all four existing
   tiers; environment and local files restate only values that differ from earlier providers.
-- After changing `appsettings.Local.json` for production deployment, synchronize it through the
-  private GitOps repository's application-configuration skill.
+- After changing `appsettings.Local.json` for production deployment, use this repository's
+  `sync-appsettings-to-configmap` skill to update the caller-configured private GitOps repository.

@@ -13,15 +13,8 @@
     podAnnotations map so workloads with additional network annotations also roll.
 .PARAMETER DeployConfigPath
     Local PowerShell data file containing default parameter values.
-.PARAMETER ConfigMapPath
-    Optional path, relative to ManifestRepo, of the ConfigMap whose
-    data.appsettings.Local.json value is sourced from LocalAppSettingsPath.
-.PARAMETER LocalAppSettingsPath
-    Private appsettings file copied into the caller-supplied ConfigMap.
 .EXAMPLE
     ./deploy.ps1
-.EXAMPLE
-    ./deploy.ps1 -SkipBuild -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -ConfigMapPath <configmap-path>
 .EXAMPLE
     ./deploy.ps1 -ManifestRepo <path-to-gitops-repo> -ManifestPath <manifest-path> -Chart
 .EXAMPLE
@@ -36,8 +29,6 @@ param(
     [string]$DeployConfigPath = (Join-Path $PSScriptRoot "deploy.local.psd1"),
     [string]$ManifestRepo,
     [string]$ManifestPath,
-    [string]$ConfigMapPath,
-    [string]$LocalAppSettingsPath = (Join-Path $PSScriptRoot "appsettings.Local.json"),
     [string]$ImageRepository,
     [switch]$SkipBuild,
     [switch]$NoCommit,
@@ -107,21 +98,12 @@ if ([string]::IsNullOrWhiteSpace($manifestPathToPatch)) {
     throw "-$requiredParameter is required for this deployment mode. Supply it explicitly or in '$DeployConfigPath'."
 }
 $manifest = Join-Path $ManifestRepo $manifestPathToPatch
-$configMap = if ([string]::IsNullOrWhiteSpace($ConfigMapPath)) { $null } else { Join-Path $ManifestRepo $ConfigMapPath }
-
 if (-not (Get-Command yq -ErrorAction SilentlyContinue)) {
     throw "yq not found. Install it (e.g. winget install MikeFarah.yq) - required to patch the GitOps manifest."
 }
 if (-not (Test-Path $manifest)) {
     throw "GitOps manifest not found at '$manifest'."
 }
-if ($configMap -and -not (Test-Path $configMap)) {
-    throw "GitOps ConfigMap not found at '$configMap'."
-}
-if ($configMap -and -not (Test-Path $LocalAppSettingsPath)) {
-    throw "Local appsettings file not found at '$LocalAppSettingsPath'."
-}
-
 function Get-GitVersion {
     if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
         Write-Host "dotnet-gitversion not found. Installing GitVersion.Tool globally..." -ForegroundColor Cyan
@@ -342,13 +324,6 @@ try {
 
     $gitOpsPaths = [System.Collections.Generic.List[string]]::new()
     $gitOpsPaths.Add($manifestPathToPatch)
-    if ($configMap) {
-        Write-Host "Syncing $LocalAppSettingsPath -> $configMap" -ForegroundColor Cyan
-        $env:DEPLOY_LOCAL_APPSETTINGS = [IO.File]::ReadAllText($LocalAppSettingsPath)
-        yq -i '.data."appsettings.Local.json" = strenv(DEPLOY_LOCAL_APPSETTINGS) | .data."appsettings.Local.json" style="literal"' $configMap
-        if ($LASTEXITCODE -ne 0) { throw "yq failed to update the appsettings ConfigMap." }
-        $gitOpsPaths.Add($ConfigMapPath)
-    }
 
     $stamp = "$(Get-GitVersion)+$ts"
     $patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
