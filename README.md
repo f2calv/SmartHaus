@@ -33,6 +33,7 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 
 - **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
 - **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.SmartHaus/README.md#speech-to-text-providers)
 - **Feature-flag driven** — enable only the integrations you need; each feature is an independent module with its own data pipeline, sinks, and [MCP tools](https://modelcontextprotocol.io/specification/2025-03-26/server/tools)
 - **Azure cloud integration** — optional [Azure Table Storage](https://learn.microsoft.com/en-us/azure/storage/tables/) and [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/) sinks for telemetry persistence, with local [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulation for development
 - **Azure Key Vault** — optional [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/) integration for secrets management (disabled via `KeyVaultName=skip` for local development)
@@ -156,7 +157,7 @@ flowchart TD
     subgraph Comms["CasCap.SmartHaus (Comms instance — gateway + media analysis)"]
         COMMS_BG["CommunicationsBgService"]
         COMMS_AGENT(("CommsAgent"))
-        STT(("Speech-to-text\n(whisper-asr)"))
+        STT(("Speech-to-text\n(selected provider)"))
         MEDIA_BG["MediaBgService"]
         SECURITY_AGENT(("SecurityAgent\n(vision)"))
     end
