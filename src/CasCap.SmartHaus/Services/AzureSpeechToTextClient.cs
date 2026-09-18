@@ -1,3 +1,5 @@
+using System.ClientModel;
+
 namespace CasCap.Services;
 
 //ISpeechToTextClient is published as experimental (MEAI001). This adapter and its consumers are the
@@ -38,7 +40,21 @@ public sealed partial class AzureSpeechToTextClient : ISpeechToTextClient
         //An explicit locale improves accuracy and latency; with none the multilingual model identifies
         //  the language itself, which is what lets one configuration serve English and German.
         var locales = ResolveLocales(speechToTextOptions, _options.Value);
-        var text = await _speechService.TranscribeAsync(audioSpeechStream, locales, cancellationToken);
+        string? text;
+        try
+        {
+            text = await _speechService.TranscribeAsync(audioSpeechStream, locales, cancellationToken);
+        }
+        catch (ClientResultException ex)
+        {
+            //Normalised to the exception the pipeline already handles, so a backend failure reaches the
+            //  sender as a rejection instead of aborting the receive loop.
+            LogTranscriptionRejected(_logger, ex.Status);
+            throw new HttpRequestException(
+                $"{nameof(AzureSpeechToTextClient)} transcription request failed, StatusCode={ex.Status}.",
+                ex, (HttpStatusCode)ex.Status);
+        }
+
         if (text is null)
             LogNoSpeechRecognized(_logger);
 
@@ -75,18 +91,24 @@ public sealed partial class AzureSpeechToTextClient : ISpeechToTextClient
 
     #region Private helpers
 
-    //A caller-supplied language wins, then the configured list, then nothing at all so the service
-    //  performs its own identification.
+    //The configured locales win: Azure rejects a bare language code such as "en" with a 400, and
+    //  SpeechToTextOptions.SpeechLanguage carries exactly that for the whisper providers.
     private static IReadOnlyList<string>? ResolveLocales(SpeechToTextOptions? speechToTextOptions,
         SpeechToTextConfig config)
     {
-        if (!string.IsNullOrWhiteSpace(speechToTextOptions?.SpeechLanguage))
-            return [speechToTextOptions.SpeechLanguage];
-        return config.AzureLocales is { Length: > 0 } locales ? locales : null;
+        if (config.AzureLocales is { Length: > 0 } locales)
+            return locales;
+        //A caller-supplied value is only usable when it is a full locale, such as "en-GB".
+        var language = speechToTextOptions?.SpeechLanguage;
+        return !string.IsNullOrWhiteSpace(language) && language.Contains('-') ? [language] : null;
     }
 
     [LoggerMessage(LogLevel.Warning, "{ClassName} recognized no speech in the supplied audio")]
     private static partial void LogNoSpeechRecognized(ILogger logger,
+        string className = nameof(AzureSpeechToTextClient));
+
+    [LoggerMessage(LogLevel.Error, "{ClassName} transcription request was rejected, StatusCode={StatusCode}")]
+    private static partial void LogTranscriptionRejected(ILogger logger, int statusCode,
         string className = nameof(AzureSpeechToTextClient));
 
     #endregion

@@ -126,6 +126,13 @@ public sealed partial class VoiceMessageTranscriptionService(
                 ex.StatusCode is { } statusCode && WhisperAsrSpeechToTextClient.IsTransientStatusCode(statusCode));
             return Record(VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed));
         }
+        catch (Exception ex)
+        {
+            //A backend that throws something unforeseen must still be reported to the sender; letting it
+            //  escape aborts the whole receive loop and the message is acknowledged but never answered.
+            LogBackendFaulted(logger, ex);
+            return Record(VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed));
+        }
         finally
         {
             if (admitted)
@@ -271,6 +278,10 @@ public sealed partial class VoiceMessageTranscriptionService(
 
     [LoggerMessage(LogLevel.Error, "{ClassName} could not start ffmpeg, failure={Failure}")]
     private static partial void LogFfmpegUnavailable(ILogger logger, string failure,
+        string className = nameof(VoiceMessageTranscriptionService));
+
+    [LoggerMessage(LogLevel.Error, "{ClassName} speech-to-text backend faulted unexpectedly")]
+    private static partial void LogBackendFaulted(ILogger logger, Exception exception,
         string className = nameof(VoiceMessageTranscriptionService));
 
     [LoggerMessage(LogLevel.Error,

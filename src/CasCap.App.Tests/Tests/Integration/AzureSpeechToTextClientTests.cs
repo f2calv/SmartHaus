@@ -1,4 +1,11 @@
+using Microsoft.Extensions.AI;
+using Microsoft.Extensions.Logging.Abstractions;
+
 namespace CasCap.Tests;
+
+//ISpeechToTextClient and its options are published as experimental (MEAI001); suppressed here as in
+//the adapters under test rather than repository-wide.
+#pragma warning disable MEAI001
 
 /// <summary>
 /// Exercises <see cref="AzureSpeechToTextClient"/> against the real Azure AI Speech resource.
@@ -39,13 +46,20 @@ public class AzureSpeechToTextClientTests : TestBase
             await sut.CreateWAV(SpokenText, wavPath);
             Assert.True(File.Exists(wavPath), "Speech synthesis produced no audio to transcribe.");
 
-            await using var audio = File.OpenRead(wavPath);
-            var transcript = await sut.TranscribeAsync(audio, ["en-GB"], TestContext.Current.CancellationToken);
+            //Driven through the adapter with the options the pipeline really sends, because calling
+            //  SpeechService directly hid a locale defect that produced a 400 in production.
+            var client = new AzureSpeechToTextClient(NullLogger<AzureSpeechToTextClient>.Instance, sut,
+                Options.Create(speechToText));
+            var options = new SpeechToTextOptions { SpeechLanguage = speechToText.Language };
 
-            _output.WriteLine($"transcript: {transcript}");
-            Assert.False(string.IsNullOrWhiteSpace(transcript), "No speech was recognized in the synthesized audio.");
+            await using var audio = File.OpenRead(wavPath);
+            var response = await client.GetTextAsync(audio, options, TestContext.Current.CancellationToken);
+
+            _output.WriteLine($"transcript: {response.Text}");
+            Assert.False(string.IsNullOrWhiteSpace(response.Text),
+                "No speech was recognized in the synthesized audio.");
             //Punctuation and casing vary by model, so compare on the words that carry the meaning.
-            Assert.Contains("quick brown fox", transcript, StringComparison.OrdinalIgnoreCase);
+            Assert.Contains("quick brown fox", response.Text, StringComparison.OrdinalIgnoreCase);
         }
         finally
         {
@@ -53,3 +67,5 @@ public class AzureSpeechToTextClientTests : TestBase
         }
     }
 }
+
+#pragma warning restore MEAI001
