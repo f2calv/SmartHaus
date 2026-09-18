@@ -147,7 +147,8 @@ public class VoiceMessageTranscriptionServiceTests
     }
 
     [Fact]
-    public async Task Transcribe_RecordsStageTimings()    {
+    public async Task Transcribe_RecordsStageTimings()
+    {
         var stt = new StubSpeechToTextClient();
         using var svc = CreateService(stt);
 

@@ -189,8 +189,13 @@ public sealed class CommsDebugNotifier(
     /// Sends a single consolidated debug message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
     /// containing a step-by-step timeline of the agent pipeline execution.
     /// </summary>
+    /// <remarks>
+    /// <c>inboundTimestamp</c> is the inbound Signal message timestamp in milliseconds since the
+    /// Unix epoch, used to report the end-to-end turnaround the sender actually experienced.
+    /// </remarks>
     public async Task SendDebugStatsAsync(string prompt, AgentRunResult result, List<CommsDebugStep> debugSteps,
-        byte[]? originalBinaryContent, string? originalMimeType, CancellationToken cancellationToken)
+        byte[]? originalBinaryContent, string? originalMimeType, long? inboundTimestamp,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
             return;
@@ -199,9 +204,17 @@ public sealed class CommsDebugNotifier(
         {
             var sb = new StringBuilder();
 
-            // ── Quoted prompt ───────────────────────────────────────────
+            // ── Quoted prompt ──────────────────────────────────────
             var truncated = prompt.Length > 200 ? prompt[..200] + "\u2026" : prompt;
             sb.AppendLine($"\u201C{truncated}\u201D");
+
+            // ── End-to-end turnaround as the sender experienced it ────
+            if (inboundTimestamp is { } received)
+            {
+                var elapsed = DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(received);
+                if (elapsed > TimeSpan.Zero)
+                    sb.AppendLine($"\u23F1 end to end {elapsed.TotalSeconds:F1}s");
+            }
 
             // ── Step-by-step pipeline timeline ──────────────────────────
             if (debugSteps.Count > 0)
@@ -330,26 +343,31 @@ public sealed class CommsDebugNotifier(
         var energyWh = result.GetEstimatedEnergyWh();
         var gpuTemp = result.GetGpuTemperatureC();
         var gpuUtil = result.GetGpuUtilizationPercent();
+        var energyReporting = edgeHardwareConfig.Value.EnergyReporting;
+        var reportEnergy = energyWh is > 0 && energyReporting is not EnergyReportingMode.Off;
 
-        if ((energyWh is null or 0) && gpuTemp is null)
+        if (!reportEnergy && gpuTemp is null)
             return;
 
         sb.AppendLine();
 
-        if (energyWh is > 0)
+        if (reportEnergy)
         {
             sb.Append($"⚡ {energyWh:F2}Wh");
 
-            // Fun comparisons.
-            var comparisons = new List<string>();
-            if (edgeHardwareConfig.Value.KettleBoilWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.KettleBoilWh:F4} kettles");
-            if (edgeHardwareConfig.Value.PhoneChargeWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.PhoneChargeWh:F3} phone charges");
-            if (edgeHardwareConfig.Value.LedBulbHourWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.LedBulbHourWh:F3} LED-bulb-hrs");
-            if (comparisons.Count > 0)
-                sb.Append($" ({string.Join(" | ", comparisons)})");
+            if (energyReporting is EnergyReportingMode.Verbose)
+            {
+                // Fun comparisons.
+                var comparisons = new List<string>();
+                if (edgeHardwareConfig.Value.KettleBoilWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.KettleBoilWh:F4} kettles");
+                if (edgeHardwareConfig.Value.PhoneChargeWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.PhoneChargeWh:F3} phone charges");
+                if (edgeHardwareConfig.Value.LedBulbHourWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.LedBulbHourWh:F3} LED-bulb-hrs");
+                if (comparisons.Count > 0)
+                    sb.Append($" ({string.Join(" | ", comparisons)})");
+            }
         }
 
         if (gpuTemp is not null)

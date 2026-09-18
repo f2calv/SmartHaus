@@ -452,7 +452,7 @@ public sealed partial class CommunicationsBgService
                         debugSteps.Count(s => s.Result is not null),
                         debugSteps.Count(s => s.Result?.Usage is not null));
                     await _debugNotifier.SendDebugStatsAsync(request.Prompt, agentResult!, debugSteps,
-                        request.BinaryContent, request.MimeType, cancellationToken);
+                        request.BinaryContent, request.MimeType, request.Timestamp, cancellationToken);
 
                     // Green tick reaction to indicate successful processing.
                     if (request.Sender is not null && request.Timestamp is not null)
