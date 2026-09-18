@@ -340,13 +340,24 @@ if ($MyInvocation.InvocationName -ne '.') {
     }
 
     $TargetPath = Join-Path $ManifestRepo $AppSettingsConfigMapPath
-    Sync-AppSettingsToConfigMap `
-        -SourcePath $SourcePath `
-        -SourceRoot $ApplicationRoot `
-        -TargetPath $TargetPath `
-        -RepositoryRoot $ManifestRepo `
-        -ConfigMapName $AppSettingsConfigMapName `
-        -ConfigMapKey $AppSettingsConfigMapKey `
-        -WhatIf:$WhatIfPreference `
-        -Confirm:$false
+
+    # PowerShell decodes native command output using the console output encoding, which on Windows
+    # defaults to an OEM code page; that mangles any non-ASCII setting on the way back from yq and
+    # fails the equivalence check.
+    $PreviousOutputEncoding = [Console]::OutputEncoding
+    [Console]::OutputEncoding = [Text.UTF8Encoding]::new($false)
+    try {
+        Sync-AppSettingsToConfigMap `
+            -SourcePath $SourcePath `
+            -SourceRoot $ApplicationRoot `
+            -TargetPath $TargetPath `
+            -RepositoryRoot $ManifestRepo `
+            -ConfigMapName $AppSettingsConfigMapName `
+            -ConfigMapKey $AppSettingsConfigMapKey `
+            -WhatIf:$WhatIfPreference `
+            -Confirm:$false
+    }
+    finally {
+        [Console]::OutputEncoding = $PreviousOutputEncoding
+    }
 }
