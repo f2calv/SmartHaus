@@ -82,6 +82,7 @@ public static class HausServiceCollectionExtensions
 #pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
         services.TryAddSingleton<ISpeechToTextClient, WhisperAsrSpeechToTextClient>();
 #pragma warning restore MEAI001
+        services.TryAddSingleton<VoiceTranscriptionMetrics>();
         services.TryAddSingleton<VoiceMessageTranscriptionService>();
     }
 

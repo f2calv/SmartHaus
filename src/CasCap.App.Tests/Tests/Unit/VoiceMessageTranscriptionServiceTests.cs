@@ -133,6 +133,21 @@ public class VoiceMessageTranscriptionServiceTests
     }
 
     [Fact]
+    public async Task Transcribe_RecordsStageTimings()
+    {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreateWav(seconds: 3), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, result.Outcome);
+        Assert.Equal(3, result.AudioDuration!.Value.TotalSeconds, precision: 1);
+        //A conforming WAV skips ffmpeg entirely, which is what a null transcode duration means.
+        Assert.Null(result.TranscodeDuration);
+        Assert.NotNull(result.TranscriptionDuration);
+    }
+
+    [Fact]
     public async Task Transcribe_SendsNormalisedWavMetadataToBackend()
     {
         var stt = new StubSpeechToTextClient { Responder = (_, _, _) => Task.FromResult(new SpeechToTextResponse("ok")) };
@@ -254,7 +269,8 @@ public class VoiceMessageTranscriptionServiceTests
     #region Private helpers
 
     private static VoiceMessageTranscriptionService CreateService(ISpeechToTextClient stt, SpeechToTextConfig? config = null) =>
-        new(NullLogger<VoiceMessageTranscriptionService>.Instance, Options.Create(config ?? new SpeechToTextConfig()), stt);
+        new(NullLogger<VoiceMessageTranscriptionService>.Instance, Options.Create(config ?? new SpeechToTextConfig()), stt,
+            TestMetrics.Voice());
 
     /// <summary>Builds a synthetic silent RIFF/WAVE payload with the requested format.</summary>
     private static byte[] CreateWav(int sampleRate = 16_000, short channels = 1, short bitsPerSample = 16, double seconds = 1)

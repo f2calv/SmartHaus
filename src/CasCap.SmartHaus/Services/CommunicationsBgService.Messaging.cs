@@ -108,17 +108,15 @@ public sealed partial class CommunicationsBgService
         byte[]? binaryContent = null;
         string? mimeType = null;
         var voiceSuppressed = false;
-        string? transcript = null;
-        VoiceTranscriptionOutcome? voiceOutcome = null;
+        VoiceTranscriptionResult? voice = null;
         AttachmentCleanupResult? cleanup = null;
         try
         {
             if (agentAvailable && attachmentIds.Count > 0)
             {
                 var acquisition = await AcquireAttachmentAsync(notification, cancellationToken);
-                (binaryContent, mimeType, voiceSuppressed) =
-                    (acquisition.Content, acquisition.MimeType, acquisition.VoiceSuppressed);
-                (transcript, voiceOutcome) = (acquisition.Transcript, acquisition.Outcome);
+                (binaryContent, mimeType, voiceSuppressed, voice) =
+                    (acquisition.Content, acquisition.MimeType, acquisition.VoiceSuppressed, acquisition.Voice);
             }
         }
         finally
@@ -147,16 +145,16 @@ public sealed partial class CommunicationsBgService
         var prompt = notification.Message ?? _commsAgent!.Prompt;
 
         // A successful transcript replaces the prompt; the audio itself is never forwarded.
-        if (!string.IsNullOrWhiteSpace(transcript))
+        if (voice is { TranscriptAvailable: true, Text: { } transcript })
         {
             prompt = transcript;
             if (_speechToTextConfig.EchoTranscriptToDebugChat)
-                await _debugNotifier.SendVoiceTranscriptDebugAsync(transcript, cancellationToken);
+                await _debugNotifier.SendVoiceTranscriptDebugAsync(voice, cancellationToken);
         }
 
         // A voice message the pipeline could not transcribe gets one concise reply and no agent
         // turn, so nothing is persisted to the conversation.
-        if (voiceOutcome is not null and not VoiceTranscriptionOutcome.Success
+        if (voice?.Outcome is not null and not VoiceTranscriptionOutcome.Success
             && _speechToTextConfig.Mode is VoiceProcessingMode.Enabled)
         {
             await SendVoiceFailureReplyAsync(cancellationToken);
@@ -209,7 +207,7 @@ public sealed partial class CommunicationsBgService
         // otherwise eyes for a message it has seen.
         if (notification.Timestamp is not null)
             await _notifier.SendProgressUpdateAsync(
-                _signalCliConfig.PhoneNumber, _groupId!, voiceOutcome is not null ? "\U0001F442" : "\U0001F440",
+                _signalCliConfig.PhoneNumber, _groupId!, voice is not null ? "\U0001F442" : "\U0001F440",
                 notification.Sender, notification.Timestamp.Value);
 
         await EnqueueReplyAsync(prompt, binaryContent, mimeType, sender: notification.Sender,
@@ -234,13 +232,13 @@ public sealed partial class CommunicationsBgService
         // Deterministic selection: the first attachment carrying an identifier.
         var attachment = attachments.FirstOrDefault(a => !string.IsNullOrWhiteSpace(a.Id));
         if (attachment is null)
-            return new(null, null, false, null, null);
+            return new(null, null, false, null);
 
         var isVoice = IsAudio(attachment.ContentType);
         if (isVoice && _speechToTextConfig.Mode is VoiceProcessingMode.Disabled)
         {
             LogVoiceRejected(_logger, nameof(CommunicationsBgService));
-            return new(null, null, true, null, null);
+            return new(null, null, true, null);
         }
 
         var content = await _notifier.GetAttachmentAsync(attachment.Id!, cancellationToken);
@@ -248,10 +246,10 @@ public sealed partial class CommunicationsBgService
             LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachment.Id!, attachment.ContentType, content.Length);
 
         if (!isVoice)
-            return new(content, attachment.ContentType, false, null, null);
+            return new(content, attachment.ContentType, false, null);
 
         if (content is null)
-            return new(null, null, true, null, VoiceTranscriptionOutcome.Invalid);
+            return new(null, null, true, VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.Invalid));
 
         // Raw audio never reaches the agent: it is replaced by the normalised transcript, or the
         // turn is abandoned. Shadow transcribes for measurement but stops short of the agent.
@@ -259,22 +257,20 @@ public sealed partial class CommunicationsBgService
         LogVoiceTranscription(_logger, nameof(CommunicationsBgService), result.Outcome.ToString(),
             result.Text?.Length ?? 0);
 
+        //Shadow measures the pipeline but must not reach the agent, so the transcript is dropped here.
         if (_speechToTextConfig.Mode is VoiceProcessingMode.Shadow)
-            return new(null, null, true, null, result.Outcome);
+            return new(null, null, true, result with { Text = null });
 
-        return result.TranscriptAvailable
-            ? new(null, null, false, result.Text, result.Outcome)
-            : new(null, null, true, null, result.Outcome);
+        return new(null, null, !result.TranscriptAvailable, result);
     }
 
     /// <summary>The outcome of acquiring, and where applicable transcribing, one attachment.</summary>
     /// <param name="Content">Non-audio attachment bytes passed to the agent, or <see langword="null"/>.</param>
     /// <param name="MimeType">The media type of <paramref name="Content"/>.</param>
     /// <param name="VoiceSuppressed">Whether a voice payload was withheld from the agent turn.</param>
-    /// <param name="Transcript">The normalised transcript that replaces the audio, when successful.</param>
-    /// <param name="Outcome">The transcription outcome, or <see langword="null"/> for non-audio.</param>
+    /// <param name="Voice">The transcription result, or <see langword="null"/> for non-audio.</param>
     private sealed record AttachmentAcquisition(byte[]? Content, string? MimeType, bool VoiceSuppressed,
-        string? Transcript, VoiceTranscriptionOutcome? Outcome);
+        VoiceTranscriptionResult? Voice);
 
     /// <summary>Sends the single generic failure reply used when a voice message could not be transcribed.</summary>
     /// <remarks>Carries no transcript, no audio and no identifier.</remarks>

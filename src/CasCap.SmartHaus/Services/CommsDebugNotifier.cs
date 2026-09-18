@@ -66,22 +66,34 @@ public sealed class CommsDebugNotifier(
     /// Sends the transcript of an inbound voice message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
     /// so a misheard command can be diagnosed against what the agent actually received.
     /// </summary>
-    /// <param name="transcript">The normalised transcript about to be given to the agent.</param>
+    /// <param name="result">The successful transcription, carrying the transcript and stage timings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
     /// Only called when <see cref="SpeechToTextConfig.EchoTranscriptToDebugChat"/> is enabled. The
     /// transcript goes to the debug recipient alone and never to a log sink or telemetry.
     /// </remarks>
-    public async Task SendVoiceTranscriptDebugAsync(string transcript, CancellationToken cancellationToken)
+    public async Task SendVoiceTranscriptDebugAsync(VoiceTranscriptionResult result, CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
             return;
 
         try
         {
+            var sb = new StringBuilder();
+            sb.AppendLine($"\U0001F442 Processing audio prompt: \u201C{result.Text}\u201D");
+            if (result.AudioDuration is { } audio)
+                sb.Append($"\u23F1 audio {audio.TotalSeconds:N1}s | ");
+            //A null transcode duration means the sender's audio was already a conforming WAV.
+            sb.Append("transcode ");
+            sb.Append(result.TranscodeDuration is { } transcode
+                ? $"{transcode.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcode)}"
+                : "skipped");
+            if (result.TranscriptionDuration is { } transcription)
+                sb.Append($" | transcribe {transcription.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcription)}");
+
             var debugMsg = new SignalMessageRequest
             {
-                Message = $"\U0001F442 Processing audio prompt: \u201C{transcript}\u201D",
+                Message = sb.ToString(),
                 Number = signalCliConfig.Value.PhoneNumber,
                 Recipients = [signalCliConfig.Value.PhoneNumberDebug]
             };
@@ -93,6 +105,12 @@ public sealed class CommsDebugNotifier(
                 nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
     }
+
+    //Seconds of audio processed per second of wall clock; above one means faster than playback.
+    private static string Realtime(TimeSpan? audioDuration, TimeSpan elapsed) =>
+        audioDuration is { } audio && elapsed > TimeSpan.Zero
+            ? $" ({audio.TotalSeconds / elapsed.TotalSeconds:N1}x)"
+            : string.Empty;
 
     /// <summary>
     /// Sends a copy of an incoming stream event to <see cref="SignalCliConfig.PhoneNumberDebug"/>

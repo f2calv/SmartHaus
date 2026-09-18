@@ -20,7 +20,8 @@ namespace CasCap.Services;
 public sealed partial class VoiceMessageTranscriptionService(
     ILogger<VoiceMessageTranscriptionService> logger,
     IOptions<SpeechToTextConfig> options,
-    ISpeechToTextClient speechToTextSvc) : IDisposable
+    ISpeechToTextClient speechToTextSvc,
+    VoiceTranscriptionMetrics metrics) : IDisposable
 {
     private const int _targetSampleRate = 16_000;
     private const int _targetChannels = 1;
@@ -77,7 +78,10 @@ public sealed partial class VoiceMessageTranscriptionService(
             await _gate.WaitAsync(budget.Token);
             admitted = true;
 
-            var wav = IsNormalisedWav(audio) ? audio : await ToWav(audio, config.FfmpegPath, budget.Token);
+            var transcodeStart = Stopwatch.GetTimestamp();
+            var alreadyNormalised = IsNormalisedWav(audio);
+            var wav = alreadyNormalised ? audio : await ToWav(audio, config.FfmpegPath, budget.Token);
+            TimeSpan? transcodeDuration = alreadyNormalised ? null : Stopwatch.GetElapsedTime(transcodeStart);
             if (wav is null || wav.Length == 0)
                 return Reject(VoiceTranscriptionOutcome.ConversionFailed, audio.Length);
             if (wav.Length > config.MaxDecodedBytes)
@@ -99,14 +103,18 @@ public sealed partial class VoiceMessageTranscriptionService(
             };
 
             using var audioStream = new MemoryStream(wav, writable: false);
+            var transcriptionStart = Stopwatch.GetTimestamp();
             var response = await speechToTextSvc.GetTextAsync(audioStream, speechToTextOptions, budget.Token);
+            var transcriptionDuration = Stopwatch.GetElapsedTime(transcriptionStart);
 
             var text = Normalise(response.Text);
             if (text.Length == 0)
                 return Reject(VoiceTranscriptionOutcome.EmptyTranscript, wav.Length);
 
-            LogTranscribed(logger, wav.Length, (int)format.Duration.TotalSeconds, text.Length);
-            return VoiceTranscriptionResult.Success(text);
+            LogTranscribed(logger, wav.Length, (int)format.Duration.TotalSeconds, text.Length,
+                (int)(transcodeDuration?.TotalMilliseconds ?? 0), (int)transcriptionDuration.TotalMilliseconds);
+            return Record(VoiceTranscriptionResult.Success(text, format.Duration, transcodeDuration,
+                transcriptionDuration));
         }
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
@@ -116,7 +124,7 @@ public sealed partial class VoiceMessageTranscriptionService(
         {
             LogBackendFailed(logger, (int?)ex.StatusCode ?? 0,
                 ex.StatusCode is { } statusCode && WhisperAsrSpeechToTextClient.IsTransientStatusCode(statusCode));
-            return VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed);
+            return Record(VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed));
         }
         finally
         {
@@ -133,7 +141,13 @@ public sealed partial class VoiceMessageTranscriptionService(
     private VoiceTranscriptionResult Reject(VoiceTranscriptionOutcome outcome, int byteCount)
     {
         LogRejected(logger, outcome, byteCount);
-        return VoiceTranscriptionResult.Failure(outcome);
+        return Record(VoiceTranscriptionResult.Failure(outcome));
+    }
+
+    private VoiceTranscriptionResult Record(VoiceTranscriptionResult result)
+    {
+        metrics.Record(result);
+        return result;
     }
 
     private static bool SignatureMatches(ReadOnlySpan<byte> audio, string mediaType) => mediaType.ToLowerInvariant() switch
@@ -308,9 +322,10 @@ public sealed partial class VoiceMessageTranscriptionService(
         string className = nameof(VoiceMessageTranscriptionService));
 
     [LoggerMessage(LogLevel.Information,
-        "{ClassName} transcribed voice media, decodedBytes={DecodedBytes}, durationSeconds={DurationSeconds}, transcriptLength={TranscriptLength}")]
+        "{ClassName} transcribed voice media, decodedBytes={DecodedBytes}, durationSeconds={DurationSeconds}, transcriptLength={TranscriptLength}, transcodeMs={TranscodeMs}, transcriptionMs={TranscriptionMs}")]
     private static partial void LogTranscribed(ILogger logger, int decodedBytes, int durationSeconds,
-        int transcriptLength, string className = nameof(VoiceMessageTranscriptionService));
+        int transcriptLength, int transcodeMs, int transcriptionMs,
+        string className = nameof(VoiceMessageTranscriptionService));
 
     #endregion
 }

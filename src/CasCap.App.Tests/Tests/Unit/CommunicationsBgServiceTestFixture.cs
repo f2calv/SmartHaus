@@ -160,7 +160,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             signalCliConfig, env, new StubHttpClientFactory());
 #pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
         var transcriptionSvc = new VoiceMessageTranscriptionService(
-            NullLogger<VoiceMessageTranscriptionService>.Instance, speechToTextConfig, SpeechToText);
+            NullLogger<VoiceMessageTranscriptionService>.Instance, speechToTextConfig, SpeechToText,
+            TestMetrics.Voice());
 #pragma warning restore MEAI001
 
         Service = new CommunicationsBgService(
