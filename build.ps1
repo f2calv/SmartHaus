@@ -1,4 +1,35 @@
-[CmdletBinding()]
+#!/usr/bin/env pwsh
+#Requires -Version 7.4
+<#
+.SYNOPSIS
+    Builds the application container image for local validation or publication.
+.DESCRIPTION
+    Selects Dockerfile.Debug for Debug builds and Dockerfile for Release builds.
+    Debug builds discover sibling repositories from Dockerfile.Debug and mirror them
+    into deps before invoking Docker Buildx. Push builds authenticate to GHCR and use
+    GitVersion FullSemVer unless an explicit tag is supplied.
+.PARAMETER Push
+    Authenticates to GHCR and publishes the image instead of performing validation only.
+.PARAMETER Configuration
+    Build configuration. Debug uses Dockerfile.Debug; Release uses Dockerfile.
+.PARAMETER Tag
+    Image tag override. Defaults to GitVersion FullSemVer for push builds and latest-dev otherwise.
+.PARAMETER Platforms
+    Comma-separated Docker target platforms.
+.PARAMETER ImageName
+    Image repository name beneath ghcr.io/f2calv.
+.PARAMETER WorkloadName
+    Workload project name passed to the Docker build.
+.EXAMPLE
+    ./build.ps1 -Configuration Debug -Platforms linux/arm64
+.EXAMPLE
+    ./build.ps1 -Push -Configuration Release -Tag 1.2.3
+.EXAMPLE
+    ./build.ps1 -Configuration Debug -WhatIf
+.NOTES
+    Push builds require gh, Docker Buildx, and package-write access to GHCR.
+#>
+[CmdletBinding(SupportsShouldProcess)]
 param(
     # Authenticate to ghcr.io (via gh CLI) and push the image instead of a local-only build.
     [switch]$Push,
@@ -13,35 +44,45 @@ param(
     [string]$WorkloadName = "CasCap.App.Server"
 )
 
-Set-StrictMode -Version 3.0
 $ErrorActionPreference = "Stop"
+$PSNativeCommandUseErrorActionPreference = $false
+Set-StrictMode -Version 3.0
 
-$REGISTRY = "ghcr.io/f2calv"
-$REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
-$GIT_REPOSITORY = $REPO_ROOT | Split-Path -Leaf
-$GIT_BRANCH = $(git -C $REPO_ROOT branch --show-current)
-$GIT_COMMIT = $(git -C $REPO_ROOT rev-parse HEAD)
+#region Functions
+function Get-DependencyRepositories {
+    [CmdletBinding()]
+    [OutputType([string[]])]
+    param([Parameter(Mandatory)][string]$DockerfilePath)
 
-$GITHUB_WORKFLOW = "local"
-$GITHUB_RUN_ID = 0
-$GITHUB_RUN_NUMBER = 0
-
-$BUILDER_NAME = "${ImageName}1"
-
-# Sibling repositories copied into deps/ for Debug (Dockerfile.Debug) builds, so a
-# fix/feature can be verified without first publishing those repos. Dockerfile.Debug
-# is authoritative because every copied dependency must also exist in the build context.
-$dockerfileDebug = Join-Path $REPO_ROOT "Dockerfile.Debug"
-$DEP_REPOS = @([regex]::Matches(
-        [IO.File]::ReadAllText($dockerfileDebug),
+    $dependencyRepositories = @([regex]::Matches(
+        [IO.File]::ReadAllText($DockerfilePath),
         '(?m)^\s*COPY\s+deps/([^/\s]+)\s+/'
     ) | ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique)
-if ($DEP_REPOS.Count -eq 0) {
-    throw "No sibling dependencies were found in '$dockerfileDebug'."
+    if ($dependencyRepositories.Count -eq 0) {
+        throw "No sibling dependencies were found in '$DockerfilePath'."
+    }
+    return $dependencyRepositories
+}
+
+function Get-BuildDockerfile {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory)][ValidateSet("Debug", "Release")][string]$Configuration)
+
+    if ($Configuration -eq "Debug") { return "Dockerfile.Debug" }
+    return "Dockerfile"
 }
 
 function Resolve-Tag {
-    if ($Tag) { return $Tag.ToLower() }
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [string]$ExplicitTag,
+        [switch]$Push,
+        [Parameter(Mandatory)][string]$RepositoryRoot
+    )
+
+    if ($ExplicitTag) { return $ExplicitTag.ToLowerInvariant() }
     if ($Push) {
         if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
             Write-Host "dotnet-gitversion not found. Installing GitVersion.Tool globally..." -ForegroundColor Cyan
@@ -51,12 +92,15 @@ function Resolve-Tag {
             $toolsPath = Join-Path $HOME ".dotnet/tools"
             if ($env:PATH -notlike "*$toolsPath*") { $env:PATH = "$toolsPath$([IO.Path]::PathSeparator)$env:PATH" }
         }
-        return "$(dotnet-gitversion $REPO_ROOT /showvariable FullSemVer)".Trim().ToLower()
+        return "$(dotnet-gitversion $RepositoryRoot /showvariable FullSemVer)".Trim().ToLowerInvariant()
     }
     return "latest-dev"
 }
 
 function Connect-Ghcr {
+    [CmdletBinding()]
+    param()
+
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
         throw "gh CLI not found. Install: https://cli.github.com"
     }
@@ -71,13 +115,19 @@ function Connect-Ghcr {
 }
 
 function Sync-Deps {
-    $parent = Split-Path $REPO_ROOT -Parent
-    foreach ($repo in $DEP_REPOS) {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepositoryRoot,
+        [Parameter(Mandatory)][string[]]$DependencyRepositories
+    )
+
+    $parent = Split-Path $RepositoryRoot -Parent
+    foreach ($repo in $DependencyRepositories) {
         $src = Join-Path $parent $repo
         if (-not (Test-Path $src)) {
             throw "Debug build requires sibling repo '$repo' at '$src' (not found)."
         }
-        $dst = Join-Path (Join-Path $REPO_ROOT "deps") $repo
+        $dst = Join-Path (Join-Path $RepositoryRoot "deps") $repo
         $resolvedSource = [IO.Path]::GetFullPath($src).TrimEnd([IO.Path]::DirectorySeparatorChar)
         $resolvedDestination = [IO.Path]::GetFullPath($dst).TrimEnd([IO.Path]::DirectorySeparatorChar)
         if ($resolvedDestination.StartsWith("$resolvedSource$([IO.Path]::DirectorySeparatorChar)", [StringComparison]::OrdinalIgnoreCase)) {
@@ -95,45 +145,77 @@ function Sync-Deps {
 }
 
 function Invoke-Build {
-    $dockerfile = if ($Configuration -eq "Debug") { "Dockerfile.Debug" } else { "Dockerfile" }
-    $tagValue = Resolve-Tag
-    $img = "$REGISTRY/$($ImageName.ToLower()):$tagValue"
+    [CmdletBinding(SupportsShouldProcess)]
+    param()
 
-    if ($Configuration -eq "Debug") { Sync-Deps }
+    $registry = "ghcr.io/f2calv"
+    $repositoryRoot = [IO.Path]::GetFullPath($PSScriptRoot)
+    $dockerfile = Get-BuildDockerfile -Configuration $Configuration
+    $dependencyRepositories = Get-DependencyRepositories -DockerfilePath (Join-Path $repositoryRoot "Dockerfile.Debug")
+    $image = "$registry/$($ImageName.ToLowerInvariant())"
+
+    if (-not $PSCmdlet.ShouldProcess($image, "Build $Configuration container image")) { return }
+
+    $gitRepository = Split-Path $repositoryRoot -Leaf
+    $gitBranch = "$(git -C $repositoryRoot branch --show-current)".Trim()
+    if ($LASTEXITCODE -ne 0) { throw "git branch failed for '$repositoryRoot'." }
+    $gitCommit = "$(git -C $repositoryRoot rev-parse HEAD)".Trim()
+    if ($LASTEXITCODE -ne 0) { throw "git rev-parse failed for '$repositoryRoot'." }
+    $tagValue = Resolve-Tag -ExplicitTag $Tag -Push:$Push -RepositoryRoot $repositoryRoot
+    $imageReference = "${image}:$tagValue"
+    $builderName = "${ImageName}1"
+
+    if ($Configuration -eq "Debug") {
+        Sync-Deps -RepositoryRoot $repositoryRoot -DependencyRepositories $dependencyRepositories
+    }
     if ($Push) { Connect-Ghcr }
 
-    & docker buildx inspect $BUILDER_NAME 2>$null
+    & docker buildx inspect $builderName 2>$null
     if ($LASTEXITCODE -ne 0) {
-        & docker buildx create --name $BUILDER_NAME
+        & docker buildx create --name $builderName
+        if ($LASTEXITCODE -ne 0) { throw "docker buildx create failed with exit code $LASTEXITCODE" }
     }
-    & docker buildx use $BUILDER_NAME
+    & docker buildx use $builderName
+    if ($LASTEXITCODE -ne 0) { throw "docker buildx use failed with exit code $LASTEXITCODE" }
 
     # Multi-arch manifests cannot be loaded into the local engine; --push publishes,
     # --pull just validates the build (the original local-only behaviour).
     $publishArg = if ($Push) { "--push" } else { "--pull" }
 
-    & docker buildx build -t $img `
-        -f (Join-Path $REPO_ROOT $dockerfile) `
+    & docker buildx build -t $imageReference `
+        -f (Join-Path $repositoryRoot $dockerfile) `
         --build-arg WORKLOAD=$WorkloadName `
         --build-arg CONFIGURATION=$Configuration `
-        --build-arg GIT_REPOSITORY=$GIT_REPOSITORY `
-        --build-arg GIT_BRANCH=$GIT_BRANCH `
-        --build-arg GIT_COMMIT=$GIT_COMMIT `
+        --build-arg GIT_REPOSITORY=$gitRepository `
+        --build-arg GIT_BRANCH=$gitBranch `
+        --build-arg GIT_COMMIT=$gitCommit `
         --build-arg GIT_TAG=$tagValue `
-        --build-arg GITHUB_WORKFLOW=$GITHUB_WORKFLOW `
-        --build-arg GITHUB_RUN_ID=$GITHUB_RUN_ID `
-        --build-arg GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER `
+        --build-arg GITHUB_WORKFLOW=local `
+        --build-arg GITHUB_RUN_ID=0 `
+        --build-arg GITHUB_RUN_NUMBER=0 `
         --platform $Platforms `
         $publishArg `
-        $REPO_ROOT
+        $repositoryRoot
     if ($LASTEXITCODE -ne 0) { throw "docker buildx build failed with exit code $LASTEXITCODE" }
 
     if ($Push) {
-        Write-Host "Pushed: $img" -ForegroundColor Green
+        Write-Host "Pushed: $imageReference" -ForegroundColor Green
     }
     else {
-        Write-Host "Built (not pushed): $img" -ForegroundColor Green
+        Write-Host "Built (not pushed): $imageReference" -ForegroundColor Green
     }
 }
+#endregion Functions
 
-Invoke-Build
+#region Main Execution
+if ($MyInvocation.InvocationName -ne '.') {
+    try {
+        Invoke-Build -WhatIf:$WhatIfPreference
+        exit 0
+    }
+    catch {
+        Write-Error -ErrorAction Continue "build.ps1 failed: $($_.Exception.Message)"
+        exit 1
+    }
+}
+#endregion Main Execution
