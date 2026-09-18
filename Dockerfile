@@ -74,11 +74,14 @@ COPY --link --from=build /app/publish .
 COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Runtime dependencies ------------------------------------------------------
+# ffmpeg is required, not optional: voice-message speech-to-text normalises every inbound
+# attachment through it, and ffmpeg-record.sh depends on it too.
 RUN <<EOF
 set -eux
 apt-get update
-apt-get install -y --no-install-recommends curl libgpiod-dev
+apt-get install -y --no-install-recommends curl libgpiod-dev ffmpeg
 rm -rf /var/lib/apt/lists/*
+ffmpeg -version
 EOF
 
 # -- Temporary debug tooling ---------------------------------------------------
@@ -88,7 +91,7 @@ EOF
 #RUN <<EOF
 #set -eux
 #apt-get update
-#apt-get install -y --no-install-recommends tzdata ffmpeg
+#apt-get install -y --no-install-recommends tzdata
 #rm -rf /var/lib/apt/lists/*
 #EOF
 #

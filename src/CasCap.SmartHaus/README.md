@@ -152,7 +152,7 @@ flowchart LR
     SIGNAL(["Signal<br/>voice message"]) -->|audio/aac bytes| DOWNLOAD["Download<br/>attachment"]
     DOWNLOAD --> TRANSCODE["ffmpeg<br/>AAC → WAV<br/>(16kHz mono PCM)"]
     TRANSCODE --> WHISPER(("whisper-asr<br/>(POST /asr)"))
-    WHISPER -->|transcribed text| INJECT["Inject into prompt<br/>[AUDIO TRANSCRIPTION]"]
+    WHISPER -->|transcribed text| INJECT["Replace the prompt<br/>with the transcript"]
     INJECT --> COMMS(("CommsAgent"))
     COMMS -->|response| SIGNAL
 ```
@@ -364,7 +364,7 @@ flowchart TD
 
     subgraph AudioPipeline["Audio Transcription"]
         AUDIO_IN["audio/aac bytes"] --> FFMPEG["ffmpeg<br/>AAC → WAV<br/>(16kHz mono PCM)"]
-        FFMPEG --> WHISPER["EdgeCpuWhisper<br/>karanchopda333/whisper"]
+        FFMPEG --> WHISPER["whisper-asr<br/>(POST /asr)"]
         WHISPER --> TRANSCRIPTION["transcribed text"]
     end
     Audio --> AudioPipeline

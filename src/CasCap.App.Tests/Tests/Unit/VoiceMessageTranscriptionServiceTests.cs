@@ -1,5 +1,6 @@
 using Microsoft.Extensions.AI;
 using Microsoft.Extensions.Logging.Abstractions;
+using System.Globalization;
 using System.Net;
 using System.Text;
 
@@ -266,7 +267,69 @@ public class VoiceMessageTranscriptionServiceTests
         Assert.Equal(1, stt.MaxConcurrency);
     }
 
+    [Fact]
+    public async Task Transcribe_ConvertsRealAacToNormalisedWav()
+    {
+        var aac = await CreateAac(seconds: 2, TestContext.Current.CancellationToken);
+        Assert.SkipWhen(aac.Length == 0, "ffmpeg is not installed here; this runs inside the runtime image.");
+
+        byte[]? delivered = null;
+        var stt = new StubSpeechToTextClient
+        {
+            Responder = async (stream, _, ct) =>
+            {
+                using var buffer = new MemoryStream();
+                await stream.CopyToAsync(buffer, ct);
+                delivered = buffer.ToArray();
+                return new SpeechToTextResponse("ok");
+            }
+        };
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(aac, "audio/aac", TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, result.Outcome);
+        Assert.NotNull(result.TranscodeDuration);
+        Assert.Equal(2, result.AudioDuration!.Value.TotalSeconds, tolerance: 0.5);
+
+        var (audioFormat, channels, sampleRate, bitsPerSample) = ReadWavFormat(delivered!);
+        Assert.Equal(1, audioFormat);
+        Assert.Equal(1, channels);
+        Assert.Equal(16_000, sampleRate);
+        Assert.Equal(16, bitsPerSample);
+    }
+
     #region Private helpers
+
+    /// <summary>Generates silent ADTS AAC with ffmpeg, or an empty array when ffmpeg is unavailable.</summary>
+    private static async Task<byte[]> CreateAac(int seconds, CancellationToken cancellationToken)
+    {
+        string[] arguments =
+        [
+            "-hide_banner", "-loglevel", "error",
+            "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+            "-t", seconds.ToString(CultureInfo.InvariantCulture),
+            "-c:a", "aac", "-f", "adts", "pipe:1"
+        ];
+        var result = await ShellExtensions.RunProcessWithStdinAsync("ffmpeg", arguments, [],
+            ProcessErrorCapture.Text, cancellationToken);
+        return result.Success ? result.Output : [];
+    }
+
+    private static (short AudioFormat, short Channels, int SampleRate, short BitsPerSample) ReadWavFormat(byte[] wav)
+    {
+        Assert.Equal("RIFF", Encoding.ASCII.GetString(wav, 0, 4));
+        Assert.Equal("WAVE", Encoding.ASCII.GetString(wav, 8, 4));
+
+        //ffmpeg may emit LIST or other chunks, so seek the fmt chunk rather than assuming it is first.
+        var offset = 12;
+        while (Encoding.ASCII.GetString(wav, offset, 4) != "fmt ")
+            offset += 8 + BitConverter.ToInt32(wav, offset + 4);
+
+        var body = offset + 8;
+        return (BitConverter.ToInt16(wav, body), BitConverter.ToInt16(wav, body + 2),
+            BitConverter.ToInt32(wav, body + 4), BitConverter.ToInt16(wav, body + 14));
+    }
 
     private static VoiceMessageTranscriptionService CreateService(ISpeechToTextClient stt, SpeechToTextConfig? config = null) =>
         new(NullLogger<VoiceMessageTranscriptionService>.Instance, Options.Create(config ?? new SpeechToTextConfig()), stt,

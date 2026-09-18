@@ -189,7 +189,6 @@ services:
       CasCap__AIConfig__Providers__EdgeGpu__ModelName: qwen3.5:4b
       CasCap__AIConfig__Providers__EdgeGpuVL__Endpoint: http://ollama:11434
       CasCap__AIConfig__Providers__EdgeOllamaCpuVLC__Endpoint: http://ollama:11434
-      CasCap__AIConfig__Providers__EdgeCpuWhisper__Endpoint: http://ollama:11434
     depends_on:
       redis:
         condition: service_healthy
