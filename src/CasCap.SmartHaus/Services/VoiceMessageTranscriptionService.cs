@@ -197,6 +197,15 @@ public sealed partial class VoiceMessageTranscriptionService(
             var chunkId = audio.Slice(offset, 4);
             var chunkLength = BinaryPrimitives.ReadUInt32LittleEndian(audio.Slice(offset + 4, 4));
             var payload = audio[(offset + _chunkHeaderLength)..];
+
+            if (chunkId.SequenceEqual("data"u8))
+            {
+                // ffmpeg cannot seek back to patch the size when writing to a pipe, so it emits a
+                // placeholder length; the audio is then whatever remains after the header.
+                dataLength = chunkLength > payload.Length ? (uint)payload.Length : chunkLength;
+                break;
+            }
+
             if (chunkLength > payload.Length)
                 return false;
 
@@ -208,11 +217,6 @@ public sealed partial class VoiceMessageTranscriptionService(
                 byteRate = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(8, 4));
                 bitsPerSample = BinaryPrimitives.ReadInt16LittleEndian(payload.Slice(14, 2));
                 seenFormat = true;
-            }
-            else if (chunkId.SequenceEqual("data"u8))
-            {
-                dataLength = chunkLength;
-                break;
             }
 
             offset += _chunkHeaderLength + (int)chunkLength + ((chunkLength & 1) == 1 ? 1 : 0);

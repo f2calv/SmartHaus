@@ -134,8 +134,20 @@ public class VoiceMessageTranscriptionServiceTests
     }
 
     [Fact]
-    public async Task Transcribe_RecordsStageTimings()
+    public async Task Transcribe_AcceptsPipedWavWithPlaceholderLengths()
     {
+        var stt = new StubSpeechToTextClient();
+        using var svc = CreateService(stt);
+
+        var result = await svc.Transcribe(CreatePipedWav(seconds: 2), _wav, TestContext.Current.CancellationToken);
+
+        Assert.Equal(VoiceTranscriptionOutcome.Success, result.Outcome);
+        Assert.Equal(2, result.AudioDuration!.Value.TotalSeconds, tolerance: 0.01);
+        Assert.Equal(1, stt.CallCount);
+    }
+
+    [Fact]
+    public async Task Transcribe_RecordsStageTimings()    {
         var stt = new StubSpeechToTextClient();
         using var svc = CreateService(stt);
 
@@ -357,6 +369,42 @@ public class VoiceMessageTranscriptionServiceTests
         writer.Write(bitsPerSample);
         writer.Write("data"u8);
         writer.Write(dataLength);
+        writer.Write(new byte[dataLength]);
+        writer.Flush();
+        return buffer.ToArray();
+    }
+
+    /// <summary>
+    /// Builds what ffmpeg emits when its WAV output is a pipe: it cannot seek back to patch the
+    /// RIFF and data lengths, so both are left as the placeholder <c>0xFFFFFFFF</c>, and a LIST
+    /// chunk sits between <c>fmt </c> and <c>data</c>.
+    /// </summary>
+    private static byte[] CreatePipedWav(int sampleRate = 16_000, short channels = 1, short bitsPerSample = 16,
+        double seconds = 1)
+    {
+        var blockAlign = (short)(channels * bitsPerSample / 8);
+        var byteRate = sampleRate * blockAlign;
+        var dataLength = (int)(byteRate * seconds);
+        ReadOnlySpan<byte> listPayload = "INFOISFT\u0010\0\0\0Lavf60.16.100\0\0\0"u8;
+
+        using var buffer = new MemoryStream();
+        using var writer = new BinaryWriter(buffer, Encoding.ASCII, leaveOpen: true);
+        writer.Write("RIFF"u8);
+        writer.Write(uint.MaxValue);
+        writer.Write("WAVE"u8);
+        writer.Write("fmt "u8);
+        writer.Write(16);
+        writer.Write((short)1);
+        writer.Write(channels);
+        writer.Write(sampleRate);
+        writer.Write(byteRate);
+        writer.Write(blockAlign);
+        writer.Write(bitsPerSample);
+        writer.Write("LIST"u8);
+        writer.Write(listPayload.Length);
+        writer.Write(listPayload);
+        writer.Write("data"u8);
+        writer.Write(uint.MaxValue);
         writer.Write(new byte[dataLength]);
         writer.Flush();
         return buffer.ToArray();
