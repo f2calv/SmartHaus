@@ -41,6 +41,10 @@ jobs:
       dockerfile: Dockerfile.whisper-cpp
       tag: ${{ needs.versioning.outputs.version }}
       #Executing the binary is the whole point of this build: the upstream arm64 image
-      #aborts with SIGILL on a Cortex-A76, and only a real run catches that.
-      smoke-test: docker run --rm $IMAGE -h
+      #aborts with SIGILL on a Cortex-A76, and only a real run catches that. The second
+      #check catches the Vulkan backend being dropped at link time, which leaves a
+      #working server that silently transcribes on the CPU.
+      smoke-test: |
+        docker run --rm $IMAGE -h
+        docker run --rm --entrypoint sh $IMAGE -c 'ldd /opt/whisper/bin/whisper-server | grep -q libggml-vulkan'
       smoke-test-platform: linux/arm64
