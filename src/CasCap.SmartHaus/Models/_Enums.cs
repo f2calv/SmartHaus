@@ -68,8 +68,9 @@ public enum TextToSpeechProvider
     /// Two things block it today. The image
     /// (<c>mcr.microsoft.com/azure-cognitive-services/speechservices/neural-text-to-speech</c>)
     /// publishes an amd64 manifest only, verified against the registry, so it cannot run on the arm64
-    /// edge node; and access is gated behind a Microsoft approval request. It is also about 1.77 GB
-    /// compressed, against 162 MB for Piper.
+    /// edge node; and access is gated behind a Microsoft approval request. Its appetite is the real
+    /// obstacle though: Microsoft's own run command allocates 6 CPU cores and 12 GB of memory, against
+    /// the 226 MB Piper was measured at. Each image tag also carries a single voice.
     /// </para>
     /// <para>
     /// It still meters usage back to the cloud resource, so it needs outbound connectivity and bills
@@ -83,19 +84,30 @@ public enum TextToSpeechProvider
 
     /// <summary>A self-hosted Piper server. Keeps synthesis on the local network.</summary>
     /// <remarks>
-    /// TODO: not implemented. Deploy <see href="https://github.com/linuxserver/docker-piper"/>
-    /// (<c>lscr.io/linuxserver/piper</c>, linux/arm64, about 162 MB) and add a client for its native
-    /// HTTP shape, which is not OpenAI-compatible. It emits WAV only, so its client must encode to
-    /// Opus itself rather than asking the server for it.
+    /// TODO: not implemented, but measured and by far the lightest option
+    /// (<c>lscr.io/linuxserver/piper</c>, linux/arm64): 43 MB resident idle, 226 MB with an
+    /// <c>en_GB</c> voice loaded, synthesizing at about 6.4x realtime on CPU.
+    /// <para>
+    /// That image speaks the Wyoming protocol on TCP 10200, not HTTP: a newline-delimited JSON header
+    /// declaring <c>data_length</c> and <c>payload_length</c>, followed by those bytes in turn. It
+    /// needs a socket client rather than an <see cref="System.Net.Http.HttpClient"/>, and it emits raw
+    /// PCM at 22.05 kHz, so its adapter must encode to Opus itself.
+    /// </para>
+    /// <para>
+    /// Two ways to avoid the protocol work. Piper upstream ships an HTTP server module returning WAV,
+    /// and <c>openedai-speech</c> wraps Piper behind an OpenAI-compatible route, which the existing
+    /// OpenAI client could drive once its credential is made optional.
+    /// </para>
     /// </remarks>
     Piper,
 
     /// <summary>A self-hosted Kokoro server. Keeps synthesis on the local network.</summary>
     /// <remarks>
     /// TODO: not implemented. Deploy <see href="https://github.com/remsky/Kokoro-FastAPI"/>
-    /// (<c>ghcr.io/remsky/kokoro-fastapi-cpu</c>, linux/arm64, about 1.36 GB). It exposes an
-    /// OpenAI-compatible speech route, so the existing OpenAI client should serve it once the
-    /// endpoint is configurable.
+    /// (<c>ghcr.io/remsky/kokoro-fastapi-cpu</c>, linux/arm64). It exposes an OpenAI-compatible speech
+    /// route, so the existing OpenAI client should serve it once the endpoint is configurable and the
+    /// credential optional. Resident memory is unmeasured and is the number that matters: it carries a
+    /// PyTorch runtime, so expect substantially more than Piper.
     /// </remarks>
     Kokoro,
 

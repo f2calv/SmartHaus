@@ -74,6 +74,25 @@ public sealed record TextToSpeechConfig : IAppConfig
     /// </remarks>
     public string? AzureOpenAiVoice { get; init; }
 
+    /// <summary>Endpoint of the Piper server, as <c>host:port</c>.</summary>
+    /// <remarks>
+    /// Required only when <see cref="Provider"/> is <see cref="TextToSpeechProvider.Piper"/>. This is
+    /// a Wyoming protocol socket rather than an HTTP endpoint, so it carries no scheme; the default
+    /// port is 10200.
+    /// </remarks>
+    public string? PiperEndpoint { get; init; }
+
+    /// <summary>Voice used by <see cref="TextToSpeechProvider.Piper"/>.</summary>
+    /// <remarks>
+    /// A Piper voice name such as <c>en_GB-alba-medium</c>. Defaults to <see langword="null"/>, which
+    /// leaves the voice the server was started with.
+    /// </remarks>
+    public string? PiperVoice { get; init; }
+
+    /// <summary>Path to the ffmpeg executable used to encode raw PCM.</summary>
+    /// <remarks>Needed only by providers that emit PCM rather than a compressed container.</remarks>
+    public string FfmpegPath { get; init; } = "ffmpeg";
+
     /// <summary>Longest reply, in characters, that will be synthesized.</summary>
     /// <remarks>
     /// Defaults to <c>1000</c>. An agent can answer at length, and synthesizing a wall of text wastes

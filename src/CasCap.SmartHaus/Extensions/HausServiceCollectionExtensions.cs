@@ -133,8 +133,10 @@ public static class HausServiceCollectionExtensions
             {
                 TextToSpeechProvider.AzureOpenAi =>
                     ActivatorUtilities.CreateInstance<AzureOpenAiTextToSpeechClient>(sp),
+                TextToSpeechProvider.Piper =>
+                    ActivatorUtilities.CreateInstance<PiperTextToSpeechClient>(sp),
                 //Self-hosted and unbuilt; the enum documents what each one still needs.
-                TextToSpeechProvider.AzureSpeechContainer or TextToSpeechProvider.Piper
+                TextToSpeechProvider.AzureSpeechContainer
                     or TextToSpeechProvider.Kokoro or TextToSpeechProvider.CoquiXtts =>
                     throw new NotImplementedException(
                         $"{nameof(TextToSpeechProvider)}.{provider} is not implemented; see the remarks on that member."),

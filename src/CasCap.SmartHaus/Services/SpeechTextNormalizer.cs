@@ -34,6 +34,13 @@ namespace CasCap.Services;
 /// A dependency on a real Markdown parser was considered and backed out: regex is proportionate for a
 /// guard, and would not be for a primary mechanism.
 /// </para>
+/// <para>
+/// TODO: a slash between words is read with no pause, so <c>windows/shutters</c> runs together.
+/// Substituting " or " works only when both sides are alphabetic and at least two characters long;
+/// a blanket replacement would mangle dates, paths, URLs and units, where <c>km/h</c> is saved only
+/// by its single-character right side. This is the third symptom of the same cause as the bold
+/// markers and the bullet pauses, and is further evidence for asking the agent for spoken prose.
+/// </para>
 /// </remarks>
 public static partial class SpeechTextNormalizer
 {
