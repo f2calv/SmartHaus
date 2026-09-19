@@ -74,7 +74,7 @@ public sealed partial class AzureOpenAiTextToSpeechClient : HttpClientBase, ITex
             ["input"] = text,
             ["response_format"] = ResponseFormat,
         };
-        var voice = options?.VoiceId ?? config.Voice;
+        var voice = options?.VoiceId ?? config.AzureOpenAiVoice;
         if (!string.IsNullOrWhiteSpace(voice))
             payload["voice"] = voice;
 
@@ -82,7 +82,7 @@ public sealed partial class AzureOpenAiTextToSpeechClient : HttpClientBase, ITex
         var token = await credential.GetTokenAsync(new TokenRequestContext([TokenScope]), cancellationToken);
         var headers = new List<(string name, string value)> { ("Authorization", $"Bearer {token.Token}") };
 
-        var (audio, _, statusCode, _) = await PostJson<byte[], string>(requestUri, payload,
+        var (audio, error, statusCode, _) = await PostJson<byte[], string>(requestUri, payload,
             additionalHeaders: headers, cancellationToken: cancellationToken);
 
         if (audio is null)
@@ -92,8 +92,13 @@ public sealed partial class AzureOpenAiTextToSpeechClient : HttpClientBase, ITex
                 LogSynthesisUnavailable(_logger, status);
             else
                 LogSynthesisRejected(_logger, status);
+            //The service reports which parameter it rejected, and a bare status code leaves that
+            //  undiagnosable; it describes the request, not the text being spoken.
+            var detail = error is { Length: > 0 }
+                ? $" {error[..Math.Min(error.Length, 500)]}"
+                : string.Empty;
             throw new HttpRequestException(
-                $"{nameof(AzureOpenAiTextToSpeechClient)} synthesis request failed, StatusCode={status}.",
+                $"{nameof(AzureOpenAiTextToSpeechClient)} synthesis request failed, StatusCode={status}.{detail}",
                 inner: null, statusCode);
         }
 

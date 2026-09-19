@@ -219,7 +219,8 @@ public sealed partial class CommunicationsBgService
         }
 
         await EnqueueReplyAsync(prompt, binaryContent, mimeType, sender: notification.Sender,
-            timestamp: notification.Timestamp, bypassSession: false, cancellationToken: cancellationToken);
+            timestamp: notification.Timestamp, bypassSession: false,
+            inboundWasVoice: voice is not null, cancellationToken: cancellationToken);
     }
 
     /// <summary>
@@ -405,10 +406,11 @@ public sealed partial class CommunicationsBgService
     /// </remarks>
     private async Task EnqueueReplyAsync(string prompt, byte[]? binaryContent = null, string? mimeType = null,
         string? sender = null, long? timestamp = null, bool bypassSession = false, string[]? extraBase64Attachments = null,
-        CancellationToken cancellationToken = default)
+        bool inboundWasVoice = false, CancellationToken cancellationToken = default)
     {
         await _replyChannel.Writer.WriteAsync(
-            new ReplyRequest(prompt, binaryContent, mimeType, sender, timestamp, bypassSession, extraBase64Attachments),
+            new ReplyRequest(prompt, binaryContent, mimeType, sender, timestamp, bypassSession,
+                extraBase64Attachments, inboundWasVoice),
             cancellationToken);
         LogReplyEnqueued(_logger, nameof(CommunicationsBgService));
     }
@@ -452,6 +454,12 @@ public sealed partial class CommunicationsBgService
                     // Merge pre-built media attachments (e.g. from the media analysis pipeline).
                     if (request.ExtraBase64Attachments is { Length: > 0 })
                         base64Attachments = [.. base64Attachments ?? [], .. request.ExtraBase64Attachments];
+
+                    // The agent's answer is spoken, never the diagnostic footer appended above.
+                    var spoken = await _voiceReplySvc.TrySynthesizeAttachmentAsync(
+                        agentResponse, request.InboundWasVoice, cancellationToken);
+                    if (spoken is not null)
+                        base64Attachments = [.. base64Attachments ?? [], spoken];
 
                     var reply = new SignalMessageRequest
                     {
@@ -535,5 +543,6 @@ public sealed partial class CommunicationsBgService
         string? Sender,
         long? Timestamp,
         bool BypassSession = false,
-        string[]? ExtraBase64Attachments = null);
+        string[]? ExtraBase64Attachments = null,
+        bool InboundWasVoice = false);
 }

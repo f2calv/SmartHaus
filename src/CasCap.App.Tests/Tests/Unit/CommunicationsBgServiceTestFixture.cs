@@ -58,6 +58,9 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <summary>The speech-to-text backend behind the transcription service.</summary>
     public FakeSpeechToTextClient SpeechToText { get; } = new();
 
+    /// <summary>The synthesis backend behind the spoken-reply service.</summary>
+    public FakeTextToSpeechClient TextToSpeech { get; } = new();
+
     /// <summary>
     /// Builds a silent 16 kHz mono signed 16-bit PCM WAV, which is what the transcription service
     /// accepts without invoking ffmpeg.
@@ -107,7 +110,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         VoiceProcessingMode voiceMode = VoiceProcessingMode.Enabled,
         bool agentAvailable = true,
         int replyQueueCapacity = 100,
-        bool echoTranscriptToDebugChat = false)
+        bool echoTranscriptToDebugChat = false,
+        VoiceReplyMode voiceReplyMode = VoiceReplyMode.Disabled)
     {
         Notifier.Groups.Add(new FakeNotificationGroup { Id = GroupId, Name = GroupName, Members = [Account, Sender] });
 
@@ -162,6 +166,9 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         var transcriptionSvc = new VoiceMessageTranscriptionService(
             NullLogger<VoiceMessageTranscriptionService>.Instance, speechToTextConfig, SpeechToText,
             TestMetrics.Voice());
+        var voiceReplySvc = new VoiceReplySynthesisService(
+            NullLogger<VoiceReplySynthesisService>.Instance, TextToSpeech,
+            Options.Create(new TextToSpeechConfig { Mode = voiceReplyMode }));
 #pragma warning restore MEAI001
 
         Service = new CommunicationsBgService(
@@ -179,6 +186,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             Cleaner,
             Deduplicator,
             transcriptionSvc,
+            voiceReplySvc,
             commandHandler,
             new StubRemoteCache(),
             EventSink,

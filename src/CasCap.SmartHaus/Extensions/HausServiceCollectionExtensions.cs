@@ -142,6 +142,7 @@ public static class HausServiceCollectionExtensions
             };
         });
 #pragma warning restore MEAI001
+        services.TryAddSingleton<VoiceReplySynthesisService>();
     }
 
     /// <summary>

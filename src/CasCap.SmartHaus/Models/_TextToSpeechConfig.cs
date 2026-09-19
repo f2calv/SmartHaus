@@ -48,13 +48,31 @@ public sealed record TextToSpeechConfig : IAppConfig
     /// </remarks>
     public string AzureOpenAiApiVersion { get; init; } = "2025-03-01-preview";
 
-    /// <summary>Voice used for synthesis.</summary>
+    /// <summary>Voice used by <see cref="TextToSpeechProvider.AzureSpeech"/>.</summary>
     /// <remarks>
-    /// The naming differs per provider: Azure AI Speech expects a full voice name such as
-    /// <c>en-GB-SoniaNeural</c>, while the OpenAI-compatible route expects a short name such as
-    /// <c>alloy</c>. Defaults to <see langword="null"/>, which leaves the provider's own default.
+    /// A full Azure AI Speech voice name, such as <c>en-GB-SoniaNeural</c>. Defaults to
+    /// <see langword="null"/>, which leaves the provider's own default.
+    /// <para>
+    /// TODO: only this voice has been listened to, and it was kept because it is neutral and
+    /// unaccented. The <c>en-GB</c> catalogue holds a dozen or so alternatives worth comparing
+    /// side by side before settling.
+    /// </para>
     /// </remarks>
-    public string? Voice { get; init; }
+    public string? AzureSpeechVoice { get; init; }
+
+    /// <summary>Voice used by <see cref="TextToSpeechProvider.AzureOpenAi"/>.</summary>
+    /// <remarks>
+    /// A short OpenAI voice name such as <c>alloy</c>, <c>sage</c> or <c>coral</c>. Kept separate from
+    /// <see cref="AzureSpeechVoice"/> because the two naming schemes are not interchangeable and the
+    /// service rejects the wrong one outright.
+    /// <para>
+    /// TODO: every voice in this set sounds American, and there are no locale variants, so changing
+    /// the name will not change the accent. The <c>gpt-4o-mini-tts</c> deployment accepts an
+    /// <c>instructions</c> field that steers delivery in natural language, which is the only route to
+    /// a British-sounding result here; it is untested.
+    /// </para>
+    /// </remarks>
+    public string? AzureOpenAiVoice { get; init; }
 
     /// <summary>Longest reply, in characters, that will be synthesized.</summary>
     /// <remarks>

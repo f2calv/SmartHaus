@@ -52,6 +52,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly ProviderConfig? _provider;
     private readonly AgentConfig? _commsAgent;
     private readonly VoiceMessageTranscriptionService _transcriptionSvc;
+    private readonly VoiceReplySynthesisService _voiceReplySvc;
 
     private string? _groupId;
     private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
@@ -80,6 +81,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         ISignalAttachmentCleaner attachmentCleaner,
         ISignalMessageDeduplicator deduplicator,
         VoiceMessageTranscriptionService transcriptionSvc,
+        VoiceReplySynthesisService voiceReplySvc,
         AgentCommandHandler commandHandler,
         IRemoteCache remoteCache,
         IEventSink<CommsEvent> commsSink,
@@ -102,6 +104,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
         _transcriptionSvc = transcriptionSvc;
+        _voiceReplySvc = voiceReplySvc;
         _commandHandler = commandHandler;
         //Resolved lazily rather than captured here, so an unreachable cache cannot stop the feature
         //being constructed; only the stream path needs it.

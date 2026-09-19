@@ -37,7 +37,7 @@ public sealed partial class AzureSpeechTextToSpeechClient : ITextToSpeechClient
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(text);
 
-        var voice = options?.VoiceId ?? _options.Value.Voice;
+        var voice = options?.VoiceId ?? _options.Value.AzureSpeechVoice;
         var audio = await _speechService.SynthesizeAsync(text, voice, cancellationToken);
         if (audio is null || audio.Length == 0)
         {
