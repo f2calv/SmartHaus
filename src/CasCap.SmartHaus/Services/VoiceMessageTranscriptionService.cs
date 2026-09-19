@@ -126,10 +126,11 @@ public sealed partial class VoiceMessageTranscriptionService(
                 ex.StatusCode is { } statusCode && WhisperAsrSpeechToTextClient.IsTransientStatusCode(statusCode));
             return Record(VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed));
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             //A backend that throws something unforeseen must still be reported to the sender; letting it
             //  escape aborts the whole receive loop and the message is acknowledged but never answered.
+            //Caller cancellation is deliberately excluded so shutdown still unwinds promptly.
             LogBackendFaulted(logger, ex);
             return Record(VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.BackendFailed));
         }

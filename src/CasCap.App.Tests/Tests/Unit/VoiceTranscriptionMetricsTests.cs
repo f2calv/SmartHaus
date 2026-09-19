@@ -34,9 +34,11 @@ public class VoiceTranscriptionMetricsTests
 
         var counter = Assert.Single(measurements, x => x.Instrument == "haus.voice.transcriptions");
         Assert.Equal(1, counter.Value);
-        var tag = Assert.Single(counter.Tags);
-        Assert.Equal(VoiceTranscriptionMetrics.OutcomeTagName, tag.Key);
-        Assert.Equal(nameof(VoiceTranscriptionOutcome.BackendFailed), tag.Value);
+        //Every measurement carries the provider so outcomes can be compared across backends.
+        var outcome = Assert.Single(counter.Tags, t => t.Key == VoiceTranscriptionMetrics.OutcomeTagName);
+        Assert.Equal(nameof(VoiceTranscriptionOutcome.BackendFailed), outcome.Value);
+        var provider = Assert.Single(counter.Tags, t => t.Key == VoiceTranscriptionMetrics.ProviderTagName);
+        Assert.Equal(nameof(SpeechToTextProvider.WhisperAsr), provider.Value);
         //No stage ran, so no duration or speed may be reported.
         Assert.Single(measurements);
     }
