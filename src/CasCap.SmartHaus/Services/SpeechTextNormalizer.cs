@@ -35,11 +35,13 @@ namespace CasCap.Services;
 /// guard, and would not be for a primary mechanism.
 /// </para>
 /// <para>
-/// TODO: a slash between words is read with no pause, so <c>windows/shutters</c> runs together.
-/// Substituting " or " works only when both sides are alphabetic and at least two characters long;
-/// a blanket replacement would mangle dates, paths, URLs and units, where <c>km/h</c> is saved only
-/// by its single-character right side. This is the third symptom of the same cause as the bold
-/// markers and the bullet pauses, and is further evidence for asking the agent for spoken prose.
+/// TODO: a slash between words is handled differently per provider, so any rule here would override
+/// a sensible default rather than fix a fault everywhere. Azure AI Speech runs <c>windows/shutters</c>
+/// together with no pause; Piper speaks it as "windows slash shutters", which is acceptable.
+/// Substituting " or " would work only when both sides are alphabetic and at least two characters
+/// long; a blanket replacement would mangle dates, paths, URLs and units, where <c>km/h</c> is saved
+/// only by its single-character right side. Lower priority than it first appeared, and further
+/// evidence for asking the agent for spoken prose instead.
 /// </para>
 /// </remarks>
 public static partial class SpeechTextNormalizer

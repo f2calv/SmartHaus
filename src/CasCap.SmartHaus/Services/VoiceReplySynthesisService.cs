@@ -1,5 +1,4 @@
 namespace CasCap.Services;
-
 //ITextToSpeechClient is published as experimental (MEAI001). This service and the adapters are the
 //only contact points, so the diagnostic is suppressed here rather than repository-wide.
 #pragma warning disable MEAI001
@@ -73,7 +72,10 @@ public sealed partial class VoiceReplySynthesisService
             using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             budget.CancelAfter(config.TimeoutMs);
 
+            var started = Stopwatch.GetTimestamp();
             var response = await _textToSpeechClient.GetAudioAsync(speakable, options: null, budget.Token);
+            var elapsed = (int)Stopwatch.GetElapsedTime(started).TotalMilliseconds;
+
             var audio = response.Contents.OfType<DataContent>().FirstOrDefault();
             if (audio is null || audio.Data.Length == 0)
             {
@@ -82,7 +84,7 @@ public sealed partial class VoiceReplySynthesisService
             }
 
             var mediaType = audio.MediaType ?? AzureSpeechTextToSpeechClient.OggOpusMediaType;
-            LogReplySynthesized(_logger, config.Provider.ToString(), speakable.Length, audio.Data.Length);
+            LogReplySynthesized(_logger, config.Provider.ToString(), speakable.Length, audio.Data.Length, elapsed);
             return $"data:{mediaType};filename={AttachmentFileName};base64,"
                 + Convert.ToBase64String(audio.Data.Span);
         }
@@ -102,9 +104,9 @@ public sealed partial class VoiceReplySynthesisService
 
     //Character and byte counts are safe to log; the reply text itself is not.
     [LoggerMessage(LogLevel.Information,
-        "{ClassName} synthesized a spoken reply, provider={Provider}, characters={CharacterCount}, bytes={ByteCount}")]
+        "{ClassName} synthesized a spoken reply, provider={Provider}, characters={CharacterCount}, bytes={ByteCount}, elapsed={ElapsedMs}ms")]
     private static partial void LogReplySynthesized(ILogger logger, string provider, int characterCount,
-        int byteCount, string className = nameof(VoiceReplySynthesisService));
+        int byteCount, int elapsedMs, string className = nameof(VoiceReplySynthesisService));
 
     [LoggerMessage(LogLevel.Debug,
         "{ClassName} reply not spoken, characters={CharacterCount} exceeds MaxCharacters={MaxCharacters}")]
