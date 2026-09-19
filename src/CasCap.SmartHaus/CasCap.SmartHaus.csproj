@@ -5,6 +5,7 @@
   </PropertyGroup>
   <ItemGroup>
 
+    <EmbeddedResource Include="Resources\SecurityAgent.instructions.md" />
     <EmbeddedResource Include="Resources\HeatingAgent.instructions.md" />
     <EmbeddedResource Include="Resources\EnergyAgent.instructions.md" />
     <EmbeddedResource Include="Resources\HomeControlAgent.instructions.md" />
