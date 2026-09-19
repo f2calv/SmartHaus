@@ -57,9 +57,14 @@ public sealed partial class VoiceReplySynthesisService
         if (string.IsNullOrWhiteSpace(text))
             return null;
 
-        if (text.Length > config.MaxCharacters)
+        //Markdown is read out literally, so structure becomes punctuation before anything is spoken.
+        var speakable = SpeechTextNormalizer.ToSpeakable(text);
+        if (speakable.Length == 0)
+            return null;
+
+        if (speakable.Length > config.MaxCharacters)
         {
-            LogReplyTooLong(_logger, text.Length, config.MaxCharacters);
+            LogReplyTooLong(_logger, speakable.Length, config.MaxCharacters);
             return null;
         }
 
@@ -68,7 +73,7 @@ public sealed partial class VoiceReplySynthesisService
             using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             budget.CancelAfter(config.TimeoutMs);
 
-            var response = await _textToSpeechClient.GetAudioAsync(text, options: null, budget.Token);
+            var response = await _textToSpeechClient.GetAudioAsync(speakable, options: null, budget.Token);
             var audio = response.Contents.OfType<DataContent>().FirstOrDefault();
             if (audio is null || audio.Data.Length == 0)
             {
@@ -77,7 +82,7 @@ public sealed partial class VoiceReplySynthesisService
             }
 
             var mediaType = audio.MediaType ?? AzureSpeechTextToSpeechClient.OggOpusMediaType;
-            LogReplySynthesized(_logger, config.Provider.ToString(), text.Length, audio.Data.Length);
+            LogReplySynthesized(_logger, config.Provider.ToString(), speakable.Length, audio.Data.Length);
             return $"data:{mediaType};filename={AttachmentFileName};base64,"
                 + Convert.ToBase64String(audio.Data.Span);
         }
