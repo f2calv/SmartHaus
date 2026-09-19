@@ -101,7 +101,12 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         }
     }
 
-    [Fact]
+    // TODO: re-enable once the test image is committed. The fixture depends on an uncommitted
+    // C:\temp\wine.png, so it fails on every machine that does not happen to have that file.
+    // Commit a small image under the test project and copy it to the output directory instead,
+    // then drop the Skip and the absolute path. Its sibling in AIAgentExtensionsTests exercises
+    // the same multimodal path and self-skips, so nothing is currently unguarded by this.
+    [Fact(Skip = @"Depends on an uncommitted image at C:\temp\wine.png; see the TODO above.")]
     public async Task GetResponseAsync_WithFileContent_ReturnsChatResponse()
     {
         if (!File.Exists(_filePath))
