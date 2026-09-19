@@ -29,7 +29,9 @@ public enum VoiceProcessingMode
 /// <summary>Selects which speech-to-text backend transcribes an inbound voice message.</summary>
 /// <remarks>
 /// The three are interchangeable behind <c>ISpeechToTextClient</c>, so switching provider is a
-/// configuration change rather than a code change.
+/// configuration change rather than a code change. Measured throughput for each, and the problems
+/// each one presented, are recorded in
+/// <see href="https://github.com/f2calv/SmartHaus/issues/82">issue 82</see>.
 /// </remarks>
 public enum SpeechToTextProvider
 {
@@ -41,6 +43,92 @@ public enum SpeechToTextProvider
 
     /// <summary>The Azure AI Speech fast transcription API. The only provider that sends audio off the network.</summary>
     Azure,
+}
+
+/// <summary>Selects which text-to-speech backend synthesizes a spoken reply.</summary>
+/// <remarks>
+/// The backends are interchangeable behind <c>ITextToSpeechClient</c>, so switching provider is a
+/// configuration change rather than a code change. The comparison that produced this list, and the
+/// design decisions behind the adapters, are recorded in
+/// <see href="https://github.com/f2calv/SmartHaus/issues/82">issue 82</see>.
+/// </remarks>
+public enum TextToSpeechProvider
+{
+    /// <summary>Azure AI Speech synthesis, the same resource and credential the transcription provider uses.</summary>
+    AzureSpeech,
+
+    /// <summary>An Azure OpenAI audio deployment, reached through the OpenAI-compatible speech route.</summary>
+    AzureOpenAi,
+
+    /// <summary>The Azure AI Speech neural synthesis container, run on our own hardware.</summary>
+    /// <remarks>
+    /// TODO: not implemented. The appeal is that text and audio never leave the network while the
+    /// voices stay the cloud ones, unlike every other self-hosted option here.
+    /// <para>
+    /// Two things block it today. The image
+    /// (<c>mcr.microsoft.com/azure-cognitive-services/speechservices/neural-text-to-speech</c>)
+    /// publishes an amd64 manifest only, verified against the registry, so it cannot run on the arm64
+    /// edge node; and access is gated behind a Microsoft approval request. It is also about 1.77 GB
+    /// compressed, against 162 MB for Piper.
+    /// </para>
+    /// <para>
+    /// It still meters usage back to the cloud resource, so it needs outbound connectivity and bills
+    /// per character exactly as <see cref="AzureSpeech"/> does — it removes the data disclosure, not
+    /// the dependency or the cost. The Speech SDK reaches it through a host rather than an endpoint
+    /// and without a credential, so <c>SpeechService</c> needs a host construction path before the
+    /// existing Azure adapter can serve it.
+    /// </para>
+    /// </remarks>
+    AzureSpeechContainer,
+
+    /// <summary>A self-hosted Piper server. Keeps synthesis on the local network.</summary>
+    /// <remarks>
+    /// TODO: not implemented. Deploy <see href="https://github.com/linuxserver/docker-piper"/>
+    /// (<c>lscr.io/linuxserver/piper</c>, linux/arm64, about 162 MB) and add a client for its native
+    /// HTTP shape, which is not OpenAI-compatible. It emits WAV only, so its client must encode to
+    /// Opus itself rather than asking the server for it.
+    /// </remarks>
+    Piper,
+
+    /// <summary>A self-hosted Kokoro server. Keeps synthesis on the local network.</summary>
+    /// <remarks>
+    /// TODO: not implemented. Deploy <see href="https://github.com/remsky/Kokoro-FastAPI"/>
+    /// (<c>ghcr.io/remsky/kokoro-fastapi-cpu</c>, linux/arm64, about 1.36 GB). It exposes an
+    /// OpenAI-compatible speech route, so the existing OpenAI client should serve it once the
+    /// endpoint is configurable.
+    /// </remarks>
+    Kokoro,
+
+    /// <summary>A self-hosted Coqui XTTS server, which can clone a voice from a short reference clip.</summary>
+    /// <remarks>
+    /// TODO: not implemented, and the only entry here chosen for a capability rather than for speed
+    /// or footprint. Zero-shot cloning needs roughly six seconds of reference audio.
+    /// <para>
+    /// Three things need settling before it is worth building. The upstream
+    /// <see href="https://github.com/coqui-ai/TTS"/> is archived, so the maintained fork
+    /// <see href="https://github.com/idiap/coqui-ai-TTS"/> is the real target. The published images are
+    /// built for amd64 and CUDA, so arm64 on the edge node is unproven and may mean building our own.
+    /// The XTTS-v2 weights are released under the Coqui Public Model License, which is
+    /// non-commercial, so check that before it becomes anything other than a household experiment.
+    /// </para>
+    /// <para>
+    /// It emits WAV only, so its client must encode to Opus itself rather than asking the server for it.
+    /// </para>
+    /// </remarks>
+    CoquiXtts,
+}
+
+/// <summary>Controls when a spoken reply is produced alongside the text one.</summary>
+public enum VoiceReplyMode
+{
+    /// <summary>Replies are text only.</summary>
+    Disabled,
+
+    /// <summary>A spoken reply is produced only when the incoming message was itself a voice message.</summary>
+    MatchInbound,
+
+    /// <summary>Every reply is spoken, whatever the incoming message was.</summary>
+    Always,
 }
 
 /// <summary>The terminal outcome of a bounded voice-message transcription attempt.</summary>
