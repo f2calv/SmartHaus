@@ -441,6 +441,7 @@ FodyWeavers.xsd
 manifest*
 appsettings.Local.json
 appsettings.Local.*.json
+appsettings.*.Local.json
 deploy.local.psd1
 
 # local sibling repos synced in for Debug (Dockerfile.Debug) container builds
