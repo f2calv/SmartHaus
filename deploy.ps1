@@ -341,7 +341,7 @@ function Invoke-DeploymentImageBuild {
         [Parameter(Mandatory)][string]$RepoRoot,
         [switch]$SkipBuild,
         [switch]$OnlyCharts,
-        [string[]]$Platforms,
+        [string]$Platforms,
         [string]$Tag,
         [string]$ImageRepository,
         [string[]]$Rest
@@ -561,7 +561,7 @@ function Initialize-DeploymentSettings {
         -DashboardManifestPath $DashboardManifestPath
     return [pscustomobject]@{
         ManifestPath = $manifestPath
-        Manifest = Join-Path $ManifestRepo $manifestPath
+        Manifest     = Join-Path $ManifestRepo $manifestPath
     }
 }
 

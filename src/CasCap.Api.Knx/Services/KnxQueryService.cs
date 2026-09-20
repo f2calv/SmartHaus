@@ -702,7 +702,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var filtered = groups
             .Where(IsPhysicalContactGroup)
             .Where(p => roomType is null || p.Room == roomType)
-            .OrderByFloor(p => p.Floor.Value)
+            .OrderByFloor(p => p.Floor.GetValueOrDefault())
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();

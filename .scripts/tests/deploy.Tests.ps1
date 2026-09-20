@@ -11,9 +11,15 @@ BeforeAll {
 
 Describe 'deploy.ps1 helpers' -Tag 'Unit' {
     Context 'build argument validation' {
+        It 'Keeps the configured platform scalar when invoking the image build' {
+            $parameter = (Get-Command Invoke-DeploymentImageBuild).Parameters['Platforms']
+
+            $parameter.ParameterType | Should -Be ([string])
+        }
+
         It 'Removes a redundant Debug configuration and preserves other arguments' {
             @(ConvertTo-DeployBuildArguments -Arguments @('-Configuration', 'Debug', '-WorkloadName', 'Synthetic.Workload')) |
-                Should -Be @('-WorkloadName', 'Synthetic.Workload')
+            Should -Be @('-WorkloadName', 'Synthetic.Workload')
         }
 
         It 'Accepts the colon form of Debug configuration' {
@@ -28,17 +34,17 @@ Describe 'deploy.ps1 helpers' -Tag 'Unit' {
     Context 'manifest selection and validation' {
         It 'Selects the application manifest for a normal deployment' {
             Resolve-DeploymentManifestPath -ManifestPath 'apps/application.yaml' -DashboardManifestPath 'apps/dashboard.yaml' |
-                Should -BeExactly 'apps/application.yaml'
+            Should -BeExactly 'apps/application.yaml'
         }
 
         It 'Selects the dashboard manifest for a charts-only deployment' {
             Resolve-DeploymentManifestPath -OnlyCharts -ManifestPath 'apps/application.yaml' -DashboardManifestPath 'apps/dashboard.yaml' |
-                Should -BeExactly 'apps/dashboard.yaml'
+            Should -BeExactly 'apps/dashboard.yaml'
         }
 
         It 'Requires the mode-specific manifest path' {
             { Resolve-DeploymentManifestPath -OnlyCharts -ManifestPath 'apps/application.yaml' } |
-                Should -Throw '*DashboardManifestPath*'
+            Should -Throw '*DashboardManifestPath*'
         }
     }
 
@@ -85,8 +91,8 @@ Describe 'deploy.ps1 helpers' -Tag 'Unit' {
             $before = Get-Content -LiteralPath $script:ManifestFile -Raw
 
             Invoke-Deployment -CallerBoundParameters @{
-                ManifestRepo = $script:ManifestRepo
-                ManifestPath = $script:ManifestPath
+                ManifestRepo      = $script:ManifestRepo
+                ManifestPath      = $script:ManifestPath
                 PodAnnotationName = $script:PodAnnotationName
             } -WhatIf
 
