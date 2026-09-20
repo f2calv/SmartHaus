@@ -164,6 +164,364 @@ function Get-ManifestPatchExpression {
     return $assignments -join ' | '
 }
 
+function Get-DeploymentGitVersion {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
+        Write-Host "dotnet-gitversion not found. Installing GitVersion.Tool globally..." -ForegroundColor Cyan
+        dotnet tool install -g GitVersion.Tool
+        if ($LASTEXITCODE -ne 0) { throw "Failed to install GitVersion.Tool. Run: dotnet tool install -g GitVersion.Tool" }
+        $toolsPath = Join-Path $HOME ".dotnet/tools"
+        if ($env:PATH -notlike "*$toolsPath*") { $env:PATH = "$toolsPath$([IO.Path]::PathSeparator)$env:PATH" }
+    }
+    return "$(dotnet-gitversion $RepoRoot /showvariable FullSemVer)".Trim()
+}
+
+function Connect-HelmRegistry {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Registry)
+
+    if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
+        throw "gh CLI not found (needed to authenticate Helm to $Registry). Install: https://cli.github.com"
+    }
+    $ghUser = "$(gh api user --jq .login)".Trim()
+    Write-Host "Authenticating Helm to $Registry as $ghUser..." -ForegroundColor Cyan
+    gh auth token | helm registry login $Registry --username $ghUser --password-stdin
+    if ($LASTEXITCODE -ne 0) { throw "helm registry login $Registry failed." }
+}
+
+function Remove-LocalDependencies {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$RepoRoot)
+
+    $dependenciesPath = Join-Path $RepoRoot "deps"
+    if (-not (Test-Path -LiteralPath $dependenciesPath)) { return }
+
+    Write-Host "Removing local build dependencies from '$dependenciesPath'..." -ForegroundColor Cyan
+    Remove-Item -LiteralPath $dependenciesPath -Recurse -Force
+}
+
+function Get-GitUpstream {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$Repository,
+        [Parameter(Mandatory)][string]$FailureMessage
+    )
+
+    $upstream = "$(git -C $Repository rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')".Trim()
+    if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($upstream)) { throw $FailureMessage }
+    return $upstream
+}
+
+function Get-GitRevision {
+    [CmdletBinding()]
+    [OutputType([string])]
+    param(
+        [Parameter(Mandatory)][string]$Repository,
+        [Parameter(Mandatory)][string]$Revision,
+        [Parameter(Mandatory)][string]$FailureMessage
+    )
+
+    $resolved = "$(git -C $Repository rev-parse $Revision)".Trim()
+    if ($LASTEXITCODE -ne 0) { throw $FailureMessage }
+    return $resolved
+}
+
+function Update-ManifestRepository {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$ManifestRepo)
+
+    $workingTreeChanges = @(git -C $ManifestRepo status --porcelain)
+    if ($LASTEXITCODE -ne 0) { throw "git status failed for '$ManifestRepo'." }
+    if ($workingTreeChanges.Count -gt 0) {
+        throw "GitOps repository '$ManifestRepo' has local changes. Commit, stash, or discard them before deploying."
+    }
+
+    Write-Host "Refreshing GitOps repository '$ManifestRepo'..." -ForegroundColor Cyan
+    git -C $ManifestRepo fetch --prune
+    if ($LASTEXITCODE -ne 0) { throw "git fetch failed for '$ManifestRepo'." }
+    $upstream = Get-GitUpstream -Repository $ManifestRepo -FailureMessage "The current GitOps branch has no upstream branch."
+    git -C $ManifestRepo merge --ff-only $upstream
+    if ($LASTEXITCODE -ne 0) {
+        throw "GitOps branch could not be fast-forwarded to '$upstream'. Resolve its branch state before deploying."
+    }
+}
+
+function Sync-ManifestRepositoryAfterPushFailure {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$ManifestRepo)
+
+    $upstream = Get-GitUpstream -Repository $ManifestRepo -FailureMessage "git push failed and the current GitOps branch has no upstream branch."
+    $upstreamBeforeFetch = Get-GitRevision -Repository $ManifestRepo -Revision $upstream -FailureMessage "git push failed and '$upstream' could not be resolved."
+
+    git -C $ManifestRepo fetch --prune
+    if ($LASTEXITCODE -ne 0) { throw "git push failed and the GitOps repository could not be refreshed." }
+    $upstreamAfterFetch = Get-GitRevision -Repository $ManifestRepo -Revision $upstream -FailureMessage "git push failed and refreshed upstream '$upstream' could not be resolved."
+    if ($upstreamBeforeFetch -eq $upstreamAfterFetch) {
+        throw "git push failed without '$upstream' advancing; review the push error above."
+    }
+
+    Write-Host "Upstream advanced during deployment; rebasing and retrying the push..." -ForegroundColor Yellow
+    git -C $ManifestRepo rebase $upstream
+    if ($LASTEXITCODE -ne 0) {
+        git -C $ManifestRepo rebase --abort
+        throw "Automatic GitOps rebase failed. The rebase was aborted; reconcile '$upstream' manually."
+    }
+}
+
+function Push-ManifestRepository {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$ManifestRepo)
+
+    for ($attempt = 1; $attempt -le 3; $attempt++) {
+        git -C $ManifestRepo push
+        if ($LASTEXITCODE -eq 0) { return }
+        if ($attempt -eq 3) { throw "git push failed after $attempt attempts." }
+        Sync-ManifestRepositoryAfterPushFailure -ManifestRepo $ManifestRepo
+    }
+}
+
+function Assert-NoModelDrift {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [string]$MigrationProject,
+        [string]$MigrationContext,
+        [string]$MigrationConnectionStringEnvironmentVariable,
+        [string]$MigrationConnectionString
+    )
+
+    if ([string]::IsNullOrWhiteSpace($MigrationProject)) { return }
+    if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
+        throw "dotnet not found - required for the EF model-drift check."
+    }
+    Write-Host "Checking EF model/migration drift..." -ForegroundColor Cyan
+    $previousArtifactsPath = $env:ArtifactsPath
+    $previousBaseOutputPath = $env:BaseOutputPath
+    $previousConnectionString = if ($MigrationConnectionStringEnvironmentVariable) {
+        [Environment]::GetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable)
+    }
+    $driftOutputPath = Join-Path ([IO.Path]::GetTempPath()) "ef-output-$PID-$([Guid]::NewGuid().ToString('N'))"
+    $env:ArtifactsPath = $null
+    $env:BaseOutputPath = Join-Path $driftOutputPath "bin\"
+    if ($MigrationConnectionStringEnvironmentVariable) {
+        [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $MigrationConnectionString)
+    }
+    $dataProject = Join-Path $RepoRoot $MigrationProject
+    Push-Location $RepoRoot
+    try {
+        dotnet tool restore | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "dotnet tool restore failed (needed for dotnet-ef)." }
+        dotnet restore $dataProject | Out-Null
+        if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed for the EF model-drift check." }
+        $efArguments = @("ef", "migrations", "has-pending-model-changes", "--project", $dataProject, "--startup-project", $dataProject)
+        if ($MigrationContext) { $efArguments += @("--context", $MigrationContext) }
+        & dotnet @efArguments
+        if ($LASTEXITCODE -ne 0) {
+            throw "EF model/migration drift check failed. Review the dotnet ef output above; add a migration only when it reports pending model changes."
+        }
+    }
+    finally {
+        Pop-Location
+        $env:ArtifactsPath = $previousArtifactsPath
+        $env:BaseOutputPath = $previousBaseOutputPath
+        if ($MigrationConnectionStringEnvironmentVariable) {
+            [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $previousConnectionString)
+        }
+        Remove-Item $driftOutputPath -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}
+
+function Invoke-DeploymentImageBuild {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$SkipBuild,
+        [switch]$OnlyCharts,
+        [string[]]$Platforms,
+        [string]$Tag,
+        [string]$ImageRepository,
+        [string[]]$Rest
+    )
+
+    if (-not $SkipBuild -and -not $OnlyCharts) {
+        & (Join-Path $RepoRoot 'build.ps1') -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
+        if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed with exit code $LASTEXITCODE" }
+        return
+    }
+    if ($OnlyCharts) {
+        Write-Host "Skipping image build/push (-OnlyCharts)." -ForegroundColor Yellow
+        return
+    }
+    Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
+}
+
+function Get-DeploymentChart {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Timestamp,
+        [switch]$OnlyCharts,
+        [string]$ChartPath,
+        [string]$ChartRepository,
+        [string]$DashboardChartPath,
+        [string]$DashboardChartRepository,
+        [string]$ChartVersion
+    )
+
+    if ($OnlyCharts) {
+        $ChartPath = $DashboardChartPath
+        $ChartRepository = $DashboardChartRepository
+    }
+    if ([string]::IsNullOrWhiteSpace($ChartPath) -or [string]::IsNullOrWhiteSpace($ChartRepository)) {
+        throw "ChartPath and ChartRepository are required for chart deployment. Supply them explicitly or in the deployment configuration."
+    }
+    if ([string]::IsNullOrWhiteSpace($ChartVersion)) { $ChartVersion = "0.0.0-dev.$Timestamp" }
+    $chartDirectory = Join-Path $RepoRoot $ChartPath
+    if (-not (Test-Path (Join-Path $chartDirectory 'Chart.yaml'))) {
+        throw "Chart not found at '$chartDirectory' (expected Chart.yaml). Pass -ChartPath to override."
+    }
+    return [pscustomobject]@{
+        Path       = $ChartPath
+        Repository = $ChartRepository
+        Version    = $ChartVersion
+        Directory  = $chartDirectory
+        Name       = Split-Path $ChartPath -Leaf
+    }
+}
+
+function Test-DashboardChart {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][pscustomobject]$Chart)
+
+    Get-ChildItem (Join-Path $Chart.Directory 'dashboards/*.json') | ForEach-Object {
+        try { $null = Get-Content $_.FullName -Raw | ConvertFrom-Json }
+        catch { throw "Invalid dashboard JSON '$($_.FullName)': $($_.Exception.Message)" }
+    }
+    helm lint $Chart.Directory
+    if ($LASTEXITCODE -ne 0) { throw "helm lint failed for '$($Chart.Directory)'." }
+    $null = helm template $Chart.Name $Chart.Directory
+    if ($LASTEXITCODE -ne 0) { throw "helm template failed for '$($Chart.Directory)'." }
+}
+
+function Publish-DeploymentChart {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][pscustomobject]$Chart,
+        [Parameter(Mandatory)][string]$ChartRegistry,
+        [Parameter(Mandatory)][string]$DeploymentName,
+        [Parameter(Mandatory)][string]$Timestamp,
+        [string]$Tag,
+        [switch]$OnlyCharts
+    )
+
+    Connect-HelmRegistry -Registry $ChartRegistry
+    $packageDirectory = Join-Path ([IO.Path]::GetTempPath()) "$DeploymentName-chart-$Timestamp"
+    New-Item -ItemType Directory -Path $packageDirectory -Force | Out-Null
+    try {
+        Write-Host "Packaging $($Chart.Name) $($Chart.Version) (appVersion=$Tag) from $($Chart.Path)" -ForegroundColor Cyan
+        helm dependency update $Chart.Directory
+        if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed." }
+        $appVersion = if ($OnlyCharts) { $Chart.Version } else { $Tag }
+        helm package $Chart.Directory --version $Chart.Version --app-version $appVersion --destination $packageDirectory
+        if ($LASTEXITCODE -ne 0) { throw "helm package failed." }
+        $package = Join-Path $packageDirectory "$($Chart.Name)-$($Chart.Version).tgz"
+        $ociTarget = "oci://$ChartRegistry/$($Chart.Repository -replace '/[^/]+$', '')"
+        Write-Host "Pushing $package -> $ociTarget" -ForegroundColor Cyan
+        helm push $package $ociTarget
+        if ($LASTEXITCODE -ne 0) { throw "helm push failed." }
+    }
+    finally {
+        Remove-Item $packageDirectory -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    Write-Host "Pushed chart: ${ChartRegistry}/$($Chart.Repository):$($Chart.Version)" -ForegroundColor Green
+}
+
+function Update-DashboardManifest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$Manifest,
+        [Parameter(Mandatory)][string]$ManifestRepo,
+        [Parameter(Mandatory)][string]$ManifestPath,
+        [Parameter(Mandatory)][string]$ChartVersion,
+        [Parameter(Mandatory)][string]$DeploymentName,
+        [switch]$NoCommit
+    )
+
+    $env:DEPLOY_DASHBOARD_CHART_VERSION = $ChartVersion
+    Write-Host "Patching $Manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
+    yq -i '.spec.template.spec.source.targetRevision = strenv(DEPLOY_DASHBOARD_CHART_VERSION)' $Manifest
+    if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
+
+    git -C $ManifestRepo diff --quiet -- $ManifestPath
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo --no-pager diff --stat -- $ManifestPath
+    if ($NoCommit) {
+        Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo add -- $ManifestPath
+    git -C $ManifestRepo commit -m "deploy($DeploymentName-dashboards): chart=${ChartVersion}"
+    if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
+    Push-ManifestRepository -ManifestRepo $ManifestRepo
+    Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+}
+
+function Update-ApplicationManifest {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Manifest,
+        [Parameter(Mandatory)][string]$ManifestRepo,
+        [Parameter(Mandatory)][string]$ManifestPath,
+        [Parameter(Mandatory)][string]$ImageRepository,
+        [Parameter(Mandatory)][string]$Tag,
+        [Parameter(Mandatory)][string]$PodAnnotationName,
+        [Parameter(Mandatory)][string]$DeploymentName,
+        [Parameter(Mandatory)][string]$Timestamp,
+        [switch]$Chart,
+        [string]$ChartVersion,
+        [switch]$NoCommit
+    )
+
+    $stamp = "$(Get-DeploymentGitVersion -RepoRoot $RepoRoot)+$Timestamp"
+    $patchMessage = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
+    if ($Chart) { $patchMessage += ", targetRevision=$ChartVersion" }
+    Write-Host "Patching $Manifest ($patchMessage)" -ForegroundColor Cyan
+
+    $env:DEPLOY_IMG_REPO = $ImageRepository
+    $env:DEPLOY_IMG_TAG = $Tag
+    $env:DEPLOY_STAMP = $stamp
+    $env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
+    if ($Chart) { $env:DEPLOY_CHART_VERSION = $ChartVersion }
+    yq -i (Get-ManifestPatchExpression -Chart:$Chart) $Manifest
+    if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
+
+    git -C $ManifestRepo diff --quiet -- $ManifestPath
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo --no-pager diff --stat -- $ManifestPath
+    if ($NoCommit) {
+        Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
+        return
+    }
+    git -C $ManifestRepo add -- $ManifestPath
+    $commitMessage = if ($Chart) { "deploy($DeploymentName): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy($DeploymentName): ${Tag} ${stamp}" }
+    git -C $ManifestRepo commit -m $commitMessage
+    if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
+    Push-ManifestRepository -ManifestRepo $ManifestRepo
+    Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
+}
+
 function Invoke-Deployment {
     [CmdletBinding(SupportsShouldProcess)]
     param([hashtable]$CallerBoundParameters = @{})
@@ -204,262 +562,46 @@ function Invoke-Deployment {
 
     if (-not $PSCmdlet.ShouldProcess($manifest, "Build and deploy application artifacts, then patch the GitOps manifest")) { return }
 
-    function Get-GitVersion {
-        if (-not (Get-Command dotnet-gitversion -ErrorAction SilentlyContinue)) {
-            Write-Host "dotnet-gitversion not found. Installing GitVersion.Tool globally..." -ForegroundColor Cyan
-            dotnet tool install -g GitVersion.Tool
-            if ($LASTEXITCODE -ne 0) { throw "Failed to install GitVersion.Tool. Run: dotnet tool install -g GitVersion.Tool" }
-            $toolsPath = Join-Path $HOME ".dotnet/tools"
-            if ($env:PATH -notlike "*$toolsPath*") { $env:PATH = "$toolsPath$([IO.Path]::PathSeparator)$env:PATH" }
-        }
-        return "$(dotnet-gitversion $REPO_ROOT /showvariable FullSemVer)".Trim()
-    }
-
-    function Connect-HelmRegistry {
-        param([Parameter(Mandatory)][string]$Registry)
-        if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
-            throw "gh CLI not found (needed to authenticate Helm to $Registry). Install: https://cli.github.com"
-        }
-        $ghUser = "$(gh api user --jq .login)".Trim()
-        Write-Host "Authenticating Helm to $Registry as $ghUser..." -ForegroundColor Cyan
-        gh auth token | helm registry login $Registry --username $ghUser --password-stdin
-        if ($LASTEXITCODE -ne 0) { throw "helm registry login $Registry failed." }
-    }
-
-    function Remove-LocalDependencies {
-        $dependenciesPath = Join-Path $REPO_ROOT "deps"
-        if (-not (Test-Path -LiteralPath $dependenciesPath)) { return }
-
-        Write-Host "Removing local build dependencies from '$dependenciesPath'..." -ForegroundColor Cyan
-        Remove-Item -LiteralPath $dependenciesPath -Recurse -Force
-    }
-
-    function Update-ManifestRepository {
-        $workingTreeChanges = @(git -C $ManifestRepo status --porcelain)
-        if ($LASTEXITCODE -ne 0) { throw "git status failed for '$ManifestRepo'." }
-        if ($workingTreeChanges.Count -gt 0) {
-            throw "GitOps repository '$ManifestRepo' has local changes. Commit, stash, or discard them before deploying."
-        }
-
-        Write-Host "Refreshing GitOps repository '$ManifestRepo'..." -ForegroundColor Cyan
-        git -C $ManifestRepo fetch --prune
-        if ($LASTEXITCODE -ne 0) { throw "git fetch failed for '$ManifestRepo'." }
-        $upstream = "$(git -C $ManifestRepo rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')".Trim()
-        if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($upstream)) {
-            throw "The current GitOps branch has no upstream branch."
-        }
-        git -C $ManifestRepo merge --ff-only $upstream
-        if ($LASTEXITCODE -ne 0) {
-            throw "GitOps branch could not be fast-forwarded to '$upstream'. Resolve its branch state before deploying."
-        }
-    }
-
-    function Push-ManifestRepository {
-        for ($attempt = 1; $attempt -le 3; $attempt++) {
-            git -C $ManifestRepo push
-            if ($LASTEXITCODE -eq 0) { return }
-            if ($attempt -eq 3) { throw "git push failed after $attempt attempts." }
-
-            $upstream = "$(git -C $ManifestRepo rev-parse --abbrev-ref --symbolic-full-name '@{upstream}')".Trim()
-            if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($upstream)) {
-                throw "git push failed and the current GitOps branch has no upstream branch."
-            }
-            $upstreamBeforeFetch = "$(git -C $ManifestRepo rev-parse $upstream)".Trim()
-            if ($LASTEXITCODE -ne 0) { throw "git push failed and '$upstream' could not be resolved." }
-
-            git -C $ManifestRepo fetch --prune
-            if ($LASTEXITCODE -ne 0) { throw "git push failed and the GitOps repository could not be refreshed." }
-            $upstreamAfterFetch = "$(git -C $ManifestRepo rev-parse $upstream)".Trim()
-            if ($LASTEXITCODE -ne 0) { throw "git push failed and refreshed upstream '$upstream' could not be resolved." }
-            if ($upstreamBeforeFetch -eq $upstreamAfterFetch) {
-                throw "git push failed without '$upstream' advancing; review the push error above."
-            }
-
-            Write-Host "Upstream advanced during deployment; rebasing and retrying the push..." -ForegroundColor Yellow
-            git -C $ManifestRepo rebase $upstream
-            if ($LASTEXITCODE -ne 0) {
-                git -C $ManifestRepo rebase --abort
-                throw "Automatic GitOps rebase failed. The rebase was aborted; reconcile '$upstream' manually."
-            }
-        }
-    }
-
-    function Assert-NoModelDrift {
-        if ([string]::IsNullOrWhiteSpace($MigrationProject)) { return }
-        if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) {
-            throw "dotnet not found - required for the EF model-drift check."
-        }
-        Write-Host "Checking EF model/migration drift..." -ForegroundColor Cyan
-        $previousArtifactsPath = $env:ArtifactsPath
-        $previousBaseOutputPath = $env:BaseOutputPath
-        $previousConnectionString = if ($MigrationConnectionStringEnvironmentVariable) {
-            [Environment]::GetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable)
-        }
-        $driftOutputPath = Join-Path ([IO.Path]::GetTempPath()) "ef-output-$PID-$([Guid]::NewGuid().ToString('N'))"
-        $env:ArtifactsPath = $null
-        $env:BaseOutputPath = Join-Path $driftOutputPath "bin\"
-        if ($MigrationConnectionStringEnvironmentVariable) {
-            [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $MigrationConnectionString)
-        }
-        $dataProject = Join-Path $REPO_ROOT $MigrationProject
-        Push-Location $REPO_ROOT
-        try {
-            dotnet tool restore | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "dotnet tool restore failed (needed for dotnet-ef)." }
-            dotnet restore $dataProject | Out-Null
-            if ($LASTEXITCODE -ne 0) { throw "dotnet restore failed for the EF model-drift check." }
-            $efArguments = @("ef", "migrations", "has-pending-model-changes", "--project", $dataProject, "--startup-project", $dataProject)
-            if ($MigrationContext) { $efArguments += @("--context", $MigrationContext) }
-            & dotnet @efArguments
-            if ($LASTEXITCODE -ne 0) {
-                throw "EF model/migration drift check failed. Review the dotnet ef output above; add a migration only when it reports pending model changes."
-            }
-        }
-        finally {
-            Pop-Location
-            $env:ArtifactsPath = $previousArtifactsPath
-            $env:BaseOutputPath = $previousBaseOutputPath
-            if ($MigrationConnectionStringEnvironmentVariable) {
-                [Environment]::SetEnvironmentVariable($MigrationConnectionStringEnvironmentVariable, $previousConnectionString)
-            }
-            Remove-Item $driftOutputPath -Recurse -Force -ErrorAction SilentlyContinue
-        }
-    }
-
     try {
-        Update-ManifestRepository
-
-        $ts = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
-
-        if (-not $SkipMigrationCheck -and -not $OnlyCharts) { Assert-NoModelDrift }
-
-        if (-not $SkipBuild -and -not $OnlyCharts) {
-            & "$PSScriptRoot/build.ps1" -Push -Configuration Debug -Platforms $Platforms -Tag $Tag @Rest
-            if ($LASTEXITCODE -ne 0) { throw "build.ps1 failed with exit code $LASTEXITCODE" }
+        Update-ManifestRepository -ManifestRepo $ManifestRepo
+        $timestamp = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
+        if (-not $SkipMigrationCheck -and -not $OnlyCharts) {
+            Assert-NoModelDrift -RepoRoot $REPO_ROOT -MigrationProject $MigrationProject `
+                -MigrationContext $MigrationContext `
+                -MigrationConnectionStringEnvironmentVariable $MigrationConnectionStringEnvironmentVariable `
+                -MigrationConnectionString $MigrationConnectionString
         }
-        else {
-            if ($OnlyCharts) {
-                Write-Host "Skipping image build/push (-OnlyCharts)." -ForegroundColor Yellow
-            }
-            else {
-                Write-Host "Skipping build/push (-SkipBuild); re-rolling existing ${ImageRepository}:${Tag}" -ForegroundColor Yellow
-            }
-        }
+        Invoke-DeploymentImageBuild -RepoRoot $REPO_ROOT -SkipBuild:$SkipBuild -OnlyCharts:$OnlyCharts `
+            -Platforms $Platforms -Tag $Tag -ImageRepository $ImageRepository -Rest $Rest
 
+        $deploymentChart = $null
         if ($Chart -or $OnlyCharts) {
             if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
                 throw "helm not found. Install Helm to use -Chart."
             }
-            if ($OnlyCharts) {
-                $ChartPath = $DashboardChartPath
-                $ChartRepository = $DashboardChartRepository
-            }
-            if ([string]::IsNullOrWhiteSpace($ChartPath) -or [string]::IsNullOrWhiteSpace($ChartRepository)) {
-                throw "ChartPath and ChartRepository are required for chart deployment. Supply them explicitly or in '$DeployConfigPath'."
-            }
-            if (-not $ChartVersion) { $ChartVersion = "0.0.0-dev.$ts" }
-            $chartDir = Join-Path $REPO_ROOT $ChartPath
-            if (-not (Test-Path (Join-Path $chartDir 'Chart.yaml'))) {
-                throw "Chart not found at '$chartDir' (expected Chart.yaml). Pass -ChartPath to override."
-            }
-            $chartName = Split-Path $ChartPath -Leaf
-            $ociTarget = "oci://$ChartRegistry/$($ChartRepository -replace '/[^/]+$', '')"
-
-            if ($OnlyCharts) {
-                Get-ChildItem (Join-Path $chartDir "dashboards/*.json") | ForEach-Object {
-                    try { $null = Get-Content $_.FullName -Raw | ConvertFrom-Json }
-                    catch { throw "Invalid dashboard JSON '$($_.FullName)': $($_.Exception.Message)" }
-                }
-                helm lint $chartDir
-                if ($LASTEXITCODE -ne 0) { throw "helm lint failed for '$chartDir'." }
-                $null = helm template $chartName $chartDir
-                if ($LASTEXITCODE -ne 0) { throw "helm template failed for '$chartDir'." }
-            }
-
-            Connect-HelmRegistry -Registry $ChartRegistry
-
-            $pkgDir = Join-Path ([IO.Path]::GetTempPath()) "$DeploymentName-chart-$ts"
-            New-Item -ItemType Directory -Path $pkgDir -Force | Out-Null
-            try {
-                Write-Host "Packaging $chartName $ChartVersion (appVersion=$Tag) from $ChartPath" -ForegroundColor Cyan
-                helm dependency update $chartDir
-                if ($LASTEXITCODE -ne 0) { throw "helm dependency update failed." }
-                $appVersion = if ($OnlyCharts) { $ChartVersion } else { $Tag }
-                helm package $chartDir --version $ChartVersion --app-version $appVersion --destination $pkgDir
-                if ($LASTEXITCODE -ne 0) { throw "helm package failed." }
-                $tgz = Join-Path $pkgDir "$chartName-$ChartVersion.tgz"
-                Write-Host "Pushing $tgz -> $ociTarget" -ForegroundColor Cyan
-                helm push $tgz $ociTarget
-                if ($LASTEXITCODE -ne 0) { throw "helm push failed." }
-            }
-            finally {
-                Remove-Item $pkgDir -Recurse -Force -ErrorAction SilentlyContinue
-            }
-            Write-Host "Pushed chart: ${ChartRegistry}/${ChartRepository}:${ChartVersion}" -ForegroundColor Green
+            $deploymentChart = Get-DeploymentChart -RepoRoot $REPO_ROOT -Timestamp $timestamp `
+                -OnlyCharts:$OnlyCharts -ChartPath $ChartPath -ChartRepository $ChartRepository `
+                -DashboardChartPath $DashboardChartPath -DashboardChartRepository $DashboardChartRepository `
+                -ChartVersion $ChartVersion
+            if ($OnlyCharts) { Test-DashboardChart -Chart $deploymentChart }
+            Publish-DeploymentChart -Chart $deploymentChart -ChartRegistry $ChartRegistry `
+                -DeploymentName $DeploymentName -Timestamp $timestamp -Tag $Tag -OnlyCharts:$OnlyCharts
         }
 
         if ($OnlyCharts) {
-            $env:DEPLOY_DASHBOARD_CHART_VERSION = $ChartVersion
-            Write-Host "Patching $manifest (targetRevision=$ChartVersion)" -ForegroundColor Cyan
-            yq -i '.spec.template.spec.source.targetRevision = strenv(DEPLOY_DASHBOARD_CHART_VERSION)' $manifest
-            if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the dashboard manifest." }
-
-            git -C $ManifestRepo diff --quiet -- $manifestPathToPatch
-            if ($LASTEXITCODE -eq 0) {
-                Write-Host "No dashboard manifest changes detected - nothing to commit." -ForegroundColor Yellow
-                return
-            }
-            git -C $ManifestRepo --no-pager diff --stat -- $manifestPathToPatch
-            if ($NoCommit) {
-                Write-Host "Dashboard manifest patched but not committed (-NoCommit)." -ForegroundColor Yellow
-                return
-            }
-            git -C $ManifestRepo add -- $manifestPathToPatch
-            git -C $ManifestRepo commit -m "deploy($DeploymentName-dashboards): chart=${ChartVersion}"
-            if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
-            Push-ManifestRepository
-            Write-Host "Deployed dashboard chart $ChartVersion; ArgoCD will sync the dashboard ApplicationSet." -ForegroundColor Green
+            Update-DashboardManifest -Manifest $manifest -ManifestRepo $ManifestRepo `
+                -ManifestPath $manifestPathToPatch -ChartVersion $deploymentChart.Version `
+                -DeploymentName $DeploymentName -NoCommit:$NoCommit
             return
         }
-
-        $gitOpsPaths = [System.Collections.Generic.List[string]]::new()
-        $gitOpsPaths.Add($manifestPathToPatch)
-
-        $stamp = "$(Get-GitVersion)+$ts"
-        $patchMsg = "repository=$ImageRepository, tag=$Tag, pullPolicy=Always, deployed-version=$stamp"
-        if ($Chart) { $patchMsg += ", targetRevision=$ChartVersion" }
-        Write-Host "Patching $manifest ($patchMsg)" -ForegroundColor Cyan
-
-        $env:DEPLOY_IMG_REPO = $ImageRepository
-        $env:DEPLOY_IMG_TAG = $Tag
-        $env:DEPLOY_STAMP = $stamp
-        if ($Chart) {
-            $env:DEPLOY_CHART_VERSION = $ChartVersion
-        }
-        $env:DEPLOY_POD_ANNOTATION = $PodAnnotationName
-        $yqExpr = Get-ManifestPatchExpression -Chart:$Chart
-        yq -i $yqExpr $manifest
-        if ($LASTEXITCODE -ne 0) { throw "yq failed to patch the manifest." }
-
-        git -C $ManifestRepo diff --quiet -- $gitOpsPaths
-        if ($LASTEXITCODE -eq 0) {
-            Write-Host "No GitOps changes detected - nothing to commit." -ForegroundColor Yellow
-            return
-        }
-        git -C $ManifestRepo --no-pager diff --stat -- $gitOpsPaths
-        if ($NoCommit) {
-            Write-Host "GitOps files patched but not committed (-NoCommit). Review the diff, then commit/push manually." -ForegroundColor Yellow
-            return
-        }
-        git -C $ManifestRepo add -- $gitOpsPaths
-        $commitMsg = if ($Chart) { "deploy($DeploymentName): ${Tag} ${stamp} chart=${ChartVersion}" } else { "deploy($DeploymentName): ${Tag} ${stamp}" }
-        git -C $ManifestRepo commit -m $commitMsg
-        if ($LASTEXITCODE -ne 0) { throw "git commit failed." }
-        Push-ManifestRepository
-        Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
+        $resolvedChartVersion = if ($null -eq $deploymentChart) { $null } else { $deploymentChart.Version }
+        Update-ApplicationManifest -RepoRoot $REPO_ROOT -Manifest $manifest -ManifestRepo $ManifestRepo `
+            -ManifestPath $manifestPathToPatch -ImageRepository $ImageRepository -Tag $Tag `
+            -PodAnnotationName $PodAnnotationName -DeploymentName $DeploymentName -Timestamp $timestamp `
+            -Chart:$Chart -ChartVersion $resolvedChartVersion -NoCommit:$NoCommit
     }
     finally {
-        Remove-LocalDependencies
+        Remove-LocalDependencies -RepoRoot $REPO_ROOT
     }
 }
 #endregion Functions

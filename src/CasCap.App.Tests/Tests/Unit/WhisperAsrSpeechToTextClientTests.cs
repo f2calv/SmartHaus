@@ -91,7 +91,7 @@ public class WhisperAsrSpeechToTextClientTests
         using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
 
-        await client.GetTextAsync(audio, speechToTextOptions: null, TestContext.Current.CancellationToken);
+        await client.GetTextAsync(audio, options: null, TestContext.Current.CancellationToken);
 
         Assert.Contains("encode=false", handler.RequestUri!.Query);
         Assert.Matches("filename=\"?audio\\.wav\"?", handler.Body);
