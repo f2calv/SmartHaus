@@ -41,6 +41,7 @@ public static partial class BusSystemPrompts
             - Shutter/blind position
             - Current temperature and heating setpoint
             - Any binary contact states (doors, windows)
+            - Any door-lock states (locked, unlocked, unknown)
             Group the results by room name.
             """);
 
