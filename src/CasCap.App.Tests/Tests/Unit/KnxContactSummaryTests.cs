@@ -30,6 +30,8 @@ public sealed class KnxContactSummaryTests
     [InlineData("False", "closed", DptState.Inactive)]
     [InlineData("True", null, DptState.Active)]
     [InlineData("False", null, DptState.Inactive)]
+    [InlineData("True", "closed", DptState.Active)]
+    [InlineData("False", "open", DptState.Inactive)]
     public void FromGroup_DecodesLiveContactState(string value, string? valueLabel, DptState expected)
     {
         var group = new KnxGroupAddressGroup
@@ -58,6 +60,7 @@ public sealed class KnxContactSummaryTests
     [Theory]
     [InlineData("DG-BI", GroupAddressCategory.BI, FloorType.DG, null, null, null, false)]
     [InlineData("EG-BI-LivingRoom", GroupAddressCategory.BI, FloorType.EG, RoomType.LivingRoom, null, null, false)]
+    [InlineData("KG-BI-GuestRoom-South", GroupAddressCategory.BI, FloorType.KG, RoomType.GuestRoom, null, CompassOrientation.South, false)]
     [InlineData("DG-BI-Office(Window)-North-R", GroupAddressCategory.BI, FloorType.DG, RoomType.Office, "Window", CompassOrientation.North, true)]
     [InlineData("DG-BL-Office-North-R", GroupAddressCategory.BL, FloorType.DG, RoomType.Office, null, CompassOrientation.North, false)]
     public void IsPhysicalContactGroup_ExcludesAggregatesAndShutters(
@@ -80,6 +83,28 @@ public sealed class KnxContactSummaryTests
         };
 
         Assert.Equal(expected, KnxQueryService.IsPhysicalContactGroup(group));
+    }
+
+    [Fact]
+    public void IsRoomContactAggregate_ExcludesLocationRollupWithSpecificSiblings()
+    {
+        var aggregate = new KnxGroupAddressGroup
+        {
+            GroupName = "DG-BI-Office(Window)",
+            Category = GroupAddressCategory.BI,
+            Floor = FloorType.DG,
+            Room = RoomType.Office,
+            Location = "Window",
+        };
+        var physical = aggregate with
+        {
+            GroupName = "DG-BI-Office(Window)-North-L",
+            Orientation = CompassOrientation.North,
+            HorizontalPosition = HorizontalPosition.Left,
+        };
+
+        Assert.True(KnxQueryService.IsRoomContactAggregate(aggregate, [aggregate, physical]));
+        Assert.False(KnxQueryService.IsRoomContactAggregate(physical, [aggregate, physical]));
     }
 
     private static KnxContact CreateContact(string groupName, DptState? state)

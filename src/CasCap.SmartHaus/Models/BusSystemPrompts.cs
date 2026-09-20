@@ -34,8 +34,9 @@ public static partial class BusSystemPrompts
         string floor = "EG") =>
         new(ChatRole.User,
             $"""
-            Use the GetHouseGroupAddresses tool with groupAddressFilter Active to retrieve
-            all active group addresses, then filter the results to floor "{floor}".
+            Use GetHouseGroupAddresses for lighting, shutters, and heating.
+            Use GetHouseContactStates for door/window contacts and GetHouseDoorLockStates
+            for locks. Filter every result to floor "{floor}".
             For each room on that floor, list:
             - Lighting state (on/off, dimming percentage)
             - Shutter/blind position

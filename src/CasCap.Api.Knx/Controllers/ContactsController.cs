@@ -10,6 +10,6 @@ public sealed class ContactsController(IKnxQueryService knxQuerySvc) : Controlle
 {
     /// <inheritdoc cref="KnxQueryService.GetContactSummary"/>
     [HttpGet]
-    public async Task<Ok<KnxContactSummary>> GetContactSummary([FromQuery] string? room = null, CancellationToken cancellationToken = default)
-        => TypedResults.Ok(await knxQuerySvc.GetContactSummary(room, cancellationToken));
+    public async Task<Ok<KnxContactSummary>> GetContactSummary([FromQuery] RoomType? room = null, CancellationToken cancellationToken = default)
+        => TypedResults.Ok(await knxQuerySvc.GetContactSummary(room?.ToString(), cancellationToken));
 }

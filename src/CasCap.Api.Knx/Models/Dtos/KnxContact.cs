@@ -59,6 +59,11 @@ public sealed record KnxContact
         if (child is null)
             return null;
 
+        if (child.Value is "True" or "1")
+            return DptState.Active;
+        if (child.Value is "False" or "0")
+            return DptState.Inactive;
+
         if (Enum.TryParse<DptState>(child.ValueLabel, true, out var state))
             return state;
 
@@ -67,12 +72,7 @@ public sealed record KnxContact
         if (child.ValueLabel?.Equals("closed", StringComparison.OrdinalIgnoreCase) == true)
             return DptState.Inactive;
 
-        return child.Value switch
-        {
-            "True" or "1" => DptState.Active,
-            "False" or "0" => DptState.Inactive,
-            _ => null,
-        };
+        return null;
     }
 
     #endregion

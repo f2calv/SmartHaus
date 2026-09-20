@@ -10,6 +10,6 @@ public sealed class DoorLocksController(IKnxQueryService knxQuerySvc) : Controll
 {
     /// <inheritdoc cref="KnxQueryService.GetDoorLockSummary"/>
     [HttpGet]
-    public async Task<Ok<KnxDoorLockSummary>> GetDoorLockSummary([FromQuery] string? room = null, CancellationToken cancellationToken = default)
-        => TypedResults.Ok(await knxQuerySvc.GetDoorLockSummary(room, cancellationToken));
+    public async Task<Ok<KnxDoorLockSummary>> GetDoorLockSummary([FromQuery] RoomType? room = null, CancellationToken cancellationToken = default)
+        => TypedResults.Ok(await knxQuerySvc.GetDoorLockSummary(room?.ToString(), cancellationToken));
 }

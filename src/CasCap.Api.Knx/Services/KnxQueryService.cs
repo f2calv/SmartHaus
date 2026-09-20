@@ -701,6 +701,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         var filtered = groups
             .Where(IsPhysicalContactGroup)
+            .Where(p => !IsRoomContactAggregate(p, groups))
             .Where(p => roomType is null || p.Room == roomType)
             .OrderByFloor(p => p.Floor.GetValueOrDefault())
             .ThenBy(p => p.Room.ToString())
@@ -718,8 +719,28 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         => group.Category == GroupAddressCategory.BI
             && group.Floor is not null
             && group.Room is not null
-            && (group.Location is not null || group.Orientation is not null)
+            && group.Location is not null
             && !IsDoorLockGroup(group);
+
+    /// <summary>Determines whether a location-only contact summarizes more specific contacts in the same room.</summary>
+    /// <param name="group">The candidate contact group.</param>
+    /// <param name="groups">All parsed KNX groups.</param>
+    internal static bool IsRoomContactAggregate(
+        KnxGroupAddressGroup group,
+        IReadOnlyCollection<KnxGroupAddressGroup> groups)
+        => group.Location is not null
+            && group.Orientation is null
+            && group.HorizontalPosition is null
+            && group.VerticalPosition is null
+            && groups.Any(p =>
+                p.GroupName != group.GroupName
+                && p.Category == GroupAddressCategory.BI
+                && p.Floor == group.Floor
+                && p.Room == group.Room
+                && string.Equals(p.Location, group.Location, StringComparison.OrdinalIgnoreCase)
+                && (p.Orientation is not null
+                    || p.HorizontalPosition is not null
+                    || p.VerticalPosition is not null));
 
     /// <summary>
     /// Returns a summary of Boolean door-lock states, optionally filtered by room.
