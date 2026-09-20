@@ -39,7 +39,7 @@ public sealed record KnxDoorLock
             GroupName = group.GroupName,
             Floor = group.Floor,
             Room = group.Room,
-            Location = group.Location!,
+            Location = group.Location ?? throw new ArgumentException("Door-lock group requires location metadata.", nameof(group)),
             Orientation = group.Orientation,
             State = ToState(group),
         };
