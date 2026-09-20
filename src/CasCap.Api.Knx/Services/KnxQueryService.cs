@@ -687,6 +687,99 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     }
 
     /// <summary>
+    /// Returns a summary of physical door and window contact states, optionally filtered by room.
+    /// Category-level aggregate addresses without a room are excluded.
+    /// </summary>
+    /// <param name="room">Optional room name to filter by (e.g. Kitchen, Office, LivingRoom).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Counts and current binary states for physical contacts.</returns>
+    public async Task<KnxContactSummary> GetContactSummary(
+        string? room = null,
+        CancellationToken cancellationToken = default)
+    {
+        var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
+        var filtered = groups
+            .Where(IsPhysicalContactGroup)
+            .Where(p => !IsRoomContactAggregate(p, groups))
+            .Where(p => roomType is null || p.Room == roomType)
+            .OrderByFloor(p => p.Floor.GetValueOrDefault())
+            .ThenBy(p => p.Room.ToString())
+            .ThenBy(p => p.GroupName)
+            .ToList();
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
+
+        var contacts = filtered.Select(KnxContact.FromGroup).ToList();
+        return KnxContactSummary.Create(contacts);
+    }
+
+    /// <summary>Determines whether a BI group represents a room-scoped opening contact rather than an aggregate or lock.</summary>
+    /// <param name="group">The KNX group to classify.</param>
+    internal static bool IsPhysicalContactGroup(KnxGroupAddressGroup group)
+        => group.Category == GroupAddressCategory.BI
+            && group.Floor is not null
+            && group.Room is not null
+            && group.Location is not null
+            && !IsDoorLockGroup(group);
+
+    /// <summary>Determines whether a location-only contact summarizes more specific contacts in the same room.</summary>
+    /// <param name="group">The candidate contact group.</param>
+    /// <param name="groups">All parsed KNX groups.</param>
+    internal static bool IsRoomContactAggregate(
+        KnxGroupAddressGroup group,
+        IReadOnlyCollection<KnxGroupAddressGroup> groups)
+        => group.Location is not null
+            && group.Orientation is null
+            && group.HorizontalPosition is null
+            && group.VerticalPosition is null
+            && groups.Any(p =>
+                p.GroupName != group.GroupName
+                && p.Category == GroupAddressCategory.BI
+                && p.Floor == group.Floor
+                && p.Room == group.Room
+                && string.Equals(p.Location, group.Location, StringComparison.OrdinalIgnoreCase)
+                && (p.Orientation is not null
+                    || p.HorizontalPosition is not null
+                    || p.VerticalPosition is not null));
+
+    /// <summary>
+    /// Returns a summary of Boolean door-lock states, optionally filtered by room.
+    /// False is locked and true is unlocked for the installed lock sensors.
+    /// </summary>
+    /// <param name="room">Optional room name to filter by (e.g. Entrance or GuestRoom).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Counts and current states for classified door locks.</returns>
+    public async Task<KnxDoorLockSummary> GetDoorLockSummary(
+        string? room = null,
+        CancellationToken cancellationToken = default)
+    {
+        var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
+        var filtered = groups
+            .Where(IsDoorLockGroup)
+            .Where(p => roomType is null || p.Room == roomType)
+            .OrderByFloor(p => p.Floor.GetValueOrDefault())
+            .ThenBy(p => p.Room.ToString())
+            .ThenBy(p => p.GroupName)
+            .ToList();
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
+
+        var locks = filtered.Select(KnxDoorLock.FromGroup).ToList();
+        return KnxDoorLockSummary.Create(locks);
+    }
+
+    /// <summary>Determines whether a BI group represents a named Boolean door-lock sensor.</summary>
+    /// <param name="group">The KNX group to classify.</param>
+    internal static bool IsDoorLockGroup(KnxGroupAddressGroup group)
+        => group.Category == GroupAddressCategory.BI
+            && group.Floor is not null
+            && group.Room is not null
+            && group.Location?.EndsWith("DoorLock", StringComparison.OrdinalIgnoreCase) == true
+            && group.Children.Any(c =>
+                c.Function == ContactFunction.STATE.ToString()
+                && c.DPTs == "DPST-1-2");
+
+    /// <summary>
     /// Returns all lights in the house with current state, optionally filtered by room, grouped by floor.
     /// </summary>
     /// <param name="room">Optional room name to filter by (e.g. Kitchen, LivingRoom).</param>

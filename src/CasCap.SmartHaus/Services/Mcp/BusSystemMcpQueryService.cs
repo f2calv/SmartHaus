@@ -133,6 +133,24 @@ public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySv
         CancellationToken cancellationToken = default)
         => knxQuerySvc.GetShutter(groupName, cancellationToken);
 
+    /// <inheritdoc cref="IKnxQueryService.GetContactSummary"/>
+    [McpServerTool]
+    [Description("Gets counts and states for physical door and window contacts. States are open, closed, or unknown; for shutter or blind positions use GetHouseShutterStates instead.")]
+    public Task<KnxContactSummary> GetHouseContactStates(
+        [Description("Optional room filter (e.g. Kitchen, Office, LivingRoom).")]
+        string? room = null,
+        CancellationToken cancellationToken = default)
+        => knxQuerySvc.GetContactSummary(room, cancellationToken);
+
+    /// <inheritdoc cref="IKnxQueryService.GetDoorLockSummary"/>
+    [McpServerTool]
+    [Description("Gets counts and states for door locks. States are locked, unlocked, or unknown; false means locked and true means unlocked for these sensors.")]
+    public Task<KnxDoorLockSummary> GetHouseDoorLockStates(
+        [Description("Optional room filter (e.g. Entrance or GuestRoom).")]
+        string? room = null,
+        CancellationToken cancellationToken = default)
+        => knxQuerySvc.GetDoorLockSummary(room, cancellationToken);
+
     /// <inheritdoc cref="IKnxQueryService.ListPowerOutlets"/>
     [McpServerTool]
     [Description("Lists all power outlets with current on/off state, optionally filtered by room.")]

@@ -107,11 +107,11 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 
 | Agent | Role | MCP Tools |
 | --- | --- | --- |
-| **[CommsAgent](src/CasCap.SmartHaus/Resources/CommsAgent.instructions.md)** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 98 via delegation |
+| **[CommsAgent](src/CasCap.SmartHaus/Resources/CommsAgent.instructions.md)** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
 | **[SecurityAgent](src/CasCap.SmartHaus/Resources/SecurityAgent.instructions.md)** | Front door intercom, IP cameras, door lighting | 17 |
 | **[HeatingAgent](src/CasCap.SmartHaus/Resources/HeatingAgent.instructions.md)** | Heat pump control, KNX heating zones | 11 |
 | **[EnergyAgent](src/CasCap.SmartHaus/Resources/EnergyAgent.instructions.md)** | Solar inverter telemetry and battery status | 13 |
-| **[HomeControlAgent](src/CasCap.SmartHaus/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 35 |
+| **[HomeControlAgent](src/CasCap.SmartHaus/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 37 |
 | **[InfraAgent](src/CasCap.SmartHaus/Resources/InfraAgent.instructions.md)** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
 | **[AppliancesAgent](src/CasCap.SmartHaus/Resources/AppliancesAgent.instructions.md)** | Miele appliance control (disabled — planned) | 15 |
 
@@ -122,7 +122,7 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
 | [`SystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
-| [`BusSystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/BusSystemMcpQueryService.cs) | 19 | 5 | Shutters, HVAC, power outlets, diagnostics |
+| [`BusSystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/BusSystemMcpQueryService.cs) | 21 | 5 | Door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
 | [`HeatPumpMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
 | [`InverterMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |
 | [`FrontDoorMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/FrontDoorMcpQueryService.cs) | 8 | 5 | DoorBird intercom — photos, video, unlock |

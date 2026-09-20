@@ -123,6 +123,20 @@ public interface IKnxQueryService
     Task<KnxShutter?> GetShutter(string groupName, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns a summary of physical door and window contact states, optionally filtered by room.
+    /// </summary>
+    /// <param name="room">Optional room name to filter by (e.g. Kitchen, Office, LivingRoom).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<KnxContactSummary> GetContactSummary(string? room = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Returns a summary of Boolean door-lock states, optionally filtered by room.
+    /// </summary>
+    /// <param name="room">Optional room name to filter by (e.g. Entrance or GuestRoom).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task<KnxDoorLockSummary> GetDoorLockSummary(string? room = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns all lights in the house with current state, optionally filtered by room.
     /// </summary>
     /// <param name="room">Optional room name to filter by (e.g. Kitchen, LivingRoom).</param>

@@ -765,6 +765,19 @@ public enum DptWindowDoor
 }
 
 /// <summary>
+/// Decoded state for a Boolean KNX door-lock sensor where false means locked and true means unlocked.
+/// </summary>
+[JsonConverter(typeof(JsonStringEnumConverter))]
+public enum DptLockState
+{
+    /// <summary>Boolean value false — locked.</summary>
+    Locked = 0,
+
+    /// <summary>Boolean value true — unlocked.</summary>
+    Unlocked = 1,
+}
+
+/// <summary>
 /// Indicates the result of attempting to change a KNX group address state.
 /// </summary>
 public enum StateChangeOutcome

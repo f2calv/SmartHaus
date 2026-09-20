@@ -68,6 +68,7 @@ Segments in square brackets are optional. The parser is **order-independent** â€
 | `EG-LI-Entrance-DL-SW_FB` | EG | LI | Entrance | | DL | SW_FB | yes | Downlighter switch feedback |
 | `OG-BL-FamilyBathroom-West-POS` | OG | BL | FamilyBathroom | West | | POS | | Blind position, west-facing |
 | `EG-BI-Entrance(FrontDoor)-East-STATE` | EG | BI | Entrance | East | | STATE | | Door contact with location |
+| `EG-BI-Entrance(Main DoorLock)-North-STATE` | EG | BI | Entrance | North | | STATE | | Door lock using `DPST-1-2` |
 | `DG-HZ-StorageRoom-SETP` | DG | HZ | StorageRoom | | | SETP | | Heating setpoint |
 | `DG-BI-STATE` | DG | BI | | | | STATE | | Binary contact, no room |
 | `SYS-[DateTime]` | | SYS | | | | | | System identifier |
@@ -78,6 +79,10 @@ Segments in square brackets are optional. The parser is **order-independent** â€
 ### Grouping
 
 Addresses that share all segments except the function suffix are automatically grouped into `KnxGroupAddressGroup` records. For example, `OG-BL-FamilyBathroom-West-MOVE`, `OG-BL-FamilyBathroom-West-POS` and `OG-BL-FamilyBathroom-West-SCENE` all belong to the group `OG-BL-FamilyBathroom-West`.
+
+BI groups whose parenthesized location ends in `DoorLock` and whose `STATE` function uses
+`DPST-1-2` are projected as door locks rather than opening contacts. For these installed sensors,
+Boolean false means locked and Boolean true means unlocked.
 
 ### ETS Setup Requirements
 
