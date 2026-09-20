@@ -17,6 +17,16 @@ and Helm artifacts. Do not include deployment-environment identifiers, manifest
 locations, environment or namespace names, cluster state, deployed versions,
 or operational procedures in tracked files or public pull requests.
 
+## KNX Export Source Of Truth
+
+- KNX project software is the source of truth for group-address names, locations, orientations,
+  device types and semantics. Correct programming defects there, then generate and import a fresh
+  export.
+- Never hand-edit a generated KNX export to correct or conceal a programming defect. A manual edit
+  would drift from the KNX project and be overwritten by the next export.
+- Application parsing and classification may reflect explicit metadata from the export, but must not
+  compensate for known incorrect metadata in code.
+
 ## NuGet Package Holds
 
 - `Asp.Versioning.Mvc` has target-framework-specific major ceilings: retain the latest compatible
