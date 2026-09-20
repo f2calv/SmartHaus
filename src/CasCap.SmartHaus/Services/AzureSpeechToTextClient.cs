@@ -33,13 +33,13 @@ public sealed partial class AzureSpeechToTextClient : ISpeechToTextClient
 
     /// <inheritdoc/>
     public async Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null, CancellationToken cancellationToken = default)
+        SpeechToTextOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(audioSpeechStream);
 
         //An explicit locale improves accuracy and latency; with none the multilingual model identifies
         //  the language itself, which is what lets one configuration serve English and German.
-        var locales = ResolveLocales(speechToTextOptions, _options.Value);
+        var locales = ResolveLocales(options, _options.Value);
         string? text;
         try
         {
@@ -60,7 +60,7 @@ public sealed partial class AzureSpeechToTextClient : ISpeechToTextClient
 
         return new SpeechToTextResponse(text ?? string.Empty)
         {
-            ModelId = speechToTextOptions?.ModelId ?? _options.Value.ModelId,
+            ModelId = options?.ModelId ?? _options.Value.ModelId,
         };
     }
 
@@ -70,10 +70,10 @@ public sealed partial class AzureSpeechToTextClient : ISpeechToTextClient
     /// updates.
     /// </remarks>
     public async IAsyncEnumerable<SpeechToTextResponseUpdate> GetStreamingTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null,
+        SpeechToTextOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var response = await GetTextAsync(audioSpeechStream, speechToTextOptions, cancellationToken);
+        var response = await GetTextAsync(audioSpeechStream, options, cancellationToken);
         foreach (var update in response.ToSpeechToTextResponseUpdates())
             yield return update;
     }

@@ -62,12 +62,8 @@ public sealed partial class VoiceMessageTranscriptionService(
         ArgumentNullException.ThrowIfNull(audio);
 
         var config = options.Value;
-        if (string.IsNullOrWhiteSpace(mediaType) || !_supportedMediaTypes.Contains(mediaType))
-            return Reject(VoiceTranscriptionOutcome.Unsupported, audio.Length);
-        if (audio.Length == 0 || !SignatureMatches(audio, mediaType))
-            return Reject(VoiceTranscriptionOutcome.Invalid, audio.Length);
-        if (audio.Length > config.MaxCompressedBytes)
-            return Reject(VoiceTranscriptionOutcome.Oversized, audio.Length);
+        if (ValidateInput(audio, mediaType, config) is { } rejection)
+            return rejection;
 
         using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         budget.CancelAfter(TimeSpan.FromMilliseconds(config.TimeoutMs));
@@ -158,6 +154,17 @@ public sealed partial class VoiceMessageTranscriptionService(
         return result;
     }
 
+    private VoiceTranscriptionResult? ValidateInput(byte[] audio, string mediaType, SpeechToTextConfig config)
+    {
+        if (string.IsNullOrWhiteSpace(mediaType) || !_supportedMediaTypes.Contains(mediaType))
+            return Reject(VoiceTranscriptionOutcome.Unsupported, audio.Length);
+        if (audio.Length == 0 || !SignatureMatches(audio, mediaType))
+            return Reject(VoiceTranscriptionOutcome.Invalid, audio.Length);
+        return audio.Length > config.MaxCompressedBytes
+            ? Reject(VoiceTranscriptionOutcome.Oversized, audio.Length)
+            : null;
+    }
+
     private static bool SignatureMatches(ReadOnlySpan<byte> audio, string mediaType) => mediaType.ToLowerInvariant() switch
     {
         WhisperAsrSpeechToTextClient.WavMediaType or "audio/x-wav" or "audio/wave" or "audio/vnd.wave" => IsRiffWave(audio),
@@ -217,13 +224,13 @@ public sealed partial class VoiceMessageTranscriptionService(
             if (chunkLength > payload.Length)
                 return false;
 
-            if (chunkId.SequenceEqual("fmt "u8) && chunkLength >= 16)
+            if (ReadFormatChunk(chunkId, chunkLength, payload) is { } formatChunk)
             {
-                audioFormat = BinaryPrimitives.ReadInt16LittleEndian(payload[..2]);
-                channels = BinaryPrimitives.ReadInt16LittleEndian(payload.Slice(2, 2));
-                sampleRate = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(4, 4));
-                byteRate = BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(8, 4));
-                bitsPerSample = BinaryPrimitives.ReadInt16LittleEndian(payload.Slice(14, 2));
+                audioFormat = formatChunk.AudioFormat;
+                channels = formatChunk.Channels;
+                sampleRate = formatChunk.SampleRate;
+                byteRate = formatChunk.ByteRate;
+                bitsPerSample = formatChunk.BitsPerSample;
                 seenFormat = true;
             }
 
@@ -237,6 +244,17 @@ public sealed partial class VoiceMessageTranscriptionService(
             TimeSpan.FromSeconds((double)dataLength / byteRate));
         return true;
     }
+
+    private static WavFormatChunk? ReadFormatChunk(ReadOnlySpan<byte> chunkId, uint chunkLength,
+        ReadOnlySpan<byte> payload) =>
+        chunkId.SequenceEqual("fmt "u8) && chunkLength >= 16
+            ? new(
+                BinaryPrimitives.ReadInt16LittleEndian(payload[..2]),
+                BinaryPrimitives.ReadInt16LittleEndian(payload.Slice(2, 2)),
+                BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(4, 4)),
+                BinaryPrimitives.ReadUInt32LittleEndian(payload.Slice(8, 4)),
+                BinaryPrimitives.ReadInt16LittleEndian(payload.Slice(14, 2)))
+            : null;
 
     private async Task<byte[]?> ToWav(byte[] audio, string ffmpegPath, CancellationToken cancellationToken)
     {
@@ -267,6 +285,9 @@ public sealed partial class VoiceMessageTranscriptionService(
 
     private readonly record struct WavFormat(short AudioFormat, short Channels, int SampleRate,
         short BitsPerSample, TimeSpan Duration);
+
+    private readonly record struct WavFormatChunk(short AudioFormat, short Channels, uint SampleRate,
+        uint ByteRate, short BitsPerSample);
 
     [LoggerMessage(LogLevel.Warning, "{ClassName} rejected voice media, outcome={Outcome}, bytes={Bytes}")]
     private static partial void LogRejected(ILogger logger, VoiceTranscriptionOutcome outcome, int bytes,

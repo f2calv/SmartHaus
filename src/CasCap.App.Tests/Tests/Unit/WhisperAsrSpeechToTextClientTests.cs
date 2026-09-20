@@ -28,7 +28,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_RequestContract(string mediaType, string expectedEncode, string expectedFileName)
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler);
+        using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, OptionsFor(mediaType), TestContext.Current.CancellationToken);
@@ -48,7 +48,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_UsesConfiguredLanguage(string language)
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = _endpoint, Language = language });
+        using var client = CreateSpeechClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = _endpoint, Language = language });
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, OptionsFor("audio/wav"), TestContext.Current.CancellationToken);
@@ -60,7 +60,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_TrailingSlashEndpointDoesNotDoublePrefix()
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = $"{_endpoint}/" });
+        using var client = CreateSpeechClient(handler, new SpeechToTextConfig { WhisperAsrEndpoint = $"{_endpoint}/" });
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, OptionsFor("audio/wav"), TestContext.Current.CancellationToken);
@@ -76,7 +76,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_ParsesResponse(string json, string expectedText)
     {
         using var handler = new RecordingHandler(JsonResponse(json));
-        using var client = CreateClient(handler);
+        using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         var response = await client.GetTextAsync(audio, OptionsFor("audio/wav"), TestContext.Current.CancellationToken);
@@ -88,7 +88,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_DefaultsToWavWhenMediaTypeAbsent()
     {
         using var handler = new RecordingHandler(JsonResponse("""{"text":"ok"}"""));
-        using var client = CreateClient(handler);
+        using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         await client.GetTextAsync(audio, speechToTextOptions: null, TestContext.Current.CancellationToken);
@@ -107,7 +107,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_NonSuccessCarriesStatusCode(HttpStatusCode statusCode)
     {
         using var handler = new RecordingHandler(new HttpResponseMessage(statusCode));
-        using var client = CreateClient(handler);
+        using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
 
         var ex = await Assert.ThrowsAsync<HttpRequestException>(() =>
@@ -132,7 +132,7 @@ public class WhisperAsrSpeechToTextClientTests
     public async Task GetTextAsync_PropagatesCancellation()
     {
         using var handler = new BlockingHandler();
-        using var client = CreateClient(handler);
+        using var client = CreateSpeechClient(handler);
         using var audio = new MemoryStream("payload"u8.ToArray());
         using var cts = new CancellationTokenSource();
 
@@ -144,7 +144,8 @@ public class WhisperAsrSpeechToTextClientTests
 
     #region Private helpers
 
-    private static WhisperAsrSpeechToTextClient CreateClient(HttpMessageHandler handler, SpeechToTextConfig? config = null) =>
+    private static WhisperAsrSpeechToTextClient CreateSpeechClient(HttpMessageHandler handler,
+        SpeechToTextConfig? config = null) =>
         new(NullLogger<WhisperAsrSpeechToTextClient>.Instance,
             Options.Create(config ?? new SpeechToTextConfig { WhisperAsrEndpoint = _endpoint }),
             new StubHttpClientFactory(handler));

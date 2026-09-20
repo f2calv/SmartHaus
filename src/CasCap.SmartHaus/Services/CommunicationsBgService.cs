@@ -35,7 +35,6 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly AIConfig _aiConfig;
     private readonly SpeechToTextConfig _speechToTextConfig;
     private readonly INotifier _notifier;
-    private readonly ISignalCliClient _signalCliClient;
     private readonly ISignalAttachmentCleaner _attachmentCleaner;
     private readonly ISignalMessageDeduplicator _deduplicator;
     private readonly AgentCommandHandler _commandHandler;
@@ -77,7 +76,6 @@ public sealed partial class CommunicationsBgService : IBgFeature
         IHostEnvironment env,
         CommsDebugNotifier debugNotifier,
         INotifier notifier,
-        ISignalCliClient signalCliClient,
         ISignalAttachmentCleaner attachmentCleaner,
         ISignalMessageDeduplicator deduplicator,
         VoiceMessageTranscriptionService transcriptionSvc,
@@ -100,7 +98,6 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _env = env;
         _debugNotifier = debugNotifier;
         _notifier = notifier;
-        _signalCliClient = signalCliClient;
         _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
         _transcriptionSvc = transcriptionSvc;

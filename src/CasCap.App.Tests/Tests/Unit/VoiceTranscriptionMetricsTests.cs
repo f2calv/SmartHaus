@@ -17,13 +17,13 @@ public class VoiceTranscriptionMetricsTests
             transcodeDuration: TimeSpan.FromSeconds(2),
             transcriptionDuration: TimeSpan.FromSeconds(1))));
 
-        Assert.Equal(4, Value(measurements, "haus.voice.audio.duration"));
-        Assert.Equal(2, Value(measurements, "haus.voice.transcode.duration"));
-        Assert.Equal(1, Value(measurements, "haus.voice.transcription.duration"));
+        Assert.Equal(4, MeasurementValue(measurements, "haus.voice.audio.duration"));
+        Assert.Equal(2, MeasurementValue(measurements, "haus.voice.transcode.duration"));
+        Assert.Equal(1, MeasurementValue(measurements, "haus.voice.transcription.duration"));
         //Four seconds of audio normalised in two is twice realtime; transcribed in one is four times.
-        Assert.Equal(2, Value(measurements, "haus.voice.transcode.speed"));
-        Assert.Equal(4, Value(measurements, "haus.voice.transcription.speed"));
-        Assert.Equal(1, Value(measurements, "haus.voice.transcriptions"));
+        Assert.Equal(2, MeasurementValue(measurements, "haus.voice.transcode.speed"));
+        Assert.Equal(4, MeasurementValue(measurements, "haus.voice.transcription.speed"));
+        Assert.Equal(1, MeasurementValue(measurements, "haus.voice.transcriptions"));
     }
 
     [Fact]
@@ -55,7 +55,7 @@ public class VoiceTranscriptionMetricsTests
 
     #region Private helpers
 
-    private static double Value(List<Measured> measurements, string instrument) =>
+    private static double MeasurementValue(List<Measured> measurements, string instrument) =>
         Assert.Single(measurements, x => x.Instrument == instrument).Value;
 
     private static List<Measured> Collect(Action<VoiceTranscriptionMetrics> act)

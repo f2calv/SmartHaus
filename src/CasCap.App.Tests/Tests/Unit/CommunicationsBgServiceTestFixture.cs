@@ -182,7 +182,6 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             env,
             debugNotifier,
             Notifier,
-            new FakeSignalCliClient(),
             Cleaner,
             Deduplicator,
             transcriptionSvc,
@@ -262,7 +261,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         {
             try
             {
-                await _execution.WaitAsync(TimeSpan.FromSeconds(10));
+                await _execution.WaitAsync(TimeSpan.FromSeconds(10), CancellationToken.None);
             }
             catch (Exception ex) when (ex is OperationCanceledException or TimeoutException)
             {

@@ -17,26 +17,28 @@ public sealed class StubAIAgent : AIAgent
     private static NotSupportedException Refused() => new("stub agent performs no inference");
 
     /// <inheritdoc/>
-    protected override ValueTask<AgentSession> CreateSessionCoreAsync(CancellationToken cancellationToken)
+    protected override ValueTask<AgentSession> CreateSessionCoreAsync(CancellationToken cancellationToken = default)
         => throw Refused();
 
     /// <inheritdoc/>
     protected override ValueTask<JsonElement> SerializeSessionCoreAsync(AgentSession session,
-        JsonSerializerOptions? jsonSerializerOptions, CancellationToken cancellationToken)
+        JsonSerializerOptions? jsonSerializerOptions = null, CancellationToken cancellationToken = default)
         => throw Refused();
 
     /// <inheritdoc/>
-    protected override ValueTask<AgentSession> DeserializeSessionCoreAsync(JsonElement serializedSession,
-        JsonSerializerOptions? jsonSerializerOptions, CancellationToken cancellationToken)
+    protected override ValueTask<AgentSession> DeserializeSessionCoreAsync(JsonElement serializedState,
+        JsonSerializerOptions? jsonSerializerOptions = null, CancellationToken cancellationToken = default)
         => throw Refused();
 
     /// <inheritdoc/>
-    protected override Task<AgentResponse> RunCoreAsync(IEnumerable<ChatMessage> messages, AgentSession? session,
-        AgentRunOptions? options, CancellationToken cancellationToken)
+    protected override Task<AgentResponse> RunCoreAsync(IEnumerable<ChatMessage> messages,
+        AgentSession? session = null, AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
         => throw Refused();
 
     /// <inheritdoc/>
     protected override IAsyncEnumerable<AgentResponseUpdate> RunCoreStreamingAsync(IEnumerable<ChatMessage> messages,
-        AgentSession? session, AgentRunOptions? options, CancellationToken cancellationToken)
+        AgentSession? session = null, AgentRunOptions? options = null,
+        CancellationToken cancellationToken = default)
         => throw Refused();
 }

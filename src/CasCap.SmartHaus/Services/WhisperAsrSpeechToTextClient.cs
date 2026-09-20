@@ -52,14 +52,14 @@ public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpee
 
     /// <inheritdoc/>
     public async Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null, CancellationToken cancellationToken = default)
+        SpeechToTextOptions? options = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(audioSpeechStream);
 
-        var mediaType = ResolveMediaType(speechToTextOptions);
+        var mediaType = ResolveMediaType(options);
         //encode=false skips the server-side ffmpeg pass; the caller has already produced the WAV it wants.
         var encode = !IsWav(mediaType);
-        var language = speechToTextOptions?.SpeechLanguage ?? _options.Value.Language;
+        var language = options?.SpeechLanguage ?? _options.Value.Language;
         var requestUri =
             $"{_options.Value.WhisperAsrEndpoint.TrimEnd('/')}{RequestPath}" +
             $"?task=transcribe&language={Uri.EscapeDataString(language)}" +
@@ -88,7 +88,7 @@ public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpee
 
         return new SpeechToTextResponse(result.Text ?? string.Empty)
         {
-            ModelId = speechToTextOptions?.ModelId ?? _options.Value.ModelId,
+            ModelId = options?.ModelId ?? _options.Value.ModelId,
             RawRepresentation = result,
         };
     }
@@ -99,10 +99,10 @@ public sealed partial class WhisperAsrSpeechToTextClient : HttpClientBase, ISpee
     /// updates.
     /// </remarks>
     public async IAsyncEnumerable<SpeechToTextResponseUpdate> GetStreamingTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null,
+        SpeechToTextOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var response = await GetTextAsync(audioSpeechStream, speechToTextOptions, cancellationToken);
+        var response = await GetTextAsync(audioSpeechStream, options, cancellationToken);
         foreach (var update in response.ToSpeechToTextResponseUpdates())
             yield return update;
     }

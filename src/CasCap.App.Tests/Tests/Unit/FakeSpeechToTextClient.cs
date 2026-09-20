@@ -27,7 +27,7 @@ public sealed class FakeSpeechToTextClient : ISpeechToTextClient
 
     /// <inheritdoc/>
     public async Task<SpeechToTextResponse> GetTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null, CancellationToken cancellationToken = default)
+        SpeechToTextOptions? options = null, CancellationToken cancellationToken = default)
     {
         Requests++;
         if (Gate is not null)
@@ -39,10 +39,10 @@ public sealed class FakeSpeechToTextClient : ISpeechToTextClient
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<SpeechToTextResponseUpdate> GetStreamingTextAsync(Stream audioSpeechStream,
-        SpeechToTextOptions? speechToTextOptions = null,
+        SpeechToTextOptions? options = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var response = await GetTextAsync(audioSpeechStream, speechToTextOptions, cancellationToken);
+        var response = await GetTextAsync(audioSpeechStream, options, cancellationToken);
         foreach (var update in response.ToSpeechToTextResponseUpdates())
             yield return update;
     }
