@@ -14,7 +14,7 @@ public class PiperEndpointTests
     [InlineData("10.0.0.5:10200", "10.0.0.5", 10200)]
     //A scheme is accepted but ignored, because operators reach for one out of habit.
     [InlineData("tcp://piper.example:10200", "piper.example", 10200)]
-    [InlineData("http://piper.example:10200/", "piper.example", 10200)]
+    [InlineData("https://piper.example:10200/", "piper.example", 10200)]
     public void ParseEndpoint_SplitsHostAndPort(string endpoint, string expectedHost, int expectedPort)
     {
         var (host, port) = PiperTextToSpeechClient.ParseEndpoint(endpoint);
