@@ -135,7 +135,7 @@ public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySv
 
     /// <inheritdoc cref="IKnxQueryService.GetContactSummary"/>
     [McpServerTool]
-    [Description("Gets server-computed counts and binary states for physical door and window contacts. Contacts are open, closed, or unknown; they are never partially open. For shutter or blind positions use GetHouseShutterStates instead.")]
+    [Description("Gets counts and states for physical door and window contacts. States are open, closed, or unknown; for shutter or blind positions use GetHouseShutterStates instead.")]
     public Task<KnxContactSummary> GetHouseContactStates(
         [Description("Optional room filter (e.g. Kitchen, Office, LivingRoom).")]
         string? room = null,

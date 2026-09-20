@@ -687,8 +687,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     }
 
     /// <summary>
-    /// Returns a server-computed summary of physical door and window contact states,
-    /// optionally filtered by room. Category-level aggregate addresses without a room are excluded.
+    /// Returns a summary of physical door and window contact states, optionally filtered by room.
+    /// Category-level aggregate addresses without a room are excluded.
     /// </summary>
     /// <param name="room">Optional room name to filter by (e.g. Kitchen, Office, LivingRoom).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -702,7 +702,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var filtered = groups
             .Where(IsPhysicalContactGroup)
             .Where(p => roomType is null || p.Room == roomType)
-            .OrderByFloor(p => p.Floor!.Value)
+            .OrderByFloor(p => p.Floor.Value)
             .ThenBy(p => p.Room.ToString())
             .ThenBy(p => p.GroupName)
             .ToList();

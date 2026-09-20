@@ -20,9 +20,8 @@ public static partial class BusSystemPrompts
             - Which lights are on and their dimming levels (category LI)
             - Shutter/blind positions (category BL)
             - Heating setpoints and current temperatures (category HZ)
+            - Any open doors or windows detected by binary contacts (category BI)
             - Presence/motion detection status (category PM)
-            Also use the GetHouseContactStates tool for server-computed open and closed door/window
-            contact counts. Contacts are binary; do not infer them from shutter positions.
             Present a clear floor-by-floor overview (KG, EG, OG, DG).
             """);
 
@@ -41,8 +40,7 @@ public static partial class BusSystemPrompts
             - Lighting state (on/off, dimming percentage)
             - Shutter/blind position
             - Current temperature and heating setpoint
-            Also use the GetHouseContactStates tool with room filters as needed for binary door and
-            window contact states. Do not infer contact state from shutter positions.
+            - Any binary contact states (doors, windows)
             Group the results by room name.
             """);
 
