@@ -144,9 +144,9 @@ public sealed class DDnsBgService(
         {
             logger.LogDebug("{ClassName} querying Azure for correct subscription...",
                 nameof(DDnsBgService));
-            try
+            foreach (var sub in _subscriptions)
             {
-                foreach (var sub in _subscriptions)
+                try
                 {
                     var rg = await sub.GetResourceGroupAsync(dDnsConfig.Value.DnsResourceGroupName, cancellationToken);
                     if (rg.GetRawResponse().Status == 200)
@@ -157,10 +157,13 @@ public sealed class DDnsBgService(
                         break;
                     }
                 }
-            }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "{ClassName} Azure authentication failure", nameof(DDnsBgService));
+                catch (RequestFailedException ex) when (ex.Status is StatusCodes.Status403Forbidden
+                    or StatusCodes.Status404NotFound)
+                {
+                    logger.LogWarning("{ClassName} cannot access Resource Group {DnsResourceGroupName} in Azure subscription {SubscriptionId}, StatusCode={StatusCode}",
+                        nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName,
+                        sub.Data.SubscriptionId, ex.Status);
+                }
             }
 
             if (subscription is null)
