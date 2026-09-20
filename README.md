@@ -122,7 +122,7 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
 | [`SystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
-| [`BusSystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/BusSystemMcpQueryService.cs) | 19 | 5 | Shutters, HVAC, power outlets, diagnostics |
+| [`BusSystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/BusSystemMcpQueryService.cs) | 20 | 5 | Door/window contacts, shutters, HVAC, power outlets, diagnostics |
 | [`HeatPumpMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
 | [`InverterMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |
 | [`FrontDoorMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/FrontDoorMcpQueryService.cs) | 8 | 5 | DoorBird intercom — photos, video, unlock |

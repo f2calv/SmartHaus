@@ -294,7 +294,7 @@ MCP query services registered by `HausMcpServiceCollectionExtensions` expose dom
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
 | `SystemMcpQueryService` | 3 | — | System-level tools available to all agents (date/time, provider list, agent list) |
-| `BusSystemMcpQueryService` | 19 | 5 | Bus system — shutters, HVAC, power outlets, diagnostics |
+| `BusSystemMcpQueryService` | 20 | 5 | Bus system — door/window contacts, shutters, HVAC, power outlets, diagnostics |
 | `HeatPumpMcpQueryService` | 2 | 5 | Heat pump |
 | `InverterMcpQueryService` | 7 | 5 | Solar inverter |
 | `FrontDoorMcpQueryService` | 8 | 5 | Front door intercom |
@@ -340,7 +340,7 @@ graph TD
     end
 
     subgraph HomeAutomation["Home Automation"]
-        BUS["BusSystemMcpQueryService<br/>(19 tools, 5 prompts)"]:::integration
+        BUS["BusSystemMcpQueryService<br/>(20 tools, 5 prompts)"]:::integration
         HEAT["HeatPumpMcpQueryService<br/>(2 tools, 5 prompts)"]:::integration
         INVERTER["InverterMcpQueryService<br/>(7 tools, 5 prompts)"]:::integration
         DOOR["FrontDoorMcpQueryService<br/>(8 tools, 5 prompts)"]:::integration

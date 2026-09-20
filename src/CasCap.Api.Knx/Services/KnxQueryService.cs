@@ -687,6 +687,40 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     }
 
     /// <summary>
+    /// Returns a server-computed summary of physical door and window contact states,
+    /// optionally filtered by room. Category-level aggregate addresses without a room are excluded.
+    /// </summary>
+    /// <param name="room">Optional room name to filter by (e.g. Kitchen, Office, LivingRoom).</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Counts and current binary states for physical contacts.</returns>
+    public async Task<KnxContactSummary> GetContactSummary(
+        string? room = null,
+        CancellationToken cancellationToken = default)
+    {
+        var roomType = room is not null ? room.ParseEnum<RoomType>() : (RoomType?)null;
+        var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
+        var filtered = groups
+            .Where(IsPhysicalContactGroup)
+            .Where(p => roomType is null || p.Room == roomType)
+            .OrderByFloor(p => p.Floor!.Value)
+            .ThenBy(p => p.Room.ToString())
+            .ThenBy(p => p.GroupName)
+            .ToList();
+        await BindState(filtered, cancellationToken).ConfigureAwait(false);
+
+        var contacts = filtered.Select(KnxContact.FromGroup).ToList();
+        return KnxContactSummary.Create(contacts);
+    }
+
+    /// <summary>Determines whether a BI group represents a room-scoped physical contact rather than an aggregate.</summary>
+    /// <param name="group">The KNX group to classify.</param>
+    internal static bool IsPhysicalContactGroup(KnxGroupAddressGroup group)
+        => group.Category == GroupAddressCategory.BI
+            && group.Floor is not null
+            && group.Room is not null
+            && (group.Location is not null || group.Orientation is not null);
+
+    /// <summary>
     /// Returns all lights in the house with current state, optionally filtered by room, grouped by floor.
     /// </summary>
     /// <param name="room">Optional room name to filter by (e.g. Kitchen, LivingRoom).</param>
