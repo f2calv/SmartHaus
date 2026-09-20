@@ -1,0 +1,50 @@
+name: whisper-cpp-image
+
+#Builds the whisper.cpp ASR server image for the Pi 5. Upstream publishes no arm64 image
+#that runs on a Cortex-A76, so this repository builds its own. See Dockerfile.whisper-cpp.
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - Dockerfile.whisper-cpp
+      - .github/workflows/whisper-cpp-image.yml
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+#Deny all permissions at workflow level; jobs grant only what they need.
+permissions: {}
+
+jobs:
+  versioning:
+    uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
+    with:
+      tag-prefix: ''
+      tag-and-release: false
+
+  containerize:
+    uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
+    permissions:
+      packages: write
+      contents: read
+    needs: [versioning]
+    with:
+      #ggml's Vulkan backend needs a native arm64 builder; it generates SPIR-V with a
+      #host binary, so cross-compiling would need a second toolchain.
+      runs-on: ubuntu-24.04-arm
+      platform: linux/arm64
+      registry: ghcr.io/${{ github.repository_owner }}
+      repository: whisper-cpp
+      dockerfile: Dockerfile.whisper-cpp
+      tag: ${{ needs.versioning.outputs.version }}
+      #Executing the binary is the whole point of this build: the upstream arm64 image
+      #aborts with SIGILL on a Cortex-A76, and only a real run catches that. The second
+      #check catches the Vulkan backend being dropped at link time, which leaves a
+      #working server that silently transcribes on the CPU.
+      smoke-test: |
+        docker run --rm $IMAGE -h
+        docker run --rm --entrypoint sh $IMAGE -c 'ldd /opt/whisper/bin/whisper-server | grep -q libggml-vulkan'
+      smoke-test-platform: linux/arm64
