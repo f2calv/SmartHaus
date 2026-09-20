@@ -58,6 +58,16 @@ public sealed class KnxDoorLockSummaryTests
         Assert.False(KnxQueryService.IsDoorLockGroup(wrongDpt));
     }
 
+    [Fact]
+    public void FromGroup_RequiresLocationMetadata()
+    {
+        var group = CreateLockGroup("False", null) with { Location = null };
+
+        var exception = Assert.Throws<ArgumentException>(() => KnxDoorLock.FromGroup(group));
+
+        Assert.Equal("group", exception.ParamName);
+    }
+
     private static KnxDoorLock CreateLock(string groupName, DptLockState? state)
         => new()
         {
