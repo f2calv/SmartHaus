@@ -26,6 +26,36 @@ public sealed class KnxContactSummaryTests
     }
 
     [Theory]
+    [InlineData("True", "open", DptState.Active)]
+    [InlineData("False", "closed", DptState.Inactive)]
+    [InlineData("True", null, DptState.Active)]
+    [InlineData("False", null, DptState.Inactive)]
+    public void FromGroup_DecodesLiveContactState(string value, string? valueLabel, DptState expected)
+    {
+        var group = new KnxGroupAddressGroup
+        {
+            GroupName = "DG-BI-Office(Window)-North-R",
+            Category = GroupAddressCategory.BI,
+            Children =
+            [
+                new KnxGroupAddressGroupFunction
+                {
+                    Name = "DG-BI-Office(Window)-North-R-STATE",
+                    GroupAddress = "1/3/2",
+                    Function = ContactFunction.STATE.ToString(),
+                    DPTs = "DPST-1-19",
+                    Value = value,
+                    ValueLabel = valueLabel,
+                },
+            ],
+        };
+
+        var result = KnxContact.FromGroup(group);
+
+        Assert.Equal(expected, result.State);
+    }
+
+    [Theory]
     [InlineData("DG-BI", GroupAddressCategory.BI, FloorType.DG, null, null, null, false)]
     [InlineData("EG-BI-LivingRoom", GroupAddressCategory.BI, FloorType.EG, RoomType.LivingRoom, null, null, false)]
     [InlineData("DG-BI-Office(Window)-North-R", GroupAddressCategory.BI, FloorType.DG, RoomType.Office, "Window", CompassOrientation.North, true)]

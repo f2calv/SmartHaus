@@ -48,18 +48,31 @@ public sealed record KnxContact
             Room = group.Room,
             Location = group.Location,
             Orientation = group.Orientation,
-            State = ToEnum<DptState>(group, ContactFunction.STATE),
+            State = ToState(group),
         };
 
     #region Private Helpers
 
-    private static T? ToEnum<T>(KnxGroupAddressGroup group, ContactFunction function) where T : struct, Enum
+    private static DptState? ToState(KnxGroupAddressGroup group)
     {
-        var child = group.Children.FirstOrDefault(c => c.Function == function.ToString());
-        if (child?.ValueLabel is null)
+        var child = group.Children.FirstOrDefault(c => c.Function == ContactFunction.STATE.ToString());
+        if (child is null)
             return null;
 
-        return Enum.TryParse<T>(child.ValueLabel, true, out var result) ? result : null;
+        if (Enum.TryParse<DptState>(child.ValueLabel, true, out var state))
+            return state;
+
+        if (child.ValueLabel?.Equals("open", StringComparison.OrdinalIgnoreCase) == true)
+            return DptState.Active;
+        if (child.ValueLabel?.Equals("closed", StringComparison.OrdinalIgnoreCase) == true)
+            return DptState.Inactive;
+
+        return child.Value switch
+        {
+            "True" or "1" => DptState.Active,
+            "False" or "0" => DptState.Inactive,
+            _ => null,
+        };
     }
 
     #endregion
