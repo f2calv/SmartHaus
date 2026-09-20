@@ -522,10 +522,10 @@ Audio["Speech-to-text<br/>(selected provider)"]:::stt
 | SecurityAgent | 17 | — | 17 |
 | HeatingAgent | 11 | — | 11 |
 | EnergyAgent | 13 | — | 13 |
-| HomeControlAgent | 35 | — | 35 |
+| HomeControlAgent | 37 | — | 37 |
 | InfraAgent | 7 | — | 7 |
 | AppliancesAgent | 15 | — | 15 |
-| CommsAgent | 8 | 98 | 106 |
+| CommsAgent | 8 | 100 | 108 |
 
 ## Agent Instruction Files
 
