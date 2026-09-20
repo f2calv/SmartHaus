@@ -10,6 +10,10 @@
     "ms-vscode-remote.vscode-remote-extensionpack",
     "mutantdino.resourcemonitor",
     "usernamehw.errorlens",
-    "davidanson.vscode-markdownlint"
+    "davidanson.vscode-markdownlint",
+    "redhat.vscode-yaml",
+    "github.vscode-github-actions",
+    "humao.rest-client",
+    "tim-koehler.helm-intellisense"
   ]
 }

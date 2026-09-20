@@ -1,5 +1,8 @@
 @{
-    ManifestRepo      = 'C:\path\to\gitops-repository'
-    ManifestPath      = 'path/to/application-set.yaml'
-    PodAnnotationName = 'example.com/deployed-version'
+    ManifestRepo             = 'C:\path\to\gitops-repository'
+    ManifestPath             = 'path/to/application-set.yaml'
+    AppSettingsConfigMapPath = 'path/to/appsettings-configmap.yaml'
+    AppSettingsConfigMapName = 'application-settings'
+    AppSettingsConfigMapKey  = 'appsettings.Local.json'
+    PodAnnotationName        = 'example.com/deployed-version'
 }

@@ -3,17 +3,26 @@ name: ci
 on:
   workflow_dispatch:
   push:
-    paths-ignore:
-      - .github/copilot-instructions.md
-      - .github/dependabot.yml
-      - LICENSE
-      - README.md
+    branches: [main]
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened]
-permissions: {} #Note: deny all permissions at the workflow level; individual jobs declare only what they need (principle of least privilege)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+#Deny all permissions at workflow level; jobs grant only what they need.
+permissions: {}
+
 jobs:
+  lint:
+    uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
+    permissions:
+      contents: read
+
   release:
+    needs: [lint]
+    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       tag-prefix: ''

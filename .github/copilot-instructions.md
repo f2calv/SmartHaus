@@ -1,102 +1,51 @@
 # Copilot Instructions
 
-<!-- ── Synced section ─────────────────────────────────────────────────────
-     This file plus every file under `.github/instructions/` is kept
-     identical across all f2calv .NET repositories. The repo-specific
-     "Project-Specific Overrides" section below is excluded from sync.
-     Edit once, sync everywhere.
-     ──────────────────────────────────────────────────────────────────── -->
+## Shared Instructions
 
-## Instruction Files
+Shared Copilot instructions, skills and prompts are maintained centrally in the [.github](https://github.com/f2calv/.github) repository, under `.github/instructions/`, `.github/skills/` and `.github/prompts/`. They are deliberately not copied into this repository, so a change there takes effect everywhere without a pull request here.
 
-Detailed conventions live in scoped instruction files under `.github/instructions/`, auto-applied by file type:
+To load them, clone that repository and either add it to this VS Code workspace, or link its folders into `~/.copilot/`. Its README explains both.
 
-| File | Applies to | Covers |
-| --- | --- | --- |
-| `csharp.instructions.md` | `**/*.cs` | C# / .NET style, XML docs, logging, performance, Web API |
-| `csharp.testing.instructions.md` | `**/*Tests/**/*.cs` | xUnit test structure, naming, theories, assertions |
-| `csharp.mcp.instructions.md` | `**/*.cs` | MCP server tool attributes, descriptions, naming |
-| `csharp.azure.instructions.md` | `**/*.cs` | Azure Table Storage & Redis key naming |
-| `dotnet.instructions.md` | `**/*.csproj`, `*.slnx`, `Directory.*.props` | Central build/package config, solution format, SDK pinning |
-| `helm.instructions.md` | `charts/**` | Helm chart authoring conventions, values.schema.json, dependency wiring |
-| `docker.instructions.md` | `**/Dockerfile*`, `.dockerignore` | Multi-arch builds, stage structure, caching, provenance, hardening |
-| `github-actions.instructions.md` | workflows / `action.yml` | GitHub Actions naming, YAML, security, GitVersion |
-| `bash.instructions.md` | `**/*.sh` | Bash scripting structure, error handling, logging, testability |
-| `documentation.instructions.md` | `**/*.md` | README consistency & Mermaid diagrams |
-| `configuration.instructions.md` | `**/appsettings*.json` | `IAppConfig` / appsettings sync |
+If those shared files are not visible, stop and tell the user rather than guessing the conventions — this repository depends on them.
 
-The conventions below always apply, regardless of the file being edited.
+Everything below is specific to this repository.
 
-## Copilot Workflow
-
-- **PII scan before committing**: Before staging or creating any local `git commit`, run the repository's PII scanner (`pwsh .scripts/Find-Pii.ps1`, or `-FailOnFind` as a hard gate) and remind the user to do the same. It seeds real values from the gitignored Local config files and flags any that have leaked into tracked files or history. Never commit if high-confidence (seed) PII is reported. The generated `pii-report*.csv` is gitignored and must never be committed.
-- **Test execution**: Never run tests automatically — they may be integration tests requiring extra setup. Always prompt (ideally with a visual yes/no button) before running any tests.
-- **Preserve git history during renames/moves**: When renaming or relocating files, first perform the rename/move (preferably via `git mv`), then make content edits to the file in its new location/name. This two-step approach preserves git history across the rename. Do not delete-and-recreate files when a rename or move is the intent.
-- **Multi-repo commits**: When a single change spans multiple repositories, separate per-repository commit messages are acceptable (but not mandatory). Prefer them where the changes are disconnected, or where one repository should not really "know about" the other (e.g. an app repo and a GitOps repo). A single shared commit message is fine when the change is genuinely coupled.
-- **Build after refactoring**: After any refactoring, build the **entire solution** (not just the affected project) to catch edge-case compilation errors in dependent projects. When multiple `.sln` / `.slnx` files exist, prefer the one with a `.Debug.slnx` suffix.
-
-## Public Repository Confidentiality
-
-- Treat every non-public repository's identity and contents as confidential, even when they appear in the local workspace, conversation context, diffs, logs, or tool output.
-- Never publish private repository names, URLs, owner/repository coordinates, branches, file paths, architecture, deployment details, or inferred existence in tracked files, commit messages, issues, pull request titles/descriptions/reviews/comments, release notes, workflow annotations, examples, or other public-facing content.
-- Describe required relationships generically (for example, "private GitOps repository" or "internal service") and supply private coordinates only through secrets, repository variables, or caller-provided values.
-- Before creating or updating public GitHub content, review the proposed text and metadata for private identifiers and implementation details.
-
-## Repository Structure
-
-Every f2calv repository follows a consistent layout, regardless of language:
-
-- **Root files**: `README.md`, `LICENSE`, `GitVersion.yml`, `.editorconfig`, `.gitattributes`, `.gitignore`, and `.pre-commit-config.yaml` live in the repository root.
-- **Source code** lives under `src/`. *(Exception: GitHub Action repositories keep `action.yml` at the root per the GitHub Actions convention.)*
-- **Tooling** lives in dot-prefixed folders — `.github/` (workflows, instructions), `.scripts/`, `.devcontainer/`, `.docker/`, `.config/`, `.vscode/`.
-- **Additional documentation** beyond the root `README.md` lives as Markdown under `docs/`.
-- **`.gitattributes`** standardises line endings across Windows/Linux. Use:
-
-  ```gitattributes
-  * text=auto eol=lf
-  *.{cmd,[cC][mM][dD]} text eol=crlf
-  *.{bat,[bB][aA][tT]} text eol=crlf
-  ```
-
-- **`.editorconfig`** is the single source of truth for indentation, line endings, and analyzer/formatting rules.
-- **`GitVersion.yml`** in the root drives semantic-versioning rules.
-
-## Misc
-
-- When detecting new conventions or patterns in the codebase, add them to the appropriate `.github/instructions/*.instructions.md` file (or this file for cross-cutting workflow rules) and apply them retroactively where applicable.
-- Keep this file and the `.github/instructions/` files in sync across repositories based on the common synced guidelines.
-
----
-
-## Project-Specific Overrides
-
-<!-- This section is excluded from cross-repository sync. Place any repo-specific rules below. -->
-
-### Public Deployment Boundary
+## Public Deployment Boundary
 
 This public repository stops at building and publishing application, package,
 and Helm artifacts. Do not include deployment-environment identifiers, manifest
 locations, environment or namespace names, cluster state, deployed versions,
 or operational procedures in tracked files or public pull requests.
 
-### Configuration File Strategy
+## NuGet Package Holds
 
-This repository has two tiers of `appsettings` files:
+- `Asp.Versioning.Mvc` has target-framework-specific major ceilings: retain the latest compatible
+  8.x version for `net8.0` projects and the latest compatible 10.x version for `net10.0` projects.
+  The 10.x package targets .NET 10 and must not replace the conditioned 8.x entry while SmartHaus
+  multi-targets `net8.0`.
+- Keep the `Asp.Versioning.Mvc` `PackageVersion` conditions in `Directory.Packages.props`. A full
+  dependency update may advance each framework-compatible line independently, but must not collapse
+  them into one unconditional version.
+- `Asp.Versioning.Mvc.ApiExplorer` has a 10.x major ceiling matching the server project's .NET 10
+  target. Reassess the family only when the corresponding application target framework changes.
+
+## Configuration File Strategy
+
+SmartHaus follows the standard provider order and options-synchronisation rules in
+`dotnet.configuration.instructions.md`. Its repository-specific split is:
 
 | File | Git-tracked | Purpose |
 | --- | --- | --- |
-| `appsettings.json` | Yes | Base/production configuration with **generic placeholder values** (no PII). Serves as a reference for open-source consumers to understand the full configuration surface and clone-and-run after a few tweaks. |
-| `appsettings.Development.json` | Yes | Development/docker-compose overrides with **demo-friendly defaults** (e.g. `demo` credentials, Azurite connection strings, `HealthCheck: "None"`, `KeyVaultName: "skip"`). Allows `docker compose --profile demo up` to work out of the box. |
-| `appsettings.Local.json` | No (`.gitignored`) | **Real production** secrets and configuration (Azure Key Vault names, storage account keys, device IPs, phone numbers, API tokens). Never committed. |
-| `appsettings.Local.Development.json` | No (`.gitignored`) | **Real development** secrets and configuration (actual device passwords, real service endpoints). Never committed. |
+| `appsettings.json` | Yes | Base and production reference configuration with public-safe placeholders |
+| `appsettings.Development.json` | Yes | Demo-safe local and container-development overrides |
+| `appsettings.Local.json` | No | Private values shared by local environments and used as production deployment input |
+| `appsettings.Local.Development.json` | No | Private overrides used only in Development |
 
-**Loading order** (later files override earlier ones): `appsettings.json` → `appsettings.{env}.json` → `appsettings.Local.json` → `appsettings.Local.{env}.json` → Azure Key Vault.
-
-**When adding, renaming, or removing an `IAppConfig` property**, update all four files:
-
-1. `appsettings.json` — add/rename/remove the key with a generic placeholder value.
-2. `appsettings.Development.json` — add/rename/remove with a demo-safe default if the property needs an override for local docker-compose runs.
-3. `appsettings.Local.json` — add/rename/remove with the real production value.
-4. `appsettings.Local.Development.json` — add/rename/remove with the real development value.
-
-**PII rules**: The git-tracked files (`appsettings.json`, `appsettings.Development.json`) must **never** contain real IP addresses, hostnames, passwords, API keys, phone numbers, tenant IDs, storage account names, or any other personally identifiable information. Use generic placeholders (`192.168.1.100`, `example.com`, `mystorageaccount`, `+10000000000`, `demo`, `00000000-0000-0000-0000-000000000000`). Real values belong exclusively in the `.gitignored` Local files.
+- Keep tracked configuration clone-and-run friendly and free of real identifiers, endpoints and
+  credentials. Use synthetic placeholders.
+- Keep real private values in the gitignored local files. Azure Key Vault is added as the final
+  application-specific provider and remains the authority for deployment credentials.
+- When a bindable property changes, follow the central synchronisation rule across all four existing
+  tiers; environment and local files restate only values that differ from earlier providers.
+- After changing `appsettings.Local.json` for production deployment, use this repository's
+  `sync-appsettings-to-configmap` skill to update the caller-configured private GitOps repository.

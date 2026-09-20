@@ -72,6 +72,14 @@ public sealed record EdgeHardwareConfig : IAppConfig, IAzTableStorageConfig, IMe
     [Range(0.001, double.MaxValue)]
     public double LedBulbHourWh { get; init; } = 10;
 
+    /// <inheritdoc cref="EnergyReportingMode" path="/summary"/>
+    /// <remarks>
+    /// Defaults to <see cref="EnergyReportingMode.Minimal"/> to keep the debug message short; the
+    /// kettle, phone-charge and LED-bulb equivalences only appear under
+    /// <see cref="EnergyReportingMode.Verbose"/>.
+    /// </remarks>
+    public EnergyReportingMode EnergyReporting { get; init; } = EnergyReportingMode.Minimal;
+
     // ── Metrics ─────────────────────────────────────────────────────
 
     /// <inheritdoc/>

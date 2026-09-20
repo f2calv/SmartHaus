@@ -62,16 +62,23 @@ EOF
 # ------------------------------------------------------------------------------
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
-COPY --link --from=build /app/publish .
-COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Runtime dependencies ------------------------------------------------------
+# Installed before the application layers, and matching Dockerfile; see the rationale there.
 RUN <<EOF
 set -eux
 apt-get update
-apt-get install -y --no-install-recommends curl libgpiod-dev
+apt-get install -y --no-install-recommends curl libgpiod2t64 ffmpeg
+for lib in /usr/lib/*/libgpiod.so.2; do
+    ln -sf "$(basename "$lib")" "$(dirname "$lib")/libgpiod.so"
+done
 rm -rf /var/lib/apt/lists/*
+ffmpeg -version
+test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.2)")/libgpiod.so"
 EOF
+
+COPY --link --from=build /app/publish .
+COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Provenance ----------------------------------------------------------------
 ARG GIT_REPOSITORY=n/a

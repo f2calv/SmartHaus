@@ -10,6 +10,10 @@ namespace CasCap.Tests.Misc;
 /// configured via <c>appsettings.Development.json</c> under <c>CasCap:AIConfig:Providers</c>.
 /// They will fail if the server is not available.
 /// </remarks>
+// TODO: Review the unit/integration split and external dependencies for these live-agent tests. The
+// configured EdgeGpu endpoint is not reachable from every workstation or CI runner; use a deterministic
+// local test server or an explicit availability-based integration skip, and remove this TODO once both
+// local and cluster validation paths are repeatable.
 public class AIAgentExtensionsTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";

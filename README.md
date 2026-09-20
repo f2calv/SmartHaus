@@ -1,4 +1,4 @@
-﻿# SmartHaus — IoT & Agentic Smart Home on the Edge
+# SmartHaus — IoT & Agentic Smart Home on the Edge
 
 [cascap.api.buderus-badge]: https://img.shields.io/nuget/v/CasCap.Api.Buderus?color=blue
 [cascap.api.buderus-url]: https://nuget.org/packages/CasCap.Api.Buderus
@@ -32,7 +32,8 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 ## Highlights
 
 - **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
-- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent, AudioAgent) orchestrate decisions autonomously — see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.SmartHaus/README.md#speech-to-text-providers)
 - **Feature-flag driven** — enable only the integrations you need; each feature is an independent module with its own data pipeline, sinks, and [MCP tools](https://modelcontextprotocol.io/specification/2025-03-26/server/tools)
 - **Azure cloud integration** — optional [Azure Table Storage](https://learn.microsoft.com/en-us/azure/storage/tables/) and [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/) sinks for telemetry persistence, with local [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulation for development
 - **Azure Key Vault** — optional [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/) integration for secrets management (disabled via `KeyVaultName=skip` for local development)
@@ -113,7 +114,6 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 | **[HomeControlAgent](src/CasCap.SmartHaus/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 35 |
 | **[InfraAgent](src/CasCap.SmartHaus/Resources/InfraAgent.instructions.md)** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
 | **[AppliancesAgent](src/CasCap.SmartHaus/Resources/AppliancesAgent.instructions.md)** | Miele appliance control (disabled — planned) | 15 |
-| **[AudioAgent](src/CasCap.SmartHaus/Resources/AudioAgent.instructions.md)** | Speech-to-text transcription via Whisper | — |
 
 ### MCP Tool Services
 
@@ -157,7 +157,7 @@ flowchart TD
     subgraph Comms["CasCap.SmartHaus (Comms instance — gateway + media analysis)"]
         COMMS_BG["CommunicationsBgService"]
         COMMS_AGENT(("CommsAgent"))
-        AUDIO_AGENT(("AudioAgent\n(Whisper STT)"))
+        STT(("Speech-to-text\n(selected provider)"))
         MEDIA_BG["MediaBgService"]
         SECURITY_AGENT(("SecurityAgent\n(vision)"))
     end
@@ -191,8 +191,8 @@ flowchart TD
 
     %% CommsAgent gateway
     COMMS_STREAM --> COMMS_BG
-    COMMS_BG -->|audio attachment| AUDIO_AGENT
-    AUDIO_AGENT -->|transcribed text| COMMS_BG
+    COMMS_BG -->|audio attachment| STT
+    STT -->|transcript| COMMS_BG
     COMMS_BG --> COMMS_AGENT
     COMMS_AGENT -->|relay to group| SIGNALCLI
     SIGNALCLI -->|incoming messages| COMMS_BG
@@ -466,7 +466,8 @@ Additional services started by the `demo` profile:
    curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
    ```
 
-   Or use the `ubiquiti-demo.http` file with the VS Code REST Client extension.
+    Or use [`requests/ubiquiti-demo.http`](requests/ubiquiti-demo.http) with the VS Code REST Client
+    extension.
 
 ## Project Configuration
 
@@ -488,7 +489,7 @@ Additional services started by the `demo` profile:
 | `.editorconfig` | Code style rules (4-space indent, LF line endings, full formatting rules) |
 | `global.json` | SDK constraint — stable releases only |
 | `docker-compose.yml` | Infrastructure services + `demo` profile for visitor demo |
-| `ubiquiti-demo.http` | REST Client test requests for the Ubiquiti demo webhook endpoints |
+| `requests/` | REST Client request collections and secret-safe local configuration template |
 | `GitVersion.yml` | Semantic versioning configuration (ContinuousDeployment mode) |
 
 ### Suppressed Warnings
@@ -545,11 +546,3 @@ Additional workflows:
 - [ ] Public API has XML documentation
 - [ ] Properties separated by blank lines
 - [ ] `ServiceProvider` instances are disposed in tests
-
-## Contributing
-
-1. Fork the repository and create a feature branch
-2. Follow all conventions documented above
-3. Run the full validation checklist before submitting a PR
-4. PRs target the `main` branch and require CI to pass
-5. Versioning is automated via GitVersion — do not manually edit version numbers

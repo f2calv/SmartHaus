@@ -33,6 +33,10 @@ namespace CasCap.Tests.Infrastructure;
 /// where those dependencies are absent.
 /// </para>
 /// </remarks>
+// TODO: Review the WebApplicationFactory test boundary and its dependencies. Program binds required
+// configuration before ConfigureWebHost applies these overrides; once supplied earlier, the synthetic
+// Test feature starts no background service and Serilog request logging lacks DiagnosticContext. Replace
+// this with a deterministic test bootstrap, then remove the TODO when all API tests start without live services.
 public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
 {
     /// <summary>

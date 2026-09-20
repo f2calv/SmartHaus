@@ -109,6 +109,10 @@ public sealed partial class CommunicationsBgService
     private static partial void LogAttachmentDownloaded(ILogger logger, string className, string attachmentId, string? contentType, int size);
 
     [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice transcription outcome={Outcome}, transcriptChars={TranscriptChars}")]
+    private static partial void LogVoiceTranscription(ILogger logger, string className, string outcome, int transcriptChars);
+
+    [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} processing slash command {Command} from {Sender}")]
     private static partial void LogSlashCommand(ILogger logger, string className, ChatCommand command, string? sender);
 
@@ -123,6 +127,22 @@ public sealed partial class CommunicationsBgService
     [LoggerMessage(Level = LogLevel.Debug,
         Message = "{ClassName} poll {PollId} not tracked, ignoring vote")]
     private static partial void LogPollNotTracked(ILogger logger, string className, string pollId);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} duplicate message from {Sender} suppressed, already reserved")]
+    private static partial void LogDuplicateSuppressed(ILogger logger, string className, string? sender);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "{ClassName} attachment cleanup left {RemainingCount} attachment(s) on the server, suppressing transcription and agent turn")]
+    private static partial void LogAttachmentCleanupFailed(ILogger logger, string className, int remainingCount);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice message rejected, voice processing is disabled")]
+    private static partial void LogVoiceRejected(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} voice message acquired but no agent turn produced, mode={VoiceProcessingMode}")]
+    private static partial void LogVoiceTurnSuppressed(ILogger logger, string className, string voiceProcessingMode);
 
     // ── Messaging partial (reply queue) ──────────────────────────────────
 

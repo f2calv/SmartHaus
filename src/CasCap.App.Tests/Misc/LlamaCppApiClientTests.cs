@@ -12,6 +12,10 @@ namespace CasCap.Tests.Misc;
 /// configured via <c>appsettings.Development.json</c> under <c>CasCap:AIConfig:Providers</c>.
 /// They will fail if the server is not available.
 /// </remarks>
+// TODO: Review these llama.cpp integration tests and their runtime dependencies. The configured server
+// may be reachable only after deployment to the cluster; provide a deterministic local endpoint or an
+// explicit availability-based skip, and remove this TODO when the suite can distinguish an unavailable
+// dependency from a client regression on every supported test environment.
 public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";
@@ -101,7 +105,12 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         }
     }
 
-    [Fact]
+    // TODO: re-enable once the test image is committed. The fixture depends on an uncommitted
+    // C:\temp\wine.png, so it fails on every machine that does not happen to have that file.
+    // Commit a small image under the test project and copy it to the output directory instead,
+    // then drop the Skip and the absolute path. Its sibling in AIAgentExtensionsTests exercises
+    // the same multimodal path and self-skips, so nothing is currently unguarded by this.
+    [Fact(Skip = @"Depends on an uncommitted image at C:\temp\wine.png; see the TODO above.")]
     public async Task GetResponseAsync_WithFileContent_ReturnsChatResponse()
     {
         if (!File.Exists(_filePath))

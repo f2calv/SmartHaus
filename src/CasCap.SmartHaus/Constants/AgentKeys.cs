@@ -38,7 +38,4 @@ public static class AgentKeys
 
     /// <summary>Home Connect appliances agent.</summary>
     public const string AppliancesAgent = nameof(AppliancesAgent);
-
-    /// <summary>Audio transcription agent (Whisper model).</summary>
-    public const string AudioAgent = nameof(AudioAgent);
 }

@@ -63,6 +63,56 @@ public sealed class CommsDebugNotifier(
     }
 
     /// <summary>
+    /// Sends the transcript of an inbound voice message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// so a misheard command can be diagnosed against what the agent actually received.
+    /// </summary>
+    /// <param name="result">The successful transcription, carrying the transcript and stage timings.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <remarks>
+    /// Only called when <see cref="SpeechToTextConfig.EchoTranscriptToDebugChat"/> is enabled. The
+    /// transcript goes to the debug recipient alone and never to a log sink or telemetry.
+    /// </remarks>
+    public async Task SendVoiceTranscriptDebugAsync(VoiceTranscriptionResult result, CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+            return;
+
+        try
+        {
+            var sb = new StringBuilder();
+            sb.AppendLine($"\U0001F442 Processing audio prompt: \u201C{result.Text}\u201D");
+            if (result.AudioDuration is { } audio)
+                sb.Append($"\u23F1 audio {audio.TotalSeconds:N1}s | ");
+            //A null transcode duration means the sender's audio was already a conforming WAV.
+            sb.Append("transcode ");
+            sb.Append(result.TranscodeDuration is { } transcode
+                ? $"{transcode.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcode)}"
+                : "skipped");
+            if (result.TranscriptionDuration is { } transcription)
+                sb.Append($" | transcribe {transcription.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcription)}");
+
+            var debugMsg = new SignalMessageRequest
+            {
+                Message = sb.ToString(),
+                Number = signalCliConfig.Value.PhoneNumber,
+                Recipients = [signalCliConfig.Value.PhoneNumberDebug]
+            };
+            await notifier.SendAsync(debugMsg, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to {PhoneNumberDebug}",
+                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+        }
+    }
+
+    //Seconds of audio processed per second of wall clock; above one means faster than playback.
+    private static string Realtime(TimeSpan? audioDuration, TimeSpan elapsed) =>
+        audioDuration is { } audio && elapsed > TimeSpan.Zero
+            ? $" ({audio.TotalSeconds / elapsed.TotalSeconds:N1}x)"
+            : string.Empty;
+
+    /// <summary>
     /// Sends a copy of an incoming stream event to <see cref="SignalCliConfig.PhoneNumberDebug"/>
     /// so automated sensor messages can be observed alongside the agent's response.
     /// </summary>
@@ -139,8 +189,13 @@ public sealed class CommsDebugNotifier(
     /// Sends a single consolidated debug message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
     /// containing a step-by-step timeline of the agent pipeline execution.
     /// </summary>
+    /// <remarks>
+    /// <c>inboundTimestamp</c> is the inbound Signal message timestamp in milliseconds since the
+    /// Unix epoch, used to report the end-to-end turnaround the sender actually experienced.
+    /// </remarks>
     public async Task SendDebugStatsAsync(string prompt, AgentRunResult result, List<CommsDebugStep> debugSteps,
-        byte[]? originalBinaryContent, string? originalMimeType, CancellationToken cancellationToken)
+        byte[]? originalBinaryContent, string? originalMimeType, long? inboundTimestamp,
+        CancellationToken cancellationToken)
     {
         if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
             return;
@@ -149,9 +204,17 @@ public sealed class CommsDebugNotifier(
         {
             var sb = new StringBuilder();
 
-            // ── Quoted prompt ───────────────────────────────────────────
+            // ── Quoted prompt ──────────────────────────────────────
             var truncated = prompt.Length > 200 ? prompt[..200] + "\u2026" : prompt;
             sb.AppendLine($"\u201C{truncated}\u201D");
+
+            // ── End-to-end turnaround as the sender experienced it ────
+            if (inboundTimestamp is { } received)
+            {
+                var elapsed = DateTimeOffset.UtcNow - DateTimeOffset.FromUnixTimeMilliseconds(received);
+                if (elapsed > TimeSpan.Zero)
+                    sb.AppendLine($"\u23F1 end to end {elapsed.TotalSeconds:F1}s");
+            }
 
             // ── Step-by-step pipeline timeline ──────────────────────────
             if (debugSteps.Count > 0)
@@ -237,15 +300,11 @@ public sealed class CommsDebugNotifier(
             if (result.FinishReason is { Length: > 0 })
                 sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
 
-            // Attach original + transcoded audio files when available for pipeline debugging.
-            var audioAttachments = BuildAudioDebugAttachments(originalBinaryContent, originalMimeType);
-
             var debugMsg = new SignalMessageRequest
             {
                 Message = sb.ToString().TrimEnd(),
                 Number = signalCliConfig.Value.PhoneNumber,
                 Recipients = [signalCliConfig.Value.PhoneNumberDebug],
-                Base64Attachments = audioAttachments,
             };
             await notifier.SendAsync(debugMsg, cancellationToken);
             logger.LogDebug("{ClassName} debug stats sent to {PhoneNumberDebug}",
@@ -256,33 +315,6 @@ public sealed class CommsDebugNotifier(
             logger.LogWarning(ex, "{ClassName} failed to send debug stats to {PhoneNumberDebug}",
                 nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
         }
-    }
-
-    /// <summary>
-    /// Builds base64 data-URI attachments for the original audio and the transcoded WAV
-    /// so both can be inspected via the debug Signal message.
-    /// </summary>
-    /// <returns>An array of data-URI strings, or <see langword="null"/> when no audio content is available.</returns>
-    internal static string[]? BuildAudioDebugAttachments(byte[]? originalBinaryContent, string? originalMimeType)
-    {
-        if (originalBinaryContent is null || originalMimeType is null
-            || !originalMimeType.StartsWith("audio/", StringComparison.OrdinalIgnoreCase))
-            return null;
-
-        var attachments = new List<string>();
-
-        // Derive a short extension from the MIME type (e.g. "audio/aac" → "aac", "audio/ogg" → "ogg").
-        var ext = originalMimeType.AsSpan()[(originalMimeType.IndexOf('/') + 1)..].ToString();
-        attachments.Add(
-            $"data:{originalMimeType};filename=original.{ext};base64,{Convert.ToBase64String(originalBinaryContent)}");
-
-        // Check for transcoded WAV from the sub-agent delegation pipeline.
-        var audioDebug = AgentExtensions.GetAmbientAudioDebug();
-        if (audioDebug?.TranscodedWav is { } wavBytes)
-            attachments.Add(
-                $"data:audio/wav;filename=transcoded.wav;base64,{Convert.ToBase64String(wavBytes)}");
-
-        return attachments.Count > 0 ? [.. attachments] : null;
     }
 
     /// <summary>
@@ -311,26 +343,31 @@ public sealed class CommsDebugNotifier(
         var energyWh = result.GetEstimatedEnergyWh();
         var gpuTemp = result.GetGpuTemperatureC();
         var gpuUtil = result.GetGpuUtilizationPercent();
+        var energyReporting = edgeHardwareConfig.Value.EnergyReporting;
+        var reportEnergy = energyWh is > 0 && energyReporting is not EnergyReportingMode.Off;
 
-        if ((energyWh is null or 0) && gpuTemp is null)
+        if (!reportEnergy && gpuTemp is null)
             return;
 
         sb.AppendLine();
 
-        if (energyWh is > 0)
+        if (reportEnergy)
         {
             sb.Append($"⚡ {energyWh:F2}Wh");
 
-            // Fun comparisons.
-            var comparisons = new List<string>();
-            if (edgeHardwareConfig.Value.KettleBoilWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.KettleBoilWh:F4} kettles");
-            if (edgeHardwareConfig.Value.PhoneChargeWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.PhoneChargeWh:F3} phone charges");
-            if (edgeHardwareConfig.Value.LedBulbHourWh > 0)
-                comparisons.Add($"~{energyWh.Value / edgeHardwareConfig.Value.LedBulbHourWh:F3} LED-bulb-hrs");
-            if (comparisons.Count > 0)
-                sb.Append($" ({string.Join(" | ", comparisons)})");
+            if (energyReporting is EnergyReportingMode.Verbose)
+            {
+                // Fun comparisons.
+                var comparisons = new List<string>();
+                if (edgeHardwareConfig.Value.KettleBoilWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.KettleBoilWh:F4} kettles");
+                if (edgeHardwareConfig.Value.PhoneChargeWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.PhoneChargeWh:F3} phone charges");
+                if (edgeHardwareConfig.Value.LedBulbHourWh > 0)
+                    comparisons.Add($"~{energyWh!.Value / edgeHardwareConfig.Value.LedBulbHourWh:F3} LED-bulb-hrs");
+                if (comparisons.Count > 0)
+                    sb.Append($" ({string.Join(" | ", comparisons)})");
+            }
         }
 
         if (gpuTemp is not null)

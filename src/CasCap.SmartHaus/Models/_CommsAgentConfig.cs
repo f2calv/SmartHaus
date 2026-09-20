@@ -173,9 +173,18 @@ public sealed record CommsAgentConfig : IAppConfig
     /// <summary>Maximum number of replies buffered in the outbound queue before the oldest are dropped.</summary>
     /// <remarks>
     /// Defaults to <c>100</c>. Bounds the reply channel so a flood cannot grow an unbounded backlog
-    /// that drip-feeds for hours; when full the oldest queued reply is discarded.
+    /// that drip-feeds for hours; a producer waits for capacity rather than having its work evicted.
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int ReplyQueueCapacity { get; init; } = 100;
+
+    /// <summary>How long an inbound Signal message identity stays reserved against redelivery, in hours.</summary>
+    /// <remarks>
+    /// Defaults to <c>168</c> (seven days). Used by
+    /// <see cref="CasCap.Services.RedisSignalMessageDeduplicator"/>. This bounds repeated processing
+    /// of a redelivered envelope; it is not an exactly-once guarantee.
+    /// </remarks>
+    [Range(1, int.MaxValue)]
+    public int MessageDeduplicationTtlHours { get; init; } = 168;
 }
