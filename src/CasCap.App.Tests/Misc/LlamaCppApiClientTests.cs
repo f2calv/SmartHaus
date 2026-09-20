@@ -12,6 +12,10 @@ namespace CasCap.Tests.Misc;
 /// configured via <c>appsettings.Development.json</c> under <c>CasCap:AIConfig:Providers</c>.
 /// They will fail if the server is not available.
 /// </remarks>
+// TODO: Review these llama.cpp integration tests and their runtime dependencies. The configured server
+// may be reachable only after deployment to the cluster; provide a deterministic local endpoint or an
+// explicit availability-based skip, and remove this TODO when the suite can distinguish an unavailable
+// dependency from a client regression on every supported test environment.
 public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";
