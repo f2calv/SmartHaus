@@ -522,71 +522,135 @@ function Update-ApplicationManifest {
     Write-Host "Deployed: ${ImageRepository}:${Tag}; ArgoCD will sync the application." -ForegroundColor Green
 }
 
-function Invoke-Deployment {
-    [CmdletBinding(SupportsShouldProcess)]
-    param([hashtable]$CallerBoundParameters = @{})
+function Initialize-DeploymentSettings {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][hashtable]$CallerBoundParameters,
+        [Parameter(Mandatory)][string]$RepoRoot
+    )
 
-    $REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
     foreach ($setting in $CallerBoundParameters.GetEnumerator()) {
-        Set-Variable -Name $setting.Key -Value $setting.Value -WhatIf:$false
+        Set-Variable -Name $setting.Key -Value $setting.Value -Scope 1 -WhatIf:$false
     }
     if (Test-Path $DeployConfigPath) {
         $deployConfig = Import-PowerShellDataFile $DeployConfigPath
         foreach ($setting in $deployConfig.GetEnumerator()) {
             if (-not $CallerBoundParameters.ContainsKey($setting.Key)) {
-                Set-Variable -Name $setting.Key -Value $setting.Value -WhatIf:$false
+                Set-Variable -Name $setting.Key -Value $setting.Value -Scope 1 -WhatIf:$false
             }
         }
     }
-    $repositoryName = Split-Path $REPO_ROOT -Leaf
-    if ([string]::IsNullOrWhiteSpace($DeploymentName)) { $DeploymentName = $repositoryName.ToLowerInvariant() }
-    if ([string]::IsNullOrWhiteSpace($ImageRepository)) { $ImageRepository = "ghcr.io/f2calv/$($repositoryName.ToLowerInvariant())" }
+
+    $repositoryName = Split-Path $RepoRoot -Leaf
+    if ([string]::IsNullOrWhiteSpace($DeploymentName)) {
+        Set-Variable -Name DeploymentName -Value $repositoryName.ToLowerInvariant() -Scope 1 -WhatIf:$false
+    }
+    if ([string]::IsNullOrWhiteSpace($ImageRepository)) {
+        Set-Variable -Name ImageRepository -Value "ghcr.io/f2calv/$($repositoryName.ToLowerInvariant())" -Scope 1 -WhatIf:$false
+    }
     if (-not $OnlyCharts -and [string]::IsNullOrWhiteSpace($PodAnnotationName)) {
         throw "-PodAnnotationName is required. Supply it explicitly or in '$DeployConfigPath'."
     }
-
-    $Rest = @(ConvertTo-DeployBuildArguments -Arguments $Rest)
+    Set-Variable -Name Rest -Value @(ConvertTo-DeployBuildArguments -Arguments $Rest) -Scope 1 -WhatIf:$false
 
     if ([string]::IsNullOrWhiteSpace($ManifestRepo)) {
         throw "-ManifestRepo is required. Supply it explicitly or in '$DeployConfigPath'."
     }
-    $manifestPathToPatch = Resolve-DeploymentManifestPath -OnlyCharts:$OnlyCharts -ManifestPath $ManifestPath -DashboardManifestPath $DashboardManifestPath
-    $manifest = Join-Path $ManifestRepo $manifestPathToPatch
+    $manifestPath = Resolve-DeploymentManifestPath -OnlyCharts:$OnlyCharts -ManifestPath $ManifestPath `
+        -DashboardManifestPath $DashboardManifestPath
+    return [pscustomobject]@{
+        ManifestPath = $manifestPath
+        Manifest = Join-Path $ManifestRepo $manifestPath
+    }
+}
+
+function Assert-DeploymentPrerequisites {
+    [CmdletBinding()]
+    param([Parameter(Mandatory)][string]$Manifest)
 
     if (-not (Get-Command yq -ErrorAction SilentlyContinue)) {
         throw "yq not found. Install it (e.g. winget install MikeFarah.yq) - required to patch the GitOps manifest."
     }
-    if (-not (Test-Path $manifest)) {
-        throw "GitOps manifest not found at '$manifest'."
+    if (-not (Test-Path $Manifest)) { throw "GitOps manifest not found at '$Manifest'." }
+}
+
+function Invoke-ConfiguredModelDriftCheck {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [switch]$SkipMigrationCheck,
+        [switch]$OnlyCharts,
+        [string]$MigrationProject,
+        [string]$MigrationContext,
+        [string]$MigrationConnectionStringEnvironmentVariable,
+        [string]$MigrationConnectionString
+    )
+
+    if ($SkipMigrationCheck -or $OnlyCharts) { return }
+    Assert-NoModelDrift -RepoRoot $RepoRoot -MigrationProject $MigrationProject `
+        -MigrationContext $MigrationContext `
+        -MigrationConnectionStringEnvironmentVariable $MigrationConnectionStringEnvironmentVariable `
+        -MigrationConnectionString $MigrationConnectionString
+}
+
+function Publish-ConfiguredDeploymentChart {
+    [CmdletBinding()]
+    [OutputType([pscustomobject])]
+    param(
+        [Parameter(Mandatory)][string]$RepoRoot,
+        [Parameter(Mandatory)][string]$Timestamp,
+        [switch]$Chart,
+        [switch]$OnlyCharts,
+        [string]$ChartPath,
+        [string]$ChartRepository,
+        [string]$DashboardChartPath,
+        [string]$DashboardChartRepository,
+        [string]$ChartVersion,
+        [string]$ChartRegistry,
+        [string]$DeploymentName,
+        [string]$Tag
+    )
+
+    if (-not $Chart -and -not $OnlyCharts) { return $null }
+    if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
+        throw "helm not found. Install Helm to use -Chart."
     }
+    $deploymentChart = Get-DeploymentChart -RepoRoot $RepoRoot -Timestamp $Timestamp `
+        -OnlyCharts:$OnlyCharts -ChartPath $ChartPath -ChartRepository $ChartRepository `
+        -DashboardChartPath $DashboardChartPath -DashboardChartRepository $DashboardChartRepository `
+        -ChartVersion $ChartVersion
+    if ($OnlyCharts) { Test-DashboardChart -Chart $deploymentChart }
+    Publish-DeploymentChart -Chart $deploymentChart -ChartRegistry $ChartRegistry `
+        -DeploymentName $DeploymentName -Timestamp $Timestamp -Tag $Tag -OnlyCharts:$OnlyCharts
+    return $deploymentChart
+}
+
+function Invoke-Deployment {
+    [CmdletBinding(SupportsShouldProcess)]
+    param([hashtable]$CallerBoundParameters = @{})
+
+    $REPO_ROOT = [IO.Path]::GetFullPath($PSScriptRoot)
+    $deployment = Initialize-DeploymentSettings -CallerBoundParameters $CallerBoundParameters -RepoRoot $REPO_ROOT
+    $manifestPathToPatch = $deployment.ManifestPath
+    $manifest = $deployment.Manifest
+    Assert-DeploymentPrerequisites -Manifest $manifest
 
     if (-not $PSCmdlet.ShouldProcess($manifest, "Build and deploy application artifacts, then patch the GitOps manifest")) { return }
 
     try {
         Update-ManifestRepository -ManifestRepo $ManifestRepo
         $timestamp = [DateTime]::UtcNow.ToString('yyyyMMddHHmmss')
-        if (-not $SkipMigrationCheck -and -not $OnlyCharts) {
-            Assert-NoModelDrift -RepoRoot $REPO_ROOT -MigrationProject $MigrationProject `
-                -MigrationContext $MigrationContext `
-                -MigrationConnectionStringEnvironmentVariable $MigrationConnectionStringEnvironmentVariable `
-                -MigrationConnectionString $MigrationConnectionString
-        }
+        Invoke-ConfiguredModelDriftCheck -RepoRoot $REPO_ROOT -SkipMigrationCheck:$SkipMigrationCheck `
+            -OnlyCharts:$OnlyCharts -MigrationProject $MigrationProject -MigrationContext $MigrationContext `
+            -MigrationConnectionStringEnvironmentVariable $MigrationConnectionStringEnvironmentVariable `
+            -MigrationConnectionString $MigrationConnectionString
         Invoke-DeploymentImageBuild -RepoRoot $REPO_ROOT -SkipBuild:$SkipBuild -OnlyCharts:$OnlyCharts `
             -Platforms $Platforms -Tag $Tag -ImageRepository $ImageRepository -Rest $Rest
-
-        $deploymentChart = $null
-        if ($Chart -or $OnlyCharts) {
-            if (-not (Get-Command helm -ErrorAction SilentlyContinue)) {
-                throw "helm not found. Install Helm to use -Chart."
-            }
-            $deploymentChart = Get-DeploymentChart -RepoRoot $REPO_ROOT -Timestamp $timestamp `
-                -OnlyCharts:$OnlyCharts -ChartPath $ChartPath -ChartRepository $ChartRepository `
-                -DashboardChartPath $DashboardChartPath -DashboardChartRepository $DashboardChartRepository `
-                -ChartVersion $ChartVersion
-            if ($OnlyCharts) { Test-DashboardChart -Chart $deploymentChart }
-            Publish-DeploymentChart -Chart $deploymentChart -ChartRegistry $ChartRegistry `
-                -DeploymentName $DeploymentName -Timestamp $timestamp -Tag $Tag -OnlyCharts:$OnlyCharts
-        }
+        $deploymentChart = Publish-ConfiguredDeploymentChart -RepoRoot $REPO_ROOT -Timestamp $timestamp `
+            -Chart:$Chart -OnlyCharts:$OnlyCharts -ChartPath $ChartPath -ChartRepository $ChartRepository `
+            -DashboardChartPath $DashboardChartPath -DashboardChartRepository $DashboardChartRepository `
+            -ChartVersion $ChartVersion -ChartRegistry $ChartRegistry -DeploymentName $DeploymentName -Tag $Tag
 
         if ($OnlyCharts) {
             Update-DashboardManifest -Manifest $manifest -ManifestRepo $ManifestRepo `
