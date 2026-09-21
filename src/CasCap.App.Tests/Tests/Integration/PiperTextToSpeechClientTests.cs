@@ -17,6 +17,7 @@ namespace CasCap.Tests;
 /// <c>docker run -d --name piper -e PIPER_VOICE=en_GB-alba-medium -p 10200:10200 lscr.io/linuxserver/piper</c>.
 /// </remarks>
 [Trait("Category", "TextToSpeech")]
+[Trait("Category", "Integration")]
 public class PiperTextToSpeechClientTests : TestBase
 {
     public PiperTextToSpeechClientTests(ITestOutputHelper output) : base(output) { }

@@ -20,6 +20,7 @@ namespace CasCap.Tests;
 /// </para>
 /// </remarks>
 [Trait("Category", "SpeechToText")]
+[Trait("Category", "Integration")]
 public class AzureSpeechToTextClientTests : TestBase
 {
     public AzureSpeechToTextClientTests(ITestOutputHelper output) : base(output) { }
