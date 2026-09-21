@@ -7,6 +7,7 @@ namespace CasCap.Tests;
 /// Populate <see cref="OAuthToken"/> with a valid Bearer token before running.
 /// Tests will fail if the token is expired or invalid.
 /// </remarks>
+[Trait("Category", "Integration")]
 public class MieleClientServiceTests(ITestOutputHelper output)
 {
     private const string MieleBaseAddress = "https://api.mcs3.miele.com/v1/";

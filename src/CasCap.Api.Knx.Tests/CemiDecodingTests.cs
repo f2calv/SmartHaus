@@ -8,6 +8,7 @@ namespace CasCap.Tests;
 /// Integration tests for the CEMI frame deserialization and <see cref="GroupValue"/> decoding pipeline.
 /// Reads CEMI data from Azure Table Storage via <see cref="KnxSinkAzureTablesCemiService"/>.
 /// </summary>
+[Trait("Category", "Integration")]
 public class CemiDecodingTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]

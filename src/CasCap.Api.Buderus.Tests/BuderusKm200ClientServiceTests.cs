@@ -8,6 +8,7 @@ namespace CasCap.Tests;
 /// <c>appsettings.Development.json</c> under the <c>CasCap:BuderusConfig</c> key.
 /// Tests are skipped by default to avoid failures in CI environments without hardware access.
 /// </remarks>
+[Trait("Category", "Integration")]
 public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     #region Read datapoints

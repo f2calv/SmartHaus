@@ -16,6 +16,7 @@ namespace CasCap.Tests.Misc;
 // may be reachable only after deployment to the cluster; provide a deterministic local endpoint or an
 // explicit availability-based skip, and remove this TODO when the suite can distinguish an unavailable
 // dependency from a client regression on every supported test environment.
+[Trait("Category", "Integration")]
 public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";

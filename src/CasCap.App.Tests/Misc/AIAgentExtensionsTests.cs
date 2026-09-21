@@ -14,6 +14,7 @@ namespace CasCap.Tests.Misc;
 // configured EdgeGpu endpoint is not reachable from every workstation or CI runner; use a deterministic
 // local test server or an explicit availability-based integration skip, and remove this TODO once both
 // local and cluster validation paths are repeatable.
+[Trait("Category", "Integration")]
 public class AIAgentExtensionsTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";

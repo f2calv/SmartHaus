@@ -3,6 +3,7 @@
 /// <summary>
 /// Integration tests for <see cref="DoorBirdClientService"/> against a real DoorBird device.
 /// </summary>
+[Trait("Category", "Integration")]
 public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]
