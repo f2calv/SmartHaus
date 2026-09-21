@@ -77,10 +77,13 @@ public class AIAgentExtensionsTests(ITestOutputHelper output) : TestBase(output)
         }
     }
 
-    [Theory]
-    [InlineData(@"C:\temp\wine.png", "image/png", "Please describe this image in a maximum of two sentences.", "wine bottle")]
-    public async Task RunAnalysisAsync_WithImage_ReturnsResult(string filePath, string mimeType, string prompt, string expectedContent)
+    [Fact]
+    public async Task RunAnalysisAsync_WithImage_ReturnsResult()
     {
+        var filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "wine.png");
+        const string mimeType = "image/png";
+        const string prompt = "Please describe this image in a maximum of two sentences.";
+        const string expectedContent = "wine bottle";
         if (!File.Exists(filePath))
         {
             _output.WriteLine($"Test file not found at '{filePath}', skipping image test.");

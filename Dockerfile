@@ -151,8 +151,7 @@ LABEL org.opencontainers.image.title="$WORKLOAD" \
     org.opencontainers.image.version="$GIT_TAG" \
     org.opencontainers.image.revision="$GIT_COMMIT"
 
-#TODO: run as a non-root USER. Pending confirmation that no workload needs root or a privileged
-#      capability - knx/wiz/shelly attach to a Multus network and edge-* reads host hardware.
+USER $APP_UID
 
 # exec replaces the shell so dotnet becomes PID 1 and receives SIGTERM for a clean shutdown.
 ENTRYPOINT ["sh", "-c", "exec dotnet ${WORKLOAD}.dll"]

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.SignalR.Client;
+using System.Security.Cryptography;
 
 namespace CasCap.Services;
 
@@ -39,7 +40,7 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
         connection.Closed += async (error) =>
         {
             Debug.Assert(connection.State == HubConnectionState.Disconnected);
-            await Task.Delay(new Random().Next(0, 5) * 1000);
+            await Task.Delay(RandomNumberGenerator.GetInt32(0, 5) * 1000);
             IsConnected = await ConnectWithRetryAsync();
         };
         connection.Reconnecting += error =>

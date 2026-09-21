@@ -19,7 +19,9 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
     public async Task InvalidateSession_InvalidatesExistingSession()
     {
         var session = await svc.GetSession();
-        Assert.NotNull(session?.Bha?.SessionId);
+        Assert.NotNull(session);
+        Assert.NotNull(session.Bha);
+        Assert.NotNull(session.Bha.SessionId);
 
         var result = await svc.InvalidateSession(session.Bha.SessionId);
         Assert.NotNull(result);
@@ -138,7 +140,7 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
     [Fact]
     public async Task SubscribeAndUnsubscribe_RoundTrip()
     {
-        var testUrl = "http://192.168.1.100:9999/test-doorbird-callback";
+        var testUrl = new UriBuilder(Uri.UriSchemeHttp, "example.invalid", 9999, "test-doorbird-callback").Uri.AbsoluteUri;
         var eventType = "doorbell";
 
         var subscribed = await svc.SubscribeNotification(testUrl, eventType);

@@ -90,15 +90,15 @@ public sealed class BuderusKm200ClientService : HttpClientBase
     /// <returns>Datapoint object, or null if not found.</returns>
     public async Task<Km200DatapointObject?> GetDataPoint(string requestUriOrId)
     {
-        requestUriOrId = $"{_config.BaseAddress}:{_config.Port}{requestUriOrId}";
-        var tpl = await GetAsync<string, string>(requestUriOrId).ConfigureAwait(false);
+        var requestUri = BuildRequestUri(requestUriOrId);
+        var tpl = await GetAsync<string, string>(requestUri.ToString()).ConfigureAwait(false);
         if (tpl.result is null || tpl.result.IndexOf("Sorry, the requested file does not exist on this server.") > -1)
-            _logger.LogWarning("url '{RequestUriOrId}' not found", requestUriOrId);
+            _logger.LogWarning("url '{RequestUri}' not found", requestUri);
         else
         {
             var json = _buderusKm200Reader.Decrypt(tpl.result);
             if (string.IsNullOrWhiteSpace(json))
-                _logger.LogWarning("no data returned for url '{RequestUriOrId}'", requestUriOrId);
+                _logger.LogWarning("no data returned for url '{RequestUri}'", requestUri);
             else
                 return json.FromJson<Km200DatapointObject>()!;
         }
@@ -133,7 +133,7 @@ public sealed class BuderusKm200ClientService : HttpClientBase
 
         var payload = BuildPayload(dp.Type, value);
         var encrypted = Encrypt(payload);
-        var requestUri = $"{_config.BaseAddress}:{_config.Port}{datapointId}";
+        var requestUri = BuildRequestUri(datapointId);
 
         using var request = new HttpRequestMessage(HttpMethod.Post, requestUri);
         request.Content = new ByteArrayContent(encrypted);
@@ -154,6 +154,21 @@ public sealed class BuderusKm200ClientService : HttpClientBase
     }
 
     #region private helpers
+
+    private Uri BuildRequestUri(string datapointId)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(datapointId);
+        var segments = datapointId.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        if (segments.Length == 0 || segments.Any(segment => segment is "." or ".."))
+            throw new ArgumentException("Datapoint id must be an absolute KM200 path without traversal segments.", nameof(datapointId));
+
+        var builder = new UriBuilder(_config.BaseAddress)
+        {
+            Port = _config.Port,
+            Path = string.Join('/', segments.Select(Uri.EscapeDataString)),
+        };
+        return builder.Uri;
+    }
 
     /// <summary>
     /// Builds the JSON write payload for the given datapoint type and value.

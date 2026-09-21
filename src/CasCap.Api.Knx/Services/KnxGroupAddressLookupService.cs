@@ -181,7 +181,7 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     public void DptSummary()
     {
         var summary = from p in dLookupByAddress.Values
-                      where 1 == 1 && p.Major > 0
+                      where p.Major > 0
                       group p by new
                       {
                           //p.Category,
@@ -219,7 +219,6 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
         }
 
         var summary = from s in l
-                      where 1 == 1
                       group s by new
                       {
                           s

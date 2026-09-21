@@ -2,6 +2,7 @@ using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using System.Security.Cryptography;
 
 namespace CasCap.Tests.Infrastructure;
 
@@ -47,7 +48,7 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
     /// <summary>
     /// The Basic-auth password injected into the test configuration.
     /// </summary>
-    public const string TestPassword = "testpass";
+    public static string TestPassword { get; } = Convert.ToHexString(RandomNumberGenerator.GetBytes(16));
 
     /// <summary>
     /// Configuration key for the <c>EnabledFeatures</c> property.

@@ -114,7 +114,7 @@ public sealed partial class CommunicationsBgService
                 && _speechToTextConfig.Mode is not VoiceProcessingMode.Disabled;
             await _notifier.SendProgressUpdateAsync(
                 _signalCliConfig.PhoneNumber, _groupId!, listening ? "\U0001F442" : "\U0001F440",
-                notification.Sender, notification.Timestamp.Value);
+                notification.Sender, notification.Timestamp.Value, cancellationToken);
         }
 
         byte[]? binaryContent = null;
@@ -145,14 +145,14 @@ public sealed partial class CommunicationsBgService
             // and would repeat the agent turn. Operator cleanup is required before promotion.
             LogAttachmentCleanupFailed(_logger, nameof(CommunicationsBgService), cleanup.Remaining.Count);
             await SendAttachmentCleanupFailureReplyAsync(cancellationToken);
-            await SendFailureReactionAsync(notification);
+            await SendFailureReactionAsync(notification, cancellationToken);
             return;
         }
 
         if (!agentAvailable)
         {
             LogNoAgentSkipping(_logger, nameof(CommunicationsBgService));
-            await SendFailureReactionAsync(notification);
+            await SendFailureReactionAsync(notification, cancellationToken);
             return;
         }
 
@@ -172,7 +172,7 @@ public sealed partial class CommunicationsBgService
             && _speechToTextConfig.Mode is VoiceProcessingMode.Enabled)
         {
             await SendVoiceFailureReplyAsync(cancellationToken);
-            await SendFailureReactionAsync(notification);
+            await SendFailureReactionAsync(notification, cancellationToken);
             return;
         }
 
@@ -205,7 +205,7 @@ public sealed partial class CommunicationsBgService
             // Green tick reaction to indicate the command has been seen and processed.
             if (notification.Timestamp is not null)
                 await _notifier.SendProgressUpdateAsync(
-                    _signalCliConfig.PhoneNumber, _groupId!, "\u2705", notification.Sender, notification.Timestamp.Value);
+                    _signalCliConfig.PhoneNumber, _groupId!, "\u2705", notification.Sender, notification.Timestamp.Value, cancellationToken);
 
             return;
         }
@@ -316,12 +316,12 @@ public sealed partial class CommunicationsBgService
     /// Every abandoned turn has to reach this, otherwise the message keeps its acknowledgement
     /// reaction and looks like it is still being worked on.
     /// </remarks>
-    private async Task SendFailureReactionAsync(IReceivedNotification notification)
+    private async Task SendFailureReactionAsync(IReceivedNotification notification, CancellationToken cancellationToken)
     {
         if (_groupId is null || notification.Timestamp is null)
             return;
         await _notifier.SendProgressUpdateAsync(
-            _signalCliConfig.PhoneNumber, _groupId, "\u274C", notification.Sender, notification.Timestamp.Value);
+            _signalCliConfig.PhoneNumber, _groupId, "\u274C", notification.Sender, notification.Timestamp.Value, cancellationToken);
     }
 
     /// <summary>Collects every attachment identifier carried by the envelope, selected or not.</summary>
@@ -426,18 +426,18 @@ public sealed partial class CommunicationsBgService
             try
             {
                 if (request.Sender is not null)
-                    await _notifier.StartProcessingAsync(_signalCliConfig.PhoneNumber, _groupId!);
+                    await _notifier.StartProcessingAsync(_signalCliConfig.PhoneNumber, _groupId!, cancellationToken);
 
                 // Hourglass reaction to indicate processing has started.
                 if (request.Sender is not null && request.Timestamp is not null)
                     await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\u23F3", request.Sender, request.Timestamp.Value);
+                        _signalCliConfig.PhoneNumber, _groupId!, "\u23F3", request.Sender, request.Timestamp.Value, cancellationToken);
 
                 var (agentResult, debugSteps) = await RunAgentAsync(request.Prompt, request.BinaryContent,
                     request.MimeType, request.BypassSession, request.Sender, request.Timestamp, cancellationToken);
 
                 if (request.Sender is not null)
-                    await _notifier.StopProcessingAsync(_signalCliConfig.PhoneNumber, _groupId!);
+                    await _notifier.StopProcessingAsync(_signalCliConfig.PhoneNumber, _groupId!, cancellationToken);
 
                 var agentResponse = agentResult?.OutputText;
                 if (!string.IsNullOrWhiteSpace(agentResponse))
@@ -490,7 +490,7 @@ public sealed partial class CommunicationsBgService
                     // Green tick reaction to indicate successful processing.
                     if (request.Sender is not null && request.Timestamp is not null)
                         await _notifier.SendProgressUpdateAsync(
-                            _signalCliConfig.PhoneNumber, _groupId!, "\u2705", request.Sender, request.Timestamp.Value);
+                            _signalCliConfig.PhoneNumber, _groupId!, "\u2705", request.Sender, request.Timestamp.Value, cancellationToken);
                 }
                 else
                 {
@@ -500,7 +500,7 @@ public sealed partial class CommunicationsBgService
                     // produced no usable response, so do not signal success to the user.
                     if (request.Sender is not null && request.Timestamp is not null)
                         await _notifier.SendProgressUpdateAsync(
-                            _signalCliConfig.PhoneNumber, _groupId!, "\u274C", request.Sender, request.Timestamp.Value);
+                            _signalCliConfig.PhoneNumber, _groupId!, "\u274C", request.Sender, request.Timestamp.Value, cancellationToken);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
@@ -510,7 +510,7 @@ public sealed partial class CommunicationsBgService
                 // Red cross reaction to indicate a processing failure.
                 if (request.Sender is not null && request.Timestamp is not null)
                     await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\u274C", request.Sender, request.Timestamp.Value);
+                        _signalCliConfig.PhoneNumber, _groupId!, "\u274C", request.Sender, request.Timestamp.Value, cancellationToken);
             }
         }
     }

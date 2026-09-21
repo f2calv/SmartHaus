@@ -43,7 +43,7 @@ public sealed partial class MessagingMcpQueryService(
             Answers = answerArray,
             Recipient = groupId,
         };
-        var response = await signalCliSvc.CreatePoll(phoneNumber, request);
+        var response = await signalCliSvc.CreatePoll(phoneNumber, request, cancellationToken);
         if (response is not null)
             pollTracker.TrackPoll(response.Timestamp, question, answerArray, groupId);
 
@@ -67,7 +67,7 @@ public sealed partial class MessagingMcpQueryService(
         {
             PollTimestamp = pollId,
             Recipient = groupId,
-        });
+        }, cancellationToken);
         if (result)
             pollTracker.RemovePoll(pollId);
 

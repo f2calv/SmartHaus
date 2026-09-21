@@ -70,7 +70,7 @@ public sealed partial class CommunicationsBgService
                     // Option B: swap reaction to twisted-arrows to indicate delegation.
                     if (sender is not null && timestamp is not null)
                         await _notifier.SendProgressUpdateAsync(
-                            _signalCliConfig.PhoneNumber, _groupId!, "\U0001F500", sender, timestamp.Value);
+                            _signalCliConfig.PhoneNumber, _groupId!, "\U0001F500", sender, timestamp.Value, ct);
                 },
 
                 OnCompletion = (agentKey, depth, subResult, ct) =>
@@ -130,7 +130,7 @@ public sealed partial class CommunicationsBgService
                 // Restore hourglass reaction after delegation completes (Option B cleanup).
                 if (sender is not null && timestamp is not null)
                     await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\u23F3", sender, timestamp.Value);
+                        _signalCliConfig.PhoneNumber, _groupId!, "\u23F3", sender, timestamp.Value, cancellationToken);
 
                 // Final step for the parent agent.
                 pipelineSw.Stop();

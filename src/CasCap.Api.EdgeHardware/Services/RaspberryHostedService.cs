@@ -69,51 +69,19 @@ public class RaspberryHostedService : IHostedService
         {
             //motionDetected = true;
             Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tmotion detected, taking picture!");
-            var version = 3;
-            if (version == 0)
-                await _cameraDev.TakePicture();
-            else if (version == 1)
-            {
-                var raw = await _cameraDev.StoreToMemory();
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg created");
-                var fileName = $"{DateTime.UtcNow}.raw";//:yyyy-MM-dd-HH-mm-ss-fff"
-                await _blobStorage.UploadBlob(fileName, raw.bytes, CancellationToken.None);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg uploaded");
-            }
-            else if (version == 2)
-            {
-                var jpg = await _cameraDev.TakePicture();
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg created");
-                var bytes = await File.ReadAllBytesAsync(jpg.filePath);
-                await _blobStorage.UploadBlob(Path.GetFileName(jpg.filePath), bytes, CancellationToken.None);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg uploaded");
-            }
-            else if (version == 3)
-            {
-                //await SendDeviceToCloudMessageAsync("photo taken!", new KeyValuePair<string, string>("cameraEvent", "true"));
-                var jpg = await _cameraDev.TakePicture();
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg created");
-                var webp = await ConvertJpg2Webp(jpg.filePath);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg -> webp");
+            var jpg = await _cameraDev.TakePicture();
+            Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg created");
+            var webp = await ConvertJpg2Webp(jpg.filePath);
+            Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg -> webp");
 
-                //await _blobStorageSvc.UploadBytes(await File.ReadAllBytesAsync(jpg.filePath),
-                //    $"{jpg.utcDate:yyyy/MM/dd/HH}/{Path.GetFileName(jpg.filePath)}");
-                //Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg uploaded");
-                File.Delete(jpg.filePath);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg deleted");
+            File.Delete(jpg.filePath);
+            Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\tjpg deleted");
 
-                await _blobStorage.UploadBlob($"{jpg.timestampUtc:yyyy/MM/dd/HH}/{Path.GetFileName(webp.filePath)}", webp.bytes, CancellationToken.None);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\twebp uploaded");
+            await _blobStorage.UploadBlob($"{jpg.timestampUtc:yyyy/MM/dd/HH}/{Path.GetFileName(webp.filePath)}", webp.bytes, CancellationToken.None);
+            Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\twebp uploaded");
 
-                //Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\ttry upload to googlephotos");//can't do this cos of OAuth - this would have to be a local svc?
-                //await GooglePhotosDevTEMP(webp.filePath);
-
-
-                File.Delete(webp.filePath);
-                Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\twebp deleted");
-            }
-            else
-                throw new NotSupportedException($"unexpected version {version}");
+            File.Delete(webp.filePath);
+            Console.WriteLine($"{DateTime.UtcNow:HH:mm:ss.fff}\twebp deleted");
             //motionDetected = false;
         }
         else
@@ -178,18 +146,6 @@ public class RaspberryHostedService : IHostedService
         //await GooglePhotosDevTEMP(Path.Combine(_appConfig.LocalPath, "test.webp"));
 
         //https://github.com/techyian/MMALSharp
-        if (_env.IsProduction() && 1 == 2)
-        {
-            await _cameraDev.TakePicture();
-            _logger.LogDebug("{ClassName} photo taken :)", nameof(RaspberryHostedService));
-
-            await _cameraDev.TakeVideo(TimeSpan.FromSeconds(5));
-            _logger.LogDebug("{ClassName} video recorded!", nameof(RaspberryHostedService));
-
-            var raw = await _cameraDev.StoreToMemory();
-            _logger.LogDebug("{ClassName} raw picture taken, {Bytes} bytes!", nameof(RaspberryHostedService), raw.bytes.Length);
-        }
-
         _logger.LogDebug("{ClassName} start motion sensor loop...", nameof(RaspberryHostedService));
         while (!cancellationToken.IsCancellationRequested)
         {

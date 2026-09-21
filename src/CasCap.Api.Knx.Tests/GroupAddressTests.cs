@@ -90,7 +90,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
         //count GroupAddress elements directly from the raw XML
         var xml = await File.ReadAllTextAsync(path, TestContext.Current.CancellationToken);
         var xDoc = XDocument.Parse(xml);
-        XNamespace ns = "http://knx.org/xml/ga-export/01";
+        XNamespace ns = $"{Uri.UriSchemeHttp}://knx.org/xml/ga-export/01";
         var xmlElementCount = xDoc.Descendants(ns + "GroupAddress").Count();
 
         _output.WriteLine($"Deserialized: {deserialized.Count}, XML elements: {xmlElementCount}");
