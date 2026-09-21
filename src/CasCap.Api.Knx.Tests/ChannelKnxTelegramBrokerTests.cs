@@ -14,11 +14,9 @@ public class ChannelKnxTelegramBrokerTests
         await broker.PublishAsync(expected, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        await foreach (var item in broker.SubscribeAsync(cts.Token))
-        {
-            Assert.Equal(expected, item);
-            break;
-        }
+        await using var enumerator = broker.SubscribeAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal(expected, enumerator.Current);
     }
 
     [Fact]
@@ -73,10 +71,8 @@ public class ChannelKnxTelegramBrokerTests
         await broker.PublishAsync(42, TestContext.Current.CancellationToken);
 
         using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
-        await foreach (var item in broker.SubscribeAsync(cts.Token))
-        {
-            Assert.Equal(42, item);
-            break;
-        }
+        await using var enumerator = broker.SubscribeAsync(cts.Token).GetAsyncEnumerator(cts.Token);
+        Assert.True(await enumerator.MoveNextAsync());
+        Assert.Equal(42, enumerator.Current);
     }
 }

@@ -44,7 +44,6 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         // The returned JSON must at minimum contain the EnabledFeatures field.
         var doc = JsonDocument.Parse(json);
         Assert.True(
-            doc.RootElement.TryGetProperty("EnabledFeatures", out _) ||
             doc.RootElement.TryGetProperty("EnabledFeatures", out _),
             "Response JSON should contain 'EnabledFeatures' property");
     }

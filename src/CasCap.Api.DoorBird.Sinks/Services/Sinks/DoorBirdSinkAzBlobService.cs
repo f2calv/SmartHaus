@@ -18,7 +18,7 @@ public sealed partial class DoorBirdSinkAzBlobService(ILogger<DoorBirdSinkAzBlob
         if (@event.bytes is not null)
         {
             var blob = new MyBlob(@event.bytes, @event.FileName ?? string.Empty, @event.DateCreatedUtc);
-            await BlobStatics.UploadQueue.Writer.WriteAsync(blob);
+            await BlobStatics.UploadQueue.Writer.WriteAsync(blob, cancellationToken);
         }
     }
 

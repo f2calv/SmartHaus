@@ -54,7 +54,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
                             var a = agents[key];
                             var p = aiConfig.Value.Providers[a.Provider];
                             return $"{Markup.Escape(a.Name)} [grey]({Markup.Escape(p.Type.ToString())} — {Markup.Escape(p.ModelName)})[/]";
-                        }));
+                        }), cancellationToken);
 
             var agentConfig = agents[selectedKey];
             var provider = aiConfig.Value.Providers[agentConfig.Provider];
@@ -80,7 +80,7 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
                             tools.AddRange(AgentExtensions.FilterTools(mcpTools.Cast<AITool>(), source,
                                 isDevelopment: true));
 
-                            var mcpPrompts = (await mcpClient.ListPromptsAsync()).ToList();
+                            var mcpPrompts = (await mcpClient.ListPromptsAsync(cancellationToken: cancellationToken)).ToList();
                             prompts.AddRange(mcpPrompts.ToPromptDescriptors());
                         }
 

@@ -1,4 +1,4 @@
-﻿using CasCap.Extensions;
+using CasCap.Extensions;
 using Microsoft.Extensions.AI;
 
 namespace CasCap.Tests.Misc;
@@ -78,21 +78,12 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         try
         {
             using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            var seenAny = false;
-
-            await foreach (var update in chatClient.GetStreamingResponseAsync(messages, cancellationToken: cts.Token))
-            {
-                Assert.NotNull(update);
-                _output.WriteLine($"Streaming update: ResponseId={update.ResponseId}, ModelId={update.ModelId}, FinishReason={update.FinishReason}");
-                seenAny = true;
-                break;
-            }
-
-            if (!seenAny)
-            {
-                _output.WriteLine("No streaming updates received within timeout.");
-                Assert.Fail("No streaming updates received from llama.cpp within timeout.");
-            }
+            await using var enumerator = chatClient.GetStreamingResponseAsync(messages, cancellationToken: cts.Token)
+                .GetAsyncEnumerator(cts.Token);
+            Assert.True(await enumerator.MoveNextAsync(), "No streaming updates received from llama.cpp within timeout.");
+            var update = enumerator.Current;
+            Assert.NotNull(update);
+            _output.WriteLine($"Streaming update: ResponseId={update.ResponseId}, ModelId={update.ModelId}, FinishReason={update.FinishReason}");
         }
         catch (HttpRequestException ex)
         {
@@ -149,3 +140,4 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         }
     }
 }
+

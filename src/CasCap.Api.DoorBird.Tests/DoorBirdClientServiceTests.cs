@@ -1,4 +1,4 @@
-﻿namespace CasCap.Tests;
+namespace CasCap.Tests;
 
 /// <summary>
 /// Integration tests for <see cref="DoorBirdClientService"/> against a real DoorBird device.
@@ -19,7 +19,9 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
     public async Task InvalidateSession_InvalidatesExistingSession()
     {
         var session = await svc.GetSession();
-        Assert.NotNull(session?.Bha?.SessionId);
+        Assert.NotNull(session);
+        Assert.NotNull(session.Bha);
+        Assert.NotNull(session.Bha.SessionId);
 
         var result = await svc.InvalidateSession(session.Bha.SessionId);
         Assert.NotNull(result);
@@ -150,3 +152,4 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
         _output.WriteLine("Unsubscribed successfully");
     }
 }
+
