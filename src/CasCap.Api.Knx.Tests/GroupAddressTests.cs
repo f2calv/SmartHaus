@@ -1,9 +1,8 @@
 namespace CasCap.Tests;
 
 /// <summary>
-/// Integration tests for KNX group address parsing and lookup.
+/// Unit and integration tests for KNX group address parsing and lookup.
 /// </summary>
-[Trait("Category", "Integration")]
 public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]
@@ -29,6 +28,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task ParseGroupAddressNamingConvention()
     {
         var address_errors = new List<KnxGroupAddressParsed>();
@@ -81,6 +81,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task DeserializedGroupAddressCountMatchesXml()
     {
         var path = _serviceProvider.GetRequiredService<IOptions<KnxConfig>>().Value.GroupAddressXmlFilePath;
@@ -98,6 +99,7 @@ public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
     }
 
     [Fact]
+    [Trait("Category", "Integration")]
     public async Task GroupedAddressesContainAllChildren()
     {
         var gaLookup = await _knxGroupAddressLookupSvc.GetLookup(TestContext.Current.CancellationToken);
