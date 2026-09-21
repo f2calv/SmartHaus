@@ -506,7 +506,7 @@ Configured in `Directory.Build.props`: `IDE1006`, `IDE0042`, `CS1574`, `NETSDK12
 
 1. **lint** — Runs the repository pre-commit hooks
 2. **versioning** — Calculates the semantic version without publishing on pull requests
-3. **build** — Builds `SmartHaus.Release.slnx` and runs credential-free `CasCap.App.Tests`, excluding `Category=Integration`
+3. **build** — Builds `SmartHaus.Release.slnx` and runs its credential-free tests, excluding `Category=Integration`
 4. **release** — Creates the GitHub release from the validated version on `main`
 
 Live device, speech-provider, and AI-agent tests carry `Category=Integration` and are not pull-request gates.
@@ -547,7 +547,7 @@ Additional workflows:
 
 - [ ] `dotnet restore` succeeds
 - [ ] `dotnet build SmartHaus.Debug.slnx --no-restore` completes with 0 errors
-- [ ] Credential-free `CasCap.App.Tests` pass with `Category=Integration` excluded
+- [ ] Credential-free solution tests pass with `Category=Integration` excluded
 - [ ] Docker dependencies running (`docker compose up`)
 - [ ] Public API has XML documentation
 - [ ] Properties separated by blank lines

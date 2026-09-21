@@ -36,8 +36,7 @@ jobs:
     with:
       version: ${{ needs.versioning.outputs.version }}
       solution-name: SmartHaus.Release.slnx
-      test-solution-name: src/CasCap.App.Tests/CasCap.App.Tests.csproj
-      dotnet-test-args: '["--filter-not-trait", "Category=Integration"]'
+      dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--ignore-exit-code", "8"]'
 
   release:
     needs: [lint, versioning, build]
