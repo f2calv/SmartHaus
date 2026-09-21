@@ -1,5 +1,7 @@
 # SmartHaus — IoT & Agentic Smart Home on the Edge
 
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=f2calv_SmartHaus&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=f2calv_SmartHaus)
+
 [cascap.api.buderus-badge]: https://img.shields.io/nuget/v/CasCap.Api.Buderus?color=blue
 [cascap.api.buderus-url]: https://nuget.org/packages/CasCap.Api.Buderus
 [cascap.api.buderus.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Buderus.Sinks?color=blue
