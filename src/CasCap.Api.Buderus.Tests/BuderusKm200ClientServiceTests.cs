@@ -177,5 +177,15 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         _output.WriteLine("Correctly rejected write to read-only datapoint");
     }
 
+    [Theory]
+    [InlineData("../admin")]
+    [InlineData("/dhwCircuits/../admin")]
+    [InlineData("/")]
+    public async Task SetDataPoint_InvalidPath_ThrowsArgumentException(string datapointId)
+    {
+        await Assert.ThrowsAsync<ArgumentException>(() =>
+            svc.SetDataPoint(datapointId, "50", TestContext.Current.CancellationToken));
+    }
+
     #endregion
 }

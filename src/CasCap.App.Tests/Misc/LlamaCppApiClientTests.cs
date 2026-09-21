@@ -1,4 +1,4 @@
-using CasCap.Extensions;
+﻿using CasCap.Extensions;
 using Microsoft.Extensions.AI;
 
 namespace CasCap.Tests.Misc;
@@ -21,7 +21,7 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
 {
     private const string DefaultProviderKey = "EdgeGpu";
 
-    private readonly string _filePath = @"C:\temp\wine.png";
+    private readonly string _filePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyPictures), "wine.png");
     private readonly string _fileMimeType = "image/png";
 
     private (ProviderConfig provider, AgentConfig agentConfig) CreateTestConfig()
@@ -98,11 +98,11 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
     }
 
     // TODO: re-enable once the test image is committed. The fixture depends on an uncommitted
-    // C:\temp\wine.png, so it fails on every machine that does not happen to have that file.
+    // image in the current user's Pictures directory, so it is unavailable in CI.
     // Commit a small image under the test project and copy it to the output directory instead,
     // then drop the Skip and the absolute path. Its sibling in AIAgentExtensionsTests exercises
     // the same multimodal path and self-skips, so nothing is currently unguarded by this.
-    [Fact(Skip = @"Depends on an uncommitted image at C:\temp\wine.png; see the TODO above.")]
+    [Fact(Skip = "Depends on an uncommitted image fixture; see the TODO above.")]
     public async Task GetResponseAsync_WithFileContent_ReturnsChatResponse()
     {
         if (!File.Exists(_filePath))
@@ -140,4 +140,3 @@ public class LlamaCppApiClientTests(ITestOutputHelper output) : TestBase(output)
         }
     }
 }
-

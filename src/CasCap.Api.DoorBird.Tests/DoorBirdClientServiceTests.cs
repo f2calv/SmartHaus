@@ -1,4 +1,4 @@
-namespace CasCap.Tests;
+﻿namespace CasCap.Tests;
 
 /// <summary>
 /// Integration tests for <see cref="DoorBirdClientService"/> against a real DoorBird device.
@@ -140,7 +140,7 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
     [Fact]
     public async Task SubscribeAndUnsubscribe_RoundTrip()
     {
-        var testUrl = "http://192.168.1.100:9999/test-doorbird-callback";
+        var testUrl = new UriBuilder(Uri.UriSchemeHttp, "example.invalid", 9999, "test-doorbird-callback").Uri.AbsoluteUri;
         var eventType = "doorbell";
 
         var subscribed = await svc.SubscribeNotification(testUrl, eventType);
@@ -152,4 +152,3 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
         _output.WriteLine("Unsubscribed successfully");
     }
 }
-
