@@ -64,8 +64,10 @@ public static class EdgeHardwareServiceCollectionExtensions
                 if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
                     services.AddSingleton<ICpuTemperatureProvider, LibreHardwareCpuTemperatureService>();
                 else
-#endif
                     services.AddSingleton<ICpuTemperatureProvider, CpuTemperatureService>();
+#else
+                services.AddSingleton<ICpuTemperatureProvider, CpuTemperatureService>();
+#endif
             }
 
             // Auto-detect NVIDIA GPU via ILGPU
