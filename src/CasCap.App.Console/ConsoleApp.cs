@@ -892,10 +892,10 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
 
     /// <summary>JSON serializer options for rendering middleware diagnostics.</summary>
     private static readonly JsonSerializerOptions s_jsonOptions = new()
-        {
-            WriteIndented = true,
-            Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-        };
+    {
+        WriteIndented = true,
+        Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+    };
 
     /// <summary>
     /// Appends a renderable to the middleware diagnostic buffer for display in the summary right column.

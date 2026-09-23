@@ -69,4 +69,4 @@ public sealed class BusController(IKnxQueryService knxQuerySvc) : ControllerBase
         return result is not null ? TypedResults.Ok(result) : TypedResults.NotFound();
     }
 
-    }
+}

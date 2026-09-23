@@ -26,6 +26,6 @@ public static class FroniusSinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<FroniusConfig>();
         services.AddEventSinks<FroniusEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(FroniusSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(FroniusSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

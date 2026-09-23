@@ -27,6 +27,6 @@ public static class KnxSinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<KnxConfig>();
         services.AddEventSinks<KnxEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(KnxSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(KnxSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

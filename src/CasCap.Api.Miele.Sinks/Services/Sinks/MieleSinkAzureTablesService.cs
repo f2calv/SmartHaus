@@ -12,15 +12,11 @@ public sealed partial class MieleSinkAzureTablesService : IEventSink<MieleEvent>
     private readonly TableClient _snapshotTableClient;
     private const string SnapshotPartitionKey = "summary";
 
-    private readonly TimeProvider _timeProvider;
-
     /// <summary>Initializes a new instance.</summary>
     public MieleSinkAzureTablesService(ILogger<MieleSinkAzureTablesService> logger,
         IOptions<AzureAuthConfig> azureAuthConfig,
-        IOptions<MieleConfig> mieleConfig,
-        TimeProvider timeProvider)
+        IOptions<MieleConfig> mieleConfig)
     {
-        _timeProvider = timeProvider;
         _logger = logger;
         var config = mieleConfig.Value;
         var sinkSettings = config.Sinks.AvailableSinks["AzureTables"];

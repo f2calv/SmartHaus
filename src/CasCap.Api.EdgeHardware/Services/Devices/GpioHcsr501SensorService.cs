@@ -8,17 +8,14 @@ namespace CasCap.Services;
 /// </summary>
 public class GpioHcsr501SensorService : IMotionDetectionDevice
 {
-    private readonly ILogger _logger;
     private readonly EdgeHardwareConfig _edgeHardwareConfig;
 
     private readonly Hcsr501 _sensor;
 
     /// <summary>Initializes a new instance of the <see cref="GpioHcsr501SensorService"/> class.</summary>
-    /// <param name="logger">Logger instance.</param>
     /// <param name="edgeHardwareConfig">Edge hardware configuration.</param>
-    public GpioHcsr501SensorService(ILogger<GpioHcsr501SensorService> logger, IOptions<EdgeHardwareConfig> edgeHardwareConfig)
+    public GpioHcsr501SensorService(IOptions<EdgeHardwareConfig> edgeHardwareConfig)
     {
-        _logger = logger;
         _edgeHardwareConfig = edgeHardwareConfig.Value;
 
         //https://github.com/dotnet/iot/tree/master/src/devices/Hcsr501

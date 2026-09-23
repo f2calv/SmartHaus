@@ -16,6 +16,6 @@ public static class WizSinksServiceCollectionExtensions
         services.AddWiz(configuration, configure);
         var config = configuration.GetCasCapConfiguration<WizConfig>();
         services.AddEventSinks<WizEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(WizSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(WizSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

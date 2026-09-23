@@ -46,5 +46,7 @@ public sealed partial class MieleSinkMemoryService(ILogger<MieleSinkMemoryServic
         foreach (var evt in _latestByDevice.Values.Take(limit))
             yield return evt;
     }
+
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing event for device {DeviceId}")]
-    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);}
+    private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
+}

@@ -21,11 +21,6 @@ namespace CasCap.Tests.Api;
 /// </remarks>
 public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
 {
-    private static readonly JsonSerializerOptions _jsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-    };
-
     /// <summary>
     /// <c>GET /api/system</c> returns 200 and an <see cref="AppConfig"/> payload when
     /// called with the authorized client.

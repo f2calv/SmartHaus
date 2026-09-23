@@ -47,6 +47,6 @@ public static class DoorBirdSinksServiceCollectionExtensions
         }
 
         services.AddEventSinks<DoorBirdEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(DoorBirdSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(DoorBirdSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }
