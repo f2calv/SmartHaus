@@ -20,6 +20,30 @@ jobs:
     permissions:
       contents: read
 
+  helm:
+    name: helm (${{ matrix.chart }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        chart:
+          - charts/smarthaus
+          - charts/dashboards
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: azure/setup-helm@v5
+        with:
+          version: 3.20.2
+
+      - name: helm dependency build ${{ matrix.chart }}
+        run: helm dependency build "${{ matrix.chart }}"
+
+      - name: helm lint ${{ matrix.chart }}
+        run: helm lint "${{ matrix.chart }}"
+
   versioning:
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     permissions:
@@ -39,7 +63,7 @@ jobs:
       dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--ignore-exit-code", "8"]'
 
   release:
-    needs: [lint, versioning, build]
+    needs: [lint, helm, versioning, build]
     if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
