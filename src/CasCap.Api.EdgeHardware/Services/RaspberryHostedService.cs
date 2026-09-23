@@ -6,8 +6,6 @@ public class RaspberryHostedService : IHostedService
     /// <summary>Logger instance.</summary>
     protected readonly ILogger _logger;
 
-    private readonly IHostEnvironment _env;
-
     /// <summary>Camera device.</summary>
     protected readonly ICameraDevice _cameraDev;
 
@@ -19,19 +17,16 @@ public class RaspberryHostedService : IHostedService
 
     /// <summary>Initializes a new instance of the <see cref="RaspberryHostedService"/> class.</summary>
     /// <param name="logger">Logger instance.</param>
-    /// <param name="env">Host environment.</param>
     /// <param name="cameraDev">Camera device.</param>
     /// <param name="motionDetection">Motion detection device.</param>
     /// <param name="blobStorage">Blob storage service.</param>
     public RaspberryHostedService(ILogger<RaspberryHostedService> logger,
-        IHostEnvironment env,
         ICameraDevice cameraDev,
         IMotionDetectionDevice motionDetection,
         IBlobStorage blobStorage
         )
     {
         _logger = logger;
-        _env = env;
         _cameraDev = cameraDev;
         _motionDetection = motionDetection;
         _motionDetection.MotionDetectedEvent += OnMotionDetectedEvent;

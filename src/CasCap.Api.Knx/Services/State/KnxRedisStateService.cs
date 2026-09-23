@@ -87,21 +87,6 @@ public sealed class KnxRedisStateService : IKnxState
         return hs.ToDictionary(k => k.Name.ToString(), v => v.Value.ToString());
     }
 
-    /// <summary>
-    /// Sets a string key with an expiry, used for blocking/debouncing.
-    /// </summary>
-    private async Task SetBlock(string key, string value, TimeSpan expiry)
-        => _ = await _remoteCache.Db.StringSetAsync(key, value, expiry, flags: CommandFlags.FireAndForget).ConfigureAwait(false);
-
-    /// <summary>
-    /// Checks if a string key exists, used for blocking/debouncing.
-    /// </summary>
-    private async Task<bool> IsBlocked(string key)
-    {
-        var result = await _remoteCache.Db.StringGetAsync(key).ConfigureAwait(false);
-        return result.HasValue;
-    }
-
     /// <inheritdoc/>
     public async ValueTask<State?> GetKnxState(string groupAddressName, CancellationToken cancellationToken = default)
     {

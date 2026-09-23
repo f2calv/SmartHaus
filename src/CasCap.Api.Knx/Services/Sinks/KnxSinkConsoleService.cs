@@ -16,12 +16,11 @@ public sealed partial class KnxSinkConsoleService(ILogger<KnxSinkConsoleService>
             || @event.Kga.Name.Contains(config.Value.BusLoggingGroupAddressFilter, StringComparison.OrdinalIgnoreCase)
             ? LogLevel.Information
             : LogLevel.Trace;
-        logger.Log(logLevel,"{ClassName} telegram from '{IndividualAddress}' to '{GroupAddress}' ({GroupAddressName}, '{Value}{ValueLabel}')",
+        logger.Log(logLevel, "{ClassName} telegram from '{IndividualAddress}' to '{GroupAddress}' ({GroupAddressName}, '{Value}{ValueLabel}')",
             nameof(KnxSinkConsoleService), @event.Args.SourceAddress, @event.Kga.GroupAddress, @event.Kga.Name, @event.Value,
             string.IsNullOrWhiteSpace(@event.ValueLabel) ? string.Empty : $" ({@event.ValueLabel})");
         return Task.CompletedTask;
     }
-
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} processing telegram for {GroupAddressName}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string groupAddressName);

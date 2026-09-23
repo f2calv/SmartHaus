@@ -29,7 +29,7 @@ public static class EdgeHardwareSinksServiceCollectionExtensions
         if (config?.Sinks is not null)
         {
             services.AddEventSinks<EdgeHardwareEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
-                [typeof(EdgeHardwareSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+                [typeof(EdgeHardwareSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
         }
 
         return gpuEnabled;

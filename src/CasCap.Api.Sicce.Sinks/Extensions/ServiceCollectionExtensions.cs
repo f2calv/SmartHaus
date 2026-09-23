@@ -26,6 +26,6 @@ public static class SicceSinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<SicceConfig>();
         services.AddEventSinks<SicceEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(SicceSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(SicceSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

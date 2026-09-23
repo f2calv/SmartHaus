@@ -26,6 +26,6 @@ public static class ShellySinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<ShellyConfig>();
         services.AddEventSinks<ShellyEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(ShellySinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(ShellySinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

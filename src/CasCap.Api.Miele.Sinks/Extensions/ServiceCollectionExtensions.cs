@@ -16,6 +16,6 @@ public static class MieleSinksServiceCollectionExtensions
         services.AddMiele(configuration, configure);
         var config = configuration.GetCasCapConfiguration<MieleConfig>();
         services.AddEventSinks<MieleEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(MieleSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(MieleSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

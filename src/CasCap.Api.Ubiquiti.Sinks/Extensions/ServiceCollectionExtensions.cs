@@ -30,6 +30,6 @@ public static class UbiquitiSinksServiceCollectionExtensions
         var config = configuration.GetCasCapConfiguration<UbiquitiConfig>();
 
         services.AddEventSinks<UbiquitiEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(UbiquitiSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(UbiquitiSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

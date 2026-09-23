@@ -26,6 +26,6 @@ public static class BuderusSinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<BuderusConfig>();
         services.AddEventSinks<BuderusEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            [typeof(BuderusSinksServiceCollectionExtensions).Assembly, ..additionalSinkAssemblies]);
+            [typeof(BuderusSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }
