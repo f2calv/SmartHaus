@@ -43,7 +43,7 @@ These sinks are registered in the feature pods and forward domain events to the 
 
 | Service | Description |
 | --- | --- |
-| `CommunicationsBgService` | Gateway agent — consumes the comms Redis Stream and incoming Signal messages, routes both through CommsAgent, and relays responses to the Signal notification group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts debug notifications to `PhoneNumberDebug` for delegation events, completion events, and session compaction events |
+| `CommunicationsBgService` | Gateway agent — consumes the comms Redis Stream and incoming Signal messages, routes both through CommsAgent, and relays responses to the Signal notification group. Voice attachments are transcribed through `IVoiceTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts debug notifications to `PhoneNumberDebug` for delegation events, completion events, and session compaction events |
 | `MediaBgService` | Consumes the media Redis Stream (`MediaConfig.StreamKey`), routes media to the domain agent configured in `MediaConfig.SourceAgentMap` (e.g. DoorBird → SecurityAgent), and posts analysis findings back to the comms stream. Runs in the Comms pod alongside `CommunicationsBgService` |
 | `HausHubSinksBgService` | Initialises the hub-side `IEventSink<HubEvent>` implementations |
 | `FroniusSymoSignalRClientService` | Connects to the hub as a SignalR client |
@@ -167,7 +167,7 @@ Each agent's orchestration settings live in a `Settings` sub-section under the c
 When a user sends an audio clip (e.g. a voice message) via Signal, `CommunicationsBgService` intercepts it before the comms agent sees it:
 
 1. **Download** — The attachment bytes and MIME type (`audio/aac`, `audio/ogg`, etc.) are downloaded from signal-cli. Every attachment identifier on the envelope is then deleted, whether or not it was selected.
-2. **Validate** — `VoiceMessageTranscriptionService` checks the declared media type against the payload's own file signature and enforces the configured compressed-size, decoded-size and duration limits. Nothing is transmitted until those pass.
+2. **Validate** — the default `IVoiceTranscriptionService` implementation checks the declared media type against the payload's own file signature and enforces the configured compressed-size, decoded-size and duration limits. Nothing is transmitted until those pass.
 3. **Normalise** — Audio that is not already 16 kHz mono signed 16-bit PCM WAV is piped through `ffmpeg` (stdin to stdout), so it never touches the file system.
 4. **Transcribe** — The WAV is handed to an `ISpeechToTextClient`, the `Microsoft.Extensions.AI` abstraction. Which implementation runs is chosen by `CasCap:SpeechToTextConfig:Provider`; see [Speech-to-text providers](#speech-to-text-providers) below. Switching provider is a configuration change, not a code change.
 5. **Inject** — Only the normalised transcript reaches CommsAgent, which processes it as ordinary text. Raw audio is never forwarded, and a failed transcription produces one concise reply with no agent turn and nothing persisted to the conversation.
