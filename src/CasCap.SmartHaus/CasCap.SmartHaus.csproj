@@ -38,6 +38,7 @@
     <PackageReference Include="CasCap.Api.Azure.CognitiveServices" />
     <PackageReference Include="CasCap.Api.Azure.Storage" />
     <PackageReference Include="CasCap.Api.SignalCli" />
+    <PackageReference Include="CasCap.Api.Voice" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">

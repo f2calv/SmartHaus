@@ -22,6 +22,8 @@
 [cascap.api.signalcli-url]: https://nuget.org/packages/CasCap.Api.SignalCli
 [cascap.api.signalcli.aspnetcore-badge]: https://img.shields.io/nuget/v/CasCap.Api.SignalCli.AspNetCore?color=blue
 [cascap.api.signalcli.aspnetcore-url]: https://nuget.org/packages/CasCap.Api.SignalCli.AspNetCore
+[cascap.api.voice-badge]: https://img.shields.io/nuget/v/CasCap.Api.Voice?color=blue
+[cascap.api.voice-url]: https://nuget.org/packages/CasCap.Api.Voice
 
 > **Early proof-of-concept / first public release.** This project is under active development — expect rough edges, breaking changes, and missing documentation. Bugs are expected and the project is **fully unsupported**. Contributions and feedback are welcome, but please set expectations accordingly.
 >
@@ -400,6 +402,7 @@ Standalone device API libraries published from this repository. *Some libraries 
 | CasCap.Api.Knx.Sinks | [![Nuget][cascap.api.knx.sinks-badge]][cascap.api.knx.sinks-url] |
 | CasCap.Api.SignalCli | [![Nuget][cascap.api.signalcli-badge]][cascap.api.signalcli-url] |
 | CasCap.Api.SignalCli.AspNetCore | [![Nuget][cascap.api.signalcli.aspnetcore-badge]][cascap.api.signalcli.aspnetcore-url] |
+| CasCap.Api.Voice | [![Nuget][cascap.api.voice-badge]][cascap.api.voice-url] |
 
 ## Prerequisites
 

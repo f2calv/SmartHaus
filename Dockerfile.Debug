@@ -36,6 +36,7 @@ RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
 COPY deps/CasCap.Common /CasCap.Common
 COPY deps/CasCap.Api.Azure /CasCap.Api.Azure
 COPY deps/CasCap.Api.SignalCli /CasCap.Api.SignalCli
+COPY deps/CasCap.Api.Voice /CasCap.Api.Voice
 COPY . .
 
 # buildx injects TARGETARCH/TARGETVARIANT automatically:

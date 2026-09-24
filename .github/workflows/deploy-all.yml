@@ -11,6 +11,14 @@ on:
         type: string
         description: Branch/tag CasCap.Api.Azure (empty=Release build)
         default:
+      cascap-api-signalcli-ref:
+        type: string
+        description: Branch/tag CasCap.Api.SignalCli (empty=Release build)
+        default:
+      cascap-api-voice-ref:
+        type: string
+        description: Branch/tag CasCap.Api.Voice (empty=Release build)
+        default:
       push-nuget:
         type: boolean
         description: Push NuGet packages?
@@ -32,13 +40,17 @@ jobs:
     needs: versioning
     with:
       version: ${{ needs.versioning.outputs.version }}
-      configuration: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'Debug' || 'Release' }}
-      solution-name: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'SmartHaus.Debug.slnx' || 'SmartHaus.Release.slnx' }}
+      configuration: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '' || inputs.cascap-api-voice-ref != '') && 'Debug' || 'Release' }}
+      solution-name: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '' || inputs.cascap-api-voice-ref != '') && 'SmartHaus.Debug.slnx' || 'SmartHaus.Release.slnx' }}
       extra-repos: |
         [
           ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"../CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
           ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
           ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"../CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
+          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && inputs.cascap-api-signalcli-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-signalcli-ref != '' && format('{{"repo":"f2calv/CasCap.Api.SignalCli","ref":"{0}","path":"../CasCap.Api.SignalCli"}}', inputs.cascap-api-signalcli-ref) || '' }}
+          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '') && inputs.cascap-api-voice-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-voice-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Voice","ref":"{0}","path":"../CasCap.Api.Voice"}}', inputs.cascap-api-voice-ref) || '' }}
         ]
 
   nuget:
@@ -68,14 +80,18 @@ jobs:
     with:
       registry: ghcr.io/${{ github.repository_owner }}
       tag: ${{ needs.versioning.outputs.version }}
-      dockerfile: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && 'Dockerfile.Debug' || 'Dockerfile' }}
-      args: --build-arg WORKLOAD=CasCap.App.Server ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && '--build-arg CONFIGURATION=Debug' || '' }}
+      dockerfile: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '' || inputs.cascap-api-voice-ref != '') && 'Dockerfile.Debug' || 'Dockerfile' }}
+      args: --build-arg WORKLOAD=CasCap.App.Server ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '' || inputs.cascap-api-voice-ref != '') && '--build-arg CONFIGURATION=Debug' || '' }}
       push-image: ${{ github.actor != 'copilot[bot]' }}
       extra-repos: |
         [
           ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"deps/CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
           ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
           ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"deps/CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
+          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && inputs.cascap-api-signalcli-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-signalcli-ref != '' && format('{{"repo":"f2calv/CasCap.Api.SignalCli","ref":"{0}","path":"deps/CasCap.Api.SignalCli"}}', inputs.cascap-api-signalcli-ref) || '' }}
+          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-signalcli-ref != '') && inputs.cascap-api-voice-ref != '' && ',' || '' }}
+          ${{ inputs.cascap-api-voice-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Voice","ref":"{0}","path":"deps/CasCap.Api.Voice"}}', inputs.cascap-api-voice-ref) || '' }}
         ]
 
   pkg-chart-smarthaus:
