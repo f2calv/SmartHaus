@@ -18,6 +18,7 @@
   </Folder>
   <Folder Name="/CasCap.Api.Azure/">
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Auth/CasCap.Api.Azure.Auth.csproj" />
+    <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.CognitiveServices/CasCap.Api.Azure.CognitiveServices.csproj" />
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Storage/CasCap.Api.Azure.Storage.csproj" />
   </Folder>
   <Folder Name="/CasCap.Api.SignalCli/">
