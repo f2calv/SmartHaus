@@ -21,7 +21,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.Disabled);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -34,7 +34,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.MatchInbound);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice: false,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice: false,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -47,12 +47,13 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.MatchInbound);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice: true,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice: true,
             TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
-        Assert.StartsWith($"data:audio/ogg;filename={VoiceReplySynthesisService.AttachmentFileName};base64,",
-            result, StringComparison.Ordinal);
+        Assert.Equal("audio/ogg", result.MediaType);
+        Assert.Equal(VoiceReplySynthesisService.AttachmentFileName, result.FileName);
+        Assert.NotEmpty(result.Audio.ToArray());
         Assert.Equal(_reply, tts.LastText);
     }
 
@@ -62,7 +63,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.Always);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice: false,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice: false,
             TestContext.Current.CancellationToken);
 
         Assert.NotNull(result);
@@ -75,7 +76,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.Always, maxCharacters: 10);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(new string('a', 11), inboundWasVoice: true,
+        var result = await svc.TrySynthesizeAsync(new string('a', 11), inboundWasVoice: true,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -91,7 +92,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient();
         var svc = CreateService(tts, VoiceReplyMode.Always);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(text, inboundWasVoice: true,
+        var result = await svc.TrySynthesizeAsync(text, inboundWasVoice: true,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -105,7 +106,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient { Failure = new HttpRequestException("backend down") };
         var svc = CreateService(tts, VoiceReplyMode.Always);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice: true,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice: true,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);
@@ -117,7 +118,7 @@ public class VoiceReplySynthesisServiceTests
         var tts = new FakeTextToSpeechClient { Audio = [] };
         var svc = CreateService(tts, VoiceReplyMode.Always);
 
-        var result = await svc.TrySynthesizeAttachmentAsync(_reply, inboundWasVoice: true,
+        var result = await svc.TrySynthesizeAsync(_reply, inboundWasVoice: true,
             TestContext.Current.CancellationToken);
 
         Assert.Null(result);

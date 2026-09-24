@@ -38,6 +38,10 @@ public sealed record CommsAgentConfig : IAppConfig
     /// </remarks>
     public string ProfileName { get; init; } = "Smart Haus";
 
+    /// <summary>Whether to echo a successful voice transcript to the configured debug recipient.</summary>
+    /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
+    public bool EchoTranscriptToDebugChat { get; init; }
+
     /// <summary>
     /// Whether to send a separate status message (e.g. "🔀 Consulting SecurityAgent…") to the
     /// Signal group when the agent delegates to a sub-agent.

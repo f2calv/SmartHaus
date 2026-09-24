@@ -69,7 +69,7 @@ public sealed class CommsDebugNotifier(
     /// <param name="result">The successful transcription, carrying the transcript and stage timings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
-    /// Only called when <see cref="SpeechToTextConfig.EchoTranscriptToDebugChat"/> is enabled. The
+    /// Only called when <see cref="CommsAgentConfig.EchoTranscriptToDebugChat"/> is enabled. The
     /// transcript goes to the debug recipient alone and never to a log sink or telemetry.
     /// </remarks>
     public async Task SendVoiceTranscriptDebugAsync(VoiceTranscriptionResult result, CancellationToken cancellationToken)

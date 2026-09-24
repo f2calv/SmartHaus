@@ -133,6 +133,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             FlushTimeoutMs = 50,
             ReplyQueueCapacity = replyQueueCapacity,
             StreamSendThrottlingEnabled = false,
+            EchoTranscriptToDebugChat = echoTranscriptToDebugChat,
         });
         var aiConfig = Options.Create(BuildAIConfig());
         var edgeHardwareConfig = Options.Create(new EdgeHardwareConfig
@@ -146,7 +147,6 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         var speechToTextConfig = Options.Create(new SpeechToTextConfig
         {
             Mode = voiceMode,
-            EchoTranscriptToDebugChat = echoTranscriptToDebugChat,
         });
 
         var services = new ServiceCollection();

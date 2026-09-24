@@ -39,7 +39,6 @@ public static class HausServiceCollectionExtensions
     {
         builder.Services.AddCasCapConfiguration<CommsAgentConfig>();
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
-        builder.Services.AddCasCapConfiguration<SpeechToTextConfig>();
         builder.Services.AddMediaStreamSink();
         builder.Services.AddSignalCli(builder.Configuration);
         builder.Services.AddMessagingMcp(
@@ -63,116 +62,6 @@ public static class HausServiceCollectionExtensions
             builder.Services.AddSingleton<IBgFeature, CommunicationsBgService>();
             builder.Services.AddSingleton<IBgFeature, MediaBgService>();
         }
-    }
-
-    /// <summary>
-    /// Registers <see cref="SpeechToTextConfig"/>, the named <see cref="HttpClient"/> used to reach
-    /// the transcription backend, the <see cref="WhisperAsrSpeechToTextClient"/> adapter and the
-    /// bounded <see cref="VoiceMessageTranscriptionService"/> policy.
-    /// </summary>
-    /// <remarks>
-    /// Not called by <see cref="AddComms"/>; the Signal receive path is wired separately so voice
-    /// support can be enabled independently of the text pipeline.
-    /// </remarks>
-    /// <param name="services">The service collection.</param>
-    public static void AddSpeechToText(this IServiceCollection services)
-    {
-        services.AddCasCapConfiguration<SpeechToTextConfig>();
-        services.AddHttpClient(WhisperAsrSpeechToTextClient.HttpClientName, (sp, client) =>
-        {
-            //The adapter builds an absolute request URI, so no BaseAddress is set here.
-            client.Timeout = TimeSpan.FromMilliseconds(
-                sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.TimeoutMs);
-        });
-        services.AddHttpClient(WhisperCppSpeechToTextClient.HttpClientName, (sp, client) =>
-        {
-            client.Timeout = TimeSpan.FromMilliseconds(
-                sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.TimeoutMs);
-        });
-        //Resolved only when Azure is the selected provider, so the other providers need no Azure
-        //  endpoint and no credential.
-        services.AddAzureSpeechService();
-#pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
-        services.TryAddSingleton<ISpeechToTextClient>(sp =>
-            sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.Provider switch
-            {
-                SpeechToTextProvider.WhisperCpp => ActivatorUtilities.CreateInstance<WhisperCppSpeechToTextClient>(sp),
-                SpeechToTextProvider.Azure => ActivatorUtilities.CreateInstance<AzureSpeechToTextClient>(sp),
-                _ => ActivatorUtilities.CreateInstance<WhisperAsrSpeechToTextClient>(sp),
-            });
-#pragma warning restore MEAI001
-        services.TryAddSingleton<VoiceTranscriptionMetrics>();
-        services.TryAddSingleton<VoiceMessageTranscriptionService>();
-    }
-
-    /// <summary>
-    /// Registers <see cref="TextToSpeechConfig"/>, the named <see cref="HttpClient"/> used by the
-    /// OpenAI-compatible route, and the <see cref="ITextToSpeechClient"/> adapter selected by
-    /// <see cref="TextToSpeechConfig.Provider"/>.
-    /// </summary>
-    /// <remarks>
-    /// Registration is unconditional; the configured <see cref="VoiceReplyMode"/> decides whether a
-    /// spoken reply is ever produced. Provider selection and its rationale are recorded in
-    /// <see href="https://github.com/f2calv/SmartHaus/issues/82">issue 82</see>.
-    /// </remarks>
-    /// <param name="services">The service collection.</param>
-    public static void AddTextToSpeech(this IServiceCollection services)
-    {
-        services.AddCasCapConfiguration<TextToSpeechConfig>();
-        services.AddAzureSpeechService();
-        services.AddHttpClient(AzureOpenAiTextToSpeechClient.HttpClientName, (sp, client) =>
-        {
-            client.Timeout = TimeSpan.FromMilliseconds(
-                sp.GetRequiredService<IOptions<TextToSpeechConfig>>().Value.TimeoutMs);
-        });
-#pragma warning disable MEAI001 // ITextToSpeechClient is experimental; see AzureSpeechTextToSpeechClient.
-        services.TryAddSingleton<ITextToSpeechClient>(sp =>
-        {
-            var provider = sp.GetRequiredService<IOptions<TextToSpeechConfig>>().Value.Provider;
-            return provider switch
-            {
-                TextToSpeechProvider.AzureOpenAi =>
-                    ActivatorUtilities.CreateInstance<AzureOpenAiTextToSpeechClient>(sp),
-                TextToSpeechProvider.Piper =>
-                    ActivatorUtilities.CreateInstance<PiperTextToSpeechClient>(sp),
-                //Self-hosted and unbuilt; the enum documents what each one still needs.
-                TextToSpeechProvider.AzureSpeechContainer
-                    or TextToSpeechProvider.Kokoro or TextToSpeechProvider.CoquiXtts =>
-                    throw new NotImplementedException(
-                        $"{nameof(TextToSpeechProvider)}.{provider} is not implemented; see the remarks on that member."),
-                _ => ActivatorUtilities.CreateInstance<AzureSpeechTextToSpeechClient>(sp),
-            };
-        });
-#pragma warning restore MEAI001
-        services.TryAddSingleton<VoiceReplySynthesisService>();
-    }
-
-    /// <summary>
-    /// Registers the shared <see cref="ISpeechService"/> used by the Azure transcription and
-    /// synthesis adapters.
-    /// </summary>
-    /// <remarks>
-    /// One Azure AI Speech account normally serves both directions, but either may be Azure while the
-    /// other is self-hosted, so the endpoint is taken from whichever section supplies one. Resolution
-    /// is deferred, so a deployment using neither Azure provider needs no endpoint and no credential.
-    /// </remarks>
-    /// <param name="services">The service collection.</param>
-    private static void AddAzureSpeechService(this IServiceCollection services)
-    {
-        services.TryAddSingleton<ISpeechService>(sp =>
-        {
-            var endpoint = sp.GetRequiredService<IOptions<SpeechToTextConfig>>().Value.AzureEndpoint
-                ?? sp.GetRequiredService<IOptions<TextToSpeechConfig>>().Value.AzureSpeechEndpoint
-                ?? throw new InvalidOperationException(
-                    $"{nameof(SpeechToTextConfig)}.{nameof(SpeechToTextConfig.AzureEndpoint)} or " +
-                    $"{nameof(TextToSpeechConfig)}.{nameof(TextToSpeechConfig.AzureSpeechEndpoint)} is required when " +
-                    "an Azure AI Speech provider is selected.");
-            var credential = sp.GetRequiredService<IOptions<AzureAuthConfig>>().Value.TokenCredential
-                ?? throw new InvalidOperationException(
-                    $"{nameof(AzureAuthConfig)}.{nameof(AzureAuthConfig.TokenCredential)} is required when " +
-                    "an Azure AI Speech provider is selected.");
-            return new SpeechService(new Uri(endpoint), credential);
-        });
     }
 
     /// <summary>

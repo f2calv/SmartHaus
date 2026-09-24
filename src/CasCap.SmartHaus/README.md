@@ -109,6 +109,12 @@ These sinks are registered in the feature pods and forward domain events to the 
 | `Dhw1AlertHysteresis` | `double` | `1.0` | Hysteresis in °C for the DHW1 setpoint alert |
 | `Dhw1AlertCooldownMs` | `int` | `3600000` | Minimum cooldown in milliseconds between consecutive DHW1 setpoint alerts |
 
+### Voice configuration (`CasCap.Api.Voice`)
+
+Speech-to-text and text-to-speech processing is owned by the adjacent `CasCap.Api.Voice` library and
+registered through its DI extensions. SmartHaus supplies the application configuration and retains
+only communications orchestration such as `EchoTranscriptToDebugChat`.
+
 ### `SpeechToTextConfig` (`CasCap:SpeechToTextConfig`)
 
 Every setting has a safe default, so the section may be omitted entirely. The provider-specific
@@ -129,7 +135,6 @@ endpoints are nullable and are read only when that provider is selected.
 | `MaxDecodedBytes` | `int` | `19200000` | Largest accepted decoded WAV, about 10 minutes of 16 kHz mono PCM |
 | `MaxDurationSeconds` | `int` | `300` | Longest accepted recording |
 | `FfmpegPath` | `string` | `ffmpeg` | ffmpeg executable used to normalise non-WAV audio |
-| `EchoTranscriptToDebugChat` | `bool` | `false` | Echoes the transcript to the debug recipient before the agent turn. A voice message may come from another household member, so enable only on a recipient you control |
 
 ## Agent Integration — Signal Messenger
 

@@ -162,7 +162,7 @@ public sealed partial class CommunicationsBgService
         if (voice is { TranscriptAvailable: true, Text: { } transcript })
         {
             prompt = transcript;
-            if (_speechToTextConfig.EchoTranscriptToDebugChat)
+            if (_commsAgentConfig.EchoTranscriptToDebugChat)
                 await _debugNotifier.SendVoiceTranscriptDebugAsync(voice, cancellationToken);
         }
 
@@ -456,10 +456,14 @@ public sealed partial class CommunicationsBgService
                         base64Attachments = [.. base64Attachments ?? [], .. request.ExtraBase64Attachments];
 
                     // The agent's answer is spoken, never the diagnostic footer appended above.
-                    var spoken = await _voiceReplySvc.TrySynthesizeAttachmentAsync(
+                    var spoken = await _voiceReplySvc.TrySynthesizeAsync(
                         agentResponse, request.InboundWasVoice, cancellationToken);
                     if (spoken is not null)
-                        base64Attachments = [.. base64Attachments ?? [], spoken];
+                    {
+                        var dataUri = $"data:{spoken.MediaType};filename={spoken.FileName};base64," +
+                            Convert.ToBase64String(spoken.Audio.Span);
+                        base64Attachments = [.. base64Attachments ?? [], dataUri];
+                    }
 
                     var reply = new SignalMessageRequest
                     {
