@@ -262,7 +262,7 @@ public sealed partial class CommunicationsBgService
 
         // Raw audio never reaches the agent: it is replaced by the normalised transcript, or the
         // turn is abandoned. Shadow transcribes for measurement but stops short of the agent.
-        var result = await _transcriptionSvc.TranscribeAsync(content, attachment.ContentType!, cancellationToken);
+        var result = await _transcriptionSvc.Transcribe(content, attachment.ContentType!, cancellationToken);
         LogVoiceTranscription(_logger, nameof(CommunicationsBgService), result.Outcome.ToString(),
             result.Text?.Length ?? 0);
 
