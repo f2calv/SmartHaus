@@ -29,7 +29,7 @@ ARG CONFIGURATION=Release
 COPY --parents src/**/*.csproj ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj" -p:Configuration="$CONFIGURATION" \
-        "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
+    "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 COPY . .
@@ -151,7 +151,7 @@ case "$TARGETARCH" in
     arm64) SHA256=50e6e58a109f2afd64376b5b003973ff213fbfdec795fe81a95b208982061d9b ;;
     *) echo "azcopy publishes no build for linux/$TARGETARCH" >&2; exit 1 ;;
 esac
-curl -fsSL -o /tmp/azcopy.tar.gz \
+curl -fsSL --proto '=https' --proto-redir '=https' -o /tmp/azcopy.tar.gz \
     "https://github.com/Azure/azure-storage-azcopy/releases/download/v${AZCOPY_VERSION}/azcopy_linux_${TARGETARCH}_${AZCOPY_VERSION}.tar.gz"
 echo "${SHA256}  /tmp/azcopy.tar.gz" | sha256sum -c -
 tar -xzf /tmp/azcopy.tar.gz -C /tmp --strip-components=1 --wildcards '*/azcopy'

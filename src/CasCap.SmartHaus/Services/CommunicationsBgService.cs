@@ -184,15 +184,15 @@ public sealed partial class CommunicationsBgService : IBgFeature
             if (!channels.Contains(_commsAgentConfig.ChannelName, StringComparer.Ordinal))
                 throw new GenericException(
                     $"Signalizr channel '{_commsAgentConfig.ChannelName}' is not configured.");
-            _logger.LogInformation("{ClassName} Signalizr channel {ChannelName} is ready",
+            _logger.LogDebug("{ClassName} Signalizr channel {ChannelName} is ready",
                 nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
 
-            _logger.LogInformation("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber());
+            _logger.LogDebug("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber());
             INotificationGroup[]? groups = null;
             try
             {
                 groups = await _notifier.ListGroupsAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                _logger.LogInformation("{ClassName} found {GroupCount} group(s): {GroupNames}",
+                _logger.LogDebug("{ClassName} found {GroupCount} group(s): {GroupNames}",
                     nameof(CommunicationsBgService), groups?.Length ?? 0,
                     groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)");
             }

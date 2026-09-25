@@ -15,6 +15,7 @@ public class CommunicationsBgServiceTests
     private const string Ear = "\U0001F442";
     private const string Hourglass = "\u23F3";
     private const string RedCross = "\u274C";
+    private const string WavMediaType = "audio/wav";
 
     [Fact]
     public async Task EarIsSentBeforeTranscriptionCompletes()
@@ -24,7 +25,7 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Gate = gate;
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_601, ("voice-6", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_601, ("voice-6", WavMediaType)));
 
         //The ear must land while the backend is still held, not after it returns.
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(Ear) == 1);
@@ -41,7 +42,7 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Failure = new HttpRequestException("backend down");
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_701, ("voice-7", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_701, ("voice-7", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(RedCross) == 1);
         var reply = Assert.Single(fixture.Signalizr.Sent);
@@ -55,7 +56,7 @@ public class CommunicationsBgServiceTests
         fixture.Cleaner.Complete = false;
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_801, ("voice-8", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_801, ("voice-8", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Deduplicator.Claims.IsEmpty);
 
@@ -122,7 +123,7 @@ public class CommunicationsBgServiceTests
         await fixture.StartAsync();
 
         fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(4_001,
-            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", "audio/wav")));
+            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Signalizr.AttachmentFetches.IsEmpty);
 
@@ -154,7 +155,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Disabled);
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Deduplicator.Claims.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
@@ -170,7 +171,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Shadow);
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Signalizr.AttachmentFetches.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
@@ -189,7 +190,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
 
@@ -206,7 +207,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_301, ("voice-4", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_301, ("voice-4", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(() => !fixture.Notifier.Sent.IsEmpty);
@@ -220,7 +221,7 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Transcript = "turn the kitchen lights off";
         await fixture.StartAsync();
 
-        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Notifier.Sent.IsEmpty);
 

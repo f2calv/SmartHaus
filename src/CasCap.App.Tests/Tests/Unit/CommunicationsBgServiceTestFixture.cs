@@ -210,7 +210,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             var attachments = notification.Attachments?
                 .Select(attachment => new SignalizrAttachment
                 {
-                    Id = attachment.Id!,
+                    Id = attachment.Id ?? throw new InvalidOperationException("Test attachments require an identifier."),
                     ContentType = attachment.ContentType,
                 })
                 .ToArray() ?? [];
