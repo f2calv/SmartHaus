@@ -32,6 +32,7 @@
     <ProjectReference Include="..\..\..\CasCap.Api.Azure\src\CasCap.Api.Azure.Storage\CasCap.Api.Azure.Storage.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Api.Voice\src\CasCap.Api.Voice\CasCap.Api.Voice.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Api.SignalCli\src\CasCap.Api.SignalCli\CasCap.Api.SignalCli.csproj" />
+    <ProjectReference Include="..\..\..\signalizr\src\CasCap.Signalizr.Client\CasCap.Signalizr.Client.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
     <PackageReference Include="CasCap.Api.Azure.Auth" />
@@ -39,6 +40,7 @@
     <PackageReference Include="CasCap.Api.Azure.Storage" />
     <PackageReference Include="CasCap.Api.SignalCli" />
     <PackageReference Include="CasCap.Api.Voice" />
+    <PackageReference Include="CasCap.Signalizr.Client" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">

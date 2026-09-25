@@ -64,7 +64,7 @@ public sealed partial class CommunicationsBgService
                             Number = _signalCliConfig.PhoneNumber,
                             Recipients = [_groupId!],
                         };
-                        await _notifier.SendAsync(statusMsg, ct);
+                        await SendMessageAsync(statusMsg, ct);
                     }
 
                     // Option B: swap reaction to twisted-arrows to indicate delegation.

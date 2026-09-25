@@ -35,6 +35,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly AIConfig _aiConfig;
     private readonly SpeechToTextConfig _speechToTextConfig;
     private readonly INotifier _notifier;
+    private readonly ISignalizrClient _signalizrClient;
     private readonly ISignalAttachmentCleaner _attachmentCleaner;
     private readonly ISignalMessageDeduplicator _deduplicator;
     private readonly AgentCommandHandler _commandHandler;
@@ -75,6 +76,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         IHostEnvironment env,
         CommsDebugNotifier debugNotifier,
         INotifier notifier,
+        ISignalizrClient signalizrClient,
         ISignalAttachmentCleaner attachmentCleaner,
         ISignalMessageDeduplicator deduplicator,
         VoiceMessageTranscriptionService transcriptionSvc,
@@ -97,6 +99,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _env = env;
         _debugNotifier = debugNotifier;
         _notifier = notifier;
+        _signalizrClient = signalizrClient;
         _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
         _transcriptionSvc = transcriptionSvc;
@@ -177,27 +180,12 @@ public sealed partial class CommunicationsBgService : IBgFeature
             // Update the Signal profile display name to include the active model.
             await UpdateSignalProfileNameAsync(_provider?.ModelName);
 
-            // Flush pending envelopes so group membership state is current.
-            // In JsonRpc (WebSocket) mode ReceiveAsync blocks on a semaphore until a
-            // message arrives, so cap the flush with a short timeout to avoid stalling
-            // the startup sequence when no envelopes are queued.
-            _logger.LogInformation("{ClassName} flushing pending envelopes", nameof(CommunicationsBgService));
-            IReceivedNotification[]? startupEnvelopes = null;
-            using (var flushCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken))
-            {
-                flushCts.CancelAfter(TimeSpan.FromMilliseconds(_commsAgentConfig.FlushTimeoutMs));
-                try
-                {
-                    startupEnvelopes = await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, flushCts.Token);
-                    _logger.LogInformation("{ClassName} pending envelopes flushed, count={EnvelopeCount}",
-                        nameof(CommunicationsBgService), startupEnvelopes?.Length ?? 0);
-                }
-                catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
-                {
-                    _logger.LogDebug("{ClassName} flush timed out (no pending envelopes), continuing",
-                        nameof(CommunicationsBgService));
-                }
-            }
+            var channels = await _signalizrClient.GetChannelsAsync(cancellationToken);
+            if (!channels.Contains(_commsAgentConfig.ChannelName, StringComparer.Ordinal))
+                throw new GenericException(
+                    $"Signalizr channel '{_commsAgentConfig.ChannelName}' is not configured.");
+            _logger.LogInformation("{ClassName} Signalizr channel {ChannelName} is ready",
+                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
 
             _logger.LogInformation("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber());
             INotificationGroup[]? groups = null;
@@ -235,18 +223,14 @@ public sealed partial class CommunicationsBgService : IBgFeature
 
             _groupResolved.TrySetResult();
 
-            _logger.LogInformation("{ClassName} starting background tasks (notifier={NotifierType})",
-                nameof(CommunicationsBgService), _notifier.GetType().Name);
+            _logger.LogInformation("{ClassName} starting background tasks (transport={TransportType})",
+                nameof(CommunicationsBgService), _signalizrClient.GetType().Name);
 
             var replyTask = DrainReplyQueueAsync(cancellationToken);
 
-            // Envelopes drained by the startup flush are real inbound messages; process them through
-            // the normal path now that the group is resolved, rather than discarding them.
-            await ProcessEnvelopesAsync(startupEnvelopes, cancellationToken);
-
-            _logger.LogInformation("{ClassName} polling for group messages on {PhoneNumber} via {Transport}",
-                nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber(), _signalCliConfig.TransportMode);
-            var incomingTask = PollForMessagesAsync(cancellationToken);
+            _logger.LogInformation("{ClassName} subscribing to Signalizr channel {ChannelName}",
+                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
+            var incomingTask = SubscribeToMessagesAsync(cancellationToken);
 
             //await-await-WhenAny propagates the first faulted task immediately so the
             //service crashes and the pod restarts rather than running in a degraded state.

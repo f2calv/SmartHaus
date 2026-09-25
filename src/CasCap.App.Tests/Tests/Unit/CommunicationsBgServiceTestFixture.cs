@@ -1,4 +1,5 @@
 using CasCap.HealthChecks;
+using CasCap.Signalizr.Client;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Text;
@@ -34,9 +35,6 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <summary>An identifier for a group the service must ignore.</summary>
     public const string OtherGroupId = "other-group-id";
 
-    /// <summary>The single generic reply sent when attachment cleanup could not complete.</summary>
-    public const string CleanupFailureReply = "\u26A0\uFE0F Sorry, I could not process that message.";
-
     private readonly CancellationTokenSource _cts = new();
     private Task? _execution;
 
@@ -60,6 +58,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
 
     /// <summary>The synthesis backend behind the spoken-reply service.</summary>
     public FakeTextToSpeechClient TextToSpeech { get; } = new();
+    public FakeSignalizrClient Signalizr { get; } = new();
 
     /// <summary>
     /// Builds a silent 16 kHz mono signed 16-bit PCM WAV, which is what the transcription service
@@ -129,8 +128,6 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             GroupId = GroupId,
             //Long enough that the idle stream consumer parks instead of spinning for the test's duration.
             PollingIntervalMs = 60_000,
-            //Short enough that the startup flush gives up promptly when no envelope is pre-queued.
-            FlushTimeoutMs = 50,
             ReplyQueueCapacity = replyQueueCapacity,
             StreamSendThrottlingEnabled = false,
             EchoTranscriptToDebugChat = echoTranscriptToDebugChat,
@@ -182,6 +179,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             env,
             debugNotifier,
             Notifier,
+            Signalizr,
             Cleaner,
             Deduplicator,
             transcriptionSvc,
@@ -201,7 +199,35 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     public async Task StartAsync()
     {
         _execution = Service.ExecuteAsync(_cts.Token);
-        await WaitForAsync(() => Notifier.ListGroupsCallCount > 0 && Notifier.ReceiveCallCount > 1);
+        await WaitForAsync(() => Notifier.ListGroupsCallCount > 0 && Signalizr.SubscribeCallCount > 0);
+    }
+
+    /// <summary>Queues application notifications as durable Signalizr deliveries.</summary>
+    public void Enqueue(params IReceivedNotification[] notifications)
+    {
+        foreach (var notification in notifications)
+        {
+            var attachments = notification.Attachments?
+                .Select(attachment => new SignalizrAttachment
+                {
+                    Id = attachment.Id!,
+                    ContentType = attachment.ContentType,
+                })
+                .ToArray() ?? [];
+
+            foreach (var attachment in attachments)
+                Signalizr.Attachments[attachment.Id] = Notifier.AttachmentContent ?? [];
+
+            Signalizr.Enqueue(new SignalizrMessage
+            {
+                DeliveryId = $"delivery-{notification.Timestamp}",
+                Channel = notification.GroupId == GroupId ? "smarthaus.chat" : notification.GroupId,
+                Sender = notification.Sender,
+                Message = notification.Message,
+                Timestamp = notification.Timestamp ?? 0,
+                Attachments = attachments,
+            });
+        }
     }
 
     /// <summary>Builds an ordinary text envelope from the configured group.</summary>

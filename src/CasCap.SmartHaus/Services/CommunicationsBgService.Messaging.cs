@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 public sealed partial class CommunicationsBgService
 {
-    private async Task PollForMessagesAsync(CancellationToken cancellationToken)
+    private async Task SubscribeToMessagesAsync(CancellationToken cancellationToken)
     {
         LogPollingStarted(_logger, nameof(CommunicationsBgService));
 
@@ -12,18 +12,24 @@ public sealed partial class CommunicationsBgService
         {
             try
             {
-                var messages = await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                await ProcessEnvelopesAsync(messages, cancellationToken);
+                await foreach (var message in _signalizrClient
+                    .SubscribeAsync(cancellationToken)
+                    .ConfigureAwait(false))
+                {
+                    if (!string.Equals(message.Channel, _commsAgentConfig.ChannelName,
+                        StringComparison.Ordinal))
+                        continue;
+
+                    await ProcessEnvelopesAsync(
+                        [SignalizrReceivedNotification.From(message)], cancellationToken);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
                 LogPollCycleError(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
             }
 
-            // In JsonRpc mode ReceiveAsync blocks until messages arrive, so no polling delay
-            // is needed. In REST mode the delay prevents excessive HTTP requests.
-            if (_signalCliConfig.TransportMode is not (SignalCliTransport.JsonRpc or SignalCliTransport.JsonRpcNative))
-                await Task.Delay(TimeSpan.FromMilliseconds(_commsAgentConfig.PollingIntervalMs), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(_commsAgentConfig.PollingIntervalMs), cancellationToken);
         }
     }
 
@@ -52,8 +58,14 @@ public sealed partial class CommunicationsBgService
 
             // Only process content messages from the configured group,
             // skipping our own echoes to avoid infinite reply loops.
+            var expectedConversation = msg is SignalizrReceivedNotification
+                ? _commsAgentConfig.ChannelName
+                : NormalizeGroupId(_groupId);
+            var actualConversation = msg is SignalizrReceivedNotification
+                ? msg.GroupId
+                : NormalizeGroupId(msg.GroupId);
             if (msg.HasContent
-                && NormalizeGroupId(msg.GroupId) == NormalizeGroupId(_groupId)
+                && actualConversation == expectedConversation
                 && msg.Sender != _signalCliConfig.PhoneNumber)
             {
                 // Check for poll vote messages and route to the poll tracker
@@ -135,7 +147,7 @@ public sealed partial class CommunicationsBgService
         {
             // signal-cli keeps every received attachment on disk until it is deleted, so all
             // identifiers on the envelope are removed, including any that were not selected.
-            if (attachmentIds.Count > 0)
+            if (attachmentIds.Count > 0 && notification is not SignalizrReceivedNotification)
                 cleanup = await _attachmentCleaner.DeleteAllAsync(attachmentIds, cancellationToken);
         }
 
@@ -199,7 +211,7 @@ public sealed partial class CommunicationsBgService
                     Number = _signalCliConfig.PhoneNumber,
                     Recipients = [_groupId!]
                 };
-                await _notifier.SendAsync(reply, cancellationToken);
+                await SendMessageAsync(reply, cancellationToken);
             }
 
             // Green tick reaction to indicate the command has been seen and processed.
@@ -250,7 +262,9 @@ public sealed partial class CommunicationsBgService
             return new(null, null, true, null);
         }
 
-        var content = await _notifier.GetAttachmentAsync(attachment.Id!, cancellationToken);
+        var content = notification is SignalizrReceivedNotification
+            ? await _signalizrClient.GetAttachmentAsync(attachment.Id!, cancellationToken)
+            : await _notifier.GetAttachmentAsync(attachment.Id!, cancellationToken);
         if (content is not null)
             LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachment.Id!, attachment.ContentType, content.Length);
 
@@ -293,7 +307,7 @@ public sealed partial class CommunicationsBgService
             Number = _signalCliConfig.PhoneNumber,
             Recipients = [_groupId]
         };
-        await _notifier.SendAsync(reply, cancellationToken);
+        await SendMessageAsync(reply, cancellationToken);
     }
 
     /// <summary>Sends the single generic failure reply used when attachment cleanup could not complete.</summary>
@@ -308,7 +322,7 @@ public sealed partial class CommunicationsBgService
             Number = _signalCliConfig.PhoneNumber,
             Recipients = [_groupId]
         };
-        await _notifier.SendAsync(reply, cancellationToken);
+        await SendMessageAsync(reply, cancellationToken);
     }
 
     /// <summary>Marks the sender's message as failed, matching the agent path's red cross.</summary>
@@ -474,11 +488,8 @@ public sealed partial class CommunicationsBgService
                     };
 
                     LogSendingAgentResponse(_logger, nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0, _groupId);
-                    var sendResult = await _notifier.SendAsync(reply, cancellationToken);
-                    if (sendResult is not null)
-                        LogMessageSent(_logger, nameof(CommunicationsBgService), sendResult.Timestamp);
-                    else
-                        LogSendReturnedNull(_logger, nameof(CommunicationsBgService));
+                    var sendTimestamp = await SendMessageAsync(reply, cancellationToken);
+                    LogMessageSent(_logger, nameof(CommunicationsBgService), sendTimestamp);
 
                     // Send detailed debug stats to the debug phone number ("Note to Self").
                     LogDebugStats(_logger, nameof(CommunicationsBgService),
@@ -535,6 +546,15 @@ public sealed partial class CommunicationsBgService
         }
         return groupId;
     }
+
+    private Task<string> SendMessageAsync(
+        SignalMessageRequest request,
+        CancellationToken cancellationToken) =>
+        _signalizrClient.SendAsync(
+            _commsAgentConfig.ChannelName,
+            request.Message,
+            request.Base64Attachments,
+            cancellationToken);
 
     /// <summary>
     /// Captures the parameters for a single agent reply so it can be queued and

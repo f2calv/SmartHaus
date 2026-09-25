@@ -33,6 +33,9 @@ jobs:
       - name: git clone f2calv/CasCap.Api.Voice
         run: git clone --depth 1 https://github.com/f2calv/CasCap.Api.Voice.git $GITHUB_WORKSPACE/../CasCap.Api.Voice
 
+      - name: git clone f2calv/signalizr
+        run: git clone --depth 1 https://github.com/f2calv/signalizr.git $GITHUB_WORKSPACE/../signalizr
+
       - name: dotnet restore SmartHaus.Debug.slnx
         run: dotnet restore SmartHaus.Debug.slnx
 

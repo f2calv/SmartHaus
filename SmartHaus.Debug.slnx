@@ -27,6 +27,9 @@
   <Folder Name="/CasCap.Api.Voice/">
     <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice/CasCap.Api.Voice.csproj" />
   </Folder>
+  <Folder Name="/signalizr/">
+    <Project Path="../signalizr/src/CasCap.Signalizr.Client/CasCap.Signalizr.Client.csproj" />
+  </Folder>
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />

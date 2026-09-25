@@ -170,7 +170,8 @@ flowchart TD
     COMMS_STREAM[("Redis Stream\ncomms:stream:events")]
     REDIS_CACHE[("Redis\nimage cache")]
     CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
-    SIGNALCLI["Signal messenger\n(signal-cli REST API)"]
+    SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
+    SIGNALCLI["signal-cli control plane\n(reactions, typing, polls)"]
 
     %% SignalR path
     FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
@@ -198,8 +199,9 @@ flowchart TD
     COMMS_BG -->|audio attachment| STT
     STT -->|transcript| COMMS_BG
     COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|relay to group| SIGNALCLI
-    SIGNALCLI -->|incoming messages| COMMS_BG
+    COMMS_AGENT -->|send to named channel| SIGNALIZR
+    SIGNALIZR -->|durable subscription| COMMS_BG
+    COMMS_BG -->|auxiliary controls| SIGNALCLI
 ```
 
 ## Dependency Graph
@@ -267,6 +269,7 @@ graph TD
             EDGE["Api.EdgeHardware"]
             EDGE_SINKS["Api.EdgeHardware.Sinks"]
         end
+            SIGNALIZR_CLIENT["Signalizr.Client"]
         SIGNAL["Api.SignalCli"]
         SIGNAL_WEB["Api.SignalCli.AspNetCore"]
         DDNS["Api.DDns"]
@@ -305,6 +308,7 @@ graph TD
     APP --> EXT2
 
     %% ── Core edges ──────────────────────────────────────────────────────────
+    HAUS --> SIGNALIZR_CLIENT
     HAUS --> SIGNAL
     HAUS --> HAUS_AI
     HAUS --> BUD_SINKS
