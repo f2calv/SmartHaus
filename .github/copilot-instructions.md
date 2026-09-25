@@ -59,3 +59,20 @@ SmartHaus follows the standard provider order and options-synchronisation rules 
   tiers; environment and local files restate only values that differ from earlier providers.
 - After changing `appsettings.Local.json` for production deployment, use this repository's
   `sync-appsettings-to-configmap` skill to update the caller-configured private GitOps repository.
+
+## Helm Charts
+
+`charts/smarthaus` is published by `deploy-all.yml` under the application release version; its
+`Chart.yaml` version is a placeholder. `charts/smarthaus-dashboards` is versioned by its own
+`Chart.yaml`: a default-branch change under that directory runs `deploy-dashboards.yml`, which
+publishes that version and bumps the dashboard Application in the private GitOps repository named
+by the `GITOPS_REPOSITORY`, `SMARTHAUS_DASHBOARD_MANIFEST_PATH`, `SMARTHAUS_DASHBOARD_NAMESPACE` and
+`SMARTHAUS_DASHBOARD_ENVIRONMENT` repository variables. Bump the dashboard chart version with every
+packaged change, including README-only edits. For local iteration, `deploy.ps1 -OnlyCharts`
+publishes a disposable development version without rolling application pods.
+
+Every chart keeps chart-testing fixtures under `ci/`, and the `helm` job in `ci.yml` lints the chart
+against each of them. Dashboard JSON is never passed through Helm `tpl`, because Grafana legend
+tokens use the same double-brace syntax; datasource UIDs are substituted with exact `replace` calls.
+The Fronius dashboard's ConfigMap name and data key are pinned in the template to preserve its
+identity; keep new dashboards on the file-basename convention.
