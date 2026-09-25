@@ -30,7 +30,7 @@ their local speech fakes.
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.App.Tests/CasCap.App.Tests.csproj
+dotnet test --project src/CasCap.App.Tests/CasCap.App.Tests.csproj
 ```
 
 ## Dependencies

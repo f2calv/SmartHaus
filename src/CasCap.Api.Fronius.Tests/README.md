@@ -21,7 +21,7 @@ These tests verify that each Solar API v1 endpoint returns well-formed data and 
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj
+dotnet test --project src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj
 ```
 
 ## Dependencies

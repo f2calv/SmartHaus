@@ -24,7 +24,7 @@ These tests verify KNX group address parsing, ETS metadata loading, and CEMI fra
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj
+dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj
 ```
 
 ## Dependencies
