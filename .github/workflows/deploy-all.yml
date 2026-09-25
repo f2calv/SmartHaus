@@ -60,7 +60,7 @@ jobs:
         ]
 
   nuget:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     permissions:
       id-token: write #nuget.org trusted publishing exchanges this for a short-lived api key
       packages: write
