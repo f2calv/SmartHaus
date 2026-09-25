@@ -1,0 +1,4 @@
+# Default install with an explicit Prometheus datasource UID.
+dashboardFolder: SmartHaus
+datasources:
+  prometheus: prometheus
