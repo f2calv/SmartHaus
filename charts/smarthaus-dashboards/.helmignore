@@ -1,5 +1,8 @@
 # Patterns to ignore when building packages
 
+# Chart-testing fixtures stay in source and are never packaged.
+ci/
+
 .DS_Store
 .git/
 .gitignore

@@ -56,45 +56,10 @@ _shared: &shared
     limits:
       cpu: 200m
       memory: 256Mi
-  # imagePullSecrets, volumes, volumeMounts, envSecrets and envVarsFrom
-  # are deployment-specific — configure via deployment overrides or your
-  # own values file.
-  # imagePullSecrets:
-  #   - name: my-registry-pull-secret
-  # volumes:
-  #   - name: certs
-  #     secret:
-  #       secretName: my-cert-secret
-  # volumeMounts:
-  #   - name: certs
-  #     mountPath: /etc/certs
-  #     readOnly: true
-  # envSecrets:
-  #   MY_SECRET_VAR: my-k8s-secret-name
-  # envVarsFrom:
-  #   - configMapRef:
-  #       name: default-app-config
 
 # ── Workload defaults ───────────────────────────────────────────────
-# Ingress is disabled by default in the workload subchart. To enable,
-# provide the full ingress block per workload via deployment values
-# or your own values override file. Example:
-#
-# doorbird:
-#   ingress:
-#     enabled: true
-#     className: nginx
-#     annotations:
-#       cert-manager.io/cluster-issuer: my-issuer
-#     hosts:
-#       - host: smarthaus.example.com
-#         paths:
-#           - path: /api/v1/doorbird
-#             pathType: Prefix
-#     tls:
-#       - secretName: my-tls-secret
-#         hosts:
-#           - smarthaus.example.com
+# Image pull secrets, volumes, secrets, ingress and node placement are
+# deployment-specific; the chart README shows examples of each.
 
 doorbird:
   <<: *shared
@@ -114,33 +79,20 @@ edge-cpu:
     privileged: true
   strategy:
     type: Recreate
-  # Node affinity and anti-affinity are deployment-specific — configure
-  # via deployment values with your real node hostnames.
-  # affinity:
-  #   nodeAffinity:
-  #     requiredDuringSchedulingIgnoredDuringExecution:
-  #       nodeSelectorTerms:
-  #         - matchExpressions:
-  #             - key: kubernetes.io/hostname
-  #               operator: In
-  #               values:
-  #                 - node-a
-  #                 - node-b
-  podAntiAffinity:
-    requiredDuringSchedulingIgnoredDuringExecution:
-      - labelSelector:
-          matchLabels:
-            app.kubernetes.io/name: edge-cpu
-        topologyKey: kubernetes.io/hostname
+  # One replica per node: each pod reports telemetry for the node it runs on.
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: edge-cpu
+          topologyKey: kubernetes.io/hostname
 
 edge-gpu:
   <<: *shared
   runtimeClassName: nvidia
   securityContext:
     privileged: true
-  # nodeSelector is deployment-specific — set via deployment values.
-  # nodeSelector:
-  #   kubernetes.io/hostname: my-gpu-node
 
 signalrhub:
   <<: *shared
@@ -161,9 +113,6 @@ sicce:
   <<: *shared
 
 # ── Disabled by default
-
-mcp:
-  replicaCount: 0
 
 ffmpeg:
   replicaCount: 0
