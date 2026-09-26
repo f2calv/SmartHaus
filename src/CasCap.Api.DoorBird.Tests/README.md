@@ -21,7 +21,7 @@ These tests verify that the DoorBird LAN API can be reached and that device comm
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj
+dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj
 ```
 
 ## Dependencies

@@ -1,9 +1,4 @@
 # syntax=docker/dockerfile:1
-# check=skip=CopyIgnoredFile
-#
-# CopyIgnoredFile is skipped deliberately: .dockerignore re-excludes bin/ and obj/ beneath the
-# deps/** allow-list that Dockerfile.Debug relies on, so the broad COPY instructions below
-# legitimately step over ignored files.
 #
 # Multi-architecture image, built from a single Dockerfile. Structure follows
 # https://github.com/f2calv/multi-arch-container-dotnet
@@ -12,14 +7,14 @@
 # is published, and the matching runtime environment variable selects which assembly is started.
 #
 # ------------------------------------------------------------------------------
-# Stage 1 of 2: build
+# Stage 1 of 3: build
 #
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
-# target under QEMU instead is typically 10-50x slower.
+# target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
-COPY ["Directory.Build.props", "Directory.Packages.props", "appsettings.json", "./"]
+COPY ["Directory.Build.props", "Directory.Packages.props", "./"]
 
 ARG WORKLOAD=CasCap.App.Server
 ARG CONFIGURATION=Release
@@ -27,21 +22,25 @@ ARG CONFIGURATION=Release
 # -- Dependency layer ----------------------------------------------------------
 # Cached until a csproj/props or package version changes. Copy every project manifest first
 # (--parents preserves directory structure) so editing source (.cs) files reuses the cached
-# restore. Restore is platform-agnostic, so keep it before ARG TARGETARCH to share it across
-# architectures.
+# restore; appsettings.json arrives with the sources because restore never reads it. Restore is
+# platform-agnostic, so keep it before ARG TARGETARCH to share it across architectures, and
+# restore every runtime identifier so each platform's publish runs offline with --no-restore.
+# Configuration is passed because Release and Debug resolve different package references.
 COPY --parents src/**/*.csproj ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj"
+    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj" -p:Configuration="$CONFIGURATION" \
+    "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
 COPY . .
 
 # buildx injects TARGETARCH/TARGETVARIANT automatically:
 #   linux/amd64 -> amd64, linux/arm64 -> arm64, linux/arm/v7 -> arm + v7
-# Concatenating the two gives a single flat token to switch on.
+# Concatenating the two gives a single flat token to switch on. The publish only reads packages
+# the restore already wrote, so the platform legs share the cache and need no network.
 ARG TARGETARCH
 ARG TARGETVARIANT
-RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked <<EOF
+RUN --network=none --mount=type=cache,target=/root/.nuget/packages,sharing=shared <<EOF
 set -eux
 # https://learn.microsoft.com/dotnet/core/rid-catalog
 case "${TARGETARCH}${TARGETVARIANT}" in
@@ -50,11 +49,12 @@ case "${TARGETARCH}${TARGETVARIANT}" in
     armv7) RID=linux-arm   ;;
     *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
 esac
-dotnet publish "src/$WORKLOAD/$WORKLOAD.csproj" -c "$CONFIGURATION" -o /app/publish -r "$RID" --self-contained false
+dotnet publish "src/$WORKLOAD/$WORKLOAD.csproj" -c "$CONFIGURATION" -o /app/publish -r "$RID" \
+    --self-contained false --no-restore
 EOF
 
 # ------------------------------------------------------------------------------
-# Stage 2 of 2: final
+# Stage 2 of 3: runtime
 #
 # No --platform override here, so buildx resolves the base image for
 # $TARGETPLATFORM and the resulting image is genuinely native to the target.
@@ -63,12 +63,12 @@ EOF
 #   mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled  no shell and no apt, so the helper
 #                                                        scripts and libgpiod cannot be installed
 #   mcr.microsoft.com/dotnet/aspnet:10.0-alpine          musl, has a shell, no tzdata by default
-#   mcr.microsoft.com/dotnet/aspnet:10.0                 full Debian, largest (used here)
+#   mcr.microsoft.com/dotnet/aspnet:10.0                 full Ubuntu, largest (used here)
 #
-# The full Debian image is required: workloads need apt-installable runtime dependencies
-# (libgpiod) and a shell for wait-for-it.sh / ffmpeg-record.sh.
+# The full Ubuntu image is required: workloads need apt-installable runtime dependencies
+# (libgpiod) and a shell for wait-for-it.sh / ffmpeg-record.sh. It already ships tzdata.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
@@ -93,33 +93,6 @@ EOF
 COPY --link --from=build /app/publish .
 COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
-# -- Temporary debug tooling ---------------------------------------------------
-# Uncomment a block to add a debugging dependency to the image, then remove it again once the
-# investigation is finished. Each block is kept build-ready so uncommenting is the only edit.
-#
-#RUN <<EOF
-#set -eux
-#apt-get update
-#apt-get install -y --no-install-recommends tzdata
-#rm -rf /var/lib/apt/lists/*
-#EOF
-#
-# AzCopy. The aka.ms links are unversioned, so this always installs the current release.
-# Microsoft publishes amd64 and arm64 only - there is no linux/arm/v7 build.
-#ARG TARGETARCH
-#RUN <<EOF
-#set -eux
-#case "$TARGETARCH" in
-#    amd64) AZCOPY_URL=https://aka.ms/downloadazcopy-v10-linux ;;
-#    arm64) AZCOPY_URL=https://aka.ms/downloadazcopy-v10-linux-arm64 ;;
-#    *) echo "azcopy publishes no build for linux/$TARGETARCH" >&2; exit 1 ;;
-#esac
-#curl -fsSL "$AZCOPY_URL" -o /tmp/azcopy.tar.gz
-#tar -xzf /tmp/azcopy.tar.gz -C /tmp --strip-components=1 --wildcards '*/azcopy'
-#install -m 0755 /tmp/azcopy /usr/local/bin/azcopy
-#rm -f /tmp/azcopy /tmp/azcopy.tar.gz
-#EOF
-
 # -- Provenance ----------------------------------------------------------------
 # Supplied by the CI workflow (.github/workflows/ci.yml) or by build.ps1/build.sh.
 ARG GIT_REPOSITORY=n/a
@@ -139,7 +112,6 @@ ARG GITHUB_RUN_NUMBER=0
 ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
 
 EXPOSE 8080
-EXPOSE 8081
 ARG WORKLOAD=CasCap.App.Server
 ENV WORKLOAD=$WORKLOAD
 
@@ -155,3 +127,43 @@ USER $APP_UID
 
 # exec replaces the shell so dotnet becomes PID 1 and receives SIGTERM for a clean shutdown.
 ENTRYPOINT ["sh", "-c", "exec dotnet ${WORKLOAD}.dll"]
+
+# ------------------------------------------------------------------------------
+# Optional stage: debug
+#
+# Investigation tooling, never published. `final` does not derive from it, so it is
+# built only on request:
+#
+#   docker buildx build --target debug --platform linux/arm64 -t smarthaus:debug .
+#
+# AzCopy is pinned to a release and verified against the SHA-256 digest GitHub
+# publishes for each asset. Microsoft publishes amd64 and arm64 only, so this
+# target fails on linux/arm/v7.
+# ------------------------------------------------------------------------------
+FROM runtime AS debug
+USER root
+ARG TARGETARCH
+ARG AZCOPY_VERSION=10.32.8
+RUN <<EOF
+set -eux
+case "$TARGETARCH" in
+    amd64) SHA256=a95277dbc265912cefdddbaf251aa99ec648cb18ba657e8788066357a9022dc3 ;;
+    arm64) SHA256=50e6e58a109f2afd64376b5b003973ff213fbfdec795fe81a95b208982061d9b ;;
+    *) echo "azcopy publishes no build for linux/$TARGETARCH" >&2; exit 1 ;;
+esac
+curl -fsSL --proto '=https' --proto-redir '=https' -o /tmp/azcopy.tar.gz \
+    "https://github.com/Azure/azure-storage-azcopy/releases/download/v${AZCOPY_VERSION}/azcopy_linux_${TARGETARCH}_${AZCOPY_VERSION}.tar.gz"
+echo "${SHA256}  /tmp/azcopy.tar.gz" | sha256sum -c -
+tar -xzf /tmp/azcopy.tar.gz -C /tmp --strip-components=1 --wildcards '*/azcopy'
+install -m 0755 /tmp/azcopy /usr/local/bin/azcopy
+rm -f /tmp/azcopy /tmp/azcopy.tar.gz
+azcopy --version
+EOF
+USER $APP_UID
+
+# ------------------------------------------------------------------------------
+# Stage 3 of 3: final
+#
+# The published image: the runtime stage without the debug tooling.
+# ------------------------------------------------------------------------------
+FROM runtime AS final

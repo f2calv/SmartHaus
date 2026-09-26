@@ -22,20 +22,19 @@ jobs:
 
   helm:
     name: helm (${{ matrix.chart }})
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
         chart:
           - charts/smarthaus
-          - charts/dashboards
+          - charts/smarthaus-dashboards
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v7
 
-      #azure/setup-helm v5
-      - uses: azure/setup-helm@59b1c81c6280f5abebb1fb1bc585696daa7dfb42
+      - uses: azure/setup-helm@v5
         with:
           version: 3.20.2
 
@@ -44,6 +43,19 @@ jobs:
 
       - name: helm lint ${{ matrix.chart }}
         run: helm lint "${{ matrix.chart }}"
+
+      - name: helm lint ${{ matrix.chart }} with ci values
+        shell: bash
+        run: |
+          shopt -s nullglob
+          fixtures=("${{ matrix.chart }}"/ci/*-values.yaml)
+          if [[ ${#fixtures[@]} -eq 0 ]]; then
+            echo "::error::${{ matrix.chart }} has no ci/*-values.yaml fixtures."
+            exit 1
+          fi
+          for fixture in "${fixtures[@]}"; do
+            helm lint "${{ matrix.chart }}" --values "$fixture"
+          done
 
   versioning:
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1

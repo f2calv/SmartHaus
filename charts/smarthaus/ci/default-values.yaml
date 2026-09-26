@@ -1,0 +1,11 @@
+# Typical edge install: node telemetry on three labelled nodes, one per node, plus the comms role.
+edge-cpu:
+  replicaCount: 3
+  nodeSelector:
+    node-group/edge: "true"
+  envVars:
+    CasCap__FeatureConfig__EnabledFeatures: EdgeHardware
+comms:
+  replicaCount: 1
+  envVars:
+    CasCap__FeatureConfig__EnabledFeatures: Comms

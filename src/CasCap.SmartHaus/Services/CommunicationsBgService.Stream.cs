@@ -126,9 +126,7 @@ public sealed partial class CommunicationsBgService
                 Number = _signalCliConfig.PhoneNumber,
                 Recipients = [_groupId!]
             };
-            var sendResult = await _notifier.SendAsync(directMsg, cancellationToken);
-            if (sendResult is null)
-                LogDirectForwardFailed(_logger, nameof(CommunicationsBgService));
+            await SendMessageAsync(directMsg, cancellationToken);
             return;
         }
 
@@ -222,8 +220,8 @@ public sealed partial class CommunicationsBgService
 
         try
         {
-            var result = await _notifier.SendAsync(notice, cancellationToken);
-            LogDropNoticeSent(_logger, nameof(CommunicationsBgService), total, result is not null);
+            await SendMessageAsync(notice, cancellationToken);
+            LogDropNoticeSent(_logger, nameof(CommunicationsBgService), total, true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
         {

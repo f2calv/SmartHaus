@@ -15,6 +15,7 @@ public class CommunicationsBgServiceTests
     private const string Ear = "\U0001F442";
     private const string Hourglass = "\u23F3";
     private const string RedCross = "\u274C";
+    private const string WavMediaType = "audio/wav";
 
     [Fact]
     public async Task EarIsSentBeforeTranscriptionCompletes()
@@ -24,7 +25,7 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Gate = gate;
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_601, ("voice-6", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_601, ("voice-6", WavMediaType)));
 
         //The ear must land while the backend is still held, not after it returns.
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(Ear) == 1);
@@ -41,24 +42,26 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Failure = new HttpRequestException("backend down");
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_701, ("voice-7", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_701, ("voice-7", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(RedCross) == 1);
-        var reply = Assert.Single(fixture.Notifier.Sent);
+        var reply = Assert.Single(fixture.Signalizr.Sent);
         Assert.Contains("could not understand", reply.Message, StringComparison.Ordinal);
     }
 
     [Fact]
-    public async Task CleanupFailureIsMarkedWithARedCross()
+    public async Task DurableAttachmentSkipsWrapperCleanup()
     {
-        await using var fixture = new CommunicationsBgServiceTestFixture();
+        await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Disabled);
         fixture.Cleaner.Complete = false;
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_801, ("residue-2", "image/jpeg")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_801, ("voice-8", WavMediaType)));
 
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.ReactionCount(RedCross) == 1);
-        Assert.Equal(0, fixture.Notifier.ReactionCount(Hourglass));
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Deduplicator.Claims.IsEmpty);
+
+        Assert.Empty(fixture.Cleaner.Calls);
+        Assert.Empty(fixture.Signalizr.AttachmentFetches);
     }
 
     [Theory]
@@ -70,7 +73,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(mode);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("turn the kitchen light on", 1_001));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("turn the kitchen light on", 1_001));
 
         //The drain loop only starts processing what the bounded channel actually accepted.
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
@@ -78,7 +81,7 @@ public class CommunicationsBgServiceTests
         Assert.Equal(1, fixture.Notifier.ReactionCount(Eyes));
         Assert.Equal(1_001, Assert.Single(fixture.Deduplicator.Claims).Timestamp);
         Assert.Empty(fixture.Cleaner.Calls);
-        Assert.Empty(fixture.Notifier.AttachmentFetches);
+        Assert.Empty(fixture.Signalizr.AttachmentFetches);
     }
 
     [Fact]
@@ -87,7 +90,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture();
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(
+        fixture.Enqueue(
             CommunicationsBgServiceTestFixture.TextEnvelope("from another group", 2_001,
                 groupId: CommunicationsBgServiceTestFixture.OtherGroupId),
             CommunicationsBgServiceTestFixture.TextEnvelope("my own echo", 2_002,
@@ -105,7 +108,7 @@ public class CommunicationsBgServiceTests
     {
         await using var fixture = new CommunicationsBgServiceTestFixture();
         //Queued before execution begins, so the startup flush drains it rather than the poll loop.
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("queued while we were down", 3_001));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("queued while we were down", 3_001));
 
         await fixture.StartAsync();
 
@@ -114,40 +117,19 @@ public class CommunicationsBgServiceTests
     }
 
     [Fact]
-    public async Task EveryAttachmentIsDeletedIncludingUnselected()
+    public async Task OnlySelectedDurableAttachmentIsDownloaded()
     {
         await using var fixture = new CommunicationsBgServiceTestFixture();
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(4_001,
-            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(4_001,
+            ("a1", "image/jpeg"), ("a2", "image/png"), ("a3", WavMediaType)));
 
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Signalizr.AttachmentFetches.IsEmpty);
 
-        Assert.Equal(["a1", "a2", "a3"], fixture.Cleaner.LastCall);
         //Selection is deterministic: only the first identifier is downloaded.
-        Assert.Equal(["a1"], fixture.Notifier.AttachmentFetches);
-    }
-
-    [Fact]
-    public async Task IncompleteCleanupSuppressesAgentTurnAndSendsOneGenericReply()
-    {
-        await using var fixture = new CommunicationsBgServiceTestFixture();
-        fixture.Cleaner.Complete = false;
-        await fixture.StartAsync();
-
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(5_001, ("residue-1", "image/jpeg")));
-
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Notifier.Sent.IsEmpty);
-        await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
-            () => fixture.Notifier.StartProcessingCallCount > 0 || fixture.Notifier.Sent.Count > 1);
-
-        var reply = Assert.Single(fixture.Notifier.Sent);
-        Assert.Equal(CommunicationsBgServiceTestFixture.CleanupFailureReply, reply.Message);
-        Assert.DoesNotContain("residue-1", reply.Message);
-        //The sender is acknowledged on receipt, but the turn never reaches the agent.
-        Assert.Equal(1, fixture.Notifier.ReactionCount(Eyes));
-        Assert.Equal(0, fixture.Notifier.ReactionCount(Hourglass));
+        Assert.Equal(["a1"], fixture.Signalizr.AttachmentFetches);
+        Assert.Empty(fixture.Cleaner.Calls);
     }
 
     [Fact]
@@ -157,7 +139,7 @@ public class CommunicationsBgServiceTests
         fixture.Deduplicator.ClaimResult = false;
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("redelivered", 6_001));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.TextEnvelope("redelivered", 6_001));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Deduplicator.Claims.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
@@ -168,36 +150,19 @@ public class CommunicationsBgServiceTests
     }
 
     [Fact]
-    public async Task CleanupFailureRetainsTheReservation()
-    {
-        await using var fixture = new CommunicationsBgServiceTestFixture();
-        fixture.Cleaner.Complete = false;
-        await fixture.StartAsync();
-
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(6_101, ("residue-2", "image/jpeg")));
-
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Notifier.Sent.IsEmpty);
-        await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(() => !fixture.Deduplicator.Releases.IsEmpty);
-
-        //Reprocessing would not remove the residue, so the claim must survive the failure.
-        Assert.Single(fixture.Deduplicator.Claims);
-        Assert.Empty(fixture.Deduplicator.Releases);
-    }
-
-    [Fact]
     public async Task DisabledModeRejectsVoiceWithoutDownloading()
     {
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Disabled);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_001, ("voice-1", WavMediaType)));
 
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Deduplicator.Claims.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
-            () => fixture.Notifier.StartProcessingCallCount > 0 || !fixture.Notifier.AttachmentFetches.IsEmpty);
+            () => fixture.Notifier.StartProcessingCallCount > 0 || !fixture.Signalizr.AttachmentFetches.IsEmpty);
 
-        Assert.Equal(["voice-1"], fixture.Cleaner.LastCall);
-        Assert.Empty(fixture.Notifier.Sent);
+        Assert.Empty(fixture.Cleaner.Calls);
+        Assert.Empty(fixture.Signalizr.Sent);
     }
 
     [Fact]
@@ -206,14 +171,14 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Shadow);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_101, ("voice-2", WavMediaType)));
 
-        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Cleaner.Calls.IsEmpty);
+        await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Signalizr.AttachmentFetches.IsEmpty);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
-            () => fixture.Notifier.StartProcessingCallCount > 0 || !fixture.Notifier.Sent.IsEmpty);
+            () => fixture.Notifier.StartProcessingCallCount > 0 || !fixture.Signalizr.Sent.IsEmpty);
 
-        Assert.Equal(["voice-2"], fixture.Notifier.AttachmentFetches);
-        Assert.Equal(["voice-2"], fixture.Cleaner.LastCall);
+        Assert.Equal(["voice-2"], fixture.Signalizr.AttachmentFetches);
+        Assert.Empty(fixture.Cleaner.Calls);
         //Shadow still acknowledges that the note was heard; it just never replies.
         Assert.Equal(1, fixture.Notifier.ReactionCount(Ear));
         Assert.Equal(0, fixture.Notifier.ReactionCount(Eyes));
@@ -225,12 +190,12 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_201, ("voice-3", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
 
-        Assert.Equal(["voice-3"], fixture.Notifier.AttachmentFetches);
-        Assert.Equal(["voice-3"], fixture.Cleaner.LastCall);
+        Assert.Equal(["voice-3"], fixture.Signalizr.AttachmentFetches);
+        Assert.Empty(fixture.Cleaner.Calls);
         //A voice note is acknowledged with an ear, not the eyes used for a text message.
         Assert.Equal(1, fixture.Notifier.ReactionCount(Ear));
         Assert.Equal(0, fixture.Notifier.ReactionCount(Eyes));
@@ -242,7 +207,7 @@ public class CommunicationsBgServiceTests
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_301, ("voice-4", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_301, ("voice-4", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Notifier.StartProcessingCallCount == 1);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(() => !fixture.Notifier.Sent.IsEmpty);
@@ -256,7 +221,7 @@ public class CommunicationsBgServiceTests
         fixture.SpeechToText.Transcript = "turn the kitchen lights off";
         await fixture.StartAsync();
 
-        fixture.Notifier.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", "audio/wav")));
+        fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => !fixture.Notifier.Sent.IsEmpty);
 
@@ -274,7 +239,7 @@ public class CommunicationsBgServiceTests
         //Hold the single reader inside the first reply so the bounded queue cannot drain.
         fixture.Notifier.BlockStartProcessing();
 
-        fixture.Notifier.Enqueue(
+        fixture.Enqueue(
             CommunicationsBgServiceTestFixture.TextEnvelope("first", 8_001),
             CommunicationsBgServiceTestFixture.TextEnvelope("second", 8_002),
             CommunicationsBgServiceTestFixture.TextEnvelope("third", 8_003),

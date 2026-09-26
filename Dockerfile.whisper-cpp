@@ -19,6 +19,8 @@
 # cross build needs a second native toolchain. The build stage is therefore not pinned
 # to $BUILDPLATFORM. GGML_NATIVE is off and the target is set explicitly, so the
 # builder's own CPU does not affect the output.
+#
+# Profile: single-arch
 # ------------------------------------------------------------------------------
 
 # Used twice: the revision to compile, and the tag of the runtime base built from it.
@@ -137,6 +139,7 @@ ENV WHISPER_CPP_COMMIT=$WHISPER_CPP_COMMIT
 LABEL org.opencontainers.image.title="whisper-cpp" \
     org.opencontainers.image.description="whisper.cpp server built for Cortex-A76 with Vulkan GPU offload" \
     org.opencontainers.image.source="https://github.com/ggml-org/whisper.cpp" \
+    org.opencontainers.image.licenses="MIT" \
     org.opencontainers.image.revision=$GIT_COMMIT \
     org.opencontainers.image.version=$GIT_TAG
 

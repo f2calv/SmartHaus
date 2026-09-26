@@ -21,7 +21,7 @@ These tests verify that the KM200 encrypted HTTPS API can be reached, datapoints
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.Api.Buderus.Tests/CasCap.Api.Buderus.Tests.csproj
+dotnet test --project src/CasCap.Api.Buderus.Tests/CasCap.Api.Buderus.Tests.csproj
 ```
 
 ## Dependencies

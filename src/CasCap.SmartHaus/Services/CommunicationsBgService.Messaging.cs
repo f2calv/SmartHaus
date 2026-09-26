@@ -4,7 +4,7 @@ namespace CasCap.Services;
 
 public sealed partial class CommunicationsBgService
 {
-    private async Task PollForMessagesAsync(CancellationToken cancellationToken)
+    private async Task SubscribeToMessagesAsync(CancellationToken cancellationToken)
     {
         LogPollingStarted(_logger, nameof(CommunicationsBgService));
 
@@ -12,18 +12,24 @@ public sealed partial class CommunicationsBgService
         {
             try
             {
-                var messages = await _notifier.ReceiveAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                await ProcessEnvelopesAsync(messages, cancellationToken);
+                await foreach (var message in _signalizrClient
+                    .SubscribeAsync(cancellationToken)
+                    .ConfigureAwait(false))
+                {
+                    if (!string.Equals(message.Channel, _commsAgentConfig.ChannelName,
+                        StringComparison.Ordinal))
+                        continue;
+
+                    await ProcessEnvelopesAsync(
+                        [SignalizrReceivedNotification.From(message)], cancellationToken);
+                }
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
                 LogPollCycleError(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
             }
 
-            // In JsonRpc mode ReceiveAsync blocks until messages arrive, so no polling delay
-            // is needed. In REST mode the delay prevents excessive HTTP requests.
-            if (_signalCliConfig.TransportMode is not (SignalCliTransport.JsonRpc or SignalCliTransport.JsonRpcNative))
-                await Task.Delay(TimeSpan.FromMilliseconds(_commsAgentConfig.PollingIntervalMs), cancellationToken);
+            await Task.Delay(TimeSpan.FromMilliseconds(_commsAgentConfig.PollingIntervalMs), cancellationToken);
         }
     }
 
@@ -31,10 +37,6 @@ public sealed partial class CommunicationsBgService
     /// Applies the group/echo filter to a batch of received envelopes and routes each qualifying
     /// envelope into the normal processing path.
     /// </summary>
-    /// <remarks>
-    /// Shared by the polling loop and the startup flush, so envelopes that were already queued at
-    /// signal-cli when the service started are processed rather than discarded.
-    /// </remarks>
     private async Task ProcessEnvelopesAsync(IReceivedNotification[]? messages, CancellationToken cancellationToken)
     {
         if (messages is null || messages.Length == 0)
@@ -50,24 +52,18 @@ public sealed partial class CommunicationsBgService
                 : "unknown";
             LogEnvelopeDetail(_logger, nameof(CommunicationsBgService), envelopeType, msg.HasContent, msg.GroupId, msg.Sender);
 
-            // Only process content messages from the configured group,
-            // skipping our own echoes to avoid infinite reply loops.
-            if (msg.HasContent
-                && NormalizeGroupId(msg.GroupId) == NormalizeGroupId(_groupId)
-                && msg.Sender != _signalCliConfig.PhoneNumber)
-            {
-                // Check for poll vote messages and route to the poll tracker
-                // instead of the normal data message pipeline.
-                if (msg is SignalReceivedMessage signalMsg
-                    && await TryProcessPollVoteAsync(signalMsg))
-                {
-                    processed++;
-                    continue;
-                }
+            if (!ShouldProcessNotification(msg))
+                continue;
 
-                await ProcessDataMessageAsync(msg, cancellationToken);
+            if (msg is SignalReceivedMessage signalMsg
+                && await TryProcessPollVoteAsync(signalMsg))
+            {
                 processed++;
+                continue;
             }
+
+            await ProcessDataMessageAsync(msg, cancellationToken);
+            processed++;
         }
 
         if (processed > 0)
@@ -135,7 +131,7 @@ public sealed partial class CommunicationsBgService
         {
             // signal-cli keeps every received attachment on disk until it is deleted, so all
             // identifiers on the envelope are removed, including any that were not selected.
-            if (attachmentIds.Count > 0)
+            if (attachmentIds.Count > 0 && notification is not SignalizrReceivedNotification)
                 cleanup = await _attachmentCleaner.DeleteAllAsync(attachmentIds, cancellationToken);
         }
 
@@ -162,7 +158,7 @@ public sealed partial class CommunicationsBgService
         if (voice is { TranscriptAvailable: true, Text: { } transcript })
         {
             prompt = transcript;
-            if (_speechToTextConfig.EchoTranscriptToDebugChat)
+            if (_commsAgentConfig.EchoTranscriptToDebugChat)
                 await _debugNotifier.SendVoiceTranscriptDebugAsync(voice, cancellationToken);
         }
 
@@ -199,7 +195,7 @@ public sealed partial class CommunicationsBgService
                     Number = _signalCliConfig.PhoneNumber,
                     Recipients = [_groupId!]
                 };
-                await _notifier.SendAsync(reply, cancellationToken);
+                await SendMessageAsync(reply, cancellationToken);
             }
 
             // Green tick reaction to indicate the command has been seen and processed.
@@ -234,13 +230,14 @@ public sealed partial class CommunicationsBgService
     private async Task<AttachmentAcquisition> AcquireAttachmentAsync(
         IReceivedNotification notification, CancellationToken cancellationToken)
     {
-        var attachments = notification.Attachments!;
+        var attachments = notification.Attachments ?? [];
         if (attachments.Count > 1)
             LogMultipleAttachments(_logger, nameof(CommunicationsBgService), attachments.Count);
 
         // Deterministic selection: the first attachment carrying an identifier.
         var attachment = attachments.FirstOrDefault(a => !string.IsNullOrWhiteSpace(a.Id));
-        if (attachment is null)
+        var attachmentId = attachment?.Id;
+        if (attachment is null || string.IsNullOrWhiteSpace(attachmentId))
             return new(null, null, false, null);
 
         var isVoice = IsAudio(attachment.ContentType);
@@ -250,9 +247,11 @@ public sealed partial class CommunicationsBgService
             return new(null, null, true, null);
         }
 
-        var content = await _notifier.GetAttachmentAsync(attachment.Id!, cancellationToken);
+        var content = notification is SignalizrReceivedNotification
+            ? await _signalizrClient.GetAttachmentAsync(attachmentId, cancellationToken)
+            : await _notifier.GetAttachmentAsync(attachmentId, cancellationToken);
         if (content is not null)
-            LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachment.Id!, attachment.ContentType, content.Length);
+            LogAttachmentDownloaded(_logger, nameof(CommunicationsBgService), attachmentId, attachment.ContentType, content.Length);
 
         if (!isVoice)
             return new(content, attachment.ContentType, false, null);
@@ -260,9 +259,11 @@ public sealed partial class CommunicationsBgService
         if (content is null)
             return new(null, null, true, VoiceTranscriptionResult.Failure(VoiceTranscriptionOutcome.Invalid));
 
+        ArgumentNullException.ThrowIfNull(attachment.ContentType);
+
         // Raw audio never reaches the agent: it is replaced by the normalised transcript, or the
         // turn is abandoned. Shadow transcribes for measurement but stops short of the agent.
-        var result = await _transcriptionSvc.Transcribe(content, attachment.ContentType!, cancellationToken);
+        var result = await _transcriptionSvc.Transcribe(content, attachment.ContentType, cancellationToken);
         LogVoiceTranscription(_logger, nameof(CommunicationsBgService), result.Outcome.ToString(),
             result.Text?.Length ?? 0);
 
@@ -293,7 +294,7 @@ public sealed partial class CommunicationsBgService
             Number = _signalCliConfig.PhoneNumber,
             Recipients = [_groupId]
         };
-        await _notifier.SendAsync(reply, cancellationToken);
+        await SendMessageAsync(reply, cancellationToken);
     }
 
     /// <summary>Sends the single generic failure reply used when attachment cleanup could not complete.</summary>
@@ -308,7 +309,7 @@ public sealed partial class CommunicationsBgService
             Number = _signalCliConfig.PhoneNumber,
             Recipients = [_groupId]
         };
-        await _notifier.SendAsync(reply, cancellationToken);
+        await SendMessageAsync(reply, cancellationToken);
     }
 
     /// <summary>Marks the sender's message as failed, matching the agent path's red cross.</summary>
@@ -456,10 +457,14 @@ public sealed partial class CommunicationsBgService
                         base64Attachments = [.. base64Attachments ?? [], .. request.ExtraBase64Attachments];
 
                     // The agent's answer is spoken, never the diagnostic footer appended above.
-                    var spoken = await _voiceReplySvc.TrySynthesizeAttachmentAsync(
+                    var spoken = await _voiceReplySvc.TrySynthesizeAsync(
                         agentResponse, request.InboundWasVoice, cancellationToken);
                     if (spoken is not null)
-                        base64Attachments = [.. base64Attachments ?? [], spoken];
+                    {
+                        var dataUri = $"data:{spoken.MediaType};filename={spoken.FileName};base64," +
+                            Convert.ToBase64String(spoken.Audio.Span);
+                        base64Attachments = [.. base64Attachments ?? [], dataUri];
+                    }
 
                     var reply = new SignalMessageRequest
                     {
@@ -470,11 +475,8 @@ public sealed partial class CommunicationsBgService
                     };
 
                     LogSendingAgentResponse(_logger, nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0, _groupId);
-                    var sendResult = await _notifier.SendAsync(reply, cancellationToken);
-                    if (sendResult is not null)
-                        LogMessageSent(_logger, nameof(CommunicationsBgService), sendResult.Timestamp);
-                    else
-                        LogSendReturnedNull(_logger, nameof(CommunicationsBgService));
+                    var sendTimestamp = await SendMessageAsync(reply, cancellationToken);
+                    LogMessageSent(_logger, nameof(CommunicationsBgService), sendTimestamp);
 
                     // Send detailed debug stats to the debug phone number ("Note to Self").
                     LogDebugStats(_logger, nameof(CommunicationsBgService),
@@ -531,6 +533,29 @@ public sealed partial class CommunicationsBgService
         }
         return groupId;
     }
+
+    private bool ShouldProcessNotification(IReceivedNotification notification)
+    {
+        if (!notification.HasContent || notification.Sender == _signalCliConfig.PhoneNumber)
+            return false;
+
+        var expectedConversation = notification is SignalizrReceivedNotification
+            ? _commsAgentConfig.ChannelName
+            : NormalizeGroupId(_groupId);
+        var actualConversation = notification is SignalizrReceivedNotification
+            ? notification.GroupId
+            : NormalizeGroupId(notification.GroupId);
+        return string.Equals(actualConversation, expectedConversation, StringComparison.Ordinal);
+    }
+
+    private Task<string> SendMessageAsync(
+        SignalMessageRequest request,
+        CancellationToken cancellationToken) =>
+        _signalizrClient.SendAsync(
+            _commsAgentConfig.ChannelName,
+            request.Message,
+            request.Base64Attachments,
+            cancellationToken);
 
     /// <summary>
     /// Captures the parameters for a single agent reply so it can be queued and

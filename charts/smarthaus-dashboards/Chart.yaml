@@ -1,5 +1,6 @@
 apiVersion: v2
-name: dashboards
+name: smarthaus-dashboards
 description: Grafana dashboards and provisioning for the SmartHaus application.
 type: application
-version: 0.1.0
+version: 0.1.1
+appVersion: "0.1.1"

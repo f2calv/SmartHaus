@@ -33,6 +33,8 @@
 #   Azurite          : localhost:10000 (Blob) / 10001 (Queue) / 10002 (Table)
 #   Ollama           : http://localhost:11434        [demo profile]
 #   signal-cli REST  : http://localhost:8081          [demo profile]
+#   Signalizr REST   : http://localhost:8090          [demo profile]
+#   Signalizr gRPC   : localhost:5001                 [demo profile]
 #   SmartHaus API    : http://localhost:8080/swagger   [demo profile]
 # =============================================================================
 
@@ -89,7 +91,7 @@ services:
 
   ollama:
     profiles: [ demo ]
-    image: ollama/ollama:0.34.1
+    image: ollama/ollama:0.34.2
     ports:
       - 11434:11434
     volumes:
@@ -117,7 +119,7 @@ services:
   # Monitor progress: docker compose --profile demo logs ollama-init -f
   ollama-init:
     profiles: [ demo ]
-    image: ollama/ollama:0.34.1
+    image: ollama/ollama:0.34.2
     depends_on:
       ollama:
         condition: service_healthy
@@ -151,6 +153,44 @@ services:
       retries: 10
       start_period: 15s
 
+  # Applies Signalizr's SQLite migrations before the gateway starts.
+  signalizr-migrate:
+    profiles: [ demo ]
+    image: ghcr.io/f2calv/signalizr:0.0.15
+    environment:
+      CasCap__FeatureConfig__EnabledFeatures: DbMigrator
+      CasCap__DatabaseConfig__Provider: Sqlite
+      CasCap__DatabaseConfig__ConnectionString: Data Source=/var/lib/signalizr/signalizr.db
+      CasCap__DatabaseConfig__MigrateOnStartup: "false"
+    volumes:
+      - signalizr_data:/var/lib/signalizr
+    restart: "no"
+
+  # Owns the signal-cli receive stream and exposes durable named-channel delivery.
+  signalizr:
+    profiles: [ demo ]
+    image: ghcr.io/f2calv/signalizr:0.0.15
+    ports:
+      - 8090:8080
+      - 5001:5001
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      CasCap__FeatureConfig__EnabledFeatures: Gateway,Receiver
+      CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
+      CasCap__SignalCliConfig__PhoneNumber: ${SIGNALIZR_PHONE_NUMBER:-+10000000000}
+      CasCap__ChannelConfig__Channels__smarthaus.chat: SmartHaus
+      CasCap__DatabaseConfig__Provider: Sqlite
+      CasCap__DatabaseConfig__ConnectionString: Data Source=/var/lib/signalizr/signalizr.db
+      CasCap__DatabaseConfig__MigrateOnStartup: "false"
+    volumes:
+      - signalizr_data:/var/lib/signalizr
+    depends_on:
+      signalcli:
+        condition: service_healthy
+      signalizr-migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
   # ---------- Demo profile: SmartHaus (EdgeHardware + Comms) ----------
 
   smarthaus:
@@ -171,6 +211,9 @@ services:
       CasCap__CachingConfig__RemoteCacheConnectionString: redis:6379,allowAdmin=true,abortConnect=false
       CasCap__SignalRHubConfig__SignalRHub: http://smarthaus:8080
       CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
+      CasCap__SignalCliConfig__PhoneNumber: ${SIGNALIZR_PHONE_NUMBER:-+10000000000}
+      CasCap__SignalizrClientConfig__BaseAddress: http://signalizr:8080
+      CasCap__SignalizrClientConfig__GrpcAddress: http://signalizr:5001
 
       # Azurite connection strings (compose uses azurite hostname instead of 127.0.0.1)
       CasCap__EdgeHardwareConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
@@ -196,6 +239,8 @@ services:
         condition: service_started
       signalcli:
         condition: service_healthy
+      signalizr:
+        condition: service_started
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:8080/healthz/live" ]
       interval: 10s
@@ -211,3 +256,4 @@ volumes:
   azurite_data:
   ollama_data:
   signalcli_data:
+  signalizr_data:

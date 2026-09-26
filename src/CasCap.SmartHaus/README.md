@@ -72,15 +72,23 @@ These sinks are registered in the feature pods and forward domain events to the 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `GroupName` | `string` | — | The name of the Signal group used for notifications |
+| `ChannelName` | `string` | `"smarthaus.chat"` | Signalizr named channel used for durable inbound delivery and core outbound messages |
 | `StreamKey` | `string` | `"comms:stream:events"` | Redis Stream key for cross-instance communication of key events |
 | `ConsumerGroup` | `string` | `"comms:agents"` | Redis consumer group name |
 | `ConsumerName` | `string` | `"comms-0"` | Consumer name within the group |
 | `ConsumerGroupStartId` | `string` | `"0"` | Starting ID when creating the consumer group (`"0"` = from beginning, `"$"` = new only) |
 | `StreamReadPosition` | `string` | `">"` | Read position passed to `XREADGROUP` |
 | `StreamReadCount` | `int` | `10` | Maximum entries per `XREADGROUP` call |
-| `PollingIntervalMs` | `int` | `5000` | Polling interval for comms stream and REST message retrieval |
+| `PollingIntervalMs` | `int` | `5000` | Retry interval for the comms stream and Signalizr subscription |
 | `HealthCheckProbeDelayMs` | `int` | `2000` | Delay in milliseconds between signal-cli readiness probes at startup |
-| `FlushTimeoutMs` | `int` | `5000` | Timeout in milliseconds for flushing pending envelopes at startup |
+
+### `SignalizrClientConfig` (`CasCap:SignalizrClientConfig`)
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `BaseAddress` | `string` | `http://localhost:8090` | Signalizr REST endpoint used for channel discovery, sends, and attachment downloads |
+| `GrpcAddress` | `string` | `http://localhost:5001` | Signalizr gRPC endpoint used for durable inbound subscriptions |
+| `SubscriberName` | `string` | `smarthaus-comms` | Stable durable cursor identity retained across restarts |
 
 ### `MediaConfig` (`CasCap:MediaConfig`)
 
@@ -109,6 +117,12 @@ These sinks are registered in the feature pods and forward domain events to the 
 | `Dhw1AlertHysteresis` | `double` | `1.0` | Hysteresis in °C for the DHW1 setpoint alert |
 | `Dhw1AlertCooldownMs` | `int` | `3600000` | Minimum cooldown in milliseconds between consecutive DHW1 setpoint alerts |
 
+### Voice configuration (`CasCap.Api.Voice`)
+
+Speech-to-text and text-to-speech processing is owned by the adjacent `CasCap.Api.Voice` library and
+registered through its DI extensions. SmartHaus supplies the application configuration and retains
+only communications orchestration such as `EchoTranscriptToDebugChat`.
+
 ### `SpeechToTextConfig` (`CasCap:SpeechToTextConfig`)
 
 Every setting has a safe default, so the section may be omitted entirely. The provider-specific
@@ -129,18 +143,17 @@ endpoints are nullable and are read only when that provider is selected.
 | `MaxDecodedBytes` | `int` | `19200000` | Largest accepted decoded WAV, about 10 minutes of 16 kHz mono PCM |
 | `MaxDurationSeconds` | `int` | `300` | Longest accepted recording |
 | `FfmpegPath` | `string` | `ffmpeg` | ffmpeg executable used to normalise non-WAV audio |
-| `EchoTranscriptToDebugChat` | `bool` | `false` | Echoes the transcript to the debug recipient before the agent turn. A voice message may come from another household member, so enable only on a recipient you control |
 
 ## Agent Integration — Signal Messenger
 
 ### CommsAgent — the gateway agent
 
-`CommunicationsBgService` is the **sole component that communicates with Signal**. It acts as a gateway between the smart home and the user:
+`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It acts as a gateway between the smart home and the user:
 
 1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsAgentConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
-2. **Incoming messages** — Polls the signal-cli REST API for new Signal group messages.
+2. **Incoming messages** — Subscribes to the configured Signalizr channel over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.
 3. **Agent routing** — Routes both stream events and incoming user messages through the `CommsAgent` (`AIAgent` resolved from `AIConfig.Agents[AgentKeys.CommsAgent]`), which decides how to respond.
-4. **Outbound** — Sends the agent's response to the Signal notification group via `INotifier`.
+4. **Outbound** — Sends the agent's response to the configured Signalizr channel. Direct SignalCli access remains temporarily for reactions, typing state, profile updates, polls, and group lookup until those control-plane operations are available through Signalizr.
 
 Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directly**. They publish their findings to the comms stream, and CommsAgent relays, aggregates, or suppresses notifications as appropriate.
 
@@ -161,13 +174,13 @@ Each agent's orchestration settings live in a `Settings` sub-section under the c
 
 When a user sends an audio clip (e.g. a voice message) via Signal, `CommunicationsBgService` intercepts it before the comms agent sees it:
 
-1. **Download** — The attachment bytes and MIME type (`audio/aac`, `audio/ogg`, etc.) are downloaded from signal-cli. Every attachment identifier on the envelope is then deleted, whether or not it was selected.
+1. **Download** — The selected attachment bytes and MIME type (`audio/aac`, `audio/ogg`, etc.) are downloaded from Signalizr's durable store. Signalizr owns wrapper cleanup and retention, so SmartHaus does not delete inbound attachments.
 2. **Validate** — `VoiceMessageTranscriptionService` checks the declared media type against the payload's own file signature and enforces the configured compressed-size, decoded-size and duration limits. Nothing is transmitted until those pass.
 3. **Normalise** — Audio that is not already 16 kHz mono signed 16-bit PCM WAV is piped through `ffmpeg` (stdin to stdout), so it never touches the file system.
 4. **Transcribe** — The WAV is handed to an `ISpeechToTextClient`, the `Microsoft.Extensions.AI` abstraction. Which implementation runs is chosen by `CasCap:SpeechToTextConfig:Provider`; see [Speech-to-text providers](#speech-to-text-providers) below. Switching provider is a configuration change, not a code change.
 5. **Inject** — Only the normalised transcript reaches CommsAgent, which processes it as ordinary text. Raw audio is never forwarded, and a failed transcription produces one concise reply with no agent turn and nothing persisted to the conversation.
 
-`CasCap:SpeechToTextConfig:Mode` gates the whole path: `Disabled` rejects voice without downloading, `Shadow` transcribes and cleans up for measurement without replying, and `Enabled` drives a normal text turn.
+`CasCap:SpeechToTextConfig:Mode` gates the whole path: `Disabled` rejects voice without downloading, `Shadow` transcribes for measurement without replying, and `Enabled` drives a normal text turn.
 
 ```mermaid
 flowchart LR
@@ -251,7 +264,8 @@ flowchart TD
     COMMS_STREAM[("Redis Stream\nCommsAgentConfig.StreamKey")]
     REDIS_CACHE[("Redis\nimage cache")]
     CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
-    SIGNALCLI["Signal messenger\n(signal-cli REST API)"]
+    SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
+    SIGNALCLI["signal-cli control plane\n(reactions, typing, polls)"]
 
     %% SignalR path
     FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
@@ -279,8 +293,9 @@ flowchart TD
     COMMS_BG -->|audio attachment| STT
     STT -->|transcript| COMMS_BG
     COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|relay to group| SIGNALCLI
-    SIGNALCLI -->|incoming messages| COMMS_BG
+    COMMS_AGENT -->|send to named channel| SIGNALIZR
+    SIGNALIZR -->|durable subscription| COMMS_BG
+    COMMS_BG -->|auxiliary controls| SIGNALCLI
 ```
 
 ## Agent Instructions
@@ -570,7 +585,8 @@ Audio["Speech-to-text<br/>(selected provider)"]:::stt
 | Project | Purpose |
 | --- | --- |
 | `CasCap.Common.AI` | Consolidated MCP tools, prompts, and agent infrastructure |
-| `CasCap.Api.SignalCli` | Signal messenger client |
+| `CasCap.Signalizr.Client` | Durable named-channel Signal transport for core send, receive, and attachment operations |
+| `CasCap.Api.SignalCli` | Temporary auxiliary Signal control plane for reactions, typing, profiles, polls, and group lookup |
 | `CasCap.Api.DDns` | Dynamic DNS service |
 | `CasCap.Api.Buderus.Sinks` | Buderus SignalR sink |
 | `CasCap.Api.DoorBird.Sinks` | DoorBird SignalR, Redis, Azure Table, and Blob sinks |

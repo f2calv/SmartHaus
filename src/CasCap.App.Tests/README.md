@@ -15,10 +15,10 @@ These tests exercise components that span multiple feature libraries and require
 | `FeatureServiceRegistrationTests` | Integration tests verifying `IBgFeature` background-service registrations and the `EnabledFeatures` filtering behaviour |
 | `HealthTests` | Integration tests for the application health-check endpoints (`/healthz`) |
 | `SystemControllerTests` | Integration tests for the `SystemController` (`GET /api/system`) including Basic authentication |
-| `AzureSpeechToTextClientTests` | Integration test for `AzureSpeechToTextClient` against the live Azure AI Speech resource. Synthesizes a known sentence, transcribes it back, and asserts the words survive the round trip. Driven through the adapter with the options the pipeline really sends, because calling the underlying service directly once hid a locale defect that only appeared in production. Skipped when no Azure endpoint or credential is configured |
-| `WhisperAsrSpeechToTextClientTests` | Unit tests for the whisper-asr adapter, covering request shape, endpoint normalisation and transient-status classification against a stub handler |
-| `VoiceMessageTranscriptionServiceTests` | Unit tests for the voice pipeline: media-type validation, size and duration limits, ffmpeg normalisation and failure outcomes |
-| `VoiceTranscriptionMetricsTests` | Unit tests asserting the voice instruments and their `outcome` and `provider` dimensions |
+
+Voice provider adapters and voice processing policy tests live in the standalone
+`CasCap.Api.Voice.Tests` project. SmartHaus retains only the communication orchestration tests and
+their local speech fakes.
 
 ## Prerequisites
 
@@ -26,12 +26,11 @@ These tests exercise components that span multiple feature libraries and require
 - `appsettings.Development.json` (optional) with server URLs and secrets.
 - `knxgroupaddresses.xml` accessible via the `GroupAddressXmlFilePath` configured in `appsettings.Development.json`.
 - A running inference server e.g. Ollama for `AIAgentExtensionsTests` — tests fail gracefully when the server is unreachable.
-- For `AzureSpeechToTextClientTests`, an Azure AI Speech resource reachable through `CasCap:SpeechToTextConfig:AzureEndpoint`, and a credential holding the `Cognitive Services Speech User` role on it. The test skips rather than fails when either is absent.
 
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.App.Tests/CasCap.App.Tests.csproj
+dotnet test --project src/CasCap.App.Tests/CasCap.App.Tests.csproj
 ```
 
 ## Dependencies

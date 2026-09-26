@@ -21,7 +21,7 @@ These tests verify that the OAuth 2.0 token flow works correctly and that the Mi
 ## Running the tests
 
 ```bash
-dotnet test src/CasCap.Api.Miele.Tests/CasCap.Api.Miele.Tests.csproj
+dotnet test --project src/CasCap.Api.Miele.Tests/CasCap.Api.Miele.Tests.csproj
 ```
 
 ## Dependencies

@@ -1,0 +1,17 @@
+# A feature workload published through an ingress.
+doorbird:
+  replicaCount: 1
+  envVars:
+    CasCap__FeatureConfig__EnabledFeatures: DoorBird
+  ingress:
+    enabled: true
+    className: nginx
+    hosts:
+      - host: smarthaus.example.com
+        paths:
+          - path: /api/v1/doorbird
+            pathType: Prefix
+    tls:
+      - secretName: smarthaus-example-tls
+        hosts:
+          - smarthaus.example.com

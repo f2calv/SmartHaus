@@ -22,6 +22,10 @@ public sealed record CommsAgentConfig : IAppConfig
     [Required, MinLength(1)]
     public required string GroupName { get; init; }
 
+    /// <summary>Signalizr channel used for application messages and attachments.</summary>
+    [Required, MinLength(1)]
+    public string ChannelName { get; init; } = "smarthaus.chat";
+
     /// <summary>Pre-configured Signal group ID used as a fallback when <c>ListGroups</c> fails.</summary>
     /// <remarks>
     /// When set, <see cref="CasCap.Services.CommunicationsBgService"/> will use this value
@@ -37,6 +41,10 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
     public string ProfileName { get; init; } = "Smart Haus";
+
+    /// <summary>Whether to echo a successful voice transcript to the configured debug recipient.</summary>
+    /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
+    public bool EchoTranscriptToDebugChat { get; init; }
 
     /// <summary>
     /// Whether to send a separate status message (e.g. "🔀 Consulting SecurityAgent…") to the
@@ -79,9 +87,7 @@ public sealed record CommsAgentConfig : IAppConfig
     [Range(1, int.MaxValue)]
     public int StreamReadCount { get; init; } = 10;
 
-    /// <summary>
-    /// Polling interval in milliseconds for the comms stream and REST message retrieval.
-    /// </summary>
+    /// <summary>Retry interval for the comms stream and Signalizr subscription.</summary>
     /// <remarks>
     /// Defaults to <c>5000</c> (5 seconds).
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
@@ -99,16 +105,6 @@ public sealed record CommsAgentConfig : IAppConfig
     /// </remarks>
     [Range(1, int.MaxValue)]
     public int HealthCheckProbeDelayMs { get; init; } = 2_000;
-
-    /// <summary>
-    /// Timeout in milliseconds for flushing pending envelopes from signal-cli at startup.
-    /// </summary>
-    /// <remarks>
-    /// Defaults to <c>5000</c> ms (5 seconds).
-    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
-    /// </remarks>
-    [Range(1, int.MaxValue)]
-    public int FlushTimeoutMs { get; init; } = 5_000;
 
     /// <summary>
     /// Optional set of <see cref="CommsEvent.Source"/> values this instance will process.
