@@ -97,6 +97,14 @@ public sealed class FakeSignalizrClient : ISignalizrClient
         string? targetAuthor = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     /// <inheritdoc/>
+    public Task SetReactionAsync(SignalizrMessage message, string reaction, CancellationToken cancellationToken = default) =>
+        SetReactionAsync(message.Channel!, reaction, message.Timestamp, message.Sender, cancellationToken);
+
+    /// <inheritdoc/>
+    public Task RemoveReactionAsync(SignalizrMessage message, string reaction, CancellationToken cancellationToken = default) =>
+        Task.CompletedTask;
+
+    /// <inheritdoc/>
     public async Task StartTypingAsync(string channel, CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _startTypingCallCount);
