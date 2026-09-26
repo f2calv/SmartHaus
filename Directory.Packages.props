@@ -18,7 +18,6 @@
     <PackageVersion Include="CasCap.Api.Azure.Auth" Version="1.6.3" />
     <PackageVersion Include="CasCap.Api.Azure.CognitiveServices" Version="1.6.3" />
     <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.6.3" />
-    <PackageVersion Include="CasCap.Api.SignalCli" Version="0.11.5" />
     <PackageVersion Include="CasCap.Api.Voice" Version="0.1.1" />
     <PackageVersion Include="CasCap.Signalizr.Client" Version="0.0.16" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.14.2" />

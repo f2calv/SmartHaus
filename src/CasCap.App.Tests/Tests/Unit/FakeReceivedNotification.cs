@@ -1,13 +1,9 @@
 namespace CasCap.Tests.Unit;
 
 /// <summary>
-/// Minimal <see cref="IReceivedNotification"/> used to drive the comms receive path without the
-/// signal-cli envelope shape.
+/// Minimal <see cref="IReceivedNotification"/> that the fixture converts into a Signalizr delivery
+/// to drive the comms receive path.
 /// </summary>
-/// <remarks>
-/// Deliberately not a <c>SignalReceivedMessage</c>, so the poll-vote and content-only diagnostic
-/// branches stay out of the way of the paths under test.
-/// </remarks>
 public sealed class FakeReceivedNotification : IReceivedNotification
 {
     /// <inheritdoc/>

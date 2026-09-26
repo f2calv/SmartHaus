@@ -4,14 +4,19 @@ namespace CasCap.Services;
 
 /// <summary>
 /// Encapsulates all debug and stats messaging sent to the
-/// <see cref="SignalCliConfig.PhoneNumberDebug"/> number ("Note to Self") for observability
-/// of the comms agent pipeline.
+/// <see cref="CommsAgentConfig.MonitorChannelName"/> Signalizr channel for observability of the
+/// comms agent pipeline.
 /// </summary>
+/// <remarks>
+/// The monitor channel is operator diagnostics: it carries prompts, transcripts and tool
+/// arguments, so its Signal group must contain only the operator. Leaving the channel name unset
+/// disables every message sent from here.
+/// </remarks>
 public sealed class CommsDebugNotifier(
     ILogger<CommsDebugNotifier> logger,
-    IOptions<SignalCliConfig> signalCliConfig,
+    IOptions<CommsAgentConfig> commsAgentConfig,
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
-    INotifier notifier,
+    ISignalizrClient signalizrClient,
     IServiceProvider serviceProvider)
 {
     /// <summary>
@@ -63,18 +68,18 @@ public sealed class CommsDebugNotifier(
     }
 
     /// <summary>
-    /// Sends the transcript of an inbound voice message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// Sends the transcript of an inbound voice message to <see cref="CommsAgentConfig.MonitorChannelName"/>
     /// so a misheard command can be diagnosed against what the agent actually received.
     /// </summary>
     /// <param name="result">The successful transcription, carrying the transcript and stage timings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
     /// Only called when <see cref="CommsAgentConfig.EchoTranscriptToDebugChat"/> is enabled. The
-    /// transcript goes to the debug recipient alone and never to a log sink or telemetry.
+    /// transcript goes to the monitor channel alone and never to a log sink or telemetry.
     /// </remarks>
     public async Task SendVoiceTranscriptDebugAsync(VoiceTranscriptionResult result, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
             return;
 
         try
@@ -91,18 +96,12 @@ public sealed class CommsDebugNotifier(
             if (result.TranscriptionDuration is { } transcription)
                 sb.Append($" | transcribe {transcription.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcription)}");
 
-            var debugMsg = new SignalMessageRequest
-            {
-                Message = sb.ToString(),
-                Number = signalCliConfig.Value.PhoneNumber,
-                Recipients = [signalCliConfig.Value.PhoneNumberDebug]
-            };
-            await notifier.SendAsync(debugMsg, cancellationToken);
+            await signalizrClient.SendAsync(monitorChannel, sb.ToString(), cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
     }
 
@@ -113,12 +112,12 @@ public sealed class CommsDebugNotifier(
             : string.Empty;
 
     /// <summary>
-    /// Sends a copy of an incoming stream event to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// Sends a copy of an incoming stream event to <see cref="CommsAgentConfig.MonitorChannelName"/>
     /// so automated sensor messages can be observed alongside the agent's response.
     /// </summary>
     public async Task SendStreamEventDebugAsync(CommsEvent commsEvent, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
             return;
 
         try
@@ -130,31 +129,25 @@ public sealed class CommsDebugNotifier(
             if (commsEvent.JsonPayload is not null)
                 sb.AppendLine($"\U0001F4CE {commsEvent.JsonPayload}");
 
-            var debugMsg = new SignalMessageRequest
-            {
-                Message = sb.ToString().TrimEnd(),
-                Number = signalCliConfig.Value.PhoneNumber,
-                Recipients = [signalCliConfig.Value.PhoneNumberDebug],
-            };
-            await notifier.SendAsync(debugMsg, cancellationToken);
-            logger.LogDebug("{ClassName} stream event debug sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            await signalizrClient.SendAsync(monitorChannel, sb.ToString().TrimEnd(), cancellationToken);
+            logger.LogDebug("{ClassName} stream event debug sent to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send stream event debug to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            logger.LogWarning(ex, "{ClassName} failed to send stream event debug to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
     }
 
     /// <summary>
-    /// Sends a compaction notification to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// Sends a compaction notification to <see cref="CommsAgentConfig.MonitorChannelName"/>
     /// when the <see cref="ToolOutputStrippingChatReducer"/> trims the chat history.
     /// </summary>
     public async Task SendCompactionDebugAsync(int inputCount, int outputCount, int toolDropped, int windowTrimmed, int target,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
             return;
 
         try
@@ -168,25 +161,19 @@ public sealed class CommsDebugNotifier(
                 sb.AppendLine($"\u2702\uFE0F Window trimmed: {windowTrimmed}");
             sb.Append($"\U0001F3AF Target: {target}");
 
-            var debugMsg = new SignalMessageRequest
-            {
-                Message = sb.ToString(),
-                Number = signalCliConfig.Value.PhoneNumber,
-                Recipients = [signalCliConfig.Value.PhoneNumberDebug],
-            };
-            await notifier.SendAsync(debugMsg, cancellationToken);
-            logger.LogDebug("{ClassName} compaction debug sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            await signalizrClient.SendAsync(monitorChannel, sb.ToString(), cancellationToken);
+            logger.LogDebug("{ClassName} compaction debug sent to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send compaction debug to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            logger.LogWarning(ex, "{ClassName} failed to send compaction debug to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
     }
 
     /// <summary>
-    /// Sends a single consolidated debug message to <see cref="SignalCliConfig.PhoneNumberDebug"/>
+    /// Sends a single consolidated debug message to <see cref="CommsAgentConfig.MonitorChannelName"/>
     /// containing a step-by-step timeline of the agent pipeline execution.
     /// </summary>
     /// <remarks>
@@ -197,7 +184,7 @@ public sealed class CommsDebugNotifier(
         byte[]? originalBinaryContent, string? originalMimeType, long? inboundTimestamp,
         CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(signalCliConfig.Value.PhoneNumberDebug))
+        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
             return;
 
         try
@@ -300,20 +287,14 @@ public sealed class CommsDebugNotifier(
             if (result.FinishReason is { Length: > 0 })
                 sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
 
-            var debugMsg = new SignalMessageRequest
-            {
-                Message = sb.ToString().TrimEnd(),
-                Number = signalCliConfig.Value.PhoneNumber,
-                Recipients = [signalCliConfig.Value.PhoneNumberDebug],
-            };
-            await notifier.SendAsync(debugMsg, cancellationToken);
-            logger.LogDebug("{ClassName} debug stats sent to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            await signalizrClient.SendAsync(monitorChannel, sb.ToString().TrimEnd(), cancellationToken);
+            logger.LogDebug("{ClassName} debug stats sent to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send debug stats to {PhoneNumberDebug}",
-                nameof(CommsDebugNotifier), signalCliConfig.Value.PhoneNumberDebug?.MaskPhoneNumber());
+            logger.LogWarning(ex, "{ClassName} failed to send debug stats to channel {Channel}",
+                nameof(CommsDebugNotifier), monitorChannel);
         }
     }
 

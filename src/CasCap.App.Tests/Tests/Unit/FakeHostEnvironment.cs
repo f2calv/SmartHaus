@@ -4,8 +4,7 @@ using Microsoft.Extensions.Hosting;
 namespace CasCap.Tests.Unit;
 
 /// <summary>
-/// <see cref="IHostEnvironment"/> substitute fixed to Development so the comms service skips the
-/// signal-cli readiness probe.
+/// <see cref="IHostEnvironment"/> substitute fixed to Development for the comms service under test.
 /// </summary>
 public sealed class FakeHostEnvironment : IHostEnvironment
 {

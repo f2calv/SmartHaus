@@ -1,57 +1,39 @@
 namespace CasCap.Services;
 
 /// <summary>
-/// MCP wrapper for <see cref="SignalCliRestClientService"/> that exposes messaging
-/// poll operations as MCP tools for the Comms Agent.
+/// Exposes messaging poll operations as MCP tools for the Comms Agent, through the Signalizr
+/// gateway.
 /// </summary>
 /// <remarks>
-/// <para>
-/// Bakes in the account phone number and dynamically resolves the target group ID from
-/// the configured group name so the agent only needs to provide the poll question and
-/// answer options.
-/// </para>
-/// <para>
-/// Temporary: these tools call <see cref="SignalCliRestClientService"/> directly until
-/// poll operations are added to <see cref="CasCap.Common.Abstractions.INotifier"/>.
-/// </para>
+/// Bakes in the chat channel so the agent only needs to provide the poll question and answer
+/// options. The gateway owns the account and resolves the channel to its Signal group.
 /// </remarks>
 [McpServerToolType]
 public sealed partial class MessagingMcpQueryService(
-    SignalCliRestClientService signalCliSvc,
+    ISignalizrClient signalizrClient,
     IPollTracker pollTracker,
-    string phoneNumber,
-    string groupName)
+    string channelName)
 {
     /// <summary>
-    /// Creates a poll in the configured notification group.
+    /// Creates a poll in the configured chat channel.
     /// </summary>
     [McpServerTool]
     [Description("Sends a multiple-choice question to the user's messaging group. ALWAYS use this tool when you would list options, choices, suggestions, recommendations, or alternatives — even if the user does not say 'poll'. Trigger phrases include 'give me options', 'what are my choices', 'suggest some', 'which should I', or any request that results in a numbered/bulleted list of possibilities. After calling this tool, do NOT send a follow-up text message — the poll itself is the response.")]
-    public async Task<CreatePollResponse?> CreatePoll(
+    public async Task<PollCreatedResult> CreatePoll(
         [Description("Short question for the poll, e.g. 'Which room lights should I turn off?'")] string question,
         [Description("Comma-separated answer options, 2–8 choices, e.g. 'Yes, No, Maybe'.")] string answers,
         CancellationToken cancellationToken = default)
     {
-        var groupId = await ResolveGroupIdAsync();
-        if (groupId is null)
-            return null;
-
         var answerArray = answers.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var request = new CreatePollRequest
-        {
-            Question = question,
-            Answers = answerArray,
-            Recipient = groupId,
-        };
-        var response = await signalCliSvc.CreatePoll(phoneNumber, request, cancellationToken);
-        if (response is not null)
-            pollTracker.TrackPoll(response.Timestamp, question, answerArray, groupId);
+        var pollId = await signalizrClient.CreatePollAsync(channelName, question, answerArray,
+            cancellationToken: cancellationToken);
+        pollTracker.TrackPoll(pollId, question, answerArray, channelName);
 
-        return response;
+        return new PollCreatedResult { PollId = pollId };
     }
 
     /// <summary>
-    /// Closes an existing poll in the notification group.
+    /// Closes an existing poll in the chat channel.
     /// </summary>
     [McpServerTool]
     [Description("Closes a previously created poll. Use the identifier from the create response.")]
@@ -59,19 +41,9 @@ public sealed partial class MessagingMcpQueryService(
         [Description("The poll identifier returned when the poll was created.")] string pollId,
         CancellationToken cancellationToken = default)
     {
-        var groupId = await ResolveGroupIdAsync();
-        if (groupId is null)
-            return false;
-
-        var result = await signalCliSvc.ClosePoll(phoneNumber, new ClosePollRequest
-        {
-            PollTimestamp = pollId,
-            Recipient = groupId,
-        }, cancellationToken);
-        if (result)
-            pollTracker.RemovePoll(pollId);
-
-        return result;
+        await signalizrClient.ClosePollAsync(channelName, pollId, cancellationToken);
+        pollTracker.RemovePoll(pollId);
+        return true;
     }
 
     /// <summary>
@@ -97,12 +69,4 @@ public sealed partial class MessagingMcpQueryService(
             IsActedUpon = poll.IsActedUpon,
         });
     }
-
-    #region private helpers
-
-    private async Task<string?> ResolveGroupIdAsync() =>
-        (await signalCliSvc.ListGroups(phoneNumber))
-            ?.FirstOrDefault(g => g.Name == groupName)?.Id;
-
-    #endregion
 }

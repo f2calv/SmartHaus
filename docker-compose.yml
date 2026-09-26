@@ -130,7 +130,7 @@ services:
 
   # ---------- Demo profile: signal-cli ----------
 
-  # signal-cli REST API — enables Signal messaging with the Comms feature.
+  # signal-cli REST API — the Signal wrapper that Signalizr owns on behalf of the Comms feature.
   # Register a phone number via the API after startup:
   #   POST http://localhost:8081/v1/register/<number>
   # or link an existing device via QR code:
@@ -179,6 +179,7 @@ services:
       CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
       CasCap__SignalCliConfig__PhoneNumber: ${SIGNALIZR_PHONE_NUMBER:-+10000000000}
       CasCap__ChannelConfig__Channels__smarthaus.chat: SmartHaus
+      CasCap__ChannelConfig__Channels__smarthaus.monitor: SmartHaus Monitor
       CasCap__DatabaseConfig__Provider: Sqlite
       CasCap__DatabaseConfig__ConnectionString: Data Source=/var/lib/signalizr/signalizr.db
       CasCap__DatabaseConfig__MigrateOnStartup: "false"
@@ -210,8 +211,6 @@ services:
       # Container hostname overrides (Development.json uses localhost, compose uses container names)
       CasCap__CachingConfig__RemoteCacheConnectionString: redis:6379,allowAdmin=true,abortConnect=false
       CasCap__SignalRHubConfig__SignalRHub: http://smarthaus:8080
-      CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
-      CasCap__SignalCliConfig__PhoneNumber: ${SIGNALIZR_PHONE_NUMBER:-+10000000000}
       CasCap__SignalizrClientConfig__BaseAddress: http://signalizr:8080
       CasCap__SignalizrClientConfig__GrpcAddress: http://signalizr:5001
 
@@ -237,8 +236,6 @@ services:
         condition: service_healthy
       otelcol:
         condition: service_started
-      signalcli:
-        condition: service_healthy
       signalizr:
         condition: service_started
     healthcheck:

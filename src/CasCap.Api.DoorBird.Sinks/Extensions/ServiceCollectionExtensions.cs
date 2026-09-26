@@ -24,7 +24,7 @@ public static class DoorBirdSinksServiceCollectionExtensions
     /// <see cref="DoorBirdConfig.AzureBlobStorageConnectionString"/> is treated as an endpoint URI;
     /// when <see langword="null"/> it is used as a full connection string.
     /// </param>
-    /// <param name="additionalSinkAssemblies">Additional assemblies to scan for <see cref="IEventSink{T}"/> implementations (e.g. SignalCli).</param>
+    /// <param name="additionalSinkAssemblies">Additional assemblies to scan for <see cref="IEventSink{T}"/> implementations.</param>
     public static void AddDoorBirdWithExtraSinks(this IServiceCollection services, IConfiguration configuration,
         bool lite = false,
         Action<DoorBirdConfig>? configure = null,

@@ -26,7 +26,7 @@ public static class HausServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers the signal-cli REST API, comms stream sink, media stream consumer,
+    /// Registers the Signalizr client, comms stream sink, media stream consumer,
     /// and the <see cref="CommunicationsBgService"/> and <see cref="MediaBgService"/>
     /// background workers for <c>Comms</c> deployments.
     /// </summary>
@@ -40,17 +40,15 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddCasCapConfiguration<CommsAgentConfig>();
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
         builder.Services.AddMediaStreamSink();
-        builder.Services.AddSignalCli(builder.Configuration);
         builder.Services.AddSignalizrClient(builder.Configuration);
         builder.Services.AddMessagingMcp(
-            builder.Configuration[$"{SignalCliConfig.ConfigurationSectionName}:{nameof(SignalCliConfig.PhoneNumber)}"]!,
-            builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.GroupName)}"]!);
+            builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.ChannelName)}"]
+                ?? new CommsAgentConfig().ChannelName);
         builder.Services.AddSingleton<DistributedCacheSessionStore>();
         builder.Services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<DistributedCacheSessionStore>());
         builder.Services.AddSingleton<AgentCommandHandler>();
 
         builder.Services.AddSingleton<CommsDebugNotifier>();
-        builder.Services.TryAddSingleton<ISignalAttachmentCleaner, SignalAttachmentCleaner>();
         builder.Services.TryAddSingleton<ISignalMessageDeduplicator, RedisSignalMessageDeduplicator>();
         // CommunicationsBgService takes the transcription service unconditionally; the configured
         // VoiceProcessingMode decides whether it does any work.

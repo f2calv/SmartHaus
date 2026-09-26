@@ -13,7 +13,7 @@ public class SignalMessageDeduplicatorTests
         string conversation = "group.ZXhhbXBsZQ==", string sender = "+10000000001", long timestamp = 1712153610000) =>
         new() { Account = account, Conversation = conversation, Sender = sender, Timestamp = timestamp };
 
-    private static CommsAgentConfig Config() => new() { GroupName = "example-group" };
+    private static CommsAgentConfig Config() => new();
 
     private static RedisSignalMessageDeduplicator UnreachableSvc() => new(
         NullLogger<RedisSignalMessageDeduplicator>.Instance, Options.Create(Config()), new ThrowingRemoteCache());

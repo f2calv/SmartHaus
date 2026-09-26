@@ -18,10 +18,6 @@
 [cascap.api.knx-url]: https://nuget.org/packages/CasCap.Api.Knx
 [cascap.api.knx.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Knx.Sinks?color=blue
 [cascap.api.knx.sinks-url]: https://nuget.org/packages/CasCap.Api.Knx.Sinks
-[cascap.api.signalcli-badge]: https://img.shields.io/nuget/v/CasCap.Api.SignalCli?color=blue
-[cascap.api.signalcli-url]: https://nuget.org/packages/CasCap.Api.SignalCli
-[cascap.api.signalcli.aspnetcore-badge]: https://img.shields.io/nuget/v/CasCap.Api.SignalCli.AspNetCore?color=blue
-[cascap.api.signalcli.aspnetcore-url]: https://nuget.org/packages/CasCap.Api.SignalCli.AspNetCore
 [cascap.api.voice-badge]: https://img.shields.io/nuget/v/CasCap.Api.Voice?color=blue
 [cascap.api.voice-url]: https://nuget.org/packages/CasCap.Api.Voice
 
@@ -171,7 +167,6 @@ flowchart TD
     REDIS_CACHE[("Redis\nimage cache")]
     CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
     SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
-    SIGNALCLI["signal-cli control plane\n(reactions, typing, polls)"]
 
     %% SignalR path
     FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
@@ -199,9 +194,8 @@ flowchart TD
     COMMS_BG -->|audio attachment| STT
     STT -->|transcript| COMMS_BG
     COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|send to named channel| SIGNALIZR
+    COMMS_AGENT -->|send, react, poll| SIGNALIZR
     SIGNALIZR -->|durable subscription| COMMS_BG
-    COMMS_BG -->|auxiliary controls| SIGNALCLI
 ```
 
 ## Dependency Graph
@@ -270,8 +264,6 @@ graph TD
             EDGE_SINKS["Api.EdgeHardware.Sinks"]
         end
             SIGNALIZR_CLIENT["Signalizr.Client"]
-        SIGNAL["Api.SignalCli"]
-        SIGNAL_WEB["Api.SignalCli.AspNetCore"]
         DDNS["Api.DDns"]
     end
 
@@ -293,7 +285,6 @@ graph TD
         T_FRO["Api.Fronius.Tests"]
         T_KNX["Api.Knx.Tests"]
         T_MIE["Api.Miele.Tests"]
-        T_SIG["Api.SignalCli.Tests"]
     end
 
     %% ── Application edges ───────────────────────────────────────────────────
@@ -309,7 +300,6 @@ graph TD
 
     %% ── Core edges ──────────────────────────────────────────────────────────
     HAUS --> SIGNALIZR_CLIENT
-    HAUS --> SIGNAL
     HAUS --> HAUS_AI
     HAUS --> BUD_SINKS
     HAUS --> DB_SINKS
@@ -334,7 +324,6 @@ graph TD
     HAUS_AI --> SHEL
     HAUS_AI --> UBI
     HAUS_AI --> EDGE
-    HAUS_AI --> SIGNAL
 
     %% ── Feature ↔ Core edges ────────────────────────────────────────────────
     BUD_SINKS --> BUD
@@ -344,7 +333,6 @@ graph TD
     FRO_SINKS --> FRO
 
     KNX_SINKS --> KNX
-    KNX_SINKS --> SIGNAL
 
     MIE_SINKS --> MIE
 
@@ -358,7 +346,6 @@ graph TD
 
     EDGE_SINKS --> EDGE
 
-    SIGNAL_WEB --> SIGNAL
 
     %% ── Foundation edges ────────────────────────────────────────────────────
     HAUS --> ABS
@@ -370,7 +357,6 @@ graph TD
     T_FRO --> FRO & EXT2
     T_KNX --> KNX & KNX_SINKS & EXT2
     T_MIE --> MIE & EXT2
-    T_SIG --> SIGNAL & EXT2
 
     %% ── Styles ──────────────────────────────────────────────────────────────
     classDef appNode fill:#1565C0,stroke:#0D47A1,color:#fff
@@ -383,11 +369,11 @@ graph TD
 
     class SERVER,CONSOLE appNode
     class APP,EXT2,HAUS coreNode
-    class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,SIGNAL,SIGNAL_WEB,DDNS featureNode
+    class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,DDNS featureNode
     class HAUS_AI mcpNode
     class BUD_SINKS,DB_SINKS,FRO_SINKS,KNX_SINKS,MIE_SINKS,SIC_SINKS,WIZ_SINKS,SHEL_SINKS,UBI_SINKS,EDGE_SINKS sinkNode
     class ABS foundationNode
-    class T_APP,T_BUD,T_DB,T_FRO,T_KNX,T_MIE,T_SIG testNode
+    class T_APP,T_BUD,T_DB,T_FRO,T_KNX,T_MIE testNode
 ```
 
 ## NuGet Packages
@@ -404,8 +390,6 @@ Standalone device API libraries published from this repository. *Some libraries 
 | CasCap.Api.Fronius.Sinks | [![Nuget][cascap.api.fronius.sinks-badge]][cascap.api.fronius.sinks-url] |
 | CasCap.Api.Knx | [![Nuget][cascap.api.knx-badge]][cascap.api.knx-url] |
 | CasCap.Api.Knx.Sinks | [![Nuget][cascap.api.knx.sinks-badge]][cascap.api.knx.sinks-url] |
-| CasCap.Api.SignalCli | [![Nuget][cascap.api.signalcli-badge]][cascap.api.signalcli-url] |
-| CasCap.Api.SignalCli.AspNetCore | [![Nuget][cascap.api.signalcli.aspnetcore-badge]][cascap.api.signalcli.aspnetcore-url] |
 | CasCap.Api.Voice | [![Nuget][cascap.api.voice-badge]][cascap.api.voice-url] |
 
 ## Prerequisites
@@ -454,7 +438,8 @@ Additional services started by the `demo` profile:
 | Service | Port | Purpose |
 | --- | --- | --- |
 | SmartHaus | 8080 | Application with Swagger UI at `/swagger` |
-| signal-cli REST | 8081 | Signal messaging API |
+| signal-cli REST | 8081 | Signal wrapper, owned by Signalizr |
+| Signalizr | 8090, 5001 | Signal gateway: REST channel operations and the gRPC subscription |
 | Ollama | 11434 | Local LLM inference (GPU) |
 
 #### Signal Messaging Setup
@@ -469,7 +454,12 @@ Additional services started by the `demo` profile:
 
    Scan the QR code from Signal on your phone: **Settings → Linked Devices → Link New Device**.
 
-3. **Send a test event** — this triggers the Comms pipeline which forwards the event via Signal:
+3. **Create the Signal groups** Signalizr resolves by name: `SmartHaus` for the chat and
+   `SmartHaus Monitor` for operator diagnostics. Keep the monitor group to yourself — it repeats
+   prompts and transcripts. SmartHaus ignores messages the gateway account itself sends, so chat
+   from a phone other than the one linked above.
+
+4. **Send a test event** — this triggers the Comms pipeline which forwards the event via Signal:
 
    ```bash
    curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"

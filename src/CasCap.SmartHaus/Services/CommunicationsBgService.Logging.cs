@@ -88,9 +88,6 @@ public sealed partial class CommunicationsBgService
 
     // ── Messaging partial (inbound processing) ───────────────────────────
 
-    [LoggerMessage(Level = LogLevel.Warning,
-        Message = "{ClassName} received content-only message with no text or attachments from {Sender}, extension data keys: [{ExtensionKeys}], raw: {RawData}")]
-    private static partial void LogContentOnlyNoText(ILogger logger, string className, string? sender, string extensionKeys, string rawData);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} received message from {Sender}: {MessageText}")]
@@ -132,9 +129,9 @@ public sealed partial class CommunicationsBgService
         Message = "{ClassName} duplicate message from {Sender} suppressed, already reserved")]
     private static partial void LogDuplicateSuppressed(ILogger logger, string className, string? sender);
 
-    [LoggerMessage(Level = LogLevel.Error,
-        Message = "{ClassName} attachment cleanup left {RemainingCount} attachment(s) on the server, suppressing transcription and agent turn")]
-    private static partial void LogAttachmentCleanupFailed(ILogger logger, string className, int remainingCount);
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} could not show {Interaction} feedback in channel {ChannelName}")]
+    private static partial void LogChannelInteractionFailed(ILogger logger, Exception ex, string className, string interaction, string channelName);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} voice message rejected, voice processing is disabled")]
@@ -155,8 +152,8 @@ public sealed partial class CommunicationsBgService
     private static partial void LogProcessingReply(ILogger logger, string className);
 
     [LoggerMessage(Level = LogLevel.Information,
-        Message = "{ClassName} sending agent response ({Length} chars, {AttachmentCount} attachment(s)) to group {GroupId}")]
-    private static partial void LogSendingAgentResponse(ILogger logger, string className, int length, int attachmentCount, string? groupId);
+        Message = "{ClassName} sending agent response ({Length} chars, {AttachmentCount} attachment(s)) to channel {ChannelName}")]
+    private static partial void LogSendingAgentResponse(ILogger logger, string className, int length, int attachmentCount, string channelName);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} message sent successfully, timestamp={Timestamp}")]
