@@ -461,7 +461,10 @@ public sealed partial class CommunicationsBgService
             await _signalizrClient.SetReactionAsync(
                 _commsAgentConfig.ChannelName, reaction, timestamp, sender, cancellationToken);
         }
-        catch (HttpRequestException ex)
+        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
+        // stop the service over a missed indicator.
+        catch (Exception ex) when (ex is HttpRequestException
+            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "reaction", _commsAgentConfig.ChannelName);
         }
@@ -474,7 +477,10 @@ public sealed partial class CommunicationsBgService
         {
             await _signalizrClient.StartTypingAsync(_commsAgentConfig.ChannelName, cancellationToken);
         }
-        catch (HttpRequestException ex)
+        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
+        // stop the service over a missed indicator.
+        catch (Exception ex) when (ex is HttpRequestException
+            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing", _commsAgentConfig.ChannelName);
         }
@@ -487,7 +493,10 @@ public sealed partial class CommunicationsBgService
         {
             await _signalizrClient.StopTypingAsync(_commsAgentConfig.ChannelName, cancellationToken);
         }
-        catch (HttpRequestException ex)
+        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
+        // stop the service over a missed indicator.
+        catch (Exception ex) when (ex is HttpRequestException
+            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
             LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing", _commsAgentConfig.ChannelName);
         }
