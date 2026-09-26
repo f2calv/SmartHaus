@@ -21,9 +21,6 @@
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.CognitiveServices/CasCap.Api.Azure.CognitiveServices.csproj" />
     <Project Path="../CasCap.Api.Azure/src/CasCap.Api.Azure.Storage/CasCap.Api.Azure.Storage.csproj" />
   </Folder>
-  <Folder Name="/CasCap.Api.SignalCli/">
-    <Project Path="../CasCap.Api.SignalCli/src/CasCap.Api.SignalCli/CasCap.Api.SignalCli.csproj" />
-  </Folder>
   <Folder Name="/CasCap.Api.Voice/">
     <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice/CasCap.Api.Voice.csproj" />
   </Folder>

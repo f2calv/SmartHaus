@@ -1,4 +1,3 @@
-using CasCap.HealthChecks;
 using Microsoft.Agents.AI;
 using StackExchange.Redis;
 
@@ -8,7 +7,7 @@ namespace CasCap.Services;
 /// Single-instance background service (<c>Comms</c> feature) that consumes
 /// key events from a Redis Stream and incoming notification group messages, feeding both
 /// through a configured <see cref="AIAgent"/> for decision-making before relaying responses
-/// via <see cref="INotifier"/>.
+/// through the configured Signalizr channel with <see cref="ISignalizrClient"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -17,9 +16,8 @@ namespace CasCap.Services;
 /// Each event is forwarded to the agent (or sent directly when no agent is configured).
 /// </para>
 /// <para>
-/// <b>Incoming messages:</b> Polls the notification API for new messages, routes data
-/// messages through the agent for processing, and sends the agent's response back to
-/// the group.
+/// <b>Incoming messages:</b> Subscribes to the Signalizr channel, routes each message through
+/// the agent for processing, and sends the agent's response back to the channel.
 /// </para>
 /// <para>
 /// The comms agent is resolved from <see cref="AgentKeys.CommsAgent"/> in
@@ -29,18 +27,17 @@ namespace CasCap.Services;
 /// </remarks>
 public sealed partial class CommunicationsBgService : IBgFeature
 {
+    //Every delivery arrives through the gateway, so the identity no longer names the account.
+    private const string SignalizrAccount = "signalizr";
+
     private readonly ILogger _logger;
-    private readonly SignalCliConfig _signalCliConfig;
     private readonly CommsAgentConfig _commsAgentConfig;
     private readonly AIConfig _aiConfig;
     private readonly SpeechToTextConfig _speechToTextConfig;
-    private readonly INotifier _notifier;
     private readonly ISignalizrClient _signalizrClient;
-    private readonly ISignalAttachmentCleaner _attachmentCleaner;
     private readonly ISignalMessageDeduplicator _deduplicator;
     private readonly AgentCommandHandler _commandHandler;
     private readonly IRemoteCache _remoteCache;
-    private readonly SignalCliConnectionHealthCheck _signalCliHealthCheck;
     private readonly IHostEnvironment _env;
     private readonly IPollTracker _pollTracker;
     private readonly CommsDebugNotifier _debugNotifier;
@@ -50,11 +47,10 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly AIAgent? _agent;
     private readonly ProviderConfig? _provider;
     private readonly AgentConfig? _commsAgent;
-    private readonly VoiceMessageTranscriptionService _transcriptionSvc;
-    private readonly VoiceReplySynthesisService _voiceReplySvc;
+    private readonly IVoiceTranscriptionService _transcriptionSvc;
+    private readonly IVoiceSynthesisService _voiceReplySvc;
 
-    private string? _groupId;
-    private readonly TaskCompletionSource _groupResolved = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _channelReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
     private readonly Channel<ReplyRequest> _replyChannel;
 
@@ -67,7 +63,6 @@ public sealed partial class CommunicationsBgService : IBgFeature
     /// Initializes a new instance of the <see cref="CommunicationsBgService"/> class.
     /// </summary>
     public CommunicationsBgService(ILogger<CommunicationsBgService> logger,
-        IOptions<SignalCliConfig> signalCliConfig,
         IOptions<CommsAgentConfig> commsAgentConfig,
         IOptions<AIConfig> aiConfig,
         IOptions<EdgeHardwareConfig> edgeHardwareConfig,
@@ -75,32 +70,26 @@ public sealed partial class CommunicationsBgService : IBgFeature
         TimeProvider timeProvider,
         IHostEnvironment env,
         CommsDebugNotifier debugNotifier,
-        INotifier notifier,
         ISignalizrClient signalizrClient,
-        ISignalAttachmentCleaner attachmentCleaner,
         ISignalMessageDeduplicator deduplicator,
-        VoiceMessageTranscriptionService transcriptionSvc,
-        VoiceReplySynthesisService voiceReplySvc,
+        IVoiceTranscriptionService transcriptionSvc,
+        IVoiceSynthesisService voiceReplySvc,
         AgentCommandHandler commandHandler,
         IRemoteCache remoteCache,
         IEventSink<CommsEvent> commsSink,
         IServiceProvider serviceProvider,
-        SignalCliConnectionHealthCheck signalCliHealthCheck,
         IPollTracker pollTracker,
         IEdgeHardwareQueryService? edgeHardwareQuerySvc = null)
     {
         _logger = logger;
         _timeProvider = timeProvider;
-        _signalCliConfig = signalCliConfig.Value;
         _commsAgentConfig = commsAgentConfig.Value;
         _aiConfig = aiConfig.Value;
         _edgeHardwareConfig = edgeHardwareConfig.Value;
         _speechToTextConfig = speechToTextConfig.Value;
         _env = env;
         _debugNotifier = debugNotifier;
-        _notifier = notifier;
         _signalizrClient = signalizrClient;
-        _attachmentCleaner = attachmentCleaner;
         _deduplicator = deduplicator;
         _transcriptionSvc = transcriptionSvc;
         _voiceReplySvc = voiceReplySvc;
@@ -108,12 +97,11 @@ public sealed partial class CommunicationsBgService : IBgFeature
         //Resolved lazily rather than captured here, so an unreachable cache cannot stop the feature
         //being constructed; only the stream path needs it.
         _remoteCache = remoteCache;
-        _signalCliHealthCheck = signalCliHealthCheck;
         _pollTracker = pollTracker;
         _edgeHardwareQuerySvc = edgeHardwareQuerySvc;
 
         // Bound the outbound reply queue so a producer flood cannot grow an unbounded backlog
-        // that signal-cli drip-feeds for hours. Producers wait for capacity rather than having an
+        // that the gateway drip-feeds for hours. Producers wait for capacity rather than having an
         // already-accepted reply evicted behind their back.
         _replyChannel = Channel.CreateBounded<ReplyRequest>(
             new BoundedChannelOptions(_commsAgentConfig.ReplyQueueCapacity)
@@ -151,80 +139,19 @@ public sealed partial class CommunicationsBgService : IBgFeature
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} starting, transport={Transport}, phoneNumber={PhoneNumber}, phoneNumberDebug={PhoneNumberDebug}, groupName={GroupName}, agentProfile={AgentProfile}",
-            nameof(CommunicationsBgService), _signalCliConfig.TransportMode, _signalCliConfig.PhoneNumber.MaskPhoneNumber(),
-            _signalCliConfig.PhoneNumberDebug?.MaskPhoneNumber() ?? "(disabled)", _commsAgentConfig.GroupName, AgentKeys.CommsAgent);
+        _logger.LogInformation("{ClassName} starting, channel={ChannelName}, monitorChannel={MonitorChannelName}, agentProfile={AgentProfile}",
+            nameof(CommunicationsBgService), _commsAgentConfig.ChannelName,
+            _commsAgentConfig.MonitorChannelName ?? "(disabled)", AgentKeys.CommsAgent);
         try
         {
             // Start consuming the comms stream immediately — this must not be gated behind
-            // the Signal messenger connection, otherwise stream events (e.g. SecurityAgent
-            // findings from MediaBgService) queue indefinitely until signal-cli becomes reachable.
+            // the gateway connection, otherwise stream events (e.g. SecurityAgent findings from
+            // MediaBgService) queue indefinitely until Signalizr becomes reachable.
             await EnsureConsumerGroupAsync();
             var streamTask = DrainStreamAsync(cancellationToken);
 
-            // Wait for signal-cli REST API to be reachable before attempting WebSocket connection.
-            if (!_env.IsDevelopment())
-            {
-                var attempt = 1;
-                while (!_signalCliHealthCheck.ConnectionActive && !cancellationToken.IsCancellationRequested)
-                {
-                    _logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug,
-                        "{ClassName} signal-cli readiness probe not yet healthy, attempt {Attempt}, retrying in {RetryMs}ms",
-                        nameof(CommunicationsBgService), attempt, _commsAgentConfig.HealthCheckProbeDelayMs);
-                    await Task.Delay(_commsAgentConfig.HealthCheckProbeDelayMs, cancellationToken);
-                    attempt++;
-                }
-                _logger.LogInformation("{ClassName} signal-cli readiness probe healthy", nameof(CommunicationsBgService));
-            }
-
-            // Update the Signal profile display name to include the active model.
-            await UpdateSignalProfileNameAsync(_provider?.ModelName);
-
-            var channels = await _signalizrClient.GetChannelsAsync(cancellationToken);
-            if (!channels.Contains(_commsAgentConfig.ChannelName, StringComparer.Ordinal))
-                throw new GenericException(
-                    $"Signalizr channel '{_commsAgentConfig.ChannelName}' is not configured.");
-            _logger.LogDebug("{ClassName} Signalizr channel {ChannelName} is ready",
-                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
-
-            _logger.LogDebug("{ClassName} listing groups for {PhoneNumber}", nameof(CommunicationsBgService), _signalCliConfig.PhoneNumber.MaskPhoneNumber());
-            INotificationGroup[]? groups = null;
-            try
-            {
-                groups = await _notifier.ListGroupsAsync(_signalCliConfig.PhoneNumber, cancellationToken);
-                _logger.LogDebug("{ClassName} found {GroupCount} group(s): {GroupNames}",
-                    nameof(CommunicationsBgService), groups?.Length ?? 0,
-                    groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)");
-            }
-            catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
-            {
-                _logger.LogWarning(ex, "{ClassName} ListGroups failed ({ExceptionType}: {ExceptionMessage})",
-                    nameof(CommunicationsBgService), ex.GetType().Name, ex.Message);
-            }
-
-            var group = groups?.FirstOrDefault(g => g.Name == _commsAgentConfig.GroupName);
-            if (group is not null)
-            {
-                _groupId = group.Id;
-                _logger.LogInformation("{ClassName} resolved group {GroupName} to {GroupId} ({MemberCount} members)",
-                    nameof(CommunicationsBgService), group.Name, _groupId, group.Members.Length);
-            }
-            else if (!string.IsNullOrWhiteSpace(_commsAgentConfig.GroupId))
-            {
-                _groupId = _commsAgentConfig.GroupId;
-                _logger.LogWarning("{ClassName} group {GroupName} not found via ListGroups, falling back to configured GroupId={GroupId}",
-                    nameof(CommunicationsBgService), _commsAgentConfig.GroupName, _groupId);
-            }
-            else
-            {
-                throw new GenericException(
-                    $"group '{_commsAgentConfig.GroupName}' not found among [{(groups is not null ? string.Join(", ", groups.Select(g => g.Name)) : "(none)")}] and no GroupId fallback configured");
-            }
-
-            _groupResolved.TrySetResult();
-
-            _logger.LogInformation("{ClassName} starting background tasks (transport={TransportType})",
-                nameof(CommunicationsBgService), _signalizrClient.GetType().Name);
+            await WaitForChannelsAsync(cancellationToken);
+            _channelReady.TrySetResult();
 
             var replyTask = DrainReplyQueueAsync(cancellationToken);
 
@@ -244,4 +171,44 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _logger.LogInformation("{ClassName} exiting", nameof(CommunicationsBgService));
     }
 
+    /// <summary>Waits until the Signalizr gateway serves the configured channels.</summary>
+    /// <remarks>
+    /// An unreachable gateway is retried, because it recovers on its own. A missing chat channel
+    /// is a configuration fault that retrying cannot fix, so it throws. A missing monitor channel
+    /// only degrades diagnostics, so it is logged and tolerated.
+    /// </remarks>
+    private async Task WaitForChannelsAsync(CancellationToken cancellationToken)
+    {
+        var attempt = 1;
+        while (true)
+        {
+            IReadOnlyList<string> channels;
+            try
+            {
+                channels = await _signalizrClient.GetChannelsAsync(cancellationToken);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug, ex,
+                    "{ClassName} Signalizr gateway not reachable, attempt {Attempt}, retrying in {RetryMs}ms",
+                    nameof(CommunicationsBgService), attempt, _commsAgentConfig.HealthCheckProbeDelayMs);
+                await Task.Delay(_commsAgentConfig.HealthCheckProbeDelayMs, cancellationToken);
+                attempt++;
+                continue;
+            }
+
+            if (!channels.Contains(_commsAgentConfig.ChannelName, StringComparer.Ordinal))
+                throw new GenericException(
+                    $"Signalizr channel '{_commsAgentConfig.ChannelName}' is not configured.");
+
+            if (_commsAgentConfig.MonitorChannelName is { Length: > 0 } monitorChannel
+                && !channels.Contains(monitorChannel, StringComparer.Ordinal))
+                _logger.LogWarning("{ClassName} Signalizr monitor channel {MonitorChannelName} is not configured, diagnostics will not be delivered",
+                    nameof(CommunicationsBgService), monitorChannel);
+
+            _logger.LogInformation("{ClassName} Signalizr channel {ChannelName} is ready",
+                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
+            return;
+        }
+    }
 }

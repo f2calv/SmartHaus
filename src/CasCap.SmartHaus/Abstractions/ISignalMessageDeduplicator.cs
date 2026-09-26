@@ -1,7 +1,7 @@
 namespace CasCap.Abstractions;
 
 /// <summary>
-/// Suppresses repeated processing of an inbound Signal message that signal-cli redelivers.
+/// Suppresses repeated processing of an inbound Signal message that Signalizr redelivers.
 /// </summary>
 /// <remarks>
 /// <para>

@@ -20,7 +20,7 @@ Each feature name activates a distinct set of services at DI registration time. 
 | `Sicce` | `SicceBgService` | — |
 | `DDns` | `DDnsBgService` | — |
 | `SignalRHub` | `HausHub` SignalR hub, hub sinks, Redis backplane | — |
-| `Comms` | `CommunicationsBgService`, signal-cli client, comms stream sink; features also register in **lite mode** (sinks only, no polling) when this flag is set | — |
+| `Comms` | `CommunicationsBgService`, Signalizr client, comms stream sink; features also register in **lite mode** (sinks only, no polling) when this flag is set | — |
 
 Features not present in `EnabledFeatures` are entirely absent — no controllers, background services, or health checks are registered for disabled features.
 
@@ -106,7 +106,7 @@ Key configuration sections:
 | `CasCap:FroniusConfig` | `FroniusConfig` | Fronius inverter settings |
 | `CasCap:KnxConfig` | `KnxConfig` | KNX bus settings |
 | `CasCap:SicceConfig` | `SicceConfig` | Sicce pump settings |
-| `CasCap:SignalCliConfig` | `SignalCliConfig` | Signal messenger settings |
+| `CasCap:SignalizrClientConfig` | `SignalizrClientConfig` | Signalizr gateway addresses and durable subscriber name |
 | `CasCap:CommsAgentConfig` | `CommsAgentConfig` | Communications agent orchestration settings |
 | `CasCap:SecurityAgentConfig` | `SecurityAgentConfig` | Security/vision agent settings |
 | `CasCap:HeatingAgentConfig` | `HeatingAgentConfig` | Heating agent settings (DHW1 alert hysteresis, cooldown) |

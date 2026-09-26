@@ -5,8 +5,8 @@ namespace CasCap.Models;
 /// </summary>
 /// <remarks>
 /// These settings govern how <see cref="CasCap.Services.CommunicationsBgService"/> interacts
-/// with the notification group — they are application-level concerns rather than signal-cli
-/// client settings.
+/// with its Signalizr channels — they are application-level concerns. The Signal account, its
+/// groups and its profile belong to the gateway.
 /// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.CommsAgent"/>
 /// in <c>AIConfig.Agents</c>.
 /// </remarks>
@@ -16,33 +16,21 @@ public sealed record CommsAgentConfig : IAppConfig
     public static string ConfigurationSectionName =>
         $"{nameof(CasCap)}:{nameof(AgentKeys.AIConfig)}:{nameof(AgentKeys.Agents)}:{nameof(AgentKeys.CommsAgent)}:{nameof(AgentKeys.Settings)}";
 
-    /// <summary>
-    /// The name of the Signal group used for notifications.
-    /// </summary>
-    [Required, MinLength(1)]
-    public required string GroupName { get; init; }
-
-    /// <summary>Signalizr channel used for application messages and attachments.</summary>
+    /// <summary>Signalizr channel used for the user-facing chat: messages, reactions, typing and polls.</summary>
     [Required, MinLength(1)]
     public string ChannelName { get; init; } = "smarthaus.chat";
 
-    /// <summary>Pre-configured Signal group ID used as a fallback when <c>ListGroups</c> fails.</summary>
+    /// <summary>
+    /// Signalizr channel for operator diagnostics, or <see langword="null"/> to disable them.
+    /// </summary>
     /// <remarks>
-    /// When set, <see cref="CasCap.Services.CommunicationsBgService"/> will use this value
-    /// instead of resolving the group ID via the signal-cli <c>listGroups</c> API. This
-    /// provides resilience against signal-cli recipient store corruption that can cause
-    /// <c>listGroups</c> to fail with <c>"Failed read recipient store"</c>.
+    /// Receives pipeline timelines, stream-event copies, compaction notices and, when
+    /// <see cref="EchoTranscriptToDebugChat"/> is enabled, voice transcripts. Its Signal group
+    /// must contain only the operator, because these messages repeat other people's content.
     /// </remarks>
-    public string? GroupId { get; init; }
+    public string? MonitorChannelName { get; init; }
 
-    /// <summary>Signal profile display name set on each application start.</summary>
-    /// <remarks>
-    /// The active model name is appended automatically at startup, e.g. "Smart Haus (qwen3.5:9b)".
-    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
-    /// </remarks>
-    public string ProfileName { get; init; } = "Smart Haus";
-
-    /// <summary>Whether to echo a successful voice transcript to the configured debug recipient.</summary>
+    /// <summary>Whether to echo a successful voice transcript to <see cref="MonitorChannelName"/>.</summary>
     /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
     public bool EchoTranscriptToDebugChat { get; init; }
 
@@ -96,8 +84,7 @@ public sealed record CommsAgentConfig : IAppConfig
     public int PollingIntervalMs { get; init; } = 5_000;
 
     /// <summary>
-    /// Delay in milliseconds between each probe when waiting for the signal-cli
-    /// readiness health check to pass at startup.
+    /// Delay in milliseconds between attempts to reach the Signalizr gateway at startup.
     /// </summary>
     /// <remarks>
     /// Defaults to <c>2000</c> ms (2 seconds).
@@ -121,7 +108,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>true</c>. When a burst of <see cref="CommsEvent"/> entries arrives faster than
     /// <see cref="StreamSendRatePerMinute"/> (with an initial allowance of <see cref="StreamSendBurst"/>),
     /// excess events are acknowledged but dropped rather than queued for slow drip-feed delivery by
-    /// signal-cli. Interactive replies to user messages are never throttled by this setting.
+    /// the gateway. Interactive replies to user messages are never throttled by this setting.
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
     public bool StreamSendThrottlingEnabled { get; init; } = true;

@@ -9,7 +9,7 @@ namespace CasCap.Tests.Infrastructure;
 /// <summary>
 /// A <see cref="WebApplicationFactory{TProgram}"/> for CasCap.App, configured for
 /// integration testing without requiring live infrastructure (Redis, Azure Key Vault,
-/// signal-cli, etc.).
+/// Signalizr, etc.).
 /// </summary>
 /// <remarks>
 /// <para>
@@ -21,7 +21,7 @@ namespace CasCap.Tests.Infrastructure;
 ///   <item>Environment is set to <c>"Testing"</c> so that <c>appsettings.Testing.json</c>
 ///         (if present) is loaded and the Key Vault bootstrap is skipped (no cert available).</item>
 ///   <item>Mandatory configuration values that normally come from Key Vault / user-secrets
-///         (<c>EnabledFeatures</c>, <c>ApiAuthConfig</c>, <c>SignalCliConfig.BaseAddress</c>) are
+///         (<c>EnabledFeatures</c>, <c>ApiAuthConfig</c>) are
 ///         provided via in-memory collection.</item>
 ///   <item>Authorization is replaced with a permissive policy so API endpoints can be
 ///         exercised without managing credentials in every test.
@@ -83,12 +83,6 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
                 [$"{ApiAuthConfig.ConfigurationSectionName}:Username"] = TestUsername,
                 [$"{ApiAuthConfig.ConfigurationSectionName}:Password"] = TestPassword,
 
-                // ── SignalCliConfig ────────────────────────────────────────────────────
-                // AddNotifications() is always called in Program.cs and requires a valid
-                // BaseAddress. Point to localhost – the service will fail gracefully when
-                // it cannot reach signal-cli.
-                [$"{SignalCliConfig.ConfigurationSectionName}:BaseAddress"]
-                    = "http://localhost:9922",
 
                 // ── CachingConfig ──────────────────────────────────────────────────────
                 // Use abortConnect=false so StackExchange.Redis does not throw during

@@ -1,4 +1,3 @@
-using CasCap.HealthChecks;
 using CasCap.Signalizr.Client;
 using Microsoft.Agents.AI;
 using Microsoft.Extensions.Logging.Abstractions;
@@ -12,37 +11,29 @@ namespace CasCap.Tests.Unit;
 /// </summary>
 /// <remarks>
 /// The service exposes no other entry point, so the fixture starts the real execution pipeline —
-/// stream consumer, reply drain loop and receive loop — and the tests observe it through
-/// <see cref="Notifier"/>.
+/// stream consumer, reply drain loop and subscription — and the tests observe it through
+/// <see cref="Signalizr"/>.
 /// </remarks>
 public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
 {
-    /// <summary>The account the service receives on.</summary>
+    /// <summary>The gateway's own account, whose messages the service must ignore.</summary>
     public const string Account = "+10000000000";
 
     /// <summary>A group member who sends the envelopes under test.</summary>
     public const string Sender = "+10000000001";
 
-    /// <summary>The operator-controlled recipient of debug output.</summary>
-    public const string DebugRecipient = "+10000000002";
+    /// <summary>The configured chat channel.</summary>
+    public const string ChatChannel = "smarthaus.chat";
 
-    /// <summary>The display name of the configured group.</summary>
-    public const string GroupName = "haus-test";
+    /// <summary>The operator-only channel that receives debug output.</summary>
+    public const string MonitorChannel = "smarthaus.monitor";
 
-    /// <summary>The identifier of the configured group.</summary>
-    public const string GroupId = "haus-test-group-id";
-
-    /// <summary>An identifier for a group the service must ignore.</summary>
-    public const string OtherGroupId = "other-group-id";
+    /// <summary>A channel the service must ignore.</summary>
+    public const string OtherChannel = "other.chat";
 
     private readonly CancellationTokenSource _cts = new();
     private Task? _execution;
 
-    /// <summary>The notifier fake feeding envelopes in and recording everything sent out.</summary>
-    public FakeNotifier Notifier { get; } = new();
-
-    /// <summary>The attachment cleaner fake.</summary>
-    public FakeSignalAttachmentCleaner Cleaner { get; } = new();
 
     /// <summary>The duplicate-suppression fake.</summary>
     public FakeSignalMessageDeduplicator Deduplicator { get; } = new();
@@ -58,7 +49,12 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
 
     /// <summary>The synthesis backend behind the spoken-reply service.</summary>
     public FakeTextToSpeechClient TextToSpeech { get; } = new();
-    public FakeSignalizrClient Signalizr { get; } = new();
+
+    /// <summary>The gateway fake feeding deliveries in and recording every channel operation.</summary>
+    public FakeSignalizrClient Signalizr { get; } = new() { Channels = [ChatChannel, MonitorChannel] };
+
+    /// <summary>Bytes returned for every attachment the tests queue.</summary>
+    public byte[] AttachmentContent { get; set; } = SyntheticWav();
 
     /// <summary>
     /// Builds a silent 16 kHz mono signed 16-bit PCM WAV, which is what the transcription service
@@ -112,20 +108,11 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         bool echoTranscriptToDebugChat = false,
         VoiceReplyMode voiceReplyMode = VoiceReplyMode.Disabled)
     {
-        Notifier.Groups.Add(new FakeNotificationGroup { Id = GroupId, Name = GroupName, Members = [Account, Sender] });
-
-        var signalCliConfig = Options.Create(new SignalCliConfig
-        {
-            BaseAddress = "http://localhost:8080",
-            PhoneNumber = Account,
-            //Only set when the test exercises the debug chat; otherwise the debug notifier short-circuits.
-            PhoneNumberDebug = echoTranscriptToDebugChat ? DebugRecipient : null,
-            TransportMode = SignalCliTransport.JsonRpc,
-        });
         var commsAgentConfig = Options.Create(new CommsAgentConfig
         {
-            GroupName = GroupName,
-            GroupId = GroupId,
+            ChannelName = ChatChannel,
+            //Only set when the test exercises the monitor channel; otherwise the debug notifier short-circuits.
+            MonitorChannelName = echoTranscriptToDebugChat ? MonitorChannel : null,
             //Long enough that the idle stream consumer parks instead of spinning for the test's duration.
             PollingIntervalMs = 60_000,
             ReplyQueueCapacity = replyQueueCapacity,
@@ -152,13 +139,11 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         var serviceProvider = services.BuildServiceProvider();
 
         var env = new FakeHostEnvironment();
-        Notifier.AttachmentContent = SyntheticWav();
-        var debugNotifier = new CommsDebugNotifier(NullLogger<CommsDebugNotifier>.Instance, signalCliConfig,
-            edgeHardwareConfig, Notifier, serviceProvider);
+        var debugNotifier = new CommsDebugNotifier(NullLogger<CommsDebugNotifier>.Instance, commsAgentConfig,
+            edgeHardwareConfig, Signalizr, serviceProvider);
         var commandHandler = new AgentCommandHandler(NullLogger<AgentCommandHandler>.Instance, aiConfig,
             new FakeSessionStore());
-        var healthCheck = new SignalCliConnectionHealthCheck(NullLogger<SignalCliConnectionHealthCheck>.Instance,
-            signalCliConfig, env, new StubHttpClientFactory());
+
 #pragma warning disable MEAI001 // ISpeechToTextClient is experimental; see WhisperAsrSpeechToTextClient.
         var transcriptionSvc = new VoiceMessageTranscriptionService(
             NullLogger<VoiceMessageTranscriptionService>.Instance, speechToTextConfig, SpeechToText,
@@ -170,7 +155,6 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
 
         Service = new CommunicationsBgService(
             NullLogger<CommunicationsBgService>.Instance,
-            signalCliConfig,
             commsAgentConfig,
             aiConfig,
             edgeHardwareConfig,
@@ -178,9 +162,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             TimeProvider.System,
             env,
             debugNotifier,
-            Notifier,
             Signalizr,
-            Cleaner,
             Deduplicator,
             transcriptionSvc,
             voiceReplySvc,
@@ -188,18 +170,17 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             new StubRemoteCache(),
             EventSink,
             serviceProvider,
-            healthCheck,
             PollTracker);
     }
 
     /// <summary>
-    /// Starts execution and waits until the group has been resolved and the receive loop is polling,
-    /// so envelopes queued afterwards travel the normal inbound path.
+    /// Starts execution and waits until the channels are ready and the subscription is open, so
+    /// deliveries queued afterwards travel the normal inbound path.
     /// </summary>
     public async Task StartAsync()
     {
         _execution = Service.ExecuteAsync(_cts.Token);
-        await WaitForAsync(() => Notifier.ListGroupsCallCount > 0 && Signalizr.SubscribeCallCount > 0);
+        await WaitForAsync(() => Signalizr.SubscribeCallCount > 0);
     }
 
     /// <summary>Queues application notifications as durable Signalizr deliveries.</summary>
@@ -216,23 +197,24 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
                 .ToArray() ?? [];
 
             foreach (var attachment in attachments)
-                Signalizr.Attachments[attachment.Id] = Notifier.AttachmentContent ?? [];
+                Signalizr.Attachments[attachment.Id] = AttachmentContent;
 
             Signalizr.Enqueue(new SignalizrMessage
             {
                 DeliveryId = $"delivery-{notification.Timestamp}",
-                Channel = notification.GroupId == GroupId ? "smarthaus.chat" : notification.GroupId,
+                Channel = notification.GroupId,
                 Sender = notification.Sender,
                 Message = notification.Message,
                 Timestamp = notification.Timestamp ?? 0,
                 Attachments = attachments,
+                FromSelf = notification.Sender == Account,
             });
         }
     }
 
-    /// <summary>Builds an ordinary text envelope from the configured group.</summary>
+    /// <summary>Builds an ordinary text envelope from the chat channel.</summary>
     public static FakeReceivedNotification TextEnvelope(string message, long timestamp,
-        string sender = Sender, string? groupId = GroupId) =>
+        string sender = Sender, string? groupId = ChatChannel) =>
         new()
         {
             Sender = sender,
@@ -241,12 +223,12 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             Timestamp = timestamp,
         };
 
-    /// <summary>Builds an attachment-only envelope from the configured group.</summary>
+    /// <summary>Builds an attachment-only envelope from the chat channel.</summary>
     public static FakeReceivedNotification AttachmentEnvelope(long timestamp, params (string Id, string ContentType)[] attachments) =>
         new()
         {
             Sender = Sender,
-            GroupId = GroupId,
+            GroupId = ChatChannel,
             Timestamp = timestamp,
             Attachments = [.. attachments.Select(a => new FakeNotificationAttachment { Id = a.Id, ContentType = a.ContentType })],
         };
@@ -281,7 +263,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         //Release any gate first, or a held drain loop would never observe the cancellation.
-        Notifier.ReleaseStartProcessing();
+        Signalizr.ReleaseStartTyping();
         await _cts.CancelAsync();
         if (_execution is not null)
         {

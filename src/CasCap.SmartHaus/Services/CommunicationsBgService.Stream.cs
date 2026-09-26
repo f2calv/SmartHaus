@@ -96,7 +96,7 @@ public sealed partial class CommunicationsBgService
             }
         }
 
-        // Rate-limit producer-driven stream events to prevent message floods that signal-cli
+        // Rate-limit producer-driven stream events to prevent message floods that the gateway
         // would otherwise drip-feed to the group over hours. Gating here (before the agent runs)
         // also avoids wasted inference on suppressed events. Interactive replies to user messages
         // flow through the reply queue and are never throttled by this gate.
@@ -113,20 +113,14 @@ public sealed partial class CommunicationsBgService
         // Forward the raw stream event to the debug chat for observability.
         await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
 
-        // Wait until Signal group resolution completes before attempting delivery.
-        await _groupResolved.Task.WaitAsync(cancellationToken);
+        // Wait until the gateway serves the chat channel before attempting delivery.
+        await _channelReady.Task.WaitAsync(cancellationToken);
 
         if (_agent is null || _commsAgent is null || _provider is null)
         {
-            // No agent — forward event message directly to the notification group.
+            // No agent — forward event message directly to the chat channel.
             LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
-            var directMsg = new SignalMessageRequest
-            {
-                Message = commsEvent.Message,
-                Number = _signalCliConfig.PhoneNumber,
-                Recipients = [_groupId!]
-            };
-            await SendMessageAsync(directMsg, cancellationToken);
+            await SendMessageAsync(commsEvent.Message, cancellationToken);
             return;
         }
 
@@ -185,9 +179,9 @@ public sealed partial class CommunicationsBgService
     /// </summary>
     private async Task MaybeSendDropNoticeAsync(CancellationToken cancellationToken)
     {
-        // The group must be resolved before we can notify; until then drops are silent (counters
+        // The channel must be ready before we can notify; until then drops are silent (counters
         // keep accumulating so the eventual notice reports the full total).
-        if (!_groupResolved.Task.IsCompletedSuccessfully || _groupId is null)
+        if (!_channelReady.Task.IsCompletedSuccessfully)
             return;
 
         var nowTicks = _timeProvider.GetUtcNow().UtcTicks;
@@ -211,12 +205,7 @@ public sealed partial class CommunicationsBgService
         if (stale > 0)
             parts.Add($"{stale} older than {_commsAgentConfig.MaxEventAgeSeconds}s");
 
-        var notice = new SignalMessageRequest
-        {
-            Message = $"\uD83D\uDEA6 Dropped {total} notification(s) to avoid flooding the group \u2014 {string.Join(", ", parts)}.",
-            Number = _signalCliConfig.PhoneNumber,
-            Recipients = [_groupId],
-        };
+        var notice = $"\uD83D\uDEA6 Dropped {total} notification(s) to avoid flooding the group \u2014 {string.Join(", ", parts)}.";
 
         try
         {

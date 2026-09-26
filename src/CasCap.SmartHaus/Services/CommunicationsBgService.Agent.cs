@@ -58,19 +58,13 @@ public sealed partial class CommunicationsBgService
                     // Option A: send a separate status message (toggleable via config).
                     if (_commsAgentConfig.DelegationMessagesEnabled)
                     {
-                        var statusMsg = new SignalMessageRequest
-                        {
-                            Message = $"\U0001F500 Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}",
-                            Number = _signalCliConfig.PhoneNumber,
-                            Recipients = [_groupId!],
-                        };
-                        await SendMessageAsync(statusMsg, ct);
+                        await SendMessageAsync(
+                            $"\U0001F500 Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}", ct);
                     }
 
                     // Option B: swap reaction to twisted-arrows to indicate delegation.
                     if (sender is not null && timestamp is not null)
-                        await _notifier.SendProgressUpdateAsync(
-                            _signalCliConfig.PhoneNumber, _groupId!, "\U0001F500", sender, timestamp.Value, ct);
+                        await SetReactionAsync("\U0001F500", sender, timestamp.Value, ct);
                 },
 
                 OnCompletion = (agentKey, depth, subResult, ct) =>
@@ -129,8 +123,7 @@ public sealed partial class CommunicationsBgService
 
                 // Restore hourglass reaction after delegation completes (Option B cleanup).
                 if (sender is not null && timestamp is not null)
-                    await _notifier.SendProgressUpdateAsync(
-                        _signalCliConfig.PhoneNumber, _groupId!, "\u23F3", sender, timestamp.Value, cancellationToken);
+                    await SetReactionAsync("\u23F3", sender, timestamp.Value, cancellationToken);
 
                 // Final step for the parent agent.
                 pipelineSw.Stop();
@@ -153,35 +146,6 @@ public sealed partial class CommunicationsBgService
         {
             _logger.LogError(ex, "{ClassName} agent inference failed", nameof(CommunicationsBgService));
             return (null, []);
-        }
-    }
-
-    /// <summary>Updates the Signal profile display name to <c>{ProfileName} ({modelName})</c>, or just <c>{ProfileName}</c> when no model is known.</summary>
-    /// <remarks>
-    /// The signal-cli REST API splits the <c>name</c> field on <c>\0</c> into given/family name.
-    /// Appending <c>\0</c> explicitly clears the family name so stale values don't persist.
-    /// </remarks>
-    private async Task UpdateSignalProfileNameAsync(string? modelName)
-    {
-        var displayName = string.IsNullOrWhiteSpace(modelName)
-            ? _commsAgentConfig.ProfileName
-            : $"{_commsAgentConfig.ProfileName} ({modelName})";
-        // Append null separator to clear any existing Signal family name.
-        var profileName = displayName + "\0";
-        try
-        {
-            var success = await _notifier.UpdateProfileNameAsync(_signalCliConfig.PhoneNumber, profileName);
-            if (success)
-                _logger.LogInformation("{ClassName} Signal profile name updated to {DisplayName}",
-                    nameof(CommunicationsBgService), displayName);
-            else
-                _logger.LogWarning("{ClassName} Signal profile name update failed for {DisplayName}",
-                    nameof(CommunicationsBgService), displayName);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogWarning(ex, "{ClassName} unable to update Signal profile name to {DisplayName}",
-                nameof(CommunicationsBgService), displayName);
         }
     }
 }

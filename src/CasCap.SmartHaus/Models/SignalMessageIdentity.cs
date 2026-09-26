@@ -7,7 +7,7 @@ namespace CasCap.Models;
 /// </remarks>
 public sealed record SignalMessageIdentity
 {
-    /// <summary>The account phone number that received the message.</summary>
+    /// <summary>The endpoint that delivered the message; the Signalizr gateway for every delivery.</summary>
     public required string Account { get; init; }
 
     /// <summary>The group or direct conversation the message belongs to.</summary>

@@ -43,7 +43,7 @@ These sinks are registered in the feature pods and forward domain events to the 
 
 | Service | Description |
 | --- | --- |
-| `CommunicationsBgService` | Gateway agent — consumes the comms Redis Stream and incoming Signal messages, routes both through CommsAgent, and relays responses to the Signal notification group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts debug notifications to `PhoneNumberDebug` for delegation events, completion events, and session compaction events |
+| `CommunicationsBgService` | Gateway agent — consumes the comms Redis Stream and incoming Signal messages, routes both through CommsAgent, and relays responses to the Signalizr chat channel. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorChannelName` channel |
 | `MediaBgService` | Consumes the media Redis Stream (`MediaConfig.StreamKey`), routes media to the domain agent configured in `MediaConfig.SourceAgentMap` (e.g. DoorBird → SecurityAgent), and posts analysis findings back to the comms stream. Runs in the Comms pod alongside `CommunicationsBgService` |
 | `HausHubSinksBgService` | Initialises the hub-side `IEventSink<HubEvent>` implementations |
 | `FroniusSymoSignalRClientService` | Connects to the hub as a SignalR client |
@@ -71,8 +71,9 @@ These sinks are registered in the feature pods and forward domain events to the 
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `GroupName` | `string` | — | The name of the Signal group used for notifications |
-| `ChannelName` | `string` | `"smarthaus.chat"` | Signalizr named channel used for durable inbound delivery and core outbound messages |
+| `ChannelName` | `string` | `"smarthaus.chat"` | Signalizr channel for the user-facing chat: messages, reactions, typing and polls |
+| `MonitorChannelName` | `string?` | `null` | Signalizr channel for operator diagnostics; its group must contain only the operator. Unset disables diagnostics |
+| `EchoTranscriptToDebugChat` | `bool` | `false` | Whether a successful voice transcript is echoed to `MonitorChannelName` |
 | `StreamKey` | `string` | `"comms:stream:events"` | Redis Stream key for cross-instance communication of key events |
 | `ConsumerGroup` | `string` | `"comms:agents"` | Redis consumer group name |
 | `ConsumerName` | `string` | `"comms-0"` | Consumer name within the group |
@@ -80,7 +81,7 @@ These sinks are registered in the feature pods and forward domain events to the 
 | `StreamReadPosition` | `string` | `">"` | Read position passed to `XREADGROUP` |
 | `StreamReadCount` | `int` | `10` | Maximum entries per `XREADGROUP` call |
 | `PollingIntervalMs` | `int` | `5000` | Retry interval for the comms stream and Signalizr subscription |
-| `HealthCheckProbeDelayMs` | `int` | `2000` | Delay in milliseconds between signal-cli readiness probes at startup |
+| `HealthCheckProbeDelayMs` | `int` | `2000` | Delay in milliseconds between attempts to reach the Signalizr gateway at startup |
 
 ### `SignalizrClientConfig` (`CasCap:SignalizrClientConfig`)
 
@@ -153,7 +154,7 @@ endpoints are nullable and are read only when that provider is selected.
 1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsAgentConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
 2. **Incoming messages** — Subscribes to the configured Signalizr channel over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.
 3. **Agent routing** — Routes both stream events and incoming user messages through the `CommsAgent` (`AIAgent` resolved from `AIConfig.Agents[AgentKeys.CommsAgent]`), which decides how to respond.
-4. **Outbound** — Sends the agent's response to the configured Signalizr channel. Direct SignalCli access remains temporarily for reactions, typing state, profile updates, polls, and group lookup until those control-plane operations are available through Signalizr.
+4. **Outbound** — Sends the agent's response, progress reactions, typing indicators and polls to the configured Signalizr channel. SmartHaus has no direct Signal access: the gateway owns the account, its groups and its profile name.
 
 Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directly**. They publish their findings to the comms stream, and CommsAgent relays, aggregates, or suppresses notifications as appropriate.
 
@@ -265,7 +266,6 @@ flowchart TD
     REDIS_CACHE[("Redis\nimage cache")]
     CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
     SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
-    SIGNALCLI["signal-cli control plane\n(reactions, typing, polls)"]
 
     %% SignalR path
     FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
@@ -293,9 +293,8 @@ flowchart TD
     COMMS_BG -->|audio attachment| STT
     STT -->|transcript| COMMS_BG
     COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|send to named channel| SIGNALIZR
+    COMMS_AGENT -->|send, react, poll| SIGNALIZR
     SIGNALIZR -->|durable subscription| COMMS_BG
-    COMMS_BG -->|auxiliary controls| SIGNALCLI
 ```
 
 ## Agent Instructions
@@ -337,7 +336,7 @@ services.AddCamerasMcp();
 services.AddAquariumMcp();
 services.AddSmartPlugMcp();
 services.AddSmartLightingMcp();
-services.AddMessagingMcp(phoneNumber, groupName);
+services.AddMessagingMcp(channelName);
 ```
 
 ### MCP Service Architecture
@@ -585,8 +584,7 @@ Audio["Speech-to-text<br/>(selected provider)"]:::stt
 | Project | Purpose |
 | --- | --- |
 | `CasCap.Common.AI` | Consolidated MCP tools, prompts, and agent infrastructure |
-| `CasCap.Signalizr.Client` | Durable named-channel Signal transport for core send, receive, and attachment operations |
-| `CasCap.Api.SignalCli` | Temporary auxiliary Signal control plane for reactions, typing, profiles, polls, and group lookup |
+| `CasCap.Signalizr.Client` | Durable named-channel Signal transport for send, receive, attachments, reactions, typing and polls |
 | `CasCap.Api.DDns` | Dynamic DNS service |
 | `CasCap.Api.Buderus.Sinks` | Buderus SignalR sink |
 | `CasCap.Api.DoorBird.Sinks` | DoorBird SignalR, Redis, Azure Table, and Blob sinks |
