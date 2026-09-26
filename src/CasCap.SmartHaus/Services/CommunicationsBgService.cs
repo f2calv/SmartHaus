@@ -47,8 +47,8 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly AIAgent? _agent;
     private readonly ProviderConfig? _provider;
     private readonly AgentConfig? _commsAgent;
-    private readonly VoiceMessageTranscriptionService _transcriptionSvc;
-    private readonly VoiceReplySynthesisService _voiceReplySvc;
+    private readonly IVoiceTranscriptionService _transcriptionSvc;
+    private readonly IVoiceSynthesisService _voiceReplySvc;
 
     private readonly TaskCompletionSource _channelReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
@@ -72,8 +72,8 @@ public sealed partial class CommunicationsBgService : IBgFeature
         CommsDebugNotifier debugNotifier,
         ISignalizrClient signalizrClient,
         ISignalMessageDeduplicator deduplicator,
-        VoiceMessageTranscriptionService transcriptionSvc,
-        VoiceReplySynthesisService voiceReplySvc,
+        IVoiceTranscriptionService transcriptionSvc,
+        IVoiceSynthesisService voiceReplySvc,
         AgentCommandHandler commandHandler,
         IRemoteCache remoteCache,
         IEventSink<CommsEvent> commsSink,
