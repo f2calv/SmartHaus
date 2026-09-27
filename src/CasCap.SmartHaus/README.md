@@ -106,8 +106,8 @@ tool and prompt names describe their capabilities independently of CLR type name
 Both group settings must match names returned by the gateway's `GET /api/v1/groups`
 (`GetGroupsAsync`) exactly, including spaces and case.
 Configure those same names in the gateway's `CasCap:GroupConfig:GroupNames` array.
-Pass unescaped names to `ISignalizrClient`; direct REST callers must URL-escape each group
-name path segment (for example, `My Test Group Name` becomes `My%20Test%20Group%20Name`).
+Pass unescaped names to `ISignalizrClient`; direct REST callers must URL-encode the `groupName`
+query parameter (for example, `My Test Group Name` becomes `My%20Test%20Group%20Name`).
 
 ### `SignalizrClientConfig` (`CasCap:SignalizrClientConfig`)
 
