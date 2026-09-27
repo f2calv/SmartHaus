@@ -55,6 +55,26 @@ These sinks are registered in the feature pods and forward domain events to the 
 | --- | --- | --- |
 | `GET /api/system` | Required | Returns git build metadata (`GitMetadata`) |
 
+### MCP Server Surface
+
+Server tool facades live in [Services/Mcp](Services/Mcp), with registrations in
+[HausMcpServiceCollectionExtensions](Extensions/HausMcpServiceCollectionExtensions.cs).
+MCP-only response DTOs live in [Models/Mcp](Models/Mcp) under the `CasCap.Models` namespace.
+Shared domain DTOs and query services remain with their owning features; endpoint composition
+stays in the server application's entry point.
+
+| Prompt class | Purpose |
+| --- | --- |
+| [AppliancesMcpPrompts](Models/AppliancesMcpPrompts.cs) | Appliance status, programs and efficiency |
+| [BusSystemMcpPrompts](Models/BusSystemMcpPrompts.cs) | Home status, floors, lighting and heating |
+| [FrontDoorMcpPrompts](Models/FrontDoorMcpPrompts.cs) | Intercom images, events and access guidance |
+| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, trends and hot water |
+| [InverterMcpPrompts](Models/InverterMcpPrompts.cs) | Solar production, power flow and battery status |
+
+Prompts supply reusable conversation guidance, while tools perform the requested operations.
+The `Mcp` filename or directory identifies MCP-specific code for scoped instructions; exposed
+tool and prompt names describe their capabilities independently of CLR type names.
+
 ## Configuration
 
 ### `SignalRHubConfig` (`CasCap:SignalRHubConfig`)

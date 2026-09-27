@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// MCP server prompts for home appliance interactions.
 /// </summary>
 [McpServerPromptType]
-public static partial class AppliancesPrompts
+public static partial class AppliancesMcpPrompts
 {
     /// <summary>
     /// Creates a prompt to retrieve all household appliances and summarise their current status.

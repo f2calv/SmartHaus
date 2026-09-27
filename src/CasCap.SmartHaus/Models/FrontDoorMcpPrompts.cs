@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// MCP server prompts for front door intercom interactions.
 /// </summary>
 [McpServerPromptType]
-public static partial class FrontDoorPrompts
+public static partial class FrontDoorMcpPrompts
 {
     /// <summary>
     /// Creates a prompt to analyse a front door camera photo and describe who or what is visible.

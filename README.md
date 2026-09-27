@@ -119,6 +119,11 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 
 [MCP](https://modelcontextprotocol.io/specification/2025-03-26/server/tools) query services expose 70+ tools and 25 prompts to AI agents, conditionally registered based on enabled features.
 
+The [MCP source reference](src/CasCap.SmartHaus/README.md#mcp-server-surface) links the
+`*McpPrompts` classes, `HausMcpServiceCollectionExtensions` and dedicated MCP response DTOs.
+The [Signal group configuration](src/CasCap.SmartHaus/README.md#commsagentconfig-cascapaiconfigagentscommsagentsettings)
+defines `GroupName` and `MonitorGroupName` for messaging.
+
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
 | [`SystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |

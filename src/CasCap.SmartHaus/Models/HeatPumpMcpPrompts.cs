@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// MCP server prompts for heat pump interactions.
 /// </summary>
 [McpServerPromptType]
-public static partial class HeatPumpPrompts
+public static partial class HeatPumpMcpPrompts
 {
     /// <summary>
     /// Creates a prompt to retrieve a full snapshot of all heat pump values and summarise the heating system status.
