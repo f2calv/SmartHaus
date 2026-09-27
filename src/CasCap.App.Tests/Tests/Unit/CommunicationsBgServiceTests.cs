@@ -69,15 +69,19 @@ public class CommunicationsBgServiceTests
         Assert.Empty(fixture.Signalizr.AttachmentFetches);
     }
 
-    [Fact]
-    public async Task ForeignGroupAndOwnEchoAreIgnored()
+    [Theory]
+    [InlineData(CommunicationsBgServiceTestFixture.OtherGroupName)]
+    [InlineData("MyTestGroupName")]
+    [InlineData("my test group name")]
+    [InlineData("My Test Group Name ")]
+    public async Task ForeignGroupAndOwnEchoAreIgnored(string foreignGroup)
     {
         await using var fixture = new CommunicationsBgServiceTestFixture();
         await fixture.StartAsync();
 
         fixture.Enqueue(
             CommunicationsBgServiceTestFixture.TextEnvelope("from another group", 2_001,
-                groupId: CommunicationsBgServiceTestFixture.OtherChannel),
+                groupId: foreignGroup),
             CommunicationsBgServiceTestFixture.TextEnvelope("my own echo", 2_002,
                 sender: CommunicationsBgServiceTestFixture.Account),
             CommunicationsBgServiceTestFixture.TextEnvelope("a real message", 2_003));
@@ -182,7 +186,7 @@ public class CommunicationsBgServiceTests
     }
 
     [Fact]
-    public async Task TranscriptIsNotEchoedToTheMonitorChannelByDefault()
+    public async Task TranscriptIsNotEchoedToTheMonitorGroupByDefault()
     {
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled);
         await fixture.StartAsync();
@@ -191,11 +195,11 @@ public class CommunicationsBgServiceTests
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(() => fixture.Signalizr.StartTypingCallCount == 1);
         await CommunicationsBgServiceTestFixture.AssertStaysFalseAsync(
-            () => fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorChannel).Any());
+            () => fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorGroupName).Any());
     }
 
     [Fact]
-    public async Task EnabledEchoSendsTheTranscriptToTheMonitorChannelOnly()
+    public async Task EnabledEchoSendsTheTranscriptToTheMonitorGroupOnly()
     {
         await using var fixture = new CommunicationsBgServiceTestFixture(VoiceProcessingMode.Enabled,
             echoTranscriptToDebugChat: true);
@@ -205,11 +209,11 @@ public class CommunicationsBgServiceTests
         fixture.Enqueue(CommunicationsBgServiceTestFixture.AttachmentEnvelope(7_401, ("voice-5", WavMediaType)));
 
         await CommunicationsBgServiceTestFixture.WaitForAsync(
-            () => fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorChannel).Any());
+            () => fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorGroupName).Any());
 
-        var debugMsg = Assert.Single(fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorChannel));
+        var debugMsg = Assert.Single(fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.MonitorGroupName));
         Assert.Contains("turn the kitchen lights off", debugMsg.Message, StringComparison.Ordinal);
-        Assert.DoesNotContain(fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.ChatChannel),
+        Assert.DoesNotContain(fixture.Signalizr.SentTo(CommunicationsBgServiceTestFixture.ChatGroupName),
             sent => sent.Message.Contains("turn the kitchen lights off", StringComparison.Ordinal));
     }
 

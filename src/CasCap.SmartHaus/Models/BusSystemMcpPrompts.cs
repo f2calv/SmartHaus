@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// MCP server prompts for bus system smart-home interactions.
 /// </summary>
 [McpServerPromptType]
-public static partial class BusSystemPrompts
+public static partial class BusSystemMcpPrompts
 {
     /// <summary>
     /// Creates a prompt to retrieve all KNX group address state and summarise the current status of the home.

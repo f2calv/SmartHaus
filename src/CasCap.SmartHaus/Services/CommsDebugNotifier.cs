@@ -4,12 +4,12 @@ namespace CasCap.Services;
 
 /// <summary>
 /// Encapsulates all debug and stats messaging sent to the
-/// <see cref="CommsAgentConfig.MonitorChannelName"/> Signalizr channel for observability of the
+/// <see cref="CommsAgentConfig.MonitorGroupName"/> Signalizr group for observability of the
 /// comms agent pipeline.
 /// </summary>
 /// <remarks>
-/// The monitor channel is operator diagnostics: it carries prompts, transcripts and tool
-/// arguments, so its Signal group must contain only the operator. Leaving the channel name unset
+/// The monitor group is operator diagnostics: it carries prompts, transcripts and tool
+/// arguments, so its Signal group must contain only the operator. Leaving the group name unset
 /// disables every message sent from here.
 /// </remarks>
 public sealed class CommsDebugNotifier(
@@ -68,18 +68,18 @@ public sealed class CommsDebugNotifier(
     }
 
     /// <summary>
-    /// Sends the transcript of an inbound voice message to <see cref="CommsAgentConfig.MonitorChannelName"/>
+    /// Sends the transcript of an inbound voice message to <see cref="CommsAgentConfig.MonitorGroupName"/>
     /// so a misheard command can be diagnosed against what the agent actually received.
     /// </summary>
     /// <param name="result">The successful transcription, carrying the transcript and stage timings.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <remarks>
     /// Only called when <see cref="CommsAgentConfig.EchoTranscriptToDebugChat"/> is enabled. The
-    /// transcript goes to the monitor channel alone and never to a log sink or telemetry.
+    /// transcript goes to the monitor group alone and never to a log sink or telemetry.
     /// </remarks>
     public async Task SendVoiceTranscriptDebugAsync(VoiceTranscriptionResult result, CancellationToken cancellationToken)
     {
-        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
+        if (commsAgentConfig.Value.MonitorGroupName is not { Length: > 0 } monitorGroupName)
             return;
 
         try
@@ -96,12 +96,12 @@ public sealed class CommsDebugNotifier(
             if (result.TranscriptionDuration is { } transcription)
                 sb.Append($" | transcribe {transcription.TotalMilliseconds:N0}ms{Realtime(result.AudioDuration, transcription)}");
 
-            await signalizrClient.SendAsync(monitorChannel, sb.ToString(), cancellationToken);
+            await signalizrClient.SendAsync(monitorGroupName, sb.ToString(), cancellationToken);
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            logger.LogWarning(ex, "{ClassName} failed to send the voice transcript to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
     }
 
@@ -112,12 +112,12 @@ public sealed class CommsDebugNotifier(
             : string.Empty;
 
     /// <summary>
-    /// Sends a copy of an incoming stream event to <see cref="CommsAgentConfig.MonitorChannelName"/>
+    /// Sends a copy of an incoming stream event to <see cref="CommsAgentConfig.MonitorGroupName"/>
     /// so automated sensor messages can be observed alongside the agent's response.
     /// </summary>
     public async Task SendStreamEventDebugAsync(CommsEvent commsEvent, CancellationToken cancellationToken)
     {
-        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
+        if (commsAgentConfig.Value.MonitorGroupName is not { Length: > 0 } monitorGroupName)
             return;
 
         try
@@ -129,25 +129,25 @@ public sealed class CommsDebugNotifier(
             if (commsEvent.JsonPayload is not null)
                 sb.AppendLine($"\U0001F4CE {commsEvent.JsonPayload}");
 
-            await signalizrClient.SendAsync(monitorChannel, sb.ToString().TrimEnd(), cancellationToken);
-            logger.LogDebug("{ClassName} stream event debug sent to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            await signalizrClient.SendAsync(monitorGroupName, sb.ToString().TrimEnd(), cancellationToken);
+            logger.LogDebug("{ClassName} stream event debug sent to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send stream event debug to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            logger.LogWarning(ex, "{ClassName} failed to send stream event debug to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
     }
 
     /// <summary>
-    /// Sends a compaction notification to <see cref="CommsAgentConfig.MonitorChannelName"/>
+    /// Sends a compaction notification to <see cref="CommsAgentConfig.MonitorGroupName"/>
     /// when the <see cref="ToolOutputStrippingChatReducer"/> trims the chat history.
     /// </summary>
     public async Task SendCompactionDebugAsync(int inputCount, int outputCount, int toolDropped, int windowTrimmed, int target,
         CancellationToken cancellationToken)
     {
-        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
+        if (commsAgentConfig.Value.MonitorGroupName is not { Length: > 0 } monitorGroupName)
             return;
 
         try
@@ -161,19 +161,19 @@ public sealed class CommsDebugNotifier(
                 sb.AppendLine($"\u2702\uFE0F Window trimmed: {windowTrimmed}");
             sb.Append($"\U0001F3AF Target: {target}");
 
-            await signalizrClient.SendAsync(monitorChannel, sb.ToString(), cancellationToken);
-            logger.LogDebug("{ClassName} compaction debug sent to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            await signalizrClient.SendAsync(monitorGroupName, sb.ToString(), cancellationToken);
+            logger.LogDebug("{ClassName} compaction debug sent to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send compaction debug to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            logger.LogWarning(ex, "{ClassName} failed to send compaction debug to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
     }
 
     /// <summary>
-    /// Sends a single consolidated debug message to <see cref="CommsAgentConfig.MonitorChannelName"/>
+    /// Sends a single consolidated debug message to <see cref="CommsAgentConfig.MonitorGroupName"/>
     /// containing a step-by-step timeline of the agent pipeline execution.
     /// </summary>
     /// <remarks>
@@ -184,7 +184,7 @@ public sealed class CommsDebugNotifier(
         byte[]? originalBinaryContent, string? originalMimeType, long? inboundTimestamp,
         CancellationToken cancellationToken)
     {
-        if (commsAgentConfig.Value.MonitorChannelName is not { Length: > 0 } monitorChannel)
+        if (commsAgentConfig.Value.MonitorGroupName is not { Length: > 0 } monitorGroupName)
             return;
 
         try
@@ -287,14 +287,14 @@ public sealed class CommsDebugNotifier(
             if (result.FinishReason is { Length: > 0 })
                 sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
 
-            await signalizrClient.SendAsync(monitorChannel, sb.ToString().TrimEnd(), cancellationToken);
-            logger.LogDebug("{ClassName} debug stats sent to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            await signalizrClient.SendAsync(monitorGroupName, sb.ToString().TrimEnd(), cancellationToken);
+            logger.LogDebug("{ClassName} debug stats sent to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to send debug stats to channel {Channel}",
-                nameof(CommsDebugNotifier), monitorChannel);
+            logger.LogWarning(ex, "{ClassName} failed to send debug stats to the configured monitor group",
+                nameof(CommsDebugNotifier));
         }
     }
 

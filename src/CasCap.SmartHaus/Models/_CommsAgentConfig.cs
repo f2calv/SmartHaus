@@ -5,7 +5,7 @@ namespace CasCap.Models;
 /// </summary>
 /// <remarks>
 /// These settings govern how <see cref="CasCap.Services.CommunicationsBgService"/> interacts
-/// with its Signalizr channels — they are application-level concerns. The Signal account, its
+/// with its Signalizr groups — they are application-level concerns. The Signal account, its
 /// groups and its profile belong to the gateway.
 /// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.CommsAgent"/>
 /// in <c>AIConfig.Agents</c>.
@@ -16,21 +16,23 @@ public sealed record CommsAgentConfig : IAppConfig
     public static string ConfigurationSectionName =>
         $"{nameof(CasCap)}:{nameof(AgentKeys.AIConfig)}:{nameof(AgentKeys.Agents)}:{nameof(AgentKeys.CommsAgent)}:{nameof(AgentKeys.Settings)}";
 
-    /// <summary>Signalizr channel used for the user-facing chat: messages, reactions, typing and polls.</summary>
+    /// <summary>Exact Signal group display name used for the user-facing chat: messages, reactions, typing and polls.</summary>
+    /// <remarks>Preserve spaces and case.</remarks>
     [Required, MinLength(1)]
-    public string ChannelName { get; init; } = "smarthaus.chat";
+    public string GroupName { get; init; } = "My Test Group Name";
 
     /// <summary>
-    /// Signalizr channel for operator diagnostics, or <see langword="null"/> to disable them.
+    /// Exact Signal group display name for operator diagnostics, or <see langword="null"/> to disable them.
     /// </summary>
     /// <remarks>
     /// Receives pipeline timelines, stream-event copies, compaction notices and, when
     /// <see cref="EchoTranscriptToDebugChat"/> is enabled, voice transcripts. Its Signal group
     /// must contain only the operator, because these messages repeat other people's content.
+    /// Preserve spaces and case.
     /// </remarks>
-    public string? MonitorChannelName { get; init; }
+    public string? MonitorGroupName { get; init; }
 
-    /// <summary>Whether to echo a successful voice transcript to <see cref="MonitorChannelName"/>.</summary>
+    /// <summary>Whether to echo a successful voice transcript to <see cref="MonitorGroupName"/>.</summary>
     /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
     public bool EchoTranscriptToDebugChat { get; init; }
 

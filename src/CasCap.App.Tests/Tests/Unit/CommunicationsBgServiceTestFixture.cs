@@ -22,14 +22,14 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <summary>A group member who sends the envelopes under test.</summary>
     public const string Sender = "+10000000001";
 
-    /// <summary>The configured chat channel.</summary>
-    public const string ChatChannel = "smarthaus.chat";
+    /// <summary>The configured chat group.</summary>
+    public const string ChatGroupName = "My Test Group Name";
 
-    /// <summary>The operator-only channel that receives debug output.</summary>
-    public const string MonitorChannel = "smarthaus.monitor";
+    /// <summary>The operator-only group that receives debug output.</summary>
+    public const string MonitorGroupName = "My Test Monitor Group Name";
 
-    /// <summary>A channel the service must ignore.</summary>
-    public const string OtherChannel = "other.chat";
+    /// <summary>A group the service must ignore.</summary>
+    public const string OtherGroupName = "Other Test Group Name";
 
     private readonly CancellationTokenSource _cts = new();
     private Task? _execution;
@@ -50,8 +50,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <summary>The synthesis backend behind the spoken-reply service.</summary>
     public FakeTextToSpeechClient TextToSpeech { get; } = new();
 
-    /// <summary>The gateway fake feeding deliveries in and recording every channel operation.</summary>
-    public FakeSignalizrClient Signalizr { get; } = new() { Channels = [ChatChannel, MonitorChannel] };
+    /// <summary>The gateway fake feeding deliveries in and recording every group operation.</summary>
+    public FakeSignalizrClient Signalizr { get; } = new() { Groups = [ChatGroupName, MonitorGroupName] };
 
     /// <summary>Bytes returned for every attachment the tests queue.</summary>
     public byte[] AttachmentContent { get; set; } = SyntheticWav();
@@ -110,9 +110,9 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     {
         var commsAgentConfig = Options.Create(new CommsAgentConfig
         {
-            ChannelName = ChatChannel,
-            //Only set when the test exercises the monitor channel; otherwise the debug notifier short-circuits.
-            MonitorChannelName = echoTranscriptToDebugChat ? MonitorChannel : null,
+            GroupName = ChatGroupName,
+            //Only set when the test exercises the monitor group; otherwise the debug notifier short-circuits.
+            MonitorGroupName = echoTranscriptToDebugChat ? MonitorGroupName : null,
             //Long enough that the idle stream consumer parks instead of spinning for the test's duration.
             PollingIntervalMs = 60_000,
             ReplyQueueCapacity = replyQueueCapacity,
@@ -174,7 +174,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     }
 
     /// <summary>
-    /// Starts execution and waits until the channels are ready and the subscription is open, so
+    /// Starts execution and waits until the groups are ready and the subscription is open, so
     /// deliveries queued afterwards travel the normal inbound path.
     /// </summary>
     public async Task StartAsync()
@@ -202,7 +202,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             Signalizr.Enqueue(new SignalizrMessage
             {
                 DeliveryId = $"delivery-{notification.Timestamp}",
-                Channel = notification.GroupId,
+                GroupName = notification.GroupId,
                 Sender = notification.Sender,
                 Message = notification.Message,
                 Timestamp = notification.Timestamp ?? 0,
@@ -212,9 +212,9 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         }
     }
 
-    /// <summary>Builds an ordinary text envelope from the chat channel.</summary>
+    /// <summary>Builds an ordinary text envelope from the chat group.</summary>
     public static FakeReceivedNotification TextEnvelope(string message, long timestamp,
-        string sender = Sender, string? groupId = ChatChannel) =>
+        string sender = Sender, string? groupId = ChatGroupName) =>
         new()
         {
             Sender = sender,
@@ -223,12 +223,12 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             Timestamp = timestamp,
         };
 
-    /// <summary>Builds an attachment-only envelope from the chat channel.</summary>
+    /// <summary>Builds an attachment-only envelope from the chat group.</summary>
     public static FakeReceivedNotification AttachmentEnvelope(long timestamp, params (string Id, string ContentType)[] attachments) =>
         new()
         {
             Sender = Sender,
-            GroupId = ChatChannel,
+            GroupId = ChatGroupName,
             Timestamp = timestamp,
             Attachments = [.. attachments.Select(a => new FakeNotificationAttachment { Id = a.Id, ContentType = a.ContentType })],
         };

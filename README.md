@@ -119,6 +119,11 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 
 [MCP](https://modelcontextprotocol.io/specification/2025-03-26/server/tools) query services expose 70+ tools and 25 prompts to AI agents, conditionally registered based on enabled features.
 
+The [MCP source reference](src/CasCap.SmartHaus/README.md#mcp-server-surface) links the
+`*McpPrompts` classes, `HausMcpServiceCollectionExtensions` and dedicated MCP response DTOs.
+The [Signal group configuration](src/CasCap.SmartHaus/README.md#commsagentconfig-cascapaiconfigagentscommsagentsettings)
+defines `GroupName` and `MonitorGroupName` for messaging.
+
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
 | [`SystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
@@ -439,7 +444,7 @@ Additional services started by the `demo` profile:
 | --- | --- | --- |
 | SmartHaus | 8080 | Application with Swagger UI at `/swagger` |
 | signal-cli REST | 8081 | Signal wrapper, owned by Signalizr |
-| Signalizr | 8090, 5001 | Signal gateway: REST channel operations and the gRPC subscription |
+| Signalizr | 8090, 5001 | Signal gateway: REST group operations and the gRPC subscription |
 | Ollama | 11434 | Local LLM inference (GPU) |
 
 #### Signal Messaging Setup
@@ -454,8 +459,10 @@ Additional services started by the `demo` profile:
 
    Scan the QR code from Signal on your phone: **Settings → Linked Devices → Link New Device**.
 
-3. **Create the Signal groups** Signalizr resolves by name: `SmartHaus` for the chat and
-   `SmartHaus Monitor` for operator diagnostics. Keep the monitor group to yourself — it repeats
+3. **Create the Signal groups** Signalizr resolves by exact display name: `My Test Group Name` for the chat
+   and `My Test Monitor Group Name` for operator diagnostics. Configure the same names in the gateway's
+   `CasCap:GroupConfig:GroupNames` array and the application's `GroupName` / `MonitorGroupName`
+   settings, preserving spaces and case. Keep the monitor group to yourself — it repeats
    prompts and transcripts. SmartHaus ignores messages the gateway account itself sends, so chat
    from a phone other than the one linked above.
 

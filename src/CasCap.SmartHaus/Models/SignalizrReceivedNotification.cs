@@ -32,7 +32,7 @@ internal sealed record SignalizrReceivedNotification : IReceivedNotification
         new()
         {
             Sender = message.Sender ?? string.Empty,
-            GroupId = message.Channel,
+            GroupId = message.GroupName,
             // The wire format has no null string, so an attachment-only delivery arrives empty.
             Message = string.IsNullOrEmpty(message.Message) ? null : message.Message,
             Timestamp = message.Timestamp == 0 ? null : message.Timestamp,

@@ -5,17 +5,17 @@ namespace CasCap.Services;
 /// gateway.
 /// </summary>
 /// <remarks>
-/// Bakes in the chat channel so the agent only needs to provide the poll question and answer
-/// options. The gateway owns the account and resolves the channel to its Signal group.
+/// Bakes in the chat group name so the agent only needs to provide the poll question and answer
+/// options. The gateway owns the account and resolves the exact Signal group name.
 /// </remarks>
 [McpServerToolType]
 public sealed partial class MessagingMcpQueryService(
     ISignalizrClient signalizrClient,
     IPollTracker pollTracker,
-    string channelName)
+    string groupName)
 {
     /// <summary>
-    /// Creates a poll in the configured chat channel.
+    /// Creates a poll in the configured chat group.
     /// </summary>
     [McpServerTool]
     [Description("Sends a multiple-choice question to the user's messaging group. ALWAYS use this tool when you would list options, choices, suggestions, recommendations, or alternatives — even if the user does not say 'poll'. Trigger phrases include 'give me options', 'what are my choices', 'suggest some', 'which should I', or any request that results in a numbered/bulleted list of possibilities. After calling this tool, do NOT send a follow-up text message — the poll itself is the response.")]
@@ -25,15 +25,15 @@ public sealed partial class MessagingMcpQueryService(
         CancellationToken cancellationToken = default)
     {
         var answerArray = answers.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
-        var pollId = await signalizrClient.CreatePollAsync(channelName, question, answerArray,
+        var pollId = await signalizrClient.CreatePollAsync(groupName, question, answerArray,
             cancellationToken: cancellationToken);
-        pollTracker.TrackPoll(pollId, question, answerArray, channelName);
+        pollTracker.TrackPoll(pollId, question, answerArray, groupName);
 
         return new PollCreatedResult { PollId = pollId };
     }
 
     /// <summary>
-    /// Closes an existing poll in the chat channel.
+    /// Closes an existing poll in the chat group.
     /// </summary>
     [McpServerTool]
     [Description("Closes a previously created poll. Use the identifier from the create response.")]
@@ -41,7 +41,7 @@ public sealed partial class MessagingMcpQueryService(
         [Description("The poll identifier returned when the poll was created.")] string pollId,
         CancellationToken cancellationToken = default)
     {
-        await signalizrClient.ClosePollAsync(channelName, pollId, cancellationToken);
+        await signalizrClient.ClosePollAsync(groupName, pollId, cancellationToken);
         pollTracker.RemovePoll(pollId);
         return true;
     }

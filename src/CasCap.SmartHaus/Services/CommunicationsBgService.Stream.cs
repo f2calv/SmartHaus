@@ -113,12 +113,12 @@ public sealed partial class CommunicationsBgService
         // Forward the raw stream event to the debug chat for observability.
         await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
 
-        // Wait until the gateway serves the chat channel before attempting delivery.
-        await _channelReady.Task.WaitAsync(cancellationToken);
+        // Wait until the gateway serves the chat group before attempting delivery.
+        await _groupReady.Task.WaitAsync(cancellationToken);
 
         if (_agent is null || _commsAgent is null || _provider is null)
         {
-            // No agent — forward event message directly to the chat channel.
+            // No agent — forward event message directly to the chat group.
             LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
             await SendMessageAsync(commsEvent.Message, cancellationToken);
             return;
@@ -179,9 +179,9 @@ public sealed partial class CommunicationsBgService
     /// </summary>
     private async Task MaybeSendDropNoticeAsync(CancellationToken cancellationToken)
     {
-        // The channel must be ready before we can notify; until then drops are silent (counters
+        // The group must be ready before we can notify; until then drops are silent (counters
         // keep accumulating so the eventual notice reports the full total).
-        if (!_channelReady.Task.IsCompletedSuccessfully)
+        if (!_groupReady.Task.IsCompletedSuccessfully)
             return;
 
         var nowTicks = _timeProvider.GetUtcNow().UtcTicks;

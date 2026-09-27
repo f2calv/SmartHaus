@@ -166,7 +166,7 @@ services:
       - signalizr_data:/var/lib/signalizr
     restart: "no"
 
-  # Owns the signal-cli receive stream and exposes durable named-channel delivery.
+  # Owns the signal-cli receive stream and exposes durable named-group delivery.
   signalizr:
     profiles: [ demo ]
     image: ghcr.io/f2calv/signalizr:0.0.15
@@ -178,8 +178,8 @@ services:
       CasCap__FeatureConfig__EnabledFeatures: Gateway,Receiver
       CasCap__SignalCliConfig__BaseAddress: http://signalcli:8080
       CasCap__SignalCliConfig__PhoneNumber: ${SIGNALIZR_PHONE_NUMBER:-+10000000000}
-      CasCap__ChannelConfig__Channels__smarthaus.chat: SmartHaus
-      CasCap__ChannelConfig__Channels__smarthaus.monitor: SmartHaus Monitor
+      CasCap__GroupConfig__GroupNames__0: My Test Group Name
+      CasCap__GroupConfig__GroupNames__1: My Test Monitor Group Name
       CasCap__DatabaseConfig__Provider: Sqlite
       CasCap__DatabaseConfig__ConnectionString: Data Source=/var/lib/signalizr/signalizr.db
       CasCap__DatabaseConfig__MigrateOnStartup: "false"

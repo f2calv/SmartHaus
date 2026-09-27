@@ -42,8 +42,8 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddMediaStreamSink();
         builder.Services.AddSignalizrClient(builder.Configuration);
         builder.Services.AddMessagingMcp(
-            builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.ChannelName)}"]
-                ?? new CommsAgentConfig().ChannelName);
+            builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.GroupName)}"]
+                ?? new CommsAgentConfig().GroupName);
         builder.Services.AddSingleton<DistributedCacheSessionStore>();
         builder.Services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<DistributedCacheSessionStore>());
         builder.Services.AddSingleton<AgentCommandHandler>();

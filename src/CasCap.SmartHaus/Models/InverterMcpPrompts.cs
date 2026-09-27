@@ -6,7 +6,7 @@ namespace CasCap.Models;
 /// MCP server prompts for solar inverter interactions.
 /// </summary>
 [McpServerPromptType]
-public static partial class InverterPrompts
+public static partial class InverterMcpPrompts
 {
     /// <summary>
     /// Creates a prompt to retrieve a real-time solar production summary and describe the current energy balance.
