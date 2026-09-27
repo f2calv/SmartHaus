@@ -14,7 +14,7 @@ public sealed partial class CommunicationsBgService
                     .SubscribeAsync(cancellationToken)
                     .ConfigureAwait(false))
                 {
-                    if (!string.Equals(message.Channel, _commsAgentConfig.ChannelName,
+                    if (!string.Equals(message.GroupName, _commsAgentConfig.GroupName,
                         StringComparison.Ordinal))
                         continue;
 
@@ -32,7 +32,7 @@ public sealed partial class CommunicationsBgService
     }
 
     /// <summary>
-    /// Applies the channel/echo filter to a batch of deliveries and routes each qualifying
+    /// Applies the group/echo filter to a batch of deliveries and routes each qualifying
     /// delivery into the poll-vote or normal processing path.
     /// </summary>
     private async Task ProcessEnvelopesAsync(SignalizrReceivedNotification[]? messages, CancellationToken cancellationToken)
@@ -46,7 +46,7 @@ public sealed partial class CommunicationsBgService
         foreach (var msg in messages)
         {
             var envelopeType = msg.PollVote is null ? "message" : "pollVote";
-            LogEnvelopeDetail(_logger, nameof(CommunicationsBgService), envelopeType, msg.HasContent, msg.GroupId, msg.Sender);
+            LogEnvelopeDetail(_logger, nameof(CommunicationsBgService), envelopeType, msg.HasContent, !string.IsNullOrEmpty(msg.GroupId), msg.Sender);
 
             if (!ShouldProcessNotification(msg))
                 continue;
@@ -389,11 +389,11 @@ public sealed partial class CommunicationsBgService
                         base64Attachments = [.. base64Attachments ?? [], dataUri];
                     }
 
-                    LogSendingAgentResponse(_logger, nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0, _commsAgentConfig.ChannelName);
+                    LogSendingAgentResponse(_logger, nameof(CommunicationsBgService), messageWithStats.Length, base64Attachments?.Length ?? 0);
                     var sendTimestamp = await SendMessageAsync(messageWithStats, base64Attachments, cancellationToken);
                     LogMessageSent(_logger, nameof(CommunicationsBgService), sendTimestamp);
 
-                    // Send the detailed pipeline timeline to the monitor channel.
+                    // Send the detailed pipeline timeline to the monitor group.
                     LogDebugStats(_logger, nameof(CommunicationsBgService),
                         agentResult!.Usage is not null,
                         agentResult.Usage?.InputTokenCount,
@@ -438,7 +438,7 @@ public sealed partial class CommunicationsBgService
     private bool ShouldProcessNotification(SignalizrReceivedNotification notification) =>
         notification.HasContent
         && !notification.FromSelf
-        && string.Equals(notification.GroupId, _commsAgentConfig.ChannelName, StringComparison.Ordinal);
+        && string.Equals(notification.GroupId, _commsAgentConfig.GroupName, StringComparison.Ordinal);
 
     private Task<string> SendMessageAsync(string message, CancellationToken cancellationToken) =>
         SendMessageAsync(message, base64Attachments: null, cancellationToken);
@@ -447,9 +447,9 @@ public sealed partial class CommunicationsBgService
         string message,
         IReadOnlyList<string>? base64Attachments,
         CancellationToken cancellationToken) =>
-        _signalizrClient.SendAsync(_commsAgentConfig.ChannelName, message, base64Attachments, cancellationToken);
+        _signalizrClient.SendAsync(_commsAgentConfig.GroupName, message, base64Attachments, cancellationToken);
 
-    /// <summary>Sets a progress reaction on a message in the chat channel.</summary>
+    /// <summary>Sets a progress reaction on a message in the chat group.</summary>
     /// <remarks>
     /// Best effort: a reaction is feedback about the work, and failing to show it must not abandon
     /// the work itself.
@@ -459,46 +459,46 @@ public sealed partial class CommunicationsBgService
         try
         {
             await _signalizrClient.SetReactionAsync(
-                _commsAgentConfig.ChannelName, reaction, timestamp, sender, cancellationToken);
+                _commsAgentConfig.GroupName, reaction, timestamp, sender, cancellationToken);
         }
         // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
         // stop the service over a missed indicator.
         catch (Exception ex) when (ex is HttpRequestException
             || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "reaction", _commsAgentConfig.ChannelName);
+            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "reaction");
         }
     }
 
-    /// <summary>Shows the typing indicator in the chat channel, best effort.</summary>
+    /// <summary>Shows the typing indicator in the chat group, best effort.</summary>
     private async Task StartTypingAsync(CancellationToken cancellationToken)
     {
         try
         {
-            await _signalizrClient.StartTypingAsync(_commsAgentConfig.ChannelName, cancellationToken);
+            await _signalizrClient.StartTypingAsync(_commsAgentConfig.GroupName, cancellationToken);
         }
         // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
         // stop the service over a missed indicator.
         catch (Exception ex) when (ex is HttpRequestException
             || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing", _commsAgentConfig.ChannelName);
+            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing");
         }
     }
 
-    /// <summary>Clears the typing indicator in the chat channel, best effort.</summary>
+    /// <summary>Clears the typing indicator in the chat group, best effort.</summary>
     private async Task StopTypingAsync(CancellationToken cancellationToken)
     {
         try
         {
-            await _signalizrClient.StopTypingAsync(_commsAgentConfig.ChannelName, cancellationToken);
+            await _signalizrClient.StopTypingAsync(_commsAgentConfig.GroupName, cancellationToken);
         }
         // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
         // stop the service over a missed indicator.
         catch (Exception ex) when (ex is HttpRequestException
             || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
         {
-            LogChannelInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing", _commsAgentConfig.ChannelName);
+            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing");
         }
     }
     /// <summary>

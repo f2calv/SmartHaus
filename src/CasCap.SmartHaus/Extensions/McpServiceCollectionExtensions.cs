@@ -78,14 +78,14 @@ public static class HausMcpServiceCollectionExtensions
     /// Registers the <see cref="Services.MessagingMcpQueryService"/> to expose messaging poll operations as MCP tools.
     /// </summary>
     /// <param name="services">The service collection.</param>
-    /// <param name="channelName">The Signalizr channel to target with poll operations.</param>
-    public static void AddMessagingMcp(this IServiceCollection services, string channelName)
+    /// <param name="groupName">The Signalizr group to target with poll operations.</param>
+    public static void AddMessagingMcp(this IServiceCollection services, string groupName)
     {
         services.AddSingleton<IPollTracker, InMemoryPollTracker>();
         services.AddSingleton(sp => new MessagingMcpQueryService(
             sp.GetRequiredService<ISignalizrClient>(),
             sp.GetRequiredService<IPollTracker>(),
-            channelName));
+            groupName));
     }
 
     /// <summary>

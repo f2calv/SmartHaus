@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// Single-instance background service (<c>Comms</c> feature) that consumes
 /// key events from a Redis Stream and incoming notification group messages, feeding both
 /// through a configured <see cref="AIAgent"/> for decision-making before relaying responses
-/// through the configured Signalizr channel with <see cref="ISignalizrClient"/>.
+/// through the configured Signalizr group with <see cref="ISignalizrClient"/>.
 /// </summary>
 /// <remarks>
 /// <para>
@@ -16,8 +16,8 @@ namespace CasCap.Services;
 /// Each event is forwarded to the agent (or sent directly when no agent is configured).
 /// </para>
 /// <para>
-/// <b>Incoming messages:</b> Subscribes to the Signalizr channel, routes each message through
-/// the agent for processing, and sends the agent's response back to the channel.
+/// <b>Incoming messages:</b> Subscribes to the Signalizr group, routes each message through
+/// the agent for processing, and sends the agent's response back to the group.
 /// </para>
 /// <para>
 /// The comms agent is resolved from <see cref="AgentKeys.CommsAgent"/> in
@@ -50,7 +50,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     private readonly IVoiceTranscriptionService _transcriptionSvc;
     private readonly IVoiceSynthesisService _voiceReplySvc;
 
-    private readonly TaskCompletionSource _channelReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
+    private readonly TaskCompletionSource _groupReady = new(TaskCreationOptions.RunContinuationsAsynchronously);
     private readonly string? _resolvedInstructions;
     private readonly Channel<ReplyRequest> _replyChannel;
 
@@ -139,9 +139,9 @@ public sealed partial class CommunicationsBgService : IBgFeature
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} starting, channel={ChannelName}, monitorChannel={MonitorChannelName}, agentProfile={AgentProfile}",
-            nameof(CommunicationsBgService), _commsAgentConfig.ChannelName,
-            _commsAgentConfig.MonitorChannelName ?? "(disabled)", AgentKeys.CommsAgent);
+        _logger.LogInformation("{ClassName} starting, monitorEnabled={MonitorEnabled}, agentProfile={AgentProfile}",
+            nameof(CommunicationsBgService), !string.IsNullOrEmpty(_commsAgentConfig.MonitorGroupName),
+            AgentKeys.CommsAgent);
         try
         {
             // Start consuming the comms stream immediately — this must not be gated behind
@@ -150,13 +150,13 @@ public sealed partial class CommunicationsBgService : IBgFeature
             await EnsureConsumerGroupAsync();
             var streamTask = DrainStreamAsync(cancellationToken);
 
-            await WaitForChannelsAsync(cancellationToken);
-            _channelReady.TrySetResult();
+            await WaitForGroupsAsync(cancellationToken);
+            _groupReady.TrySetResult();
 
             var replyTask = DrainReplyQueueAsync(cancellationToken);
 
-            _logger.LogInformation("{ClassName} subscribing to Signalizr channel {ChannelName}",
-                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
+            _logger.LogInformation("{ClassName} subscribing to the configured Signalizr chat group",
+                nameof(CommunicationsBgService));
             var incomingTask = SubscribeToMessagesAsync(cancellationToken);
 
             //await-await-WhenAny propagates the first faulted task immediately so the
@@ -171,21 +171,21 @@ public sealed partial class CommunicationsBgService : IBgFeature
         _logger.LogInformation("{ClassName} exiting", nameof(CommunicationsBgService));
     }
 
-    /// <summary>Waits until the Signalizr gateway serves the configured channels.</summary>
+    /// <summary>Waits until the Signalizr gateway serves the configured groups.</summary>
     /// <remarks>
-    /// An unreachable gateway is retried, because it recovers on its own. A missing chat channel
-    /// is a configuration fault that retrying cannot fix, so it throws. A missing monitor channel
+    /// An unreachable gateway is retried, because it recovers on its own. A missing chat group
+    /// is a configuration fault that retrying cannot fix, so it throws. A missing monitor group
     /// only degrades diagnostics, so it is logged and tolerated.
     /// </remarks>
-    private async Task WaitForChannelsAsync(CancellationToken cancellationToken)
+    private async Task WaitForGroupsAsync(CancellationToken cancellationToken)
     {
         var attempt = 1;
         while (true)
         {
-            IReadOnlyList<string> channels;
+            IReadOnlyList<string> groups;
             try
             {
-                channels = await _signalizrClient.GetChannelsAsync(cancellationToken);
+                groups = await _signalizrClient.GetGroupsAsync(cancellationToken);
             }
             catch (HttpRequestException ex)
             {
@@ -197,17 +197,17 @@ public sealed partial class CommunicationsBgService : IBgFeature
                 continue;
             }
 
-            if (!channels.Contains(_commsAgentConfig.ChannelName, StringComparer.Ordinal))
+            if (!groups.Contains(_commsAgentConfig.GroupName, StringComparer.Ordinal))
                 throw new GenericException(
-                    $"Signalizr channel '{_commsAgentConfig.ChannelName}' is not configured.");
+                    "The configured Signalizr chat group is unavailable. Check the exact display name, including spaces and case.");
 
-            if (_commsAgentConfig.MonitorChannelName is { Length: > 0 } monitorChannel
-                && !channels.Contains(monitorChannel, StringComparer.Ordinal))
-                _logger.LogWarning("{ClassName} Signalizr monitor channel {MonitorChannelName} is not configured, diagnostics will not be delivered",
-                    nameof(CommunicationsBgService), monitorChannel);
+            if (_commsAgentConfig.MonitorGroupName is { Length: > 0 } monitorGroupName
+                && !groups.Contains(monitorGroupName, StringComparer.Ordinal))
+                _logger.LogWarning("{ClassName} configured Signalizr monitor group is unavailable, diagnostics will not be delivered",
+                    nameof(CommunicationsBgService));
 
-            _logger.LogInformation("{ClassName} Signalizr channel {ChannelName} is ready",
-                nameof(CommunicationsBgService), _commsAgentConfig.ChannelName);
+            _logger.LogInformation("{ClassName} configured Signalizr chat group is ready",
+                nameof(CommunicationsBgService));
             return;
         }
     }

@@ -7,7 +7,7 @@ namespace CasCap.Tests.Unit;
 
 /// <summary>
 /// Deterministic Signalizr client that feeds deliveries to the comms subscription and records
-/// every channel operation the service performs.
+/// every group operation the service performs.
 /// </summary>
 public sealed class FakeSignalizrClient : ISignalizrClient
 {
@@ -16,13 +16,13 @@ public sealed class FakeSignalizrClient : ISignalizrClient
     private TaskCompletionSource _startTypingGate = CompletedGate();
 
     /// <summary>One recorded reaction set through <see cref="SetReactionAsync"/>.</summary>
-    public sealed record Reaction(string Channel, string Emoji, long TargetTimestamp, string? TargetAuthor);
+    public sealed record Reaction(string GroupName, string Emoji, long TargetTimestamp, string? TargetAuthor);
 
-    /// <summary>Configured channels returned to the service during startup.</summary>
-    public IReadOnlyList<string> Channels { get; set; } = ["smarthaus.chat"];
+    /// <summary>Configured groups returned to the service during startup.</summary>
+    public IReadOnlyList<string> Groups { get; set; } = [CommunicationsBgServiceTestFixture.ChatGroupName];
 
     /// <summary>Messages sent through the gateway.</summary>
-    public ConcurrentQueue<(string Channel, string Message, IReadOnlyList<string>? Attachments)> Sent { get; } = new();
+    public ConcurrentQueue<(string GroupName, string Message, IReadOnlyList<string>? Attachments)> Sent { get; } = new();
 
     /// <summary>Every reaction the service set, in order.</summary>
     public ConcurrentQueue<Reaction> Reactions { get; } = new();
@@ -47,9 +47,9 @@ public sealed class FakeSignalizrClient : ISignalizrClient
     /// <summary>Counts reactions carrying the supplied emoji.</summary>
     public int ReactionCount(string emoji) => Reactions.Count(r => r.Emoji == emoji);
 
-    /// <summary>Messages sent to one channel, in order.</summary>
-    public IEnumerable<(string Channel, string Message, IReadOnlyList<string>? Attachments)> SentTo(string channel) =>
-        Sent.Where(sent => sent.Channel == channel);
+    /// <summary>Messages sent to one group, in order.</summary>
+    public IEnumerable<(string GroupName, string Message, IReadOnlyList<string>? Attachments)> SentTo(string groupName) =>
+        Sent.Where(sent => sent.GroupName == groupName);
 
     /// <summary>Holds the reply drain loop inside <see cref="StartTypingAsync"/> until released.</summary>
     /// <remarks>Used to fill the bounded reply queue and observe producer backpressure.</remarks>
@@ -60,15 +60,15 @@ public sealed class FakeSignalizrClient : ISignalizrClient
     public void ReleaseStartTyping() => _startTypingGate.TrySetResult();
 
     /// <inheritdoc/>
-    public Task<string> SendAsync(string channel, string message,
+    public Task<string> SendAsync(string groupName, string message,
         CancellationToken cancellationToken = default) =>
-        SendAsync(channel, message, base64Attachments: null, cancellationToken);
+        SendAsync(groupName, message, base64Attachments: null, cancellationToken);
 
     /// <inheritdoc/>
-    public Task<string> SendAsync(string channel, string message,
+    public Task<string> SendAsync(string groupName, string message,
         IReadOnlyList<string>? base64Attachments, CancellationToken cancellationToken = default)
     {
-        Sent.Enqueue((channel, message, base64Attachments));
+        Sent.Enqueue((groupName, message, base64Attachments));
         return Task.FromResult(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
     }
 
@@ -81,46 +81,46 @@ public sealed class FakeSignalizrClient : ISignalizrClient
     }
 
     /// <inheritdoc/>
-    public Task<IReadOnlyList<string>> GetChannelsAsync(CancellationToken cancellationToken = default) =>
-        Task.FromResult(Channels);
+    public Task<IReadOnlyList<string>> GetGroupsAsync(CancellationToken cancellationToken = default) =>
+        Task.FromResult(Groups);
 
     /// <inheritdoc/>
-    public Task SetReactionAsync(string channel, string reaction, long targetTimestamp,
+    public Task SetReactionAsync(string groupName, string reaction, long targetTimestamp,
         string? targetAuthor = null, CancellationToken cancellationToken = default)
     {
-        Reactions.Enqueue(new Reaction(channel, reaction, targetTimestamp, targetAuthor));
+        Reactions.Enqueue(new Reaction(groupName, reaction, targetTimestamp, targetAuthor));
         return Task.CompletedTask;
     }
 
     /// <inheritdoc/>
-    public Task RemoveReactionAsync(string channel, string reaction, long targetTimestamp,
+    public Task RemoveReactionAsync(string groupName, string reaction, long targetTimestamp,
         string? targetAuthor = null, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     /// <inheritdoc/>
     public Task SetReactionAsync(SignalizrMessage message, string reaction, CancellationToken cancellationToken = default) =>
-        SetReactionAsync(message.Channel!, reaction, message.Timestamp, message.Sender, cancellationToken);
+        SetReactionAsync(message.GroupName!, reaction, message.Timestamp, message.Sender, cancellationToken);
 
     /// <inheritdoc/>
     public Task RemoveReactionAsync(SignalizrMessage message, string reaction, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     /// <inheritdoc/>
-    public async Task StartTypingAsync(string channel, CancellationToken cancellationToken = default)
+    public async Task StartTypingAsync(string groupName, CancellationToken cancellationToken = default)
     {
         Interlocked.Increment(ref _startTypingCallCount);
         await _startTypingGate.Task;
     }
 
     /// <inheritdoc/>
-    public Task StopTypingAsync(string channel, CancellationToken cancellationToken = default) => Task.CompletedTask;
+    public Task StopTypingAsync(string groupName, CancellationToken cancellationToken = default) => Task.CompletedTask;
 
     /// <inheritdoc/>
-    public Task<string> CreatePollAsync(string channel, string question, IReadOnlyList<string> answers,
+    public Task<string> CreatePollAsync(string groupName, string question, IReadOnlyList<string> answers,
         bool allowMultipleSelections = false, CancellationToken cancellationToken = default) =>
         Task.FromResult(DateTimeOffset.UtcNow.ToUnixTimeMilliseconds().ToString());
 
     /// <inheritdoc/>
-    public Task ClosePollAsync(string channel, string pollId, CancellationToken cancellationToken = default) =>
+    public Task ClosePollAsync(string groupName, string pollId, CancellationToken cancellationToken = default) =>
         Task.CompletedTask;
 
     /// <inheritdoc/>

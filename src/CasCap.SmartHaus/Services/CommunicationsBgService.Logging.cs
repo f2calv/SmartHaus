@@ -71,8 +71,8 @@ public sealed partial class CommunicationsBgService
     private static partial void LogEnvelopesReceived(ILogger logger, string className, int count);
 
     [LoggerMessage(Level = LogLevel.Debug,
-        Message = "{ClassName} envelope: Type={EnvelopeType}, HasContent={HasContent}, GroupId={GroupId}, Sender={Sender}")]
-    private static partial void LogEnvelopeDetail(ILogger logger, string className, string envelopeType, bool hasContent, string? groupId, string? sender);
+        Message = "{ClassName} envelope: Type={EnvelopeType}, HasContent={HasContent}, HasGroup={HasGroup}, Sender={Sender}")]
+    private static partial void LogEnvelopeDetail(ILogger logger, string className, string envelopeType, bool hasContent, bool hasGroup, string? sender);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} processed {Processed} of {Total} envelope(s)")]
@@ -130,8 +130,8 @@ public sealed partial class CommunicationsBgService
     private static partial void LogDuplicateSuppressed(ILogger logger, string className, string? sender);
 
     [LoggerMessage(Level = LogLevel.Warning,
-        Message = "{ClassName} could not show {Interaction} feedback in channel {ChannelName}")]
-    private static partial void LogChannelInteractionFailed(ILogger logger, Exception ex, string className, string interaction, string channelName);
+        Message = "{ClassName} could not show {Interaction} feedback in the configured chat group")]
+    private static partial void LogGroupInteractionFailed(ILogger logger, Exception ex, string className, string interaction);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} voice message rejected, voice processing is disabled")]
@@ -152,8 +152,8 @@ public sealed partial class CommunicationsBgService
     private static partial void LogProcessingReply(ILogger logger, string className);
 
     [LoggerMessage(Level = LogLevel.Information,
-        Message = "{ClassName} sending agent response ({Length} chars, {AttachmentCount} attachment(s)) to channel {ChannelName}")]
-    private static partial void LogSendingAgentResponse(ILogger logger, string className, int length, int attachmentCount, string channelName);
+        Message = "{ClassName} sending agent response ({Length} chars, {AttachmentCount} attachment(s)) to the configured chat group")]
+    private static partial void LogSendingAgentResponse(ILogger logger, string className, int length, int attachmentCount);
 
     [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} message sent successfully, timestamp={Timestamp}")]
