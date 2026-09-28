@@ -33,7 +33,7 @@ public static partial class FrontDoorMcpPrompts
         new(ChatRole.User,
             $"""
             Retrieve the {count} most recent historical snapshots from the front door camera
-            using the GetHistoryImage tool (indices 1 to {count}), then summarise the activity
+            using the GetHouseDoorHistoryImage tool (indices 1 to {count}), then summarise the activity
             over that period.
             Note any recurring visitors, delivery patterns or unusual activity.
             """);

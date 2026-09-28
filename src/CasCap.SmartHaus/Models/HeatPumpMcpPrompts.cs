@@ -26,23 +26,6 @@ public static partial class HeatPumpMcpPrompts
             """);
 
     /// <summary>
-    /// Creates a prompt to analyse the heating efficiency by reviewing recent sensor data trends.
-    /// </summary>
-    /// <param name="sensorId">The heat pump sensor identifier to analyse (e.g. _heatingCircuits_hc2_supplyTemperatureSetpoint).</param>
-    [McpServerPrompt]
-    public static partial ChatMessage AnalyseSensorTrend(
-        string sensorId = "_heatingCircuits_hc2_supplyTemperatureSetpoint") =>
-        new(ChatRole.User,
-            $"""
-            Retrieve historical events for the heat pump sensor "{sensorId}" using the
-            GetEventsById tool. Analyse the trend over time and report:
-            - The current value and recent min/max range
-            - Any significant changes or patterns
-            - Whether the values look normal for the current season
-            Provide a brief recommendation if anything looks unusual.
-            """);
-
-    /// <summary>
     /// Creates a prompt to check domestic hot water readiness and temperature.
     /// </summary>
     [McpServerPrompt]

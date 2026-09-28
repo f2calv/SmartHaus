@@ -68,7 +68,7 @@ stays in the server application's entry point.
 | [AppliancesMcpPrompts](Models/AppliancesMcpPrompts.cs) | Appliance status, programs and efficiency |
 | [BusSystemMcpPrompts](Models/BusSystemMcpPrompts.cs) | Home status, floors, lighting and heating |
 | [FrontDoorMcpPrompts](Models/FrontDoorMcpPrompts.cs) | Intercom images, events and access guidance |
-| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, trends and hot water |
+| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, hot water, health and circuit comparison |
 | [InverterMcpPrompts](Models/InverterMcpPrompts.cs) | Solar production, power flow and battery status |
 
 Prompts supply reusable conversation guidance, while tools perform the requested operations.
