@@ -1,4 +1,3 @@
-using Microsoft.Extensions.AI;
 using System.Runtime.CompilerServices;
 
 namespace CasCap.Tests.Unit;

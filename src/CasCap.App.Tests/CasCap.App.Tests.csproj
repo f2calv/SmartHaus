@@ -23,10 +23,12 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI.Evaluation\CasCap.Common.AI.Evaluation.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Testing\CasCap.Common.Testing.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.AI.Evaluation" />
     <PackageReference Include="CasCap.Common.Configuration" />
     <PackageReference Include="CasCap.Common.Testing" />
   </ItemGroup>

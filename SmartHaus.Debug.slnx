@@ -30,6 +30,7 @@
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.AI.Evaluation/CasCap.Common.AI.Evaluation.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Caching.Tests/CasCap.Common.Caching.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Caching/CasCap.Common.Caching.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Configuration/CasCap.Common.Configuration.csproj" />
