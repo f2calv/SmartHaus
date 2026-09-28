@@ -78,6 +78,11 @@
     <Project Path="src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj" />
   </Folder>
+  <Folder Name="/SmartHaus/comms/">
+    <Project Path="src/CasCap.Comms.AI/CasCap.Comms.AI.csproj" />
+    <Project Path="src/CasCap.Comms.Tests/CasCap.Comms.Tests.csproj" />
+    <Project Path="src/CasCap.Comms/CasCap.Comms.csproj" />
+  </Folder>
   <Folder Name="/SmartHaus/">
     <Project Path="src/CasCap.App.Console/CasCap.App.Console.csproj" />
     <Project Path="src/CasCap.App.Server/CasCap.App.Server.csproj" />

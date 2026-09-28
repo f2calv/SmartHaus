@@ -73,32 +73,4 @@ public static class HausMcpServiceCollectionExtensions
             sp.GetService<IKnxQueryService>(),
             sp.GetService<IWizQueryService>(),
             sp.GetService<IShellyQueryService>()));
-
-    /// <summary>
-    /// Registers the <see cref="Services.MessagingMcpQueryService"/> to expose messaging poll operations as MCP tools.
-    /// </summary>
-    /// <param name="services">The service collection.</param>
-    /// <param name="groupName">The Signalizr group to target with poll operations.</param>
-    public static void AddMessagingMcp(this IServiceCollection services, string groupName)
-    {
-        services.AddSingleton<IPollTracker, InMemoryPollTracker>();
-        services.AddSingleton(sp => new MessagingMcpQueryService(
-            sp.GetRequiredService<ISignalizrClient>(),
-            sp.GetRequiredService<IPollTracker>(),
-            groupName));
-    }
-
-    /// <summary>
-    /// Registers a stub <see cref="Services.MessagingMcpQueryService"/> so agent configs that reference
-    /// it pass DI validation without requiring Signalizr or Comms infrastructure.
-    /// </summary>
-    /// <remarks>Tools will fail at invocation time if actually called — use only when Comms is disabled.</remarks>
-    public static void AddMessagingMcpStub(this IServiceCollection services)
-    {
-        services.AddSingleton<IPollTracker, InMemoryPollTracker>();
-        services.AddSingleton(sp => new MessagingMcpQueryService(
-            null!,
-            sp.GetRequiredService<IPollTracker>(),
-            string.Empty));
-    }
 }

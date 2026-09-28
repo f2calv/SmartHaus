@@ -25,17 +25,13 @@ synthetic house and the assertions.
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system`, including Basic authentication |
 | `AgentEvaluationScenarioTests` | 5 | 11 | AgentEvaluation | SmartHaus graders, tool classification, lighting fixture and scenario data integrity |
 | `McpPromptToolReferenceTests` | 1 | 1 | McpPrompts | Every shipped MCP prompt names only tools that exist |
-| `CommunicationsBgServiceTests` | 13 | 18 | Messaging | Communications orchestration with fake Signalizr, speech and agent services |
-| `SignalMessageDeduplicatorTests` | 9 | 11 | Comms | Redis-backed duplicate Signal message suppression |
-| `MonitorSourcesGroupRouterTests` | 2 | 3 | Comms | Routing of configured operational sources to the monitor group |
 | `KnxContactSummaryTests` | 4 | 13 | Knx | Door and window contact summaries |
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Door lock summaries |
 
-Voice provider adapters and voice processing policy tests live in the standalone
-`CasCap.Api.Voice.Tests` project. SmartHaus retains only the communication orchestration tests.
-Their speech and gateway fakes come from the `CasCap.Api.Voice.Testing` and
-`CasCap.Signalizr.Client.Testing` packages, which are local project references in Debug. The
-evaluation framework's own tests live in `CasCap.Common.AI.Tests`.
+Communications orchestration tests live in [CasCap.Comms.Tests](../CasCap.Comms.Tests/README.md), next to the
+shared projects they cover. Voice provider adapters and voice processing policy tests live in the
+standalone `CasCap.Api.Voice.Tests` project, and the evaluation framework's own tests live in
+`CasCap.Common.AI.Tests`.
 
 ### Trait categories
 
@@ -45,7 +41,6 @@ evaluation framework's own tests live in `CasCap.Common.AI.Tests`.
 | `AgentEvaluation` | Agent evaluation scenarios and runs |
 | `ToolSurface` | Agent tool surface measurements |
 | `McpPrompts` | MCP prompt contract checks |
-| `Messaging`, `Comms` | Communications orchestration |
 | `Knx` | KNX summaries |
 
 ### Skipped tests

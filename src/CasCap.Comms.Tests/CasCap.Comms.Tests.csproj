@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Maintained byte-identically in SmartHaus and CAS until the shared communications code moves to
+       its own repository. Change both copies in the same change. -->
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RootNamespace>CasCap.Tests</RootNamespace>
+    <IsTestProject>true</IsTestProject>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.Comms.AI\CasCap.Comms.AI.csproj" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Voice\src\CasCap.Api.Voice.Testing\CasCap.Api.Voice.Testing.csproj" />
+    <ProjectReference Include="..\..\..\signalizr\src\CasCap.Signalizr.Client.Testing\CasCap.Signalizr.Client.Testing.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Voice.Testing" />
+    <PackageReference Include="CasCap.Signalizr.Client.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+    <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+</Project>
