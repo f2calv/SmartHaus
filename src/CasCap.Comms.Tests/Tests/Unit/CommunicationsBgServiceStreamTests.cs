@@ -122,7 +122,7 @@ public sealed class CommunicationsBgServiceStreamTests
     {
         await using var fixture = new CommunicationsBgServiceTestFixture(responderEnabled: false);
         fixture.Signalizr.GroupsFailures = 3;
-        fixture.Start();
+        fixture.LaunchWithoutWaiting();
 
         fixture.AddStreamEvent(TradeSource, "queued while offline", DateTime.UtcNow);
 
@@ -136,7 +136,7 @@ public sealed class CommunicationsBgServiceStreamTests
         await using var fixture = new CommunicationsBgServiceTestFixture(responderEnabled: false);
         fixture.Signalizr.Groups = [MonitorGroupName];
 
-        fixture.Start();
+        fixture.LaunchWithoutWaiting();
 
         var ex = await Assert.ThrowsAsync<CasCap.Signalizr.Client.Exceptions.SignalizrGroupNotConfiguredException>(
             () => fixture.Execution);

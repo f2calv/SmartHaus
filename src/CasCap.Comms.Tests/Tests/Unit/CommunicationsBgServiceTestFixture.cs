@@ -162,8 +162,8 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         return buffer.ToArray();
     }
 
-    /// <summary>Starts execution without waiting for the gateway.</summary>
-    public void Start() => _execution = Service.ExecuteAsync(_cts.Token);
+    /// <summary>Launches execution without waiting for the gateway, so a test can observe startup itself.</summary>
+    public void LaunchWithoutWaiting() => _execution = Service.ExecuteAsync(_cts.Token);
 
     /// <summary>
     /// Starts execution and waits until the groups are ready and the subscription is open, so
@@ -171,7 +171,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// </summary>
     public async Task StartAsync()
     {
-        Start();
+        LaunchWithoutWaiting();
         await WaitForAsync(() => Signalizr.SubscribeCallCount > 0);
     }
 

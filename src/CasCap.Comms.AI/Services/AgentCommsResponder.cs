@@ -173,17 +173,7 @@ public sealed partial class AgentCommsResponder : ICommsResponder
             LogAgentInferenceStarting(_logger, nameof(AgentCommsResponder), turn.Prompt.Length,
                 turn.BinaryContent is not null, _commandHandler.GetModelOverride(agentConfig.Name) ?? agentConfig.Provider);
 
-            AgentSession? session = null;
-            if (!turn.BypassSession)
-            {
-                session = await _commandHandler.LoadSessionAsync(agent, agentConfig.Name);
-                if (session is null)
-                    LogAgentSessionStarted(_logger, nameof(AgentCommsResponder));
-                else
-                    LogAgentSessionResumed(_logger, nameof(AgentCommsResponder));
-            }
-            else
-                LogAgentSessionBypassed(_logger, nameof(AgentCommsResponder));
+            var session = await LoadSessionAsync(agent, agentConfig, turn);
 
             var message = AgentExtensions.BuildChatMessage(turn.Prompt,
                 binaryContent: turn.BinaryContent, mimeType: turn.MimeType);
@@ -200,51 +190,7 @@ public sealed partial class AgentCommsResponder : ICommsResponder
                 $"{_commandHandler.GetModelOverride(agentConfig.Name) ?? agentConfig.Provider} ({provider.ModelName})",
                 TimeSpan.Zero));
 
-            // Per-run scope carrying the host callbacks, so there is no process-wide state to leak if
-            // this method exits early.
-            var runScope = new AgentRunScope
-            {
-                OnDelegation = async (agentKey, depth, subProvider, ct) =>
-                {
-                    var depthLabel = depth switch { 1 => "sub-agent", 2 => "sub-sub-agent", _ => $"depth-{depth} agent" };
-                    LogAgentDelegating(_logger, nameof(AgentCommsResponder), agentKey, depthLabel,
-                        $"{subProvider.Type}:{subProvider.ModelName}");
-
-                    debugSteps.Add(new CommsDebugStep(
-                        $"{TwistedArrows} {agentKey} ({depthLabel})",
-                        $"{subProvider.Type}:{subProvider.ModelName}",
-                        pipelineSw.Elapsed));
-
-                    // Option A: send a separate status message (toggleable via config).
-                    if (_commsConfig.Value.DelegationMessagesEnabled)
-                    {
-                        await _signalizrClient.SendAsync(_commsConfig.Value.GroupName,
-                            $"{TwistedArrows} Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}", ct);
-                    }
-
-                    // Option B: swap reaction to twisted-arrows to indicate delegation.
-                    await SetReactionAsync(TwistedArrows, turn, ct);
-                },
-
-                OnCompletion = (agentKey, depth, subResult, ct) =>
-                {
-                    debugSteps.Add(new CommsDebugStep(
-                        $"\u2705 {agentKey}",
-                        null,
-                        pipelineSw.Elapsed,
-                        subResult));
-                    return Task.CompletedTask;
-                },
-
-                OnCompaction = stats =>
-                {
-                    LogSessionCompaction(_logger, nameof(AgentCommsResponder), stats.InputCount, stats.OutputCount,
-                        stats.ToolDropped, stats.WindowTrimmed, stats.Target);
-
-                    _ = _debugNotifier.SendCompactionDebugAsync(stats.InputCount, stats.OutputCount,
-                        stats.ToolDropped, stats.WindowTrimmed, stats.Target, cancellationToken);
-                },
-            };
+            var runScope = CreateRunScope(turn, debugSteps, pipelineSw, cancellationToken);
 
             try
             {
@@ -301,6 +247,72 @@ public sealed partial class AgentCommsResponder : ICommsResponder
             return (null, []);
         }
     }
+
+    /// <summary>Loads the conversation session for the turn, or none when the turn bypasses it.</summary>
+    private async Task<AgentSession?> LoadSessionAsync(AIAgent agent, AgentConfig agentConfig, CommsTurn turn)
+    {
+        if (turn.BypassSession)
+        {
+            LogAgentSessionBypassed(_logger, nameof(AgentCommsResponder));
+            return null;
+        }
+
+        var session = await _commandHandler.LoadSessionAsync(agent, agentConfig.Name);
+        if (session is null)
+            LogAgentSessionStarted(_logger, nameof(AgentCommsResponder));
+        else
+            LogAgentSessionResumed(_logger, nameof(AgentCommsResponder));
+        return session;
+    }
+
+    /// <summary>
+    /// Builds the per-run scope carrying the host callbacks, so there is no process-wide state to leak if
+    /// the run exits early.
+    /// </summary>
+    private AgentRunScope CreateRunScope(CommsTurn turn, List<CommsDebugStep> debugSteps, Stopwatch pipelineSw,
+        CancellationToken cancellationToken) => new()
+        {
+            OnDelegation = async (agentKey, depth, subProvider, ct) =>
+            {
+                var depthLabel = depth switch { 1 => "sub-agent", 2 => "sub-sub-agent", _ => $"depth-{depth} agent" };
+                LogAgentDelegating(_logger, nameof(AgentCommsResponder), agentKey, depthLabel,
+                    $"{subProvider.Type}:{subProvider.ModelName}");
+
+                debugSteps.Add(new CommsDebugStep(
+                    $"{TwistedArrows} {agentKey} ({depthLabel})",
+                    $"{subProvider.Type}:{subProvider.ModelName}",
+                    pipelineSw.Elapsed));
+
+                // Option A: send a separate status message (toggleable via config).
+                if (_commsConfig.Value.DelegationMessagesEnabled)
+                {
+                    await _signalizrClient.SendAsync(_commsConfig.Value.GroupName,
+                        $"{TwistedArrows} Consulting {agentKey} ({depthLabel}) \u2022 {subProvider.Type}:{subProvider.ModelName}", ct);
+                }
+
+                // Option B: swap reaction to twisted-arrows to indicate delegation.
+                await SetReactionAsync(TwistedArrows, turn, ct);
+            },
+
+            OnCompletion = (agentKey, depth, subResult, ct) =>
+            {
+                debugSteps.Add(new CommsDebugStep(
+                    $"\u2705 {agentKey}",
+                    null,
+                    pipelineSw.Elapsed,
+                    subResult));
+                return Task.CompletedTask;
+            },
+
+            OnCompaction = stats =>
+            {
+                LogSessionCompaction(_logger, nameof(AgentCommsResponder), stats.InputCount, stats.OutputCount,
+                    stats.ToolDropped, stats.WindowTrimmed, stats.Target);
+
+                _ = _debugNotifier.SendCompactionDebugAsync(stats.InputCount, stats.OutputCount,
+                    stats.ToolDropped, stats.WindowTrimmed, stats.Target, cancellationToken);
+            },
+        };
 
     /// <summary>Sets a progress reaction on the turn's inbound message, best effort.</summary>
     private Task SetReactionAsync(string reaction, CommsTurn turn, CancellationToken cancellationToken) =>

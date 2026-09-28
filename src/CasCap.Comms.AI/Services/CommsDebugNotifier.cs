@@ -158,28 +158,7 @@ public sealed class CommsDebugNotifier(
             }
 
             // ── Overall summary ─────────────────────────────────────────
-            sb.AppendLine($"\u23F1 Wall: {result.Elapsed.TotalSeconds:F1}s");
-
-            if (result.Usage is not null)
-            {
-                var inp = result.Usage.InputTokenCount?.ToString("N0") ?? "\u2014";
-                var outp = result.Usage.OutputTokenCount?.ToString("N0") ?? "\u2014";
-                var total = result.Usage.TotalTokenCount?.ToString("N0") ?? "\u2014";
-                sb.AppendLine($"\u2B06 {inp} | \u2B07 {outp} | \u03A3 {total}");
-                if (result.Usage.ReasoningTokenCount is > 0)
-                    sb.AppendLine($"\U0001F9E0 Reasoning: {result.Usage.ReasoningTokenCount.Value:N0}");
-            }
-
-            sb.AppendLine($"\U0001F4DD Output: {result.OutputText.Length:N0} chars");
-
-            foreach (var line in enrichers.SelectMany(e => e.FormatDebugLines(result)))
-                sb.AppendLine(line);
-
-            if (result.Session is not null)
-                sb.AppendLine($"\U0001F4BE Session: {TryDescribeSession(result.Session) ?? "detail unavailable"}");
-
-            if (result.FinishReason is { Length: > 0 })
-                sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
+            AppendSummary(sb, result);
 
             await signalizrClient.SendAsync(monitorGroupName, sb.ToString().TrimEnd(), cancellationToken);
             logger.LogDebug("{ClassName} debug stats sent to the configured monitor group",
@@ -190,6 +169,32 @@ public sealed class CommsDebugNotifier(
             logger.LogWarning(ex, "{ClassName} failed to send debug stats to the configured monitor group",
                 nameof(CommsDebugNotifier));
         }
+    }
+
+    private void AppendSummary(StringBuilder sb, AgentRunResult result)
+    {
+        sb.AppendLine($"\u23F1 Wall: {result.Elapsed.TotalSeconds:F1}s");
+
+        if (result.Usage is not null)
+        {
+            var inp = result.Usage.InputTokenCount?.ToString("N0") ?? "\u2014";
+            var outp = result.Usage.OutputTokenCount?.ToString("N0") ?? "\u2014";
+            var total = result.Usage.TotalTokenCount?.ToString("N0") ?? "\u2014";
+            sb.AppendLine($"\u2B06 {inp} | \u2B07 {outp} | \u03A3 {total}");
+            if (result.Usage.ReasoningTokenCount is > 0)
+                sb.AppendLine($"\U0001F9E0 Reasoning: {result.Usage.ReasoningTokenCount.Value:N0}");
+        }
+
+        sb.AppendLine($"\U0001F4DD Output: {result.OutputText.Length:N0} chars");
+
+        foreach (var line in enrichers.SelectMany(e => e.FormatDebugLines(result)))
+            sb.AppendLine(line);
+
+        if (result.Session is not null)
+            sb.AppendLine($"\U0001F4BE Session: {TryDescribeSession(result.Session) ?? "detail unavailable"}");
+
+        if (result.FinishReason is { Length: > 0 })
+            sb.AppendLine($"\U0001F3C1 Finish: {result.FinishReason}");
     }
 
     private void AppendStep(StringBuilder sb, int number, CommsDebugStep step)

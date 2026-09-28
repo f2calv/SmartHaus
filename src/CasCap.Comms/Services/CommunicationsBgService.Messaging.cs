@@ -82,37 +82,16 @@ public sealed partial class CommunicationsBgService
         LogInboundMessage(logger, nameof(CommunicationsBgService), notification.Message?.Length ?? 0,
             notification.Attachments?.Count ?? 0);
 
-        // Reserve the message identity before any side effect so a redelivered envelope does not
-        // repeat the turn or the reply.
-        var identity = TryBuildIdentity(notification);
-        if (identity is not null && !await deduplicator.TryClaimAsync(identity, cancellationToken))
-        {
-            LogDuplicateSuppressed(logger, nameof(CommunicationsBgService));
+        if (!await TryReserveAsync(notification, cancellationToken))
             return;
-        }
 
-        // Acknowledge before the attachment is fetched: downloading and transcribing a voice note
-        // takes seconds, and the sender should see that it was heard immediately. The hourglass
-        // replaces this once the prompt reaches the responder.
-        if (notification.Timestamp is not null)
-        {
-            var listening = CarriesAudio(notification)
-                && speechToTextConfig.Value.Mode is not VoiceProcessingMode.Disabled;
-            await SetReactionAsync(listening ? Ear : Eyes, notification.Sender, notification.Timestamp.Value, cancellationToken);
-        }
+        await AcknowledgeReceiptAsync(notification, cancellationToken);
 
-        byte[]? binaryContent = null;
-        string? mimeType = null;
-        var voiceSuppressed = false;
-        VoiceTranscriptionResult? voice = null;
         // Signalizr owns attachment retention, so nothing here deletes the downloaded copy.
-        if (notification.Attachments is { Count: > 0 })
-        {
-            var acquisition = await AcquireAttachmentAsync(notification, cancellationToken);
-            (binaryContent, mimeType, voiceSuppressed, voice) =
-                (acquisition.Content, acquisition.MimeType, acquisition.VoiceSuppressed, acquisition.Voice);
-        }
-
+        var acquisition = notification.Attachments is { Count: > 0 }
+            ? await AcquireAttachmentAsync(notification, cancellationToken)
+            : NoAttachment;
+        var voice = acquisition.Voice;
         var prompt = notification.Message ?? active.DefaultPrompt;
 
         // A successful transcript replaces the prompt; the audio itself is never forwarded.
@@ -133,34 +112,72 @@ public sealed partial class CommunicationsBgService
             return;
         }
 
-        var command = await active.TryHandleCommandAsync(prompt, cancellationToken);
-        if (command is not null)
-        {
-            if (command.DeferredTurn is not null)
-            {
-                await EnqueueTurnAsync(command.DeferredTurn, cancellationToken);
-                return;
-            }
-
-            if (!string.IsNullOrWhiteSpace(command.ReplyText))
-                await SendMessageAsync(command.ReplyText, cancellationToken);
-
-            // Green tick reaction to indicate the command has been seen and processed.
-            if (notification.Timestamp is not null)
-                await SetReactionAsync(GreenTick, notification.Sender, notification.Timestamp.Value, cancellationToken);
+        if (await TryCompleteCommandAsync(active, prompt, notification, cancellationToken))
             return;
-        }
 
         // A voice message that the configured mode stops short of a turn ends here; it has already
         // been acquired and cleaned up.
-        if (voiceSuppressed && string.IsNullOrWhiteSpace(notification.Message))
+        if (acquisition.VoiceSuppressed && string.IsNullOrWhiteSpace(notification.Message))
         {
             LogVoiceTurnSuppressed(logger, nameof(CommunicationsBgService), speechToTextConfig.Value.Mode.ToString());
             return;
         }
 
-        await EnqueueTurnAsync(new CommsTurn(prompt, binaryContent, mimeType, notification.Sender,
+        await EnqueueTurnAsync(new CommsTurn(prompt, acquisition.Content, acquisition.MimeType, notification.Sender,
             notification.Timestamp, InboundWasVoice: voice is not null), cancellationToken);
+    }
+
+    /// <summary>
+    /// Reserves the message identity before any side effect, so a redelivered envelope does not repeat
+    /// the turn or the reply.
+    /// </summary>
+    /// <returns><see langword="false"/> when the message was already reserved.</returns>
+    private async Task<bool> TryReserveAsync(IReceivedNotification notification, CancellationToken cancellationToken)
+    {
+        var identity = TryBuildIdentity(notification);
+        if (identity is null || await deduplicator.TryClaimAsync(identity, cancellationToken))
+            return true;
+
+        LogDuplicateSuppressed(logger, nameof(CommunicationsBgService));
+        return false;
+    }
+
+    /// <summary>Marks the message as heard with an ear for a voice note or eyes for anything else.</summary>
+    /// <remarks>
+    /// Sent before the attachment is fetched: downloading and transcribing a voice note takes seconds,
+    /// and the sender should see that it was heard immediately. The hourglass replaces it once the
+    /// prompt reaches the responder.
+    /// </remarks>
+    private async Task AcknowledgeReceiptAsync(IReceivedNotification notification, CancellationToken cancellationToken)
+    {
+        if (notification.Timestamp is not { } timestamp)
+            return;
+        var listening = CarriesAudio(notification) && speechToTextConfig.Value.Mode is not VoiceProcessingMode.Disabled;
+        await SetReactionAsync(listening ? Ear : Eyes, notification.Sender, timestamp, cancellationToken);
+    }
+
+    /// <summary>Lets the responder handle <paramref name="prompt"/> as a command, completing it when it is one.</summary>
+    /// <returns><see langword="true"/> when the prompt was a command and needs no ordinary turn.</returns>
+    private async Task<bool> TryCompleteCommandAsync(ICommsResponder active, string prompt,
+        IReceivedNotification notification, CancellationToken cancellationToken)
+    {
+        var command = await active.TryHandleCommandAsync(prompt, cancellationToken);
+        if (command is null)
+            return false;
+
+        if (command.DeferredTurn is not null)
+        {
+            await EnqueueTurnAsync(command.DeferredTurn, cancellationToken);
+            return true;
+        }
+
+        if (!string.IsNullOrWhiteSpace(command.ReplyText))
+            await SendMessageAsync(command.ReplyText, cancellationToken);
+
+        // Green tick reaction to indicate the command has been seen and processed.
+        if (notification.Timestamp is { } timestamp)
+            await SetReactionAsync(GreenTick, notification.Sender, timestamp, cancellationToken);
+        return true;
     }
 
     /// <summary>
@@ -223,6 +240,8 @@ public sealed partial class CommunicationsBgService
     /// <param name="Voice">The transcription result, or <see langword="null"/> for non-audio.</param>
     private sealed record AttachmentAcquisition(byte[]? Content, string? MimeType, bool VoiceSuppressed,
         VoiceTranscriptionResult? Voice);
+
+    private static readonly AttachmentAcquisition NoAttachment = new(null, null, false, null);
 
     /// <summary>
     /// Sends the transcript of an inbound voice message to <see cref="CommsConfig.MonitorGroupName"/>

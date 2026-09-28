@@ -38,23 +38,7 @@ public sealed class EdgeHardwareAgentRunEnricher(
 
         var sb = new StringBuilder();
         if (reportEnergy)
-        {
-            sb.Append($"⚡ {energyWh:F2}Wh");
-
-            if (config.EnergyReporting is EnergyReportingMode.Verbose)
-            {
-                // Fun comparisons.
-                var comparisons = new List<string>();
-                if (config.KettleBoilWh > 0)
-                    comparisons.Add($"~{energyWh!.Value / config.KettleBoilWh:F4} kettles");
-                if (config.PhoneChargeWh > 0)
-                    comparisons.Add($"~{energyWh!.Value / config.PhoneChargeWh:F3} phone charges");
-                if (config.LedBulbHourWh > 0)
-                    comparisons.Add($"~{energyWh!.Value / config.LedBulbHourWh:F3} LED-bulb-hrs");
-                if (comparisons.Count > 0)
-                    sb.Append($" ({string.Join(" | ", comparisons)})");
-            }
-        }
+            AppendEnergy(sb, energyWh!.Value, config);
 
         if (gpuTemp is not null)
             sb.Append($" | 🌡 {gpuTemp:F0}°C");
@@ -64,16 +48,36 @@ public sealed class EdgeHardwareAgentRunEnricher(
 
         // Solar context from the Fronius snapshot (best-effort).
         if (await GetSolarSnapshotAsync() is { } solar)
-        {
-            if (solar.PhotovoltaicPower > Math.Abs(solar.LoadPower))
-                sb.Append(" | ☀\uFE0F solar-powered");
-            else if (solar.BatteryPower > 0)
-                sb.Append(" | 🔋 battery-powered");
-            else if (solar.GridPower > 0)
-                sb.Append(" | 🔌 grid");
-        }
+            sb.Append(DescribePowerSource(solar));
 
         return sb.ToString();
+    }
+
+    private static void AppendEnergy(StringBuilder sb, double energyWh, EdgeHardwareConfig config)
+    {
+        sb.Append($"⚡ {energyWh:F2}Wh");
+        if (config.EnergyReporting is not EnergyReportingMode.Verbose)
+            return;
+
+        // Fun comparisons.
+        var comparisons = new List<string>();
+        if (config.KettleBoilWh > 0)
+            comparisons.Add($"~{energyWh / config.KettleBoilWh:F4} kettles");
+        if (config.PhoneChargeWh > 0)
+            comparisons.Add($"~{energyWh / config.PhoneChargeWh:F3} phone charges");
+        if (config.LedBulbHourWh > 0)
+            comparisons.Add($"~{energyWh / config.LedBulbHourWh:F3} LED-bulb-hrs");
+        if (comparisons.Count > 0)
+            sb.Append($" ({string.Join(" | ", comparisons)})");
+    }
+
+    private static string DescribePowerSource(InverterSnapshot solar)
+    {
+        if (solar.PhotovoltaicPower > Math.Abs(solar.LoadPower))
+            return " | ☀\uFE0F solar-powered";
+        if (solar.BatteryPower > 0)
+            return " | 🔋 battery-powered";
+        return solar.GridPower > 0 ? " | 🔌 grid" : string.Empty;
     }
 
     /// <inheritdoc/>
