@@ -129,8 +129,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
         }
 
         if (_agent is null || _commsAgent is null || _provider is null)
-            _logger.LogWarning("{ClassName} agent profile {ProfileKey} not fully configured, agent responses disabled",
-                nameof(CommunicationsBgService), agentProfileName);
+            LogAgentNotConfigured(_logger, nameof(CommunicationsBgService), agentProfileName);
     }
 
     /// <inheritdoc/>
@@ -139,8 +138,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        _logger.LogInformation("{ClassName} starting, monitorEnabled={MonitorEnabled}, agentProfile={AgentProfile}",
-            nameof(CommunicationsBgService), !string.IsNullOrEmpty(_commsAgentConfig.MonitorGroupName),
+        LogStarting(_logger, nameof(CommunicationsBgService), !string.IsNullOrEmpty(_commsAgentConfig.MonitorGroupName),
             AgentKeys.CommsAgent);
         try
         {
@@ -155,8 +153,7 @@ public sealed partial class CommunicationsBgService : IBgFeature
 
             var replyTask = DrainReplyQueueAsync(cancellationToken);
 
-            _logger.LogInformation("{ClassName} subscribing to the configured Signalizr chat group",
-                nameof(CommunicationsBgService));
+            LogSubscribing(_logger, nameof(CommunicationsBgService));
             var incomingTask = SubscribeToMessagesAsync(cancellationToken);
 
             //await-await-WhenAny propagates the first faulted task immediately so the
@@ -165,10 +162,10 @@ public sealed partial class CommunicationsBgService : IBgFeature
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
         {
-            _logger.LogError(ex, "{ClassName} fatal error during execution", nameof(CommunicationsBgService));
+            LogFatalError(_logger, ex, nameof(CommunicationsBgService));
             throw;
         }
-        _logger.LogInformation("{ClassName} exiting", nameof(CommunicationsBgService));
+        LogExiting(_logger, nameof(CommunicationsBgService));
     }
 
     /// <summary>Waits until the Signalizr gateway serves the configured groups.</summary>
@@ -203,11 +200,9 @@ public sealed partial class CommunicationsBgService : IBgFeature
 
             if (_commsAgentConfig.MonitorGroupName is { Length: > 0 } monitorGroupName
                 && !groups.Contains(monitorGroupName, StringComparer.Ordinal))
-                _logger.LogWarning("{ClassName} configured Signalizr monitor group is unavailable, diagnostics will not be delivered",
-                    nameof(CommunicationsBgService));
+                LogMonitorGroupUnavailable(_logger, nameof(CommunicationsBgService));
 
-            _logger.LogInformation("{ClassName} configured Signalizr chat group is ready",
-                nameof(CommunicationsBgService));
+            LogChatGroupReady(_logger, nameof(CommunicationsBgService));
             return;
         }
     }

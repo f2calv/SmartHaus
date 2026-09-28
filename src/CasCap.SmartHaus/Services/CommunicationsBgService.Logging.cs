@@ -178,4 +178,72 @@ public sealed partial class CommunicationsBgService
     [LoggerMessage(Level = LogLevel.Error,
         Message = "{ClassName} error processing queued reply ({ExceptionType}: {ExceptionMessage})")]
     private static partial void LogReplyProcessingError(ILogger logger, Exception ex, string className, string exceptionType, string exceptionMessage);
+
+    // ── Service shell ────────────────────────────────────────────────────
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} agent profile {ProfileKey} not fully configured, agent responses disabled")]
+    private static partial void LogAgentNotConfigured(ILogger logger, string className, string profileKey);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} starting, monitorEnabled={MonitorEnabled}, agentProfile={AgentProfile}")]
+    private static partial void LogStarting(ILogger logger, string className, bool monitorEnabled, string agentProfile);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} subscribing to the configured Signalizr chat group")]
+    private static partial void LogSubscribing(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "{ClassName} fatal error during execution")]
+    private static partial void LogFatalError(ILogger logger, Exception ex, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} exiting")]
+    private static partial void LogExiting(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} configured Signalizr monitor group is unavailable, diagnostics will not be delivered")]
+    private static partial void LogMonitorGroupUnavailable(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} configured Signalizr chat group is ready")]
+    private static partial void LogChatGroupReady(ILogger logger, string className);
+
+    // ── Agent partial ────────────────────────────────────────────────────
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} running agent inference, promptLength={PromptLength}, hasAttachment={HasAttachment}, model={Model}")]
+    private static partial void LogAgentInferenceStarting(ILogger logger, string className, int promptLength, bool hasAttachment, string model);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} new agent session started")]
+    private static partial void LogAgentSessionStarted(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} agent session resumed")]
+    private static partial void LogAgentSessionResumed(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} bypassing session for this request")]
+    private static partial void LogAgentSessionBypassed(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} delegating to {AgentKey} ({DepthLabel}), provider={ProviderModel}")]
+    private static partial void LogAgentDelegating(ILogger logger, string className, string agentKey, string depthLabel, string providerModel);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} session compaction: {InputCount} \u2192 {OutputCount} (tool dropped={ToolDropped}, window trimmed={WindowTrimmed}, target={Target})")]
+    private static partial void LogSessionCompaction(ILogger logger, string className, int inputCount, int outputCount, int toolDropped, int windowTrimmed, int target);
+
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} agent completed in {Duration}, session {SessionStatus}")]
+    private static partial void LogAgentCompleted(ILogger logger, string className, TimeSpan duration, string sessionStatus);
+
+    [LoggerMessage(Level = LogLevel.Debug,
+        Message = "{ClassName} agent session persisted")]
+    private static partial void LogAgentSessionPersisted(ILogger logger, string className);
+
+    [LoggerMessage(Level = LogLevel.Error,
+        Message = "{ClassName} agent inference failed")]
+    private static partial void LogAgentInferenceFailed(ILogger logger, Exception ex, string className);
 }

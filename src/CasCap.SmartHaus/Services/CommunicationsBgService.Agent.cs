@@ -9,8 +9,7 @@ public sealed partial class CommunicationsBgService
     {
         try
         {
-            _logger.LogInformation("{ClassName} running agent inference, promptLength={PromptLength}, hasAttachment={HasAttachment}, model={Model}",
-                nameof(CommunicationsBgService), prompt.Length,
+            LogAgentInferenceStarting(_logger, nameof(CommunicationsBgService), prompt.Length,
                 binaryContent is not null, _commandHandler.GetModelOverride(_commsAgent!.Name) ?? _commsAgent!.Provider);
 
             AgentSession? session = null;
@@ -18,12 +17,12 @@ public sealed partial class CommunicationsBgService
             {
                 session = await _commandHandler.LoadSessionAsync(_agent!, _commsAgent!.Name);
                 if (session is null)
-                    _logger.LogInformation("{ClassName} new agent session started", nameof(CommunicationsBgService));
+                    LogAgentSessionStarted(_logger, nameof(CommunicationsBgService));
                 else
-                    _logger.LogInformation("{ClassName} agent session resumed", nameof(CommunicationsBgService));
+                    LogAgentSessionResumed(_logger, nameof(CommunicationsBgService));
             }
             else
-                _logger.LogInformation("{ClassName} bypassing session for this request", nameof(CommunicationsBgService));
+                LogAgentSessionBypassed(_logger, nameof(CommunicationsBgService));
 
             var message = AgentExtensions.BuildChatMessage(prompt,
                 binaryContent: binaryContent, mimeType: mimeType);
@@ -47,8 +46,8 @@ public sealed partial class CommunicationsBgService
                 OnDelegation = async (agentKey, depth, subProvider, ct) =>
                 {
                     var depthLabel = depth switch { 1 => "sub-agent", 2 => "sub-sub-agent", _ => $"depth-{depth} agent" };
-                    _logger.LogInformation("{ClassName} delegating to {AgentKey} ({DepthLabel}), provider={ProviderModel}",
-                        nameof(CommunicationsBgService), agentKey, depthLabel, $"{subProvider.Type}:{subProvider.ModelName}");
+                    LogAgentDelegating(_logger, nameof(CommunicationsBgService), agentKey, depthLabel,
+                        $"{subProvider.Type}:{subProvider.ModelName}");
 
                     debugSteps.Add(new CommsDebugStep(
                         $"\U0001F500 {agentKey} ({depthLabel})",
@@ -79,9 +78,7 @@ public sealed partial class CommunicationsBgService
 
                 OnCompaction = stats =>
                 {
-                    _logger.LogInformation(
-                        "{ClassName} session compaction: {InputCount} \u2192 {OutputCount} (tool dropped={ToolDropped}, window trimmed={WindowTrimmed}, target={Target})",
-                        nameof(CommunicationsBgService), stats.InputCount, stats.OutputCount,
+                    LogSessionCompaction(_logger, nameof(CommunicationsBgService), stats.InputCount, stats.OutputCount,
                         stats.ToolDropped, stats.WindowTrimmed, stats.Target);
 
                     _ = _debugNotifier.SendCompactionDebugAsync(stats.InputCount, stats.OutputCount,
@@ -110,15 +107,14 @@ public sealed partial class CommunicationsBgService
                 var postSnapshot = postSnapshots?.FirstOrDefault();
                 result.PopulateEnergyMetrics(preSnapshot, postSnapshot, _edgeHardwareConfig);
 
-                _logger.LogInformation("{ClassName} agent completed in {Duration}, session {SessionStatus}",
-                    nameof(CommunicationsBgService), result.Elapsed,
+                LogAgentCompleted(_logger, nameof(CommunicationsBgService), result.Elapsed,
                     result.Session is not null ? "present" : "missing");
 
                 // Persist the updated session so the next call resumes conversation context.
                 if (!bypassSession && result.Session is not null)
                 {
                     await _commandHandler.SaveSessionAsync(_agent!, _commsAgent!.Name, result.Session);
-                    _logger.LogDebug("{ClassName} agent session persisted", nameof(CommunicationsBgService));
+                    LogAgentSessionPersisted(_logger, nameof(CommunicationsBgService));
                 }
 
                 // Restore hourglass reaction after delegation completes (Option B cleanup).
@@ -144,7 +140,7 @@ public sealed partial class CommunicationsBgService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} agent inference failed", nameof(CommunicationsBgService));
+            LogAgentInferenceFailed(_logger, ex, nameof(CommunicationsBgService));
             return (null, []);
         }
     }
