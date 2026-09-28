@@ -12,7 +12,7 @@ namespace CasCap.Services;
 /// Uses <see cref="IRemoteCache.Db"/> to call <c>XADD</c>. The stream key is
 /// <see cref="CommsAgentConfig.StreamKey"/>.
 /// </remarks>
-public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
+public sealed partial class CommsStreamSinkService(ILogger<CommsStreamSinkService> logger,
     IOptions<CommsAgentConfig> commsAgentConfig,
     IHostEnvironment env,
     TimeProvider timeProvider,
@@ -31,6 +31,7 @@ public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logge
             new(nameof(CommsEvent.Source), @event.Source),
             new(nameof(CommsEvent.Message), @event.Message),
             new(nameof(CommsEvent.TimestampUtc), @event.TimestampUtc.ToString("o")),
+            new(nameof(CommsEvent.Environment), @event.Environment),
         };
 
         if (@event.JsonPayload is not null)
@@ -38,8 +39,7 @@ public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logge
 
         var streamKey = commsAgentConfig.Value.StreamKey;
         var entryId = await _db.StreamAddAsync(streamKey, fields);
-        logger.LogDebug("{ClassName} wrote event {EntryId} from {Source} to stream {StreamKey}",
-            nameof(CommsStreamSinkService), entryId, @event.Source, streamKey);
+        LogCommsEventWritten(logger, nameof(CommsStreamSinkService), entryId, @event.Source, streamKey);
     }
 
     /// <inheritdoc/>
@@ -62,4 +62,8 @@ public sealed class CommsStreamSinkService(ILogger<CommsStreamSinkService> logge
             };
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Debug,
+        Message = "{ClassName} wrote event {EntryId} from {Source} to stream {StreamKey}")]
+    private static partial void LogCommsEventWritten(ILogger logger, string className, RedisValue entryId, string source, string streamKey);
 }
