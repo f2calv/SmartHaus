@@ -168,6 +168,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
             commandHandler,
             new StubRemoteCache(),
             EventSink,
+            new PlainCommsEventFormatter(),
             serviceProvider,
             PollTracker);
     }

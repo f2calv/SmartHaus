@@ -118,9 +118,9 @@ public sealed partial class CommunicationsBgService
 
         if (_agent is null || _commsAgent is null || _provider is null)
         {
-            // No agent — forward event message directly to the chat group.
+            // No agent — forward the formatted event directly to the chat group.
             LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
-            await SendMessageAsync(commsEvent.Message, cancellationToken);
+            await SendMessageAsync(_eventFormatter.Format(commsEvent), cancellationToken);
             return;
         }
 
