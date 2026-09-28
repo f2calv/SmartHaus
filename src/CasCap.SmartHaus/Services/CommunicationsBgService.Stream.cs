@@ -6,6 +6,10 @@ public sealed partial class CommunicationsBgService
 {
     /// <summary>The Redis database backing the comms stream, resolved on first use.</summary>
     private IDatabase _db => _remoteCache.Db;
+
+    //Stream timestamps are written as round-trip UTC; parsing without these styles converts them to local time.
+    private const System.Globalization.DateTimeStyles UtcTimestampStyles =
+        System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal;
     private async Task EnsureConsumerGroupAsync()
     {
         try
@@ -188,7 +192,7 @@ public sealed partial class CommunicationsBgService
             Source = dict.GetValueOrDefault(nameof(CommsEvent.Source)) ?? "Unknown",
             Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
             Environment = dict.GetValueOrDefault(nameof(CommsEvent.Environment)) ?? _env.GetAcronym(),
-            TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
+            TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), System.Globalization.CultureInfo.InvariantCulture, UtcTimestampStyles, out var ts)
                 ? ts
                 : _timeProvider.GetUtcNow().UtcDateTime,
             JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),

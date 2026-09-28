@@ -23,6 +23,10 @@ public sealed partial class CommsStreamSinkService(ILogger<CommsStreamSinkServic
 
     private readonly IDatabase _db = remoteCache.Db;
 
+    //Stream timestamps are written as round-trip UTC; parsing without these styles converts them to local time.
+    private const System.Globalization.DateTimeStyles UtcTimestampStyles =
+        System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal;
+
     /// <inheritdoc/>
     public async Task WriteEvent(CommsEvent @event, CancellationToken cancellationToken = default)
     {
@@ -55,7 +59,7 @@ public sealed partial class CommsStreamSinkService(ILogger<CommsStreamSinkServic
                 Source = dict.GetValueOrDefault(nameof(CommsEvent.Source)) ?? "Unknown",
                 Message = dict.GetValueOrDefault(nameof(CommsEvent.Message)) ?? string.Empty,
                 Environment = dict.GetValueOrDefault(nameof(CommsEvent.Environment)) ?? env.GetAcronym(),
-                TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), out var ts)
+                TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(CommsEvent.TimestampUtc)), System.Globalization.CultureInfo.InvariantCulture, UtcTimestampStyles, out var ts)
                     ? ts
                     : timeProvider.GetUtcNow().UtcDateTime,
                 JsonPayload = dict.GetValueOrDefault(nameof(CommsEvent.JsonPayload)),
