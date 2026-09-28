@@ -63,7 +63,7 @@ public sealed partial class CommsStreamSinkService(ILogger<CommsStreamSinkServic
         }
     }
 
-    [LoggerMessage(Level = LogLevel.Debug,
+    [LoggerMessage(Level = LogLevel.Information,
         Message = "{ClassName} wrote event {EntryId} from {Source} to stream {StreamKey}")]
     private static partial void LogCommsEventWritten(ILogger logger, string className, RedisValue entryId, string source, string streamKey);
 }
