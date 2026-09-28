@@ -449,58 +449,21 @@ public sealed partial class CommunicationsBgService
         CancellationToken cancellationToken) =>
         _signalizrClient.SendAsync(_commsAgentConfig.GroupName, message, base64Attachments, cancellationToken);
 
-    /// <summary>Sets a progress reaction on a message in the chat group.</summary>
-    /// <remarks>
-    /// Best effort: a reaction is feedback about the work, and failing to show it must not abandon
-    /// the work itself.
-    /// </remarks>
-    private async Task SetReactionAsync(string reaction, string sender, long timestamp, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _signalizrClient.SetReactionAsync(
-                _commsAgentConfig.GroupName, reaction, timestamp, sender, cancellationToken);
-        }
-        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
-        // stop the service over a missed indicator.
-        catch (Exception ex) when (ex is HttpRequestException
-            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
-        {
-            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "reaction");
-        }
-    }
+    /// <summary>Sets a progress reaction on a message in the chat group, best effort.</summary>
+    /// <remarks>A reaction is feedback about the work, and failing to show it must not abandon the work itself.</remarks>
+    private Task SetReactionAsync(string reaction, string sender, long timestamp, CancellationToken cancellationToken) =>
+        _signalizrClient.TrySetReactionAsync(_commsAgentConfig.GroupName, reaction, timestamp, sender,
+            ex => LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "reaction"), cancellationToken);
 
     /// <summary>Shows the typing indicator in the chat group, best effort.</summary>
-    private async Task StartTypingAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _signalizrClient.StartTypingAsync(_commsAgentConfig.GroupName, cancellationToken);
-        }
-        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
-        // stop the service over a missed indicator.
-        catch (Exception ex) when (ex is HttpRequestException
-            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
-        {
-            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing");
-        }
-    }
+    private Task StartTypingAsync(CancellationToken cancellationToken) =>
+        _signalizrClient.TryStartTypingAsync(_commsAgentConfig.GroupName,
+            ex => LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing"), cancellationToken);
 
     /// <summary>Clears the typing indicator in the chat group, best effort.</summary>
-    private async Task StopTypingAsync(CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _signalizrClient.StopTypingAsync(_commsAgentConfig.GroupName, cancellationToken);
-        }
-        // An HttpClient timeout surfaces as a cancellation the caller did not request, and must not
-        // stop the service over a missed indicator.
-        catch (Exception ex) when (ex is HttpRequestException
-            || (ex is OperationCanceledException && !cancellationToken.IsCancellationRequested))
-        {
-            LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing");
-        }
-    }
+    private Task StopTypingAsync(CancellationToken cancellationToken) =>
+        _signalizrClient.TryStopTypingAsync(_commsAgentConfig.GroupName,
+            ex => LogGroupInteractionFailed(_logger, ex, nameof(CommunicationsBgService), "typing"), cancellationToken);
     /// <summary>
     /// Captures the parameters for a single agent reply so it can be queued and
     /// processed sequentially by <see cref="DrainReplyQueueAsync"/>.

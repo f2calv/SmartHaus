@@ -174,39 +174,25 @@ public sealed partial class CommunicationsBgService : IBgFeature
     /// <summary>Waits until the Signalizr gateway serves the configured groups.</summary>
     /// <remarks>
     /// An unreachable gateway is retried, because it recovers on its own. A missing chat group
-    /// is a configuration fault that retrying cannot fix, so it throws. A missing monitor group
+    /// is a configuration fault that retrying cannot fix, so
+    /// <see cref="SignalizrClientExtensions.WaitForGroupsAsync"/> throws. A missing monitor group
     /// only degrades diagnostics, so it is logged and tolerated.
     /// </remarks>
     private async Task WaitForGroupsAsync(CancellationToken cancellationToken)
     {
-        var attempt = 1;
-        while (true)
-        {
-            IReadOnlyList<string> groups;
-            try
-            {
-                groups = await _signalizrClient.GetGroupsAsync(cancellationToken);
-            }
-            catch (HttpRequestException ex)
-            {
-                _logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug, ex,
-                    "{ClassName} Signalizr gateway not reachable, attempt {Attempt}, retrying in {RetryMs}ms",
-                    nameof(CommunicationsBgService), attempt, _commsAgentConfig.HealthCheckProbeDelayMs);
-                await Task.Delay(_commsAgentConfig.HealthCheckProbeDelayMs, cancellationToken);
-                attempt++;
-                continue;
-            }
+        var missingOptional = await _signalizrClient.WaitForGroupsAsync(
+            [_commsAgentConfig.GroupName],
+            [_commsAgentConfig.MonitorGroupName],
+            TimeSpan.FromMilliseconds(_commsAgentConfig.HealthCheckProbeDelayMs),
+            _timeProvider,
+            (ex, attempt) => _logger.Log(attempt % 10 == 0 ? LogLevel.Warning : LogLevel.Debug, ex,
+                "{ClassName} Signalizr gateway not reachable, attempt {Attempt}, retrying in {RetryMs}ms",
+                nameof(CommunicationsBgService), attempt, _commsAgentConfig.HealthCheckProbeDelayMs),
+            cancellationToken);
 
-            if (!groups.Contains(_commsAgentConfig.GroupName, StringComparer.Ordinal))
-                throw new GenericException(
-                    "The configured Signalizr chat group is unavailable. Check the exact display name, including spaces and case.");
+        if (missingOptional.Count > 0)
+            LogMonitorGroupUnavailable(_logger, nameof(CommunicationsBgService));
 
-            if (_commsAgentConfig.MonitorGroupName is { Length: > 0 } monitorGroupName
-                && !groups.Contains(monitorGroupName, StringComparer.Ordinal))
-                LogMonitorGroupUnavailable(_logger, nameof(CommunicationsBgService));
-
-            LogChatGroupReady(_logger, nameof(CommunicationsBgService));
-            return;
-        }
+        LogChatGroupReady(_logger, nameof(CommunicationsBgService));
     }
 }
