@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
-  <!-- Maintained byte-identically in SmartHaus and CAS until the shared communications code moves to
-       its own repository. Change both copies in the same change. -->
+  <!-- Hosted here until the shared communications code moves to its own repository. Other applications
+       reference this project from an adjacent SmartHaus checkout in their Debug builds. -->
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>

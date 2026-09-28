@@ -20,8 +20,9 @@ Without an available responder, chat-bound events are formatted and sent directl
 messages are only logged. [CasCap.Comms.AI](../CasCap.Comms.AI/README.md) provides the AI agent
 responder.
 
-This project is maintained **byte-identically** in the SmartHaus and CAS repositories until the
-shared communications code moves to its own repository. Change both copies in the same change.
+This project is hosted in SmartHaus until the shared communications code moves to its own repository.
+Other applications reference it from an adjacent SmartHaus checkout in their Debug builds, so a change
+here must keep them compiling.
 
 ## Public Surface
 

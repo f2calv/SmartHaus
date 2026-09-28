@@ -10,8 +10,9 @@ Every orchestration test drives the real `CommunicationsBgService.ExecuteAsync` 
 `CasCap.Api.Voice.Testing` and an in-memory Redis. The responder is a real `AgentCommsResponder` over
 `StubAIAgent`, which refuses inference, so no test reaches a model, Redis or a gateway.
 
-This project is maintained **byte-identically** in the SmartHaus and CAS repositories until the
-shared communications code moves to its own repository. Change both copies in the same change.
+This project is hosted in SmartHaus until the shared communications code moves to its own repository.
+Other applications reference it from an adjacent SmartHaus checkout in their Debug builds, so a change
+here must keep them compiling.
 
 ## Tests
 

@@ -17,8 +17,9 @@ pipeline.
 When the agent profile, its provider or the keyed agent is missing, the responder reports itself
 unavailable and the pipeline behaves as if no responder were registered.
 
-This project is maintained **byte-identically** in the SmartHaus and CAS repositories until the
-shared communications code moves to its own repository. Change both copies in the same change.
+This project is hosted in SmartHaus until the shared communications code moves to its own repository.
+Other applications reference it from an adjacent SmartHaus checkout in their Debug builds, so a change
+here must keep them compiling.
 
 ## Public Surface
 
