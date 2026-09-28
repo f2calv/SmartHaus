@@ -48,6 +48,10 @@ public sealed partial class CommunicationsBgService
         Message = "{ClassName} could not fetch the event media ({ExceptionType}), sending without it")]
     private static partial void LogMediaFetchFailed(ILogger logger, Exception ex, string className, string exceptionType);
 
+    [LoggerMessage(Level = LogLevel.Information,
+        Message = "{ClassName} stream event from {Source} routed to the monitor group")]
+    private static partial void LogStreamEventRouted(ILogger logger, string className, string source);
+
     [LoggerMessage(Level = LogLevel.Warning,
         Message = "{ClassName} stream event from {Source} suppressed by rate limiter ({SuppressedCount} suppressed since last notice)")]
     private static partial void LogStreamEventSuppressed(ILogger logger, string className, string source, long suppressedCount);

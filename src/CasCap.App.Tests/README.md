@@ -27,6 +27,7 @@ synthetic house and the assertions.
 | `McpPromptToolReferenceTests` | 1 | 1 | McpPrompts | Every shipped MCP prompt names only tools that exist |
 | `CommunicationsBgServiceTests` | 13 | 18 | Messaging | Communications orchestration with fake Signalizr, speech and agent services |
 | `SignalMessageDeduplicatorTests` | 9 | 11 | Comms | Redis-backed duplicate Signal message suppression |
+| `MonitorSourcesGroupRouterTests` | 2 | 3 | Comms | Routing of configured operational sources to the monitor group |
 | `KnxContactSummaryTests` | 4 | 13 | Knx | Door and window contact summaries |
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Door lock summaries |
 

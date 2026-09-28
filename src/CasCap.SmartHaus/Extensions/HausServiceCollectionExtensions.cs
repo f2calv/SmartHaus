@@ -51,6 +51,7 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddSingleton<CommsDebugNotifier>();
         builder.Services.TryAddSingleton<ISignalMessageDeduplicator, RedisSignalMessageDeduplicator>();
         builder.Services.TryAddSingleton<ICommsEventFormatter, PlainCommsEventFormatter>();
+        builder.Services.TryAddSingleton<ICommsGroupRouter, MonitorSourcesGroupRouter>();
         // CommunicationsBgService takes the transcription service unconditionally; the configured
         // VoiceProcessingMode decides whether it does any work.
         builder.Services.AddSpeechToText();

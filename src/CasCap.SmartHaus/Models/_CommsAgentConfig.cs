@@ -32,6 +32,17 @@ public sealed record CommsAgentConfig : IAppConfig
     /// </remarks>
     public string? MonitorGroupName { get; init; }
 
+    /// <summary>
+    /// <see cref="CommsEvent.Source"/> values delivered to <see cref="MonitorGroupName"/> instead of
+    /// <see cref="GroupName"/>.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to none. Events from these sources are operational diagnostics, so they are sent
+    /// directly with their media and never become agent prompts. Ignored when
+    /// <see cref="MonitorGroupName"/> is unset. Used by <see cref="CasCap.Services.MonitorSourcesGroupRouter"/>.
+    /// </remarks>
+    public HashSet<string> MonitorSources { get; init; } = [];
+
     /// <summary>Whether to echo a successful voice transcript to <see cref="MonitorGroupName"/>.</summary>
     /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
     public bool EchoTranscriptToDebugChat { get; init; }

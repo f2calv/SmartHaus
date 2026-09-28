@@ -110,17 +110,28 @@ public sealed partial class CommunicationsBgService
 
         LogProcessingStreamEvent(_logger, nameof(CommunicationsBgService), commsEvent.Source, commsEvent.Message);
 
-        // Forward the raw stream event to the debug chat for observability.
-        await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
+        // Events routed away from the chat group are operational diagnostics, not prompts, so they are
+        // delivered directly; so is everything when no agent is configured.
+        var group = _groupRouter.ResolveGroup(commsEvent);
+        var routedAway = !string.Equals(group, _commsAgentConfig.GroupName, StringComparison.Ordinal);
+        var agentAvailable = _agent is not null && _commsAgent is not null && _provider is not null;
+
+        // Copy chat-bound events to the debug chat for observability; a routed event is already there.
+        if (!routedAway)
+            await _debugNotifier.SendStreamEventDebugAsync(commsEvent, cancellationToken);
 
         // Wait until the gateway serves the chat group before attempting delivery.
         await _groupReady.Task.WaitAsync(cancellationToken);
 
-        if (_agent is null || _commsAgent is null || _provider is null)
+        var extraAttachments = await TryFetchMediaAttachmentAsync(commsEvent);
+
+        if (routedAway || !agentAvailable)
         {
-            // No agent — forward the formatted event directly to the chat group.
-            LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
-            await SendMessageAsync(_eventFormatter.Format(commsEvent), cancellationToken);
+            if (routedAway)
+                LogStreamEventRouted(_logger, nameof(CommunicationsBgService), commsEvent.Source);
+            else
+                LogNoAgentForwarding(_logger, nameof(CommunicationsBgService));
+            _ = await _signalizrClient.SendAsync(group, _eventFormatter.Format(commsEvent), extraAttachments, cancellationToken);
             return;
         }
 
@@ -128,39 +139,45 @@ public sealed partial class CommunicationsBgService
         if (commsEvent.JsonPayload is not null)
             prompt += $"\n\nJSON: {commsEvent.JsonPayload}";
 
-        // If the event carries a Redis-cached media reference, fetch the bytes and attach them.
-        string[]? extraAttachments = null;
-        if (commsEvent.JsonPayload is not null)
-        {
-            try
-            {
-                var mediaRef = commsEvent.JsonPayload.FromJson<MediaReference>();
-                if (mediaRef?.MediaRedisKey is { Length: > 0 })
-                {
-                    var mediaBytes = (byte[]?)await _db.StringGetAsync(mediaRef.MediaRedisKey);
-                    if (mediaBytes is { Length: > 0 })
-                    {
-                        var mimeType = mediaRef.MimeType ?? "image/jpeg";
-                        var fileName = mediaRef.FileName ?? "media";
-                        extraAttachments = [$"data:{mimeType};filename={fileName};base64,{Convert.ToBase64String(mediaBytes)}"];
-                        await _db.KeyDeleteAsync(mediaRef.MediaRedisKey, CommandFlags.FireAndForget);
-                        LogMediaAttached(_logger, nameof(CommunicationsBgService), mediaBytes.Length, mediaRef.MediaRedisKey);
-                    }
-                    else
-                        LogMediaNotFound(_logger, nameof(CommunicationsBgService), mediaRef.MediaRedisKey);
-                }
-            }
-            catch (System.Text.Json.JsonException)
-            {
-                // The payload is not a media reference, so the event is sent without an attachment.
-            }
-            catch (RedisException ex)
-            {
-                LogMediaFetchFailed(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name);
-            }
-        }
-
         await EnqueueReplyAsync(prompt, extraBase64Attachments: extraAttachments, cancellationToken: cancellationToken);
+    }
+
+    /// <summary>Fetches the Redis-cached media an event references, deleting the key once read.</summary>
+    /// <returns>The signal-cli data-URI attachment, or <see langword="null"/> when the event carries no media.</returns>
+    private async Task<string[]?> TryFetchMediaAttachmentAsync(CommsEvent commsEvent)
+    {
+        if (commsEvent.JsonPayload is null)
+            return null;
+        try
+        {
+            // Deserialised directly rather than through FromJson, which logs every non-media payload as an error.
+            var mediaRef = System.Text.Json.JsonSerializer.Deserialize<MediaReference>(commsEvent.JsonPayload);
+            if (mediaRef?.MediaRedisKey is not { Length: > 0 } mediaKey)
+                return null;
+
+            var mediaBytes = (byte[]?)await _db.StringGetAsync(mediaKey);
+            if (mediaBytes is not { Length: > 0 })
+            {
+                LogMediaNotFound(_logger, nameof(CommunicationsBgService), mediaKey);
+                return null;
+            }
+
+            var mimeType = mediaRef.MimeType ?? "image/jpeg";
+            var fileName = mediaRef.FileName ?? "media";
+            await _db.KeyDeleteAsync(mediaKey, CommandFlags.FireAndForget);
+            LogMediaAttached(_logger, nameof(CommunicationsBgService), mediaBytes.Length, mediaKey);
+            return [$"data:{mimeType};filename={fileName};base64,{Convert.ToBase64String(mediaBytes)}"];
+        }
+        catch (System.Text.Json.JsonException)
+        {
+            // The payload is not a media reference, so the event is sent without an attachment.
+            return null;
+        }
+        catch (RedisException ex)
+        {
+            LogMediaFetchFailed(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name);
+            return null;
+        }
     }
 
     private CommsEvent DeserializeStreamEntry(StreamEntry entry)
