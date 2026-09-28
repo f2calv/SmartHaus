@@ -19,7 +19,9 @@
     <PackageVersion Include="CasCap.Api.Azure.CognitiveServices" Version="1.6.3" />
     <PackageVersion Include="CasCap.Api.Azure.Storage" Version="1.6.3" />
     <PackageVersion Include="CasCap.Api.Voice" Version="0.1.1" />
+    <PackageVersion Include="CasCap.Api.Voice.Testing" Version="0.1.1" />
     <PackageVersion Include="CasCap.Signalizr.Client" Version="0.1.0" />
+    <PackageVersion Include="CasCap.Signalizr.Client.Testing" Version="0.1.0" />
     <PackageVersion Include="CasCap.Common.Abstractions" Version="4.14.3" />
     <PackageVersion Include="CasCap.Common.AI" Version="4.14.3" />
     <PackageVersion Include="CasCap.Common.AI.Evaluation" Version="4.14.3" />

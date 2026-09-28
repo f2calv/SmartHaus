@@ -23,9 +23,11 @@
   </Folder>
   <Folder Name="/CasCap.Api.Voice/">
     <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice/CasCap.Api.Voice.csproj" />
+    <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice.Testing/CasCap.Api.Voice.Testing.csproj" />
   </Folder>
   <Folder Name="/signalizr/">
     <Project Path="../signalizr/src/CasCap.Signalizr.Client/CasCap.Signalizr.Client.csproj" />
+    <Project Path="../signalizr/src/CasCap.Signalizr.Client.Testing/CasCap.Signalizr.Client.Testing.csproj" />
   </Folder>
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />

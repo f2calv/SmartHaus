@@ -31,8 +31,10 @@ synthetic house and the assertions.
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Door lock summaries |
 
 Voice provider adapters and voice processing policy tests live in the standalone
-`CasCap.Api.Voice.Tests` project. SmartHaus retains only the communication orchestration tests and
-their local speech fakes. The evaluation framework's own tests live in `CasCap.Common.AI.Tests`.
+`CasCap.Api.Voice.Tests` project. SmartHaus retains only the communication orchestration tests.
+Their speech and gateway fakes come from the `CasCap.Api.Voice.Testing` and
+`CasCap.Signalizr.Client.Testing` packages, which are local project references in Debug. The
+evaluation framework's own tests live in `CasCap.Common.AI.Tests`.
 
 ### Trait categories
 
@@ -105,6 +107,7 @@ Each test session writes a timestamped folder under `ResultsDirectory`:
 
 The speed column is the geometric mean, over the scenario and variant combinations both models ran,
 of the reference model's median run time divided by the model's.
+
 ### Scenarios
 
 | Scenario | Agent | Question | Variants compared |

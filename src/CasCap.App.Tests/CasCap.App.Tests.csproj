@@ -23,14 +23,18 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Voice\src\CasCap.Api.Voice.Testing\CasCap.Api.Voice.Testing.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI.Evaluation\CasCap.Common.AI.Evaluation.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Testing\CasCap.Common.Testing.csproj" />
+    <ProjectReference Include="..\..\..\signalizr\src\CasCap.Signalizr.Client.Testing\CasCap.Signalizr.Client.Testing.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Voice.Testing" />
     <PackageReference Include="CasCap.Common.AI.Evaluation" />
     <PackageReference Include="CasCap.Common.Configuration" />
     <PackageReference Include="CasCap.Common.Testing" />
+    <PackageReference Include="CasCap.Signalizr.Client.Testing" />
   </ItemGroup>
 
   <ItemGroup>
