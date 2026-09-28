@@ -17,8 +17,9 @@ a [signalizr](https://github.com/f2calv/signalizr) gateway.
   optional spoken replies.
 
 Without an available responder, chat-bound events are formatted and sent directly and inbound
-messages are only logged. [CasCap.Comms.AI](../CasCap.Comms.AI/README.md) provides the AI agent
-responder.
+messages are only logged. With `StreamEventTurnsEnabled` set to `false`, chat-bound events are sent
+directly even when a responder answers inbound messages. [CasCap.Comms.AI](../CasCap.Comms.AI/README.md)
+provides the AI agent responder.
 
 This project is hosted in SmartHaus until the shared communications code moves to its own repository.
 Other applications reference it from an adjacent SmartHaus checkout in their Debug builds, so a change
@@ -53,6 +54,7 @@ groups exactly, including spaces and case.
 | `GroupName` | `"My Test Group Name"` | User-facing chat group |
 | `MonitorGroupName` | `null` | Operator-only diagnostics group; unset disables diagnostics |
 | `MonitorSources` | empty | Event sources delivered directly to the monitor group |
+| `StreamEventTurnsEnabled` | `true` | Turn chat-bound stream events into responder turns; `false` sends them directly |
 | `EchoTranscriptToDebugChat` | `false` | Echo voice transcripts to the monitor group |
 | `DelegationMessagesEnabled` | `true` | Let an agent responder announce sub-agent delegation |
 | `StreamKey` | `"comms:stream:events"` | Redis Stream key |

@@ -19,11 +19,11 @@ here must keep them compiling.
 | Class | Methods | Cases | Category | Description |
 | --- | ---: | ---: | --- | --- |
 | `CommunicationsBgServiceTests` | 13 | 18 | Messaging | Inbound admission, duplicate suppression, durable attachments, voice-processing modes, transcript echo and reply-queue backpressure |
-| `CommunicationsBgServiceStreamTests` | 12 | 15 | Comms | Direct and responder stream delivery, monitor routing, stale and throttled drops, cached media, startup retry, the missing-group fault, resubscription, the no-responder inbound behaviour and the inbound filter |
+| `CommunicationsBgServiceStreamTests` | 13 | 16 | Comms | Direct and responder stream delivery, disabled stream turns, monitor routing, stale and throttled drops, cached media, startup retry, the missing-group fault, resubscription, the no-responder inbound behaviour and the inbound filter |
 | `SignalMessageDeduplicatorTests` | 9 | 11 | Comms | Redis-backed duplicate Signal message suppression |
 | `MonitorSourcesGroupRouterTests` | 2 | 3 | Comms | Routing of configured operational sources to the monitor group |
 | `CommsEventFormatterTests` | 2 | 2 | Comms | The plain and timestamped direct-send formats |
-| **Total** | **38** | **49** | | |
+| **Total** | **39** | **50** | | |
 
 ## Trait Categories
 

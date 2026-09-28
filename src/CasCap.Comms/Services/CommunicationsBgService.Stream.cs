@@ -120,8 +120,8 @@ public sealed partial class CommunicationsBgService
         var attachments = await TryFetchMediaAttachmentAsync(commsEvent);
 
         // Events routed away from the chat group are operational diagnostics, not prompts, so they are
-        // delivered directly; so is everything when no responder is available.
-        var active = ActiveResponder;
+        // delivered directly; so is everything when no responder is available or stream turns are off.
+        var active = commsConfig.Value.StreamEventTurnsEnabled ? ActiveResponder : null;
         if (active is null || !string.Equals(group, commsConfig.Value.GroupName, StringComparison.Ordinal))
         {
             var timestamp = await signalizrClient.SendAsync(group, eventFormatter.Format(commsEvent), attachments, cancellationToken);

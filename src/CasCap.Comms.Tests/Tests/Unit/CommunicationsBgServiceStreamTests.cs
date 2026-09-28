@@ -10,7 +10,7 @@ namespace CasCap.Tests.Unit;
 [Trait("Category", "Comms")]
 public sealed class CommunicationsBgServiceStreamTests
 {
-    private const string TradeSource = "TradeEventSinkCommsService";
+    private const string EventSource = "DoorBirdSinkCommsService";
     private const string SchedulerSource = "SchedulerBgService";
 
     [Fact]
@@ -21,11 +21,11 @@ public sealed class CommunicationsBgServiceStreamTests
         await fixture.StartAsync();
         var timestamp = DateTime.UtcNow;
 
-        fixture.AddStreamEvent(TradeSource, "ORDER placed", timestamp);
+        fixture.AddStreamEvent(EventSource, "Doorbell pressed", timestamp);
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
         var sent = Assert.Single(fixture.Signalizr.Sent);
-        Assert.Equal($"{timestamp:HH:mm:ss.fff} UTC [{EnvironmentAcronym}] [{TradeSource}] ORDER placed", sent.Message);
+        Assert.Equal($"{timestamp:HH:mm:ss.fff} UTC [{EnvironmentAcronym}] [{EventSource}] Doorbell pressed", sent.Message);
         Assert.Null(sent.Attachments);
         await WaitForAsync(() => fixture.Redis.Acknowledged.Count == 1);
     }
@@ -36,12 +36,26 @@ public sealed class CommunicationsBgServiceStreamTests
         await using var fixture = new CommunicationsBgServiceTestFixture();
         await fixture.StartAsync();
 
-        fixture.AddStreamEvent(TradeSource, "ORDER placed", DateTime.UtcNow);
+        fixture.AddStreamEvent(EventSource, "Doorbell pressed", DateTime.UtcNow);
 
         //A stream turn has no sender, so it produces no typing indicator; the stub agent then fails it.
         await WaitForAsync(() => fixture.Signalizr.SentTo(MonitorGroupName).Any());
-        Assert.Contains(TradeSource, Assert.Single(fixture.Signalizr.SentTo(MonitorGroupName)).Message, StringComparison.Ordinal);
+        Assert.Contains(EventSource, Assert.Single(fixture.Signalizr.SentTo(MonitorGroupName)).Message, StringComparison.Ordinal);
         await AssertStaysFalseAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
+    }
+
+    [Fact]
+    public async Task StreamEvent_WithStreamTurnsDisabled_IsSentDirectlyDespiteResponder()
+    {
+        await using var fixture = new CommunicationsBgServiceTestFixture(streamEventTurnsEnabled: false);
+        await fixture.StartAsync();
+
+        fixture.AddStreamEvent(EventSource, "Doorbell pressed", DateTime.UtcNow);
+
+        await WaitForAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
+        Assert.Equal("Doorbell pressed", Assert.Single(fixture.Signalizr.SentTo(ChatGroupName)).Message);
+        Assert.Empty(fixture.Signalizr.SentTo(MonitorGroupName));
+        await WaitForAsync(() => fixture.Redis.Acknowledged.Count == 1);
     }
 
     [Fact]
@@ -63,7 +77,7 @@ public sealed class CommunicationsBgServiceStreamTests
         await using var fixture = new CommunicationsBgServiceTestFixture(responderEnabled: false);
         await fixture.StartAsync();
 
-        fixture.AddStreamEvent(TradeSource, "late order", DateTime.UtcNow.AddMinutes(-10));
+        fixture.AddStreamEvent(EventSource, "late doorbell", DateTime.UtcNow.AddMinutes(-10));
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(MonitorGroupName).Any());
         Assert.Contains("older than", Assert.Single(fixture.Signalizr.SentTo(MonitorGroupName)).Message, StringComparison.Ordinal);
@@ -78,8 +92,8 @@ public sealed class CommunicationsBgServiceStreamTests
             streamSendBurst: 1, streamSendRatePerMinute: 1);
         await fixture.StartAsync();
 
-        fixture.AddStreamEvent(TradeSource, "first", DateTime.UtcNow);
-        fixture.AddStreamEvent(TradeSource, "second", DateTime.UtcNow);
+        fixture.AddStreamEvent(EventSource, "first", DateTime.UtcNow);
+        fixture.AddStreamEvent(EventSource, "second", DateTime.UtcNow);
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(MonitorGroupName).Any());
         Assert.Contains("rate limit", Assert.Single(fixture.Signalizr.SentTo(MonitorGroupName)).Message, StringComparison.Ordinal);
@@ -96,7 +110,7 @@ public sealed class CommunicationsBgServiceStreamTests
         fixture.Redis.Strings[mediaKey] = [1, 2, 3];
         var payload = JsonSerializer.Serialize(new MediaReference { MediaRedisKey = mediaKey, MimeType = "image/png", FileName = "chart.png" });
 
-        fixture.AddStreamEvent(TradeSource, "chart", DateTime.UtcNow, payload);
+        fixture.AddStreamEvent(EventSource, "chart", DateTime.UtcNow, payload);
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
         var attachments = Assert.Single(fixture.Signalizr.Sent).Attachments;
@@ -111,7 +125,7 @@ public sealed class CommunicationsBgServiceStreamTests
         await using var fixture = new CommunicationsBgServiceTestFixture(responderEnabled: false);
         await fixture.StartAsync();
 
-        fixture.AddStreamEvent(TradeSource, "context", DateTime.UtcNow, """{"Symbol":"EURUSD"}""");
+        fixture.AddStreamEvent(EventSource, "context", DateTime.UtcNow, """{"Symbol":"EURUSD"}""");
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
         Assert.Null(Assert.Single(fixture.Signalizr.Sent).Attachments);
@@ -124,7 +138,7 @@ public sealed class CommunicationsBgServiceStreamTests
         fixture.Signalizr.GroupsFailures = 3;
         fixture.LaunchWithoutWaiting();
 
-        fixture.AddStreamEvent(TradeSource, "queued while offline", DateTime.UtcNow);
+        fixture.AddStreamEvent(EventSource, "queued while offline", DateTime.UtcNow);
 
         await WaitForAsync(() => fixture.Signalizr.SentTo(ChatGroupName).Any());
         Assert.Equal(4, fixture.Signalizr.GetGroupsCallCount);

@@ -38,6 +38,15 @@ public sealed record CommsConfig : IAppConfig
     /// </remarks>
     public HashSet<string> MonitorSources { get; init; } = [];
 
+    /// <summary>Whether a chat-bound stream event becomes a turn for the registered responder.</summary>
+    /// <remarks>
+    /// Defaults to <see langword="true"/>, so an agent can describe or act on each event. Set it to
+    /// <see langword="false"/> when stream events are notifications to deliver verbatim, such as trade
+    /// confirmations; they are then formatted and sent directly, and the responder only answers inbound
+    /// messages. Events routed to <see cref="MonitorGroupName"/> are always sent directly.
+    /// </remarks>
+    public bool StreamEventTurnsEnabled { get; init; } = true;
+
     /// <summary>Whether to echo a successful voice transcript to <see cref="MonitorGroupName"/>.</summary>
     /// <remarks>Defaults to <see langword="false"/>. This is communications orchestration policy, not voice processing.</remarks>
     public bool EchoTranscriptToDebugChat { get; init; }

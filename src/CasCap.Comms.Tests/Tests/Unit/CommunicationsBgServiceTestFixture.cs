@@ -48,6 +48,7 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
     /// <param name="streamSendBurst">Token-bucket capacity for stream-originated sends.</param>
     /// <param name="streamSendRatePerMinute">Token-bucket refill rate for stream-originated sends.</param>
     /// <param name="monitorSources">Stream event sources routed to the monitor group.</param>
+    /// <param name="streamEventTurnsEnabled">Whether chat-bound stream events become responder turns.</param>
     public CommunicationsBgServiceTestFixture(
         VoiceProcessingMode voiceMode = VoiceProcessingMode.Enabled,
         bool responderEnabled = true,
@@ -57,13 +58,15 @@ public sealed class CommunicationsBgServiceTestFixture : IAsyncDisposable
         ICommsEventFormatter? formatter = null,
         int streamSendBurst = 10,
         int streamSendRatePerMinute = 20,
-        string[]? monitorSources = null)
+        string[]? monitorSources = null,
+        bool streamEventTurnsEnabled = true)
     {
         var commsConfig = Options.Create(new CommsConfig
         {
             GroupName = ChatGroupName,
             MonitorGroupName = MonitorGroupName,
             MonitorSources = [.. monitorSources ?? []],
+            StreamEventTurnsEnabled = streamEventTurnsEnabled,
             //Short so the idle stream loop and resubscription react within a test's timeout.
             PollingIntervalMs = 20,
             HealthCheckProbeDelayMs = 1,

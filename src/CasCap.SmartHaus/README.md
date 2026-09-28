@@ -98,6 +98,7 @@ settings SmartHaus deployments usually change are:
 | `GroupName` | `string` | `"My Test Group Name"` | Exact Signal group display name for the user-facing chat: messages, reactions, typing and polls |
 | `MonitorGroupName` | `string?` | `null` | Exact Signal group display name for operator diagnostics; its group must contain only the operator. Unset disables diagnostics |
 | `MonitorSources` | `HashSet<string>` | empty | `CommsEvent.Source` values delivered directly to `MonitorGroupName` instead of becoming CommsAgent prompts |
+| `StreamEventTurnsEnabled` | `bool` | `true` | Whether chat-bound stream events become CommsAgent prompts; `false` sends them directly |
 | `EchoTranscriptToDebugChat` | `bool` | `false` | Whether a successful voice transcript is echoed to `MonitorGroupName` |
 | `DelegationMessagesEnabled` | `bool` | `true` | Whether a separate status message is sent when CommsAgent delegates to a sub-agent |
 
