@@ -25,7 +25,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Exact Signal group display name for operator diagnostics, or <see langword="null"/> to disable them.
     /// </summary>
     /// <remarks>
-    /// Receives pipeline timelines, stream-event copies, compaction notices and, when
+    /// Receives pipeline timelines, stream-event copies, compaction notices, drop notices and, when
     /// <see cref="EchoTranscriptToDebugChat"/> is enabled, voice transcripts. Its Signal group
     /// must contain only the operator, because these messages repeat other people's content.
     /// Preserve spaces and case.
@@ -131,7 +131,7 @@ public sealed record CommsAgentConfig : IAppConfig
     [Range(1, int.MaxValue)]
     public int StreamSendBurst { get; init; } = 10;
 
-    /// <summary>Whether stream events older than <see cref="MaxEventAgeSeconds"/> are dropped instead of delivered late.</summary>
+    /// <summary>Whether stream events older than <see cref="MaxEventAgeMs"/> are dropped instead of delivered late.</summary>
     /// <remarks>
     /// Defaults to <c>true</c>. A producer flood or consumer backlog can leave events queued far longer
     /// than they are useful; stale events are acknowledged but dropped rather than drip-fed to the group.
@@ -139,13 +139,14 @@ public sealed record CommsAgentConfig : IAppConfig
     /// </remarks>
     public bool StaleEventDroppingEnabled { get; init; } = true;
 
-    /// <summary>Maximum age in seconds of a stream event before it is considered stale and dropped.</summary>
+    /// <summary>Maximum age in milliseconds of a stream event before it is considered stale and dropped.</summary>
     /// <remarks>
-    /// Defaults to <c>60</c>. Compared against <see cref="CommsEvent.TimestampUtc"/> at the moment of processing.
-    /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
+    /// Defaults to <c>60000</c> ms (60 seconds). Compared against <see cref="CommsEvent.TimestampUtc"/> at the
+    /// moment of processing. Used by <see cref="CasCap.Services.CommunicationsBgService"/> with
+    /// <see cref="System.TimeSpan.FromMilliseconds(double)"/>.
     /// </remarks>
     [Range(1, int.MaxValue)]
-    public int MaxEventAgeSeconds { get; init; } = 60;
+    public int MaxEventAgeMs { get; init; } = 60_000;
 
     /// <summary>Minimum interval in milliseconds between drop-notice messages sent to the group while messages are being dropped.</summary>
     /// <remarks>

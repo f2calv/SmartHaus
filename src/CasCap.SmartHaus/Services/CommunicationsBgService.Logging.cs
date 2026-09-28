@@ -45,6 +45,10 @@ public sealed partial class CommunicationsBgService
     private static partial void LogMediaNotFound(ILogger logger, string className, string mediaRedisKey);
 
     [LoggerMessage(Level = LogLevel.Warning,
+        Message = "{ClassName} could not fetch the event media ({ExceptionType}), sending without it")]
+    private static partial void LogMediaFetchFailed(ILogger logger, Exception ex, string className, string exceptionType);
+
+    [LoggerMessage(Level = LogLevel.Warning,
         Message = "{ClassName} stream event from {Source} suppressed by rate limiter ({SuppressedCount} suppressed since last notice)")]
     private static partial void LogStreamEventSuppressed(ILogger logger, string className, string source, long suppressedCount);
 

@@ -82,12 +82,12 @@ public sealed partial class CommunicationsBgService
     private async Task ProcessCommsEventAsync(CommsEvent commsEvent, CancellationToken cancellationToken)
     {
         // Drop stale events: a producer flood or consumer backlog can leave events queued far
-        // longer than they are useful. Anything older than MaxEventAgeSeconds is acknowledged
+        // longer than they are useful. Anything older than MaxEventAgeMs is acknowledged
         // but dropped rather than delivered late.
         if (_commsAgentConfig.StaleEventDroppingEnabled)
         {
             var age = _timeProvider.GetUtcNow().UtcDateTime - commsEvent.TimestampUtc;
-            if (age > TimeSpan.FromSeconds(_commsAgentConfig.MaxEventAgeSeconds))
+            if (age > TimeSpan.FromMilliseconds(_commsAgentConfig.MaxEventAgeMs))
             {
                 _staleSinceNotice++;
                 LogStreamEventStale(_logger, nameof(CommunicationsBgService), commsEvent.Source, (long)age.TotalSeconds, _staleSinceNotice);
@@ -150,7 +150,14 @@ public sealed partial class CommunicationsBgService
                         LogMediaNotFound(_logger, nameof(CommunicationsBgService), mediaRef.MediaRedisKey);
                 }
             }
-            catch { /* JsonPayload is not a MediaCommsPayload — that's fine, skip attachment */ }
+            catch (System.Text.Json.JsonException)
+            {
+                // The payload is not a media reference, so the event is sent without an attachment.
+            }
+            catch (RedisException ex)
+            {
+                LogMediaFetchFailed(_logger, ex, nameof(CommunicationsBgService), ex.GetType().Name);
+            }
         }
 
         await EnqueueReplyAsync(prompt, extraBase64Attachments: extraAttachments, cancellationToken: cancellationToken);
@@ -172,11 +179,13 @@ public sealed partial class CommunicationsBgService
     }
 
     /// <summary>
-    /// Sends a single drop-notice message to the group when stream events are being dropped
-    /// (rate-limited and/or stale), rate-limited to at most once per
-    /// <see cref="CommsAgentConfig.DropNoticeIntervalMs"/> so the notice itself cannot flood the
-    /// group. The first drop always emits a notice immediately.
+    /// Sends a single drop-notice message to the monitor group, or the chat group when none is
+    /// configured, when stream events are being dropped (rate-limited and/or stale).
     /// </summary>
+    /// <remarks>
+    /// Rate-limited to at most once per <see cref="CommsAgentConfig.DropNoticeIntervalMs"/> so the
+    /// notice itself cannot flood the group. The first drop always emits a notice immediately.
+    /// </remarks>
     private async Task MaybeSendDropNoticeAsync(CancellationToken cancellationToken)
     {
         // The group must be ready before we can notify; until then drops are silent (counters
@@ -203,13 +212,17 @@ public sealed partial class CommunicationsBgService
         if (rateLimited > 0)
             parts.Add($"{rateLimited} over the {_commsAgentConfig.StreamSendRatePerMinute}/min rate limit");
         if (stale > 0)
-            parts.Add($"{stale} older than {_commsAgentConfig.MaxEventAgeSeconds}s");
+            parts.Add($"{stale} older than {_commsAgentConfig.MaxEventAgeMs}ms");
 
         var notice = $"\uD83D\uDEA6 Dropped {total} notification(s) to avoid flooding the group \u2014 {string.Join(", ", parts)}.";
 
         try
         {
-            await SendMessageAsync(notice, cancellationToken);
+            // Drop notices are operator diagnostics, so they go to the monitor group when one is configured.
+            var group = _commsAgentConfig.MonitorGroupName is { Length: > 0 } monitorGroupName
+                ? monitorGroupName
+                : _commsAgentConfig.GroupName;
+            _ = await _signalizrClient.SendAsync(group, notice, cancellationToken);
             LogDropNoticeSent(_logger, nameof(CommunicationsBgService), total, true);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
