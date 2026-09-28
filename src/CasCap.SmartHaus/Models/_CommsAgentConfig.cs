@@ -74,7 +74,7 @@ public sealed record CommsAgentConfig : IAppConfig
 
     /// <summary>Maximum entries to read from the Redis stream per <c>XREADGROUP</c> call.</summary>
     /// <remarks>Defaults to <c>10</c>. Used by <see cref="CasCap.Services.CommunicationsBgService"/>.</remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 10_000)]
     public int StreamReadCount { get; init; } = 10;
 
     /// <summary>Retry interval for the comms stream and Signalizr subscription.</summary>
@@ -82,7 +82,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>5000</c> (5 seconds).
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 300_000)]
     public int PollingIntervalMs { get; init; } = 5_000;
 
     /// <summary>
@@ -92,7 +92,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>2000</c> ms (2 seconds).
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 300_000)]
     public int HealthCheckProbeDelayMs { get; init; } = 2_000;
 
     /// <summary>
@@ -120,7 +120,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>20</c>. Token-bucket replenishment rate.
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 10_000)]
     public int StreamSendRatePerMinute { get; init; } = 20;
 
     /// <summary>Maximum initial burst of stream-originated messages allowed before throttling engages.</summary>
@@ -128,7 +128,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>10</c>. Token-bucket capacity.
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 10_000)]
     public int StreamSendBurst { get; init; } = 10;
 
     /// <summary>Whether stream events older than <see cref="MaxEventAgeMs"/> are dropped instead of delivered late.</summary>
@@ -145,7 +145,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// moment of processing. Used by <see cref="CasCap.Services.CommunicationsBgService"/> with
     /// <see cref="System.TimeSpan.FromMilliseconds(double)"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1_000, 86_400_000)]
     public int MaxEventAgeMs { get; init; } = 60_000;
 
     /// <summary>Minimum interval in milliseconds between drop-notice messages sent to the group while messages are being dropped.</summary>
@@ -153,7 +153,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// Defaults to <c>60000</c> ms (1 minute). Covers both rate-limited and stale drops. The first drop
     /// always emits a notice immediately. Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 3_600_000)]
     public int DropNoticeIntervalMs { get; init; } = 60_000;
 
     /// <summary>Maximum number of replies buffered in the outbound queue before the oldest are dropped.</summary>
@@ -162,7 +162,7 @@ public sealed record CommsAgentConfig : IAppConfig
     /// that drip-feeds for hours; a producer waits for capacity rather than having its work evicted.
     /// Used by <see cref="CasCap.Services.CommunicationsBgService"/>.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 100_000)]
     public int ReplyQueueCapacity { get; init; } = 100;
 
     /// <summary>How long an inbound Signal message identity stays reserved against redelivery, in hours.</summary>
@@ -171,6 +171,6 @@ public sealed record CommsAgentConfig : IAppConfig
     /// <see cref="CasCap.Services.RedisSignalMessageDeduplicator"/>. This bounds repeated processing
     /// of a redelivered envelope; it is not an exactly-once guarantee.
     /// </remarks>
-    [Range(1, int.MaxValue)]
+    [Range(1, 720)]
     public int MessageDeduplicationTtlHours { get; init; } = 168;
 }
