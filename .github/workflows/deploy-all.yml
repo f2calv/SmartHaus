@@ -42,6 +42,8 @@ jobs:
       version: ${{ needs.versioning.outputs.version }}
       configuration: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && 'Debug' || 'Release' }}
       solution-name: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && 'SmartHaus.Debug.slnx' || 'SmartHaus.Release.slnx' }}
+      #Match ci.yml: integration tests need the edge-sp certificate and devices, which the runner does not have.
+      dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--ignore-exit-code", "8"]'
       extra-repos: |
         [
           ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"../CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
