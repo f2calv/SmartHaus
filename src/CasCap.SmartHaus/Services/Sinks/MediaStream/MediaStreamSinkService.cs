@@ -17,6 +17,10 @@ public sealed class MediaStreamSinkService(ILogger<MediaStreamSinkService> logge
 
     private readonly IDatabase _db = remoteCache.Db;
 
+    //Stream timestamps are written as round-trip UTC; parsing without these styles converts them to local time.
+    private const System.Globalization.DateTimeStyles UtcTimestampStyles =
+        System.Globalization.DateTimeStyles.AdjustToUniversal | System.Globalization.DateTimeStyles.AssumeUniversal;
+
     /// <inheritdoc/>
     public async Task WriteEvent(MediaEvent @event, CancellationToken cancellationToken = default)
     {
@@ -61,7 +65,7 @@ public sealed class MediaStreamSinkService(ILogger<MediaStreamSinkService> logge
                 MediaType = Enum.TryParse<MediaType>(dict.GetValueOrDefault(nameof(MediaEvent.MediaType)), out var mt)
                     ? mt
                     : MediaType.Image,
-                TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(MediaEvent.TimestampUtc)), out var ts)
+                TimestampUtc = DateTime.TryParse(dict.GetValueOrDefault(nameof(MediaEvent.TimestampUtc)), System.Globalization.CultureInfo.InvariantCulture, UtcTimestampStyles, out var ts)
                     ? ts
                     : timeProvider.GetUtcNow().UtcDateTime,
                 Metadata = dict.GetValueOrDefault(nameof(MediaEvent.Metadata)),

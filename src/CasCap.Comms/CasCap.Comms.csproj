@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Hosted here until the shared communications code moves to its own repository. Other applications
+       reference this project from an adjacent SmartHaus checkout in their Debug builds. -->
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Description>Signalizr communications pipeline: comms stream delivery, inbound messages, voice and the reply queue.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CasCap.Comms.Tests" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Api.Voice\src\CasCap.Api.Voice\CasCap.Api.Voice.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Abstractions\CasCap.Common.Abstractions.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Caching\CasCap.Common.Caching.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
+    <ProjectReference Include="..\..\..\signalizr\src\CasCap.Signalizr.Client\CasCap.Signalizr.Client.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Api.Voice" />
+    <PackageReference Include="CasCap.Common.Abstractions" />
+    <PackageReference Include="CasCap.Common.Caching" />
+    <PackageReference Include="CasCap.Common.Configuration" />
+    <PackageReference Include="CasCap.Common.Extensions" />
+    <PackageReference Include="CasCap.Signalizr.Client" />
+  </ItemGroup>
+
+</Project>

@@ -26,8 +26,8 @@ public static class HausServiceCollectionExtensions
     }
 
     /// <summary>
-    /// Registers the Signalizr client, comms stream sink, media stream consumer,
-    /// and the <see cref="CommunicationsBgService"/> and <see cref="MediaBgService"/>
+    /// Registers the shared Signalizr communications pipeline with the SmartHaus comms agent, the
+    /// media stream consumer, and the <see cref="CommunicationsBgService"/> and <see cref="MediaBgService"/>
     /// background workers for <c>Comms</c> deployments.
     /// </summary>
     /// <param name="builder">The web application builder.</param>
@@ -37,30 +37,14 @@ public static class HausServiceCollectionExtensions
     /// </param>
     public static void AddComms(this WebApplicationBuilder builder, bool lite = false)
     {
-        builder.Services.AddCasCapConfiguration<CommsAgentConfig>();
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
         builder.Services.AddMediaStreamSink();
-        builder.Services.AddSignalizrClient(builder.Configuration);
-        builder.Services.AddMessagingMcp(
-            builder.Configuration[$"{CommsAgentConfig.ConfigurationSectionName}:{nameof(CommsAgentConfig.GroupName)}"]
-                ?? new CommsAgentConfig().GroupName);
-        builder.Services.AddSingleton<DistributedCacheSessionStore>();
-        builder.Services.AddSingleton<ISessionStore>(sp => sp.GetRequiredService<DistributedCacheSessionStore>());
-        builder.Services.AddSingleton<AgentCommandHandler>();
-
-        builder.Services.AddSingleton<CommsDebugNotifier>();
-        builder.Services.TryAddSingleton<ISignalMessageDeduplicator, RedisSignalMessageDeduplicator>();
-        // CommunicationsBgService takes the transcription service unconditionally; the configured
-        // VoiceProcessingMode decides whether it does any work.
-        builder.Services.AddSpeechToText();
-        // Likewise for synthesis, where VoiceReplyMode is the switch.
-        builder.Services.AddTextToSpeech();
+        builder.Services.AddComms(builder.Configuration, lite);
+        builder.Services.AddCommsAgent(AgentKeys.CommsAgent, typeof(HausServiceCollectionExtensions).Assembly);
+        builder.Services.AddSingleton<IAgentRunEnricher, EdgeHardwareAgentRunEnricher>();
 
         if (!lite)
-        {
-            builder.Services.AddSingleton<IBgFeature, CommunicationsBgService>();
             builder.Services.AddSingleton<IBgFeature, MediaBgService>();
-        }
     }
 
     /// <summary>

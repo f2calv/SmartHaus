@@ -5,6 +5,7 @@ public abstract class TestBase
     protected ITestOutputHelper _output;
     protected AIConfig _aiConfig;
     protected IConfiguration _configuration;
+    protected AzureAuthConfig? _azureAuthConfig;
 
     protected TestBase(ITestOutputHelper output)
     {
@@ -20,6 +21,7 @@ public abstract class TestBase
             .Build();
 
         _configuration = configuration;
+        _azureAuthConfig = configuration.GetSection(AzureAuthConfig.ConfigurationSectionName).Get<AzureAuthConfig>();
 
         //initiate ServiceCollection w/logging
         var services = new ServiceCollection()

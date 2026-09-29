@@ -36,14 +36,15 @@ These sinks are registered in the feature pods and forward domain events to the 
 | --- | --- |
 | `HausHubSinkConsoleService` | Logs every `HubEvent` via the .NET logger |
 | `HausHubSinkMetricsService` | Records OpenTelemetry metrics per `HubEvent` type |
-| `CommsStreamSinkService` | Writes/reads `CommsEvent` entries to/from the Redis Stream configured by `CommsAgentConfig.StreamKey` |
+| `CommsStreamSinkService` | Writes/reads `CommsEvent` entries to/from the Redis Stream configured by `CommsConfig.StreamKey`. Lives in [CasCap.Comms](../CasCap.Comms/README.md) |
 | `MediaStreamSinkService` | Writes/reads `MediaEvent` entries to/from the Redis Stream configured by `MediaConfig.StreamKey` |
 
 ### Background Services
 
 | Service | Description |
 | --- | --- |
-| `CommunicationsBgService` | Gateway agent — consumes the comms Redis Stream and incoming Signal messages, routes both through CommsAgent, and relays responses to the Signalizr chat group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorGroupName` group |
+| `CommunicationsBgService` | Gateway service from [CasCap.Comms](../CasCap.Comms/README.md) — consumes the comms Redis Stream and incoming Signal messages, routes both through the CommsAgent via `AgentCommsResponder` from [CasCap.Comms.AI](../CasCap.Comms.AI/README.md), and relays responses to the Signalizr chat group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorGroupName` group |
+| `EdgeHardwareAgentRunEnricher` | `IAgentRunEnricher` that records edge GPU energy use for each CommsAgent run and adds it, with Fronius solar context, to the reply footer and the monitor-group timeline |
 | `MediaBgService` | Consumes the media Redis Stream (`MediaConfig.StreamKey`), routes media to the domain agent configured in `MediaConfig.SourceAgentMap` (e.g. DoorBird → SecurityAgent), and posts analysis findings back to the comms stream. Runs in the Comms pod alongside `CommunicationsBgService` |
 | `HausHubSinksBgService` | Initialises the hub-side `IEventSink<HubEvent>` implementations |
 | `FroniusSymoSignalRClientService` | Connects to the hub as a SignalR client |
@@ -68,7 +69,7 @@ stays in the server application's entry point.
 | [AppliancesMcpPrompts](Models/AppliancesMcpPrompts.cs) | Appliance status, programs and efficiency |
 | [BusSystemMcpPrompts](Models/BusSystemMcpPrompts.cs) | Home status, floors, lighting and heating |
 | [FrontDoorMcpPrompts](Models/FrontDoorMcpPrompts.cs) | Intercom images, events and access guidance |
-| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, trends and hot water |
+| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, hot water, health and circuit comparison |
 | [InverterMcpPrompts](Models/InverterMcpPrompts.cs) | Solar production, power flow and battery status |
 
 Prompts supply reusable conversation guidance, while tools perform the requested operations.
@@ -87,21 +88,19 @@ tool and prompt names describe their capabilities independently of CLR type name
 | `MetricsBatchSize` | `int` | `10` | Number of events to accumulate before flushing to the OpenTelemetry counter |
 | `MetricsFlushIntervalMs` | `int` | `60000` | Periodic flush interval in milliseconds for the metrics sink |
 
-### `CommsAgentConfig` (`CasCap:AIConfig:Agents:CommsAgent:Settings`)
+### `CommsConfig` (`CasCap:CommsConfig`)
+
+Defined in [CasCap.Comms](../CasCap.Comms/README.md), which documents every setting. The
+settings SmartHaus deployments usually change are:
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `GroupName` | `string` | `"My Test Group Name"` | Exact Signal group display name for the user-facing chat: messages, reactions, typing and polls |
 | `MonitorGroupName` | `string?` | `null` | Exact Signal group display name for operator diagnostics; its group must contain only the operator. Unset disables diagnostics |
+| `MonitorSources` | `HashSet<string>` | empty | `CommsEvent.Source` values delivered directly to `MonitorGroupName` instead of becoming CommsAgent prompts |
+| `StreamEventTurnsEnabled` | `bool` | `true` | Whether chat-bound stream events become CommsAgent prompts; `false` sends them directly |
 | `EchoTranscriptToDebugChat` | `bool` | `false` | Whether a successful voice transcript is echoed to `MonitorGroupName` |
-| `StreamKey` | `string` | `"comms:stream:events"` | Redis Stream key for cross-instance communication of key events |
-| `ConsumerGroup` | `string` | `"comms:agents"` | Redis consumer group name |
-| `ConsumerName` | `string` | `"comms-0"` | Consumer name within the group |
-| `ConsumerGroupStartId` | `string` | `"0"` | Starting ID when creating the consumer group (`"0"` = from beginning, `"$"` = new only) |
-| `StreamReadPosition` | `string` | `">"` | Read position passed to `XREADGROUP` |
-| `StreamReadCount` | `int` | `10` | Maximum entries per `XREADGROUP` call |
-| `PollingIntervalMs` | `int` | `5000` | Retry interval for the comms stream and Signalizr subscription |
-| `HealthCheckProbeDelayMs` | `int` | `2000` | Delay in milliseconds between attempts to reach the Signalizr gateway at startup |
+| `DelegationMessagesEnabled` | `bool` | `true` | Whether a separate status message is sent when CommsAgent delegates to a sub-agent |
 
 Both group settings must match names returned by the gateway's `GET /api/v1/groups`
 (`GetGroupsAsync`) exactly, including spaces and case.
@@ -175,11 +174,11 @@ endpoints are nullable and are read only when that provider is selected.
 
 ### CommsAgent — the gateway agent
 
-`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It acts as a gateway between the smart home and the user:
+`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It comes from the shared [CasCap.Comms](../CasCap.Comms/README.md) project, and SmartHaus answers through `AgentCommsResponder` from [CasCap.Comms.AI](../CasCap.Comms.AI/README.md). It acts as a gateway between the smart home and the user:
 
-1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsAgentConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
+1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
 2. **Incoming messages** — Subscribes to the configured Signalizr group over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.
-3. **Agent routing** — Routes both stream events and incoming user messages through the `CommsAgent` (`AIAgent` resolved from `AIConfig.Agents[AgentKeys.CommsAgent]`), which decides how to respond.
+3. **Agent routing** — Routes both stream events and incoming user messages through the `CommsAgent` (`AIAgent` resolved from `AIConfig.Agents[AgentKeys.CommsAgent]`), which decides how to respond. Events whose source is in `CommsConfig.MonitorSources` skip the agent and go straight to the monitor group.
 4. **Outbound** — Sends the agent's response, progress reactions, typing indicators and polls to the configured Signalizr group. SmartHaus has no direct Signal access: the gateway owns the account, its groups and its profile name.
 
 Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directly**. They publish their findings to the comms stream, and CommsAgent relays, aggregates, or suppresses notifications as appropriate.
@@ -195,7 +194,7 @@ Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directl
 
 This enables users to interact with the smart home AI assistant directly from the Signal mobile app, eliminating the need for a custom mobile application.
 
-Each agent's orchestration settings live in a `Settings` sub-section under the corresponding `CasCap:AIConfig:Agents:{key}` entry in `appsettings.json`, bound to a strongly-typed record (e.g. `CommsAgentConfig`, `SecurityAgentConfig`, `HeatingAgentConfig`). The dictionary key doubles as the agent identifier — `AgentKeys` provides compile-time constants for all well-known agent names.
+Each domain agent's orchestration settings live in a `Settings` sub-section under the corresponding `CasCap:AIConfig:Agents:{key}` entry in `appsettings.json`, bound to a strongly-typed record (e.g. `SecurityAgentConfig`, `HeatingAgentConfig`). The dictionary key doubles as the agent identifier — `AgentKeys` provides compile-time constants for all well-known agent names. The comms pipeline itself is configured separately in `CasCap:CommsConfig`, because it is shared with other Signalizr applications.
 
 ### Audio attachment flow — speech-to-text transcription
 
@@ -288,7 +287,7 @@ flowchart TD
     end
 
     MEDIA_STREAM[("Redis Stream\nMediaConfig.StreamKey")]
-    COMMS_STREAM[("Redis Stream\nCommsAgentConfig.StreamKey")]
+    COMMS_STREAM[("Redis Stream\nCommsConfig.StreamKey")]
     REDIS_CACHE[("Redis\nimage cache")]
     CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
     SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]

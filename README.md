@@ -121,7 +121,7 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 
 The [MCP source reference](src/CasCap.SmartHaus/README.md#mcp-server-surface) links the
 `*McpPrompts` classes, `HausMcpServiceCollectionExtensions` and dedicated MCP response DTOs.
-The [Signal group configuration](src/CasCap.SmartHaus/README.md#commsagentconfig-cascapaiconfigagentscommsagentsettings)
+The [Signal group configuration](src/CasCap.SmartHaus/README.md#commsconfig-cascapcommsconfig)
 defines `GroupName` and `MonitorGroupName` for messaging.
 
 | Service | Tools | Prompts | Domain |
@@ -137,7 +137,7 @@ defines `GroupName` and `MonitorGroupName` for messaging.
 | [`AquariumMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/AquariumMcpQueryService.cs) | 2 | — | Sicce water pump control |
 | [`SmartPlugMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SmartPlugMcpQueryService.cs) | 3 | — | Shelly smart plug control |
 | [`SmartLightingMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SmartLightingMcpQueryService.cs) | 15 | — | KNX ceiling/wall lights and Wiz smart bulbs |
-| [`MessagingMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
+| [`MessagingMcpQueryService`](src/CasCap.Comms.AI/Services/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
 
 ### Service Architecture
 

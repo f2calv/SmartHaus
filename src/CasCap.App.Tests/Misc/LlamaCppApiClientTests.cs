@@ -1,5 +1,4 @@
-﻿using CasCap.Extensions;
-using Microsoft.Extensions.AI;
+using CasCap.Extensions;
 
 namespace CasCap.Tests.Misc;
 

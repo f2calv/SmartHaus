@@ -185,7 +185,7 @@ try
         });
     }
 
-    builder.Services.AddSingleton<IEventSink<CommsEvent>, CommsStreamSinkService>();
+    builder.Services.AddCommsStreamSink();
 
     builder.Services.AddFeatureFlagService(enabledFeatures);
     SignalRHubConfig? signalRHubConfig = null;
