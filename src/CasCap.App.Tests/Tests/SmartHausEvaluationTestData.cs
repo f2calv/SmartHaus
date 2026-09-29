@@ -15,8 +15,9 @@ public static class SmartHausEvaluationTestData
     /// <summary>The assembly holding the MCP query services, MCP prompts and embedded agent instructions.</summary>
     public static Assembly HausAssembly { get; } = typeof(SystemMcpQueryService).Assembly;
 
-    /// <summary>Every SmartHaus MCP tool type.</summary>
-    public static McpToolCatalog Catalog { get; } = McpToolCatalog.FromAssemblies(HausAssembly);
+    /// <summary>Every SmartHaus MCP tool type, including the shared messaging poll tools from CasCap.Comms.AI.</summary>
+    public static McpToolCatalog Catalog { get; } =
+        McpToolCatalog.FromAssemblies(HausAssembly, typeof(MessagingMcpQueryService).Assembly);
 
     /// <summary>The configured provider keys, or <see cref="DefaultProviderKey"/> when none are configured.</summary>
     /// <param name="config">The evaluation configuration.</param>
