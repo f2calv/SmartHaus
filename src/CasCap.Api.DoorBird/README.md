@@ -2,6 +2,8 @@
 
 A .NET library that integrates with a [DoorBird](https://www.doorbird.com) IP door station via its local LAN API, captures door events (doorbell, motion, RFID), and fans them out to a configurable set of sinks for storage and streaming.
 
+The integration is validated against a DoorBird D2100E and uses only the model-independent surfaces exposed by the DoorBird LAN API.
+
 ## Installation
 
 ```bash

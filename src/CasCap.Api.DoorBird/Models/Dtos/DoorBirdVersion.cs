@@ -30,7 +30,7 @@ public sealed record DoorBirdVersion
     public required string[] Relays { get; init; }
 
     /// <summary>
-    /// The device type identifier (e.g. "DoorBird D2101V").
+    /// The device type identifier (e.g. "DoorBird D2100E").
     /// </summary>
     [JsonPropertyName("DEVICE-TYPE")]
     public required string DeviceType { get; init; }
