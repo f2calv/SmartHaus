@@ -139,7 +139,7 @@ services:
     profiles: [ demo ]
     # 0.100 bundles signal-cli 0.14.5, which fixes the sealed-sender receive NullPointerException
     # that broke all inbound reception on 0.14.1-0.14.4.1.
-    image: bbernhard/signal-cli-rest-api:0.100
+    image: bbernhard/signal-cli-rest-api:0.101
     ports:
       - 8081:8080
     environment:
