@@ -156,7 +156,7 @@ services:
   # Applies Signalizr's SQLite migrations before the gateway starts.
   signalizr-migrate:
     profiles: [ demo ]
-    image: ghcr.io/f2calv/signalizr:0.0.15
+    image: ghcr.io/f2calv/signalizr:0.1.1
     environment:
       CasCap__FeatureConfig__EnabledFeatures: DbMigrator
       CasCap__DatabaseConfig__Provider: Sqlite
@@ -169,7 +169,7 @@ services:
   # Owns the signal-cli receive stream and exposes durable named-group delivery.
   signalizr:
     profiles: [ demo ]
-    image: ghcr.io/f2calv/signalizr:0.0.15
+    image: ghcr.io/f2calv/signalizr:0.1.1
     ports:
       - 8090:8080
       - 5001:5001
