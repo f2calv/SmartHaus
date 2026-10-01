@@ -55,6 +55,9 @@ public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, I
     /// <inheritdoc/>
     public string? AzureEntraPfxPassword { get; init; }
 
+    /// <inheritdoc/>
+    public string? AzureEntraPemPath { get; init; }
+
     private TokenCredential? tokenCredential;
 
     /// <inheritdoc/>
