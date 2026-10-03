@@ -22,8 +22,6 @@ public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStre
             nameof(DoorBirdSinkMediaStreamService),
             @event.DoorBirdEventType,
             @event.bytes?.Length ?? 0);
-        if (@event.bytes is null)
-            return;
 
         var admission = clipQueue.TryEnqueue(@event);
         if (admission is CameraClipAdmission.Enqueued)
@@ -39,6 +37,9 @@ public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStre
                 nameof(DoorBirdSinkMediaStreamService), @event.DoorBirdEventType);
             return;
         }
+
+        if (@event.bytes is null)
+            return;
 
         if (admission is CameraClipAdmission.QueueFull)
         {

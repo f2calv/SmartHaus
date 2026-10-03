@@ -72,7 +72,6 @@ public sealed class CameraClipQueueTests
         {
             DoorBirdEventType = DoorBirdEventType.MotionSensor,
             DateCreatedUtc = new DateTime(2026, 10, 3, 8, 0, 0, DateTimeKind.Utc),
-            bytes = [1, 2, 3],
         };
 
         var result = queue.TryEnqueue(@event);
