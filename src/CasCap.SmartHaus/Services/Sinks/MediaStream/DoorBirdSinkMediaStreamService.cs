@@ -17,7 +17,11 @@ public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStre
     /// <inheritdoc/>
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("{ClassName} {@Dbe}", nameof(DoorBirdSinkMediaStreamService), @event);
+        logger.LogDebug(
+            "{ClassName} processing EventType={EventType}, SnapshotBytes={SnapshotBytes}",
+            nameof(DoorBirdSinkMediaStreamService),
+            @event.DoorBirdEventType,
+            @event.bytes?.Length ?? 0);
         if (@event.bytes is null)
             return;
 
