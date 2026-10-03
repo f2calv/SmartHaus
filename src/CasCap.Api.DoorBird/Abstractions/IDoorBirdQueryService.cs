@@ -26,6 +26,19 @@ public interface IDoorBirdQueryService
     Uri GetVideoStreamUrl();
 
     /// <summary>
+    /// Captures a bounded receive-only microphone sample as G.711 μ-law WAV audio.
+    /// </summary>
+    /// <param name="duration">Requested capture duration.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The captured WAV clip, or <see langword="null"/> when audio is unavailable.</returns>
+    Task<DoorBirdAudioClip?> CaptureAudio(
+        TimeSpan duration,
+        CancellationToken cancellationToken = default);
+
+    // TODO: Add speaker transmit only after single-writer arbitration and app-preemption behavior are measured.
+    // TODO: Add full-duplex calling only with explicit AEC/ANR hooks and a proven session-ownership model.
+
+    /// <summary>
     /// DoorBird device will trigger the front/house door catch/lock relay which will allow access.
     /// </summary>
     /// <param name="doorControllerID">Optional, e.g. abcdef, lkjhgf, etc...</param>

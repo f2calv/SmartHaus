@@ -18,6 +18,13 @@ The library is built around one background service that forms the core pipeline:
 
 A REST API (`DoorBirdController`) exposes real-time photo, MJPEG video stream, relay trigger, and light-on endpoints, as well as event callbacks for push notifications from the device.
 
+`DoorBirdQueryService.CaptureAudio` provides bounded receive-only microphone capture through the
+official `bha-api/audio-receive.cgi` endpoint. DoorBird returns raw 8 kHz mono G.711 μ-law audio;
+the library frames it as `audio/wav` without transcoding so downstream callers such as
+`CasCap.Api.Voice` can validate, normalize, and transcribe it. Capture duration, byte count, and
+timeout are bounded by `DoorBirdConfig`. Speaker transmit and full-duplex calling remain deferred
+until single-writer ownership, app preemption, and acoustic echo/noise cancellation are designed.
+
 Blob upload is handled by `BlobProcessorBgService` in the [CasCap.Api.DoorBird.Sinks](../CasCap.Api.DoorBird.Sinks) project, which reads from the internal `BlobStatics.UploadQueue` channel and uploads each image blob to Azure Blob Storage via `IDoorBirdAzBlobStorageService`.
 
 ### Sinks
@@ -26,6 +33,15 @@ Blob upload is handled by `BlobProcessorBgService` in the [CasCap.Api.DoorBird.S
 | --- | --- |
 | **Console** | Logs every event via the .NET logger (Debug level) |
 | **Azure Blob Storage** | Enqueues JPEG image bytes to `BlobStatics.UploadQueue` for asynchronous upload |
+
+### Receive-only audio
+
+| Setting | Default | Purpose |
+| --- | ---: | --- |
+| `AudioReceiveUri` | `bha-api/audio-receive.cgi` | Relative DoorBird microphone endpoint |
+| `AudioCaptureMaxDurationSeconds` | `30` | Maximum requested capture duration |
+| `AudioCaptureMaxBytes` | `524288` | Maximum returned WAV size |
+| `AudioCaptureTimeoutMs` | `45000` | End-to-end capture timeout |
 
 ## Event Flow
 

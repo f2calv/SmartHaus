@@ -1,16 +1,44 @@
 # CasCap.Api.DoorBird.Tests
 
-Integration tests for the DoorBird door station library ([CasCap.Api.DoorBird](../CasCap.Api.DoorBird)) exercising `DoorBirdClientService` against a real DoorBird device.
+Unit and integration tests for the DoorBird door station library
+([CasCap.Api.DoorBird](../CasCap.Api.DoorBird)), including bounded audio framing and live-device
+LAN API behavior.
 
 ## Purpose
 
-These tests verify that the DoorBird LAN API can be reached and that device commands (session, info, snapshot) return well-formed responses.
+Unit tests validate protocol framing and bounds without credentials or network access. Integration
+tests verify that the DoorBird LAN API can be reached and that device commands return well-formed
+responses.
 
 ### Test classes
 
-| Class | Description |
+| Class | Methods | Cases | Category | Description |
+| --- | ---: | ---: | --- | --- |
+| `DoorBirdAudioCaptureTests` | 3 | 3 | Audio | Offline G.711 μ-law WAV framing, no-content, and byte-limit tests |
+| `DoorBirdClientServiceTests` | 15 | 15 | Integration | Live device info, session, snapshot, relay, and history tests |
+
+## Test Layout
+
+```text
+Tests/
+├── Unit/
+│   └── DoorBirdAudioCaptureTests.cs
+└── Integration/
+    ├── DoorBirdClientServiceTests.cs
+    └── TestBase.cs
+```
+
+## Trait Categories
+
+| Category | Purpose |
 | --- | --- |
-| `DoorBirdClientServiceTests` | Integration tests for device info retrieval, session management, photo snapshot, and event history queries |
+| `Audio` | Credential-free audio framing and capture-policy tests |
+| `Integration` | Tests requiring a configured DoorBird device |
+
+## Skipped Tests
+
+No tests are permanently skipped. Integration tests require the prerequisites below and should be
+selected explicitly only in an environment with a configured device.
 
 ## Prerequisites
 

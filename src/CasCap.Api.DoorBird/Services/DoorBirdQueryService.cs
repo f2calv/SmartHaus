@@ -37,6 +37,54 @@ public sealed class DoorBirdQueryService(
     public Uri GetVideoStreamUrl() => doorBirdClientSvc.GetVideoStreamUrl();
 
     /// <inheritdoc/>
+    public async Task<DoorBirdAudioClip?> CaptureAudio(
+        TimeSpan duration,
+        CancellationToken cancellationToken = default)
+    {
+        if (duration <= TimeSpan.Zero
+            || duration > TimeSpan.FromSeconds(doorBirdConfig.Value.AudioCaptureMaxDurationSeconds))
+        {
+            throw new ArgumentOutOfRangeException(
+                nameof(duration),
+                duration,
+                $"Duration must be between 1 second and {doorBirdConfig.Value.AudioCaptureMaxDurationSeconds} seconds.");
+        }
+
+        using var timeout = new CancellationTokenSource(
+            TimeSpan.FromMilliseconds(doorBirdConfig.Value.AudioCaptureTimeoutMs),
+            timeProvider);
+        using var budget = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeout.Token);
+
+        byte[]? bytes;
+        try
+        {
+            bytes = await doorBirdClientSvc.CaptureAudio(
+                doorBirdConfig.Value.AudioReceiveUri,
+                duration,
+                doorBirdConfig.Value.AudioCaptureMaxBytes,
+                budget.Token);
+        }
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        {
+            logger.LogWarning("{ClassName} microphone capture timed out", nameof(DoorBirdQueryService));
+            return null;
+        }
+
+        if (bytes is null)
+            return null;
+
+        const int waveHeaderLength = 58;
+        const int sampleRate = 8_000;
+        var actualDuration = TimeSpan.FromSeconds((bytes.Length - waveHeaderLength) / (double)sampleRate);
+        return new DoorBirdAudioClip
+        {
+            Bytes = bytes,
+            Duration = actualDuration,
+            CapturedUtc = timeProvider.GetUtcNow().UtcDateTime,
+        };
+    }
+
+    /// <inheritdoc/>
     public async Task<bool> UnlockFrontDoor(string? doorControllerID = null, string? relayName = null)
     {
         doorControllerID ??= doorBirdConfig.Value.DoorControllerID;
