@@ -131,8 +131,18 @@ query parameter (for example, `My Test Group Name` becomes `My%20Test%20Group%20
 
 ### `CameraClipConfig` (`CasCap:CameraClipConfig`)
 
-Public configuration keeps this feature disabled and uses synthetic camera identifiers. Production
-maps real controller identifiers only in private configuration.
+Public configuration keeps this feature disabled with an empty source map. Production maps real
+controller identifiers only in private configuration. A safe example source entry is:
+
+```json
+{
+  "CAMERA_DEVICE_ID": {
+    "DisplayName": "ExampleCamera",
+    "Path": "camera-medium",
+    "CooldownSeconds": 30
+  }
+}
+```
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
