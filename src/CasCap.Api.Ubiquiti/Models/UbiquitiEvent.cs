@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace CasCap.Models;
 
 /// <summary>
@@ -35,7 +37,17 @@ public sealed record UbiquitiEvent
     /// </summary>
     public double? Score { get; init; }
 
+    /// <summary>
+    /// Thumbnail bytes supplied by UniFi Protect, or <see langword="null"/> when thumbnails are disabled.
+    /// The bytes are excluded from serialized event metadata.
+    /// </summary>
+    [JsonIgnore]
+    public byte[]? Thumbnail { get; init; }
+
+    /// <summary>The MIME type of <see cref="Thumbnail"/>, when available.</summary>
+    public string? ThumbnailMimeType { get; init; }
+
     /// <inheritdoc/>
     public override string ToString()
-        => $"{UbiquitiEventType}, camera={CameraName ?? CameraId ?? "unknown"}, @ {DateCreatedUtc:yyyy-MM-dd HH:mm:ss}";
+        => $"{UbiquitiEventType}, camera={CameraName ?? CameraId ?? "unknown"}, @ {DateCreatedUtc:yyyy-MM-dd HH:mm:ss}, thumbnailBytes={Thumbnail?.Length ?? 0}";
 }

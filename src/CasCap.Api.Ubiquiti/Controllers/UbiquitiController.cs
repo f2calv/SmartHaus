@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 namespace CasCap.Controllers;
 
 /// <summary>
@@ -8,8 +10,10 @@ namespace CasCap.Controllers;
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
 [Produces("application/json")]
-public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
+public sealed partial class UbiquitiController(ILogger<UbiquitiController> logger, IUbiquitiQueryService ubiquitiQuerySvc) : ControllerBase
 {
+    private const long MaxWebhookRequestBytes = 5 * 1024 * 1024;
+
     /// <inheritdoc cref="UbiquitiQueryService.GetSnapshot"/>
     [HttpGet]
     public async Task<Ok<UbiquitiSnapshot>> GetSnapshot()
@@ -23,13 +27,33 @@ public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiq
     /// </summary>
     /// <param name="camera_id">Optional camera identifier from the webhook payload.</param>
     /// <param name="camera_name">Optional camera display name from the webhook payload.</param>
+    /// <param name="webhook">Optional UniFi Protect Alarm Manager payload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     [AllowAnonymous]
     [HttpGet("event/motion")]
     [HttpPost("event/motion")]
-    public async Task<Ok<string>> MotionDetected([FromQuery] string? camera_id = null, [FromQuery] string? camera_name = null)
+    [RequestSizeLimit(MaxWebhookRequestBytes)]
+    public async Task<Results<Ok<string>, BadRequest<string>>> MotionDetected(
+        [FromQuery] string? camera_id = null,
+        [FromQuery] string? camera_name = null,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] UbiquitiWebhookRequest? webhook = null,
+        CancellationToken cancellationToken = default)
     {
-        await ubiquitiQuerySvc.SendAlert(UbiquitiEventType.Motion, camera_id, camera_name);
-        return TypedResults.Ok("ok");
+        try
+        {
+            await ubiquitiQuerySvc.SendAlert(
+                UbiquitiEventType.Motion,
+                camera_id,
+                camera_name,
+                webhook: webhook,
+                cancellationToken: cancellationToken);
+            return TypedResults.Ok("ok");
+        }
+        catch (FormatException)
+        {
+            LogInvalidWebhook(logger, nameof(UbiquitiController), HttpContext.Request.ContentLength);
+            return TypedResults.BadRequest("Invalid UniFi Protect webhook payload.");
+        }
     }
 
     /// <summary>
@@ -39,31 +63,30 @@ public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiq
     /// <param name="camera_id">Optional camera identifier from the webhook payload.</param>
     /// <param name="camera_name">Optional camera display name from the webhook payload.</param>
     /// <param name="score">Optional confidence score (0.0–1.0).</param>
+    /// <param name="webhook">Optional UniFi Protect Alarm Manager payload.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     [AllowAnonymous]
     [HttpGet("event/smart")]
     [HttpPost("event/smart")]
+    [RequestSizeLimit(MaxWebhookRequestBytes)]
     public async Task<Results<Ok<string>, BadRequest<string>>> SmartDetect(
         [FromQuery] string type,
         [FromQuery] string? camera_id = null,
         [FromQuery] string? camera_name = null,
-        [FromQuery] double? score = null)
+        [FromQuery] double? score = null,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] UbiquitiWebhookRequest? webhook = null,
+        CancellationToken cancellationToken = default)
     {
-        string? body = null;
-        if (HttpContext.Request.ContentLength > 0)
-        {
-            using var reader = new StreamReader(HttpContext.Request.Body);
-            body = await reader.ReadToEndAsync();
-        }
-
         logger.LogDebug(
-            "{ClassName} smart detect webhook received Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, QueryString={QueryString}, Body={Body}",
+            "{ClassName} smart detect webhook received Type={Type}, CameraId={CameraId}, CameraName={CameraName}, Score={Score}, Method={Method}, ContentType={ContentType}, ContentLength={ContentLength}",
             nameof(UbiquitiController),
             type,
             camera_id,
             camera_name,
             score,
-            HttpContext.Request.QueryString.ToString(),
-            body);
+            HttpContext.Request.Method,
+            HttpContext.Request.ContentType,
+            HttpContext.Request.ContentLength);
 
         var eventType = type?.ToLowerInvariant() switch
         {
@@ -85,8 +108,22 @@ public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiq
             return TypedResults.BadRequest($"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.");
         }
 
-        await ubiquitiQuerySvc.SendAlert(eventType.Value, camera_id, camera_name, score);
-        return TypedResults.Ok("ok");
+        try
+        {
+            await ubiquitiQuerySvc.SendAlert(
+                eventType.Value,
+                camera_id,
+                camera_name,
+                score,
+                webhook,
+                cancellationToken);
+            return TypedResults.Ok("ok");
+        }
+        catch (FormatException)
+        {
+            LogInvalidWebhook(logger, nameof(UbiquitiController), HttpContext.Request.ContentLength);
+            return TypedResults.BadRequest("Invalid UniFi Protect webhook payload.");
+        }
     }
 
     /// <summary>
@@ -104,4 +141,9 @@ public sealed class UbiquitiController(ILogger<UbiquitiController> logger, IUbiq
     }
 
     #endregion
+
+    [LoggerMessage(
+        Level = LogLevel.Warning,
+        Message = "{ClassName} rejected an invalid UniFi Protect webhook payload with ContentLength={ContentLength}")]
+    private static partial void LogInvalidWebhook(ILogger logger, string className, long? contentLength);
 }

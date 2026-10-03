@@ -15,6 +15,14 @@ The library is built around webhook endpoints that form the core pipeline:
 | **Console** | Logs every event via the .NET logger (Debug level) |
 | **Memory** | Tracks event counts and timestamps in-memory per event type; provides snapshot queries |
 | **Metrics** | Publishes event counts as OpenTelemetry gauge metrics |
+| **CommsStream** | Writes metadata-only events directly to the communications stream |
+| **MediaStream** | Caches webhook thumbnails with a bounded TTL and routes them through camera image analysis |
+
+UniFi Protect Alarm Manager POST payloads can include a base64-encoded thumbnail under
+`alarm.thumbnail`. Thumbnail bytes are never logged or serialized into event metadata. When the
+`MediaStream` sink is enabled, SmartHaus caches the decoded image in Redis and publishes only its
+short-lived reference to the media stream. Events without thumbnails continue through
+`CommsStream` directly.
 
 ## Event Flow
 
@@ -98,7 +106,8 @@ flowchart TD
               "SeriesValues": "ubiquiti:series"
             }
           },
-          "CommsStream": { "Enabled": true }
+          "CommsStream": { "Enabled": true },
+          "MediaStream": { "Enabled": true }
         }
       }
     }
