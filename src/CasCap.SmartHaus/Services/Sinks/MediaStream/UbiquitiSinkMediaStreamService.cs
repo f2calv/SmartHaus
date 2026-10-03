@@ -5,7 +5,7 @@ namespace CasCap.Services;
 public sealed class UbiquitiSinkMediaStreamService(
     ILogger<UbiquitiSinkMediaStreamService> logger,
     CameraClipQueue clipQueue,
-    UbiquitiMediaPublisher mediaPublisher) : IEventSink<UbiquitiEvent>
+    CameraThumbnailPublisher mediaPublisher) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "MediaStream";
@@ -34,6 +34,13 @@ public sealed class UbiquitiSinkMediaStreamService(
                 nameof(UbiquitiSinkMediaStreamService));
         }
 
-        await mediaPublisher.PublishThumbnail(@event, cancellationToken);
+        var source = new CameraClipSourceConfig
+        {
+            DisplayName = @event.CameraName ?? @event.CameraId ?? "Camera",
+            Path = "unmapped",
+        };
+        await mediaPublisher.PublishThumbnail(
+            CameraClipRequest.FromUbiquiti(@event, source),
+            cancellationToken);
     }
 }

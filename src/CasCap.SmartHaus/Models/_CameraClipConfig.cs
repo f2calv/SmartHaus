@@ -18,6 +18,10 @@ public sealed record CameraClipConfig : IAppConfig
     public Dictionary<string, CameraClipSourceConfig> Sources { get; init; } =
         new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Optional DoorBird clip source.</summary>
+    [ValidateObjectMembers]
+    public CameraClipSourceConfig? DoorBirdSource { get; init; }
+
     /// <summary>Seconds included before the event timestamp.</summary>
     [Range(0, 60)]
     public int PreRollSeconds { get; init; } = 5;

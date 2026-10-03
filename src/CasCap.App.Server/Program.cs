@@ -87,6 +87,8 @@ try
     if (enabledFeatures.Contains(FeatureNames.DoorBird) || enabledFeatures.Contains(FeatureNames.Comms))
     {
         builder.Services.AddMediaStreamSink();
+        builder.Services.AddCameraClipCapture(
+            runWorker: enabledFeatures.Contains(FeatureNames.DoorBird));
         builder.Services.AddDoorBirdWithExtraSinks(builder.Configuration,
             lite: !enabledFeatures.Contains(FeatureNames.DoorBird),
             tokenCredential: appConfig.TokenCredential,

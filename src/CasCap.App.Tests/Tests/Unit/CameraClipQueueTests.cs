@@ -57,6 +57,55 @@ public sealed class CameraClipQueueTests
     }
 
     [Fact]
+    public void TryEnqueue_ConfiguredDoorBird_QueuesFrontDoorSource()
+    {
+        var config = CreateConfig() with
+        {
+            DoorBirdSource = new CameraClipSourceConfig
+            {
+                DisplayName = "FrontDoor",
+                Path = "doorbird",
+            },
+        };
+        var queue = CreateQueue(config);
+        var @event = new DoorBirdEvent
+        {
+            DoorBirdEventType = DoorBirdEventType.MotionSensor,
+            DateCreatedUtc = new DateTime(2026, 10, 3, 8, 0, 0, DateTimeKind.Utc),
+            bytes = [1, 2, 3],
+        };
+
+        var result = queue.TryEnqueue(@event);
+
+        Assert.Equal(CameraClipAdmission.Enqueued, result);
+        Assert.True(queue.Reader.TryRead(out var request));
+        Assert.Equal("doorbird", request.Source.Path);
+        Assert.Equal("MotionSensor", request.EventType);
+        Assert.Equal("DoorBird", request.MediaSource);
+    }
+
+    [Fact]
+    public void TryEnqueue_DoorRelay_IsNotConfigured()
+    {
+        var config = CreateConfig() with
+        {
+            DoorBirdSource = new CameraClipSourceConfig
+            {
+                DisplayName = "FrontDoor",
+                Path = "doorbird",
+            },
+        };
+        var queue = CreateQueue(config);
+
+        var result = queue.TryEnqueue(new DoorBirdEvent
+        {
+            DoorBirdEventType = DoorBirdEventType.DoorRelay,
+        });
+
+        Assert.Equal(CameraClipAdmission.NotConfigured, result);
+    }
+
+    [Fact]
     public void UbiquitiEvent_SerializedMetadataExcludesRawCameraId()
     {
         var json = CreateEvent(CameraId).ToJson();

@@ -28,25 +28,45 @@ public sealed class CameraClipQueue(
             return CameraClipAdmission.NotConfigured;
         }
 
+        return TryEnqueue(CameraClipRequest.FromUbiquiti(@event, source));
+    }
+
+    internal CameraClipAdmission TryEnqueue(DoorBirdEvent @event)
+    {
+        if (!config.Value.Enabled
+            || config.Value.DoorBirdSource is not { } source
+            || @event.DoorBirdEventType is DoorBirdEventType.DoorRelay)
+        {
+            return CameraClipAdmission.NotConfigured;
+        }
+
+        return TryEnqueue(CameraClipRequest.FromDoorBird(@event, source));
+    }
+
+    private CameraClipAdmission TryEnqueue(CameraClipRequest request)
+    {
         var nowUtc = timeProvider.GetUtcNow().UtcDateTime;
         lock (_admissionLock)
         {
-            if (_lastAcceptedUtc.TryGetValue(source.Path, out var lastAcceptedUtc)
-                && nowUtc - lastAcceptedUtc < TimeSpan.FromSeconds(source.CooldownSeconds))
+            if (_lastAcceptedUtc.TryGetValue(request.Source.Path, out var lastAcceptedUtc)
+                && nowUtc - lastAcceptedUtc < TimeSpan.FromSeconds(request.Source.CooldownSeconds))
             {
                 return CameraClipAdmission.Suppressed;
             }
 
-            if (!_channel.Writer.TryWrite(new CameraClipRequest(@event, source)))
+            if (!_channel.Writer.TryWrite(request))
                 return CameraClipAdmission.QueueFull;
 
-            _lastAcceptedUtc[source.Path] = nowUtc;
+            _lastAcceptedUtc[request.Source.Path] = nowUtc;
             return CameraClipAdmission.Enqueued;
         }
     }
 
-    internal bool IsConfigured(string? cameraId)
+    internal bool IsUbiquitiConfigured(string? cameraId)
         => config.Value.Enabled
             && cameraId is { Length: > 0 }
             && config.Value.Sources.ContainsKey(cameraId);
+
+    internal bool IsDoorBirdConfigured
+        => config.Value.Enabled && config.Value.DoorBirdSource is not null;
 }

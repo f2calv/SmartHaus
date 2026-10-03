@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>
-/// Consumes accepted Ubiquiti events, retrieves bounded MediaMTX time ranges, remuxes them for
+/// Consumes accepted camera events, retrieves bounded MediaMTX time ranges, remuxes them for
 /// Signal compatibility, and publishes the resulting attachment to the communications stream.
 /// </summary>
 /// <param name="logger">Logger.</param>
@@ -13,36 +13,34 @@ namespace CasCap.Services;
 /// <param name="httpClientFactory">Factory for the private playback client.</param>
 /// <param name="mediaStore">Bounded Redis attachment store.</param>
 /// <param name="commsSink">Communications stream sink.</param>
-public sealed class UbiquitiClipBgService(
-    ILogger<UbiquitiClipBgService> logger,
+public sealed class CameraClipBgService(
+    ILogger<CameraClipBgService> logger,
     IOptions<CameraClipConfig> config,
     TimeProvider timeProvider,
     IHostEnvironment env,
     CameraClipQueue clipQueue,
-    UbiquitiMediaPublisher mediaPublisher,
+    CameraThumbnailPublisher mediaPublisher,
     IHttpClientFactory httpClientFactory,
     CommsMediaStore mediaStore,
-    IEventSink<CommsEvent> commsSink) : IBgFeature
+    IEventSink<CommsEvent> commsSink) : BackgroundService
 {
     private readonly HttpClient _playbackClient =
-        httpClientFactory.CreateClient(nameof(UbiquitiClipBgService));
+        httpClientFactory.CreateClient(nameof(CameraClipBgService));
 
     /// <inheritdoc/>
-    public string FeatureName => FeatureNames.Ubiquiti;
-
-    /// <inheritdoc/>
-    public async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         if (!config.Value.Enabled)
         {
-            logger.LogInformation("{ClassName} is disabled", nameof(UbiquitiClipBgService));
+            logger.LogInformation("{ClassName} is disabled", nameof(CameraClipBgService));
             await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, cancellationToken);
             return;
         }
 
         Directory.CreateDirectory(config.Value.WorkingDirectory);
         logger.LogInformation("{ClassName} started with {SourceCount} configured sources",
-            nameof(UbiquitiClipBgService), config.Value.Sources.Count);
+            nameof(CameraClipBgService),
+            config.Value.Sources.Count + (config.Value.DoorBirdSource is null ? 0 : 1));
 
         await foreach (var request in clipQueue.Reader.ReadAllAsync(cancellationToken))
         {
@@ -58,7 +56,7 @@ public sealed class UbiquitiClipBgService(
             {
                 logger.LogError(
                     "{ClassName} failed to produce a clip for {Camera}; ErrorType={ErrorType}",
-                    nameof(UbiquitiClipBgService),
+                    nameof(CameraClipBgService),
                     request.Source.DisplayName,
                     ex.GetType().Name);
                 await PublishFallback(request, cancellationToken);
@@ -70,7 +68,7 @@ public sealed class UbiquitiClipBgService(
         CameraClipRequest request,
         CancellationToken cancellationToken)
     {
-        var postRollEndUtc = request.Event.DateCreatedUtc
+        var postRollEndUtc = request.TimestampUtc
             .AddSeconds(config.Value.PostRollSeconds);
         var delay = postRollEndUtc - timeProvider.GetUtcNow().UtcDateTime;
         if (delay > TimeSpan.Zero)
@@ -104,10 +102,10 @@ public sealed class UbiquitiClipBgService(
 
             await commsSink.WriteEvent(new CommsEvent
             {
-                Source = nameof(UbiquitiClipBgService),
+                Source = nameof(CameraClipBgService),
                 Message = $"Security camera {request.Source.DisplayName} detected "
-                    + $"{request.Event.UbiquitiEventType} at "
-                    + $"{request.Event.DateCreatedUtc:yyyy-MM-dd HH:mm:ss} UTC",
+                    + $"{request.EventType} at "
+                    + $"{request.TimestampUtc:yyyy-MM-dd HH:mm:ss} UTC",
                 Environment = env.GetAcronym(),
                 TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
                 JsonPayload = media.ToJson(),
@@ -115,7 +113,7 @@ public sealed class UbiquitiClipBgService(
 
             logger.LogInformation(
                 "{ClassName} published a {Bytes} byte clip for {Camera}",
-                nameof(UbiquitiClipBgService),
+                nameof(CameraClipBgService),
                 bytes.Length,
                 request.Source.DisplayName);
         }
@@ -132,7 +130,7 @@ public sealed class UbiquitiClipBgService(
         CancellationToken cancellationToken)
     {
         var start = new DateTimeOffset(
-            request.Event.DateCreatedUtc.AddSeconds(-config.Value.PreRollSeconds),
+            request.TimestampUtc.AddSeconds(-config.Value.PreRollSeconds),
             TimeSpan.Zero);
         var duration = config.Value.PreRollSeconds + config.Value.PostRollSeconds;
         var requestUri = "get"
@@ -232,17 +230,17 @@ public sealed class UbiquitiClipBgService(
         CameraClipRequest request,
         CancellationToken cancellationToken)
     {
-        if (request.Event.Thumbnail is not null)
+        if (request.Thumbnail is not null)
         {
-            await mediaPublisher.PublishThumbnail(request.Event, cancellationToken);
+            await mediaPublisher.PublishThumbnail(request, cancellationToken);
             return;
         }
 
         await commsSink.WriteEvent(new CommsEvent
         {
-            Source = nameof(UbiquitiClipBgService),
+            Source = nameof(CameraClipBgService),
             Message = $"Security camera {request.Source.DisplayName} detected "
-                + $"{request.Event.UbiquitiEventType}; video clip unavailable",
+                + $"{request.EventType}; video clip unavailable",
             Environment = env.GetAcronym(),
             TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
         }, cancellationToken);

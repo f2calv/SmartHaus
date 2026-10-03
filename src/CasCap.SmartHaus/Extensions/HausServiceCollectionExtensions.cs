@@ -25,20 +25,31 @@ public static class HausServiceCollectionExtensions
         services.TryAddSingleton<IEventSink<MediaEvent>, MediaStreamSinkService>();
     }
 
-    /// <summary>Registers bounded MediaMTX event-clip capture for the Ubiquiti feature.</summary>
-    public static void AddCameraClipCapture(this IServiceCollection services)
+    /// <summary>Registers bounded MediaMTX event-clip capture for camera features.</summary>
+    /// <param name="services">Service collection.</param>
+    /// <param name="runWorker">Whether this process owns clip queue processing.</param>
+    public static void AddCameraClipCapture(
+        this IServiceCollection services,
+        bool runWorker = true)
     {
-        services.AddCasCapConfiguration<CameraClipConfig>();
-        services.TryAddSingleton<CameraClipQueue>();
-        services.TryAddSingleton<UbiquitiMediaPublisher>();
-        services.AddHttpClient(nameof(UbiquitiClipBgService), (sp, client) =>
+        if (!services.Any(descriptor => descriptor.ServiceType == typeof(CameraClipQueue)))
         {
-            var options = sp.GetRequiredService<IOptions<CameraClipConfig>>().Value;
-            client.BaseAddress = new Uri(options.PlaybackBaseAddress);
-            client.Timeout = Timeout.InfiniteTimeSpan;
-        });
-        services.TryAddEnumerable(
-            ServiceDescriptor.Singleton<IBgFeature, UbiquitiClipBgService>());
+            services.AddCasCapConfiguration<CameraClipConfig>();
+            services.TryAddSingleton<CameraClipQueue>();
+            services.TryAddSingleton<CameraThumbnailPublisher>();
+            services.AddHttpClient(nameof(CameraClipBgService), (sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<CameraClipConfig>>().Value;
+                client.BaseAddress = new Uri(options.PlaybackBaseAddress);
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            });
+        }
+
+        if (runWorker)
+        {
+            services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IHostedService, CameraClipBgService>());
+        }
     }
 
     /// <summary>

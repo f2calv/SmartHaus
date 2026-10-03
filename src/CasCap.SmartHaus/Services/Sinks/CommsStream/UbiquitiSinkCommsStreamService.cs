@@ -25,7 +25,7 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
             @event.Score,
             @event.Thumbnail?.Length ?? 0);
 
-        if (@event.Thumbnail is not null || clipQueue.IsConfigured(@event.SourceCameraId))
+        if (@event.Thumbnail is not null || clipQueue.IsUbiquitiConfigured(@event.SourceCameraId))
             return;
 
         var commsEvent = new CommsEvent

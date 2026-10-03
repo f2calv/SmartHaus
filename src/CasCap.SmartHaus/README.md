@@ -149,6 +149,7 @@ controller identifiers only in private configuration. A safe example source entr
 | `Enabled` | `bool` | `false` | Enables event-to-clip capture |
 | `PlaybackBaseAddress` | `string` | `http://localhost:9996` | Private MediaMTX playback endpoint |
 | `Sources` | `Dictionary<string, CameraClipSourceConfig>` | Empty | Maps private controller camera identifiers to logical names, MediaMTX paths and cooldowns |
+| `DoorBirdSource` | `CameraClipSourceConfig?` | `null` | Optional DoorBird logical name, MediaMTX path and cooldown |
 | `PreRollSeconds` | `int` | `5` | Seconds requested before the webhook timestamp |
 | `PostRollSeconds` | `int` | `10` | Seconds awaited/requested after the webhook timestamp |
 | `MaximumClipBytes` | `int` | `12582912` | Maximum playback and remux size |
@@ -222,13 +223,14 @@ Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directl
 
 This enables users to interact with the smart home AI assistant directly from the Signal mobile app, eliminating the need for a custom mobile application.
 
-### Ubiquiti event-clip flow
+### Camera event-clip flow
 
-For privately mapped cameras, `UbiquitiSinkMediaStreamService` queues one bounded clip request rather
-than immediately publishing the webhook thumbnail. `UbiquitiClipBgService` applies the per-camera
-cooldown, waits for post-roll, requests the configured MediaMTX time range, enforces the byte limit,
-and uses FFmpeg stream copy to retain H.264 video plus the first AAC audio track. The completed MP4
-is cached through `CommsMediaStore` and delivered through the ordinary comms stream.
+For privately mapped Ubiquiti cameras and the optional DoorBird source, the corresponding media sink
+queues one bounded clip request rather than immediately publishing the webhook snapshot.
+`CameraClipBgService` applies the per-camera cooldown, waits for post-roll, requests the configured
+MediaMTX time range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264 video plus
+the first AAC audio track when present. The completed MP4 is cached through `CommsMediaStore` and
+delivered through the ordinary comms stream.
 
 The queue has a single reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
 output or oversized output explicitly falls back to the existing thumbnail path. Temporary source

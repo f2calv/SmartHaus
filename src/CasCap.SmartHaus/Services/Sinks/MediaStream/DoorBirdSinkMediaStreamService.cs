@@ -7,9 +7,8 @@ namespace CasCap.Services;
 /// </summary>
 [SinkType("MediaStream")]
 public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStreamService> logger,
-    IOptions<SecurityAgentConfig> securityAgentConfig,
-    IEventSink<MediaEvent> mediaSink,
-    IRemoteCache remoteCache) : IEventSink<DoorBirdEvent>
+    CameraClipQueue clipQueue,
+    CameraThumbnailPublisher thumbnailPublisher) : IEventSink<DoorBirdEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "MediaStream";
@@ -19,29 +18,37 @@ public sealed class DoorBirdSinkMediaStreamService(ILogger<DoorBirdSinkMediaStre
     public async Task WriteEvent(DoorBirdEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug("{ClassName} {@Dbe}", nameof(DoorBirdSinkMediaStreamService), @event);
-        if (@event.bytes is null) return;
+        if (@event.bytes is null)
+            return;
 
-        // Cache image bytes in Redis for downstream media analysis.
-        var imageRedisKey = $"{securityAgentConfig.Value.ImageCacheKeyPrefix}:{@event.EventId}";
-        await remoteCache.Db.StringSetAsync(imageRedisKey, @event.bytes,
-            TimeSpan.FromMilliseconds(securityAgentConfig.Value.ImageCacheTtlMs));
-
-        var mediaEvent = new MediaEvent
+        var admission = clipQueue.TryEnqueue(@event);
+        if (admission is CameraClipAdmission.Enqueued)
         {
-            Source = "DoorBird",
-            EventType = @event.DoorBirdEventType.ToString(),
-            Media = new MediaReference
-            {
-                MediaRedisKey = imageRedisKey,
-                MimeType = "image/jpeg",
-            },
-            MediaType = MediaType.Image,
-            TimestampUtc = @event.DateCreatedUtc,
-            Metadata = (@event with { bytes = null }).ToJson(),
-        };
+            logger.LogInformation("{ClassName} queued {EventType} clip capture",
+                nameof(DoorBirdSinkMediaStreamService), @event.DoorBirdEventType);
+            return;
+        }
 
-        logger.LogInformation("{ClassName} event detected {DoorBirdEvent}, writing to media stream",
-            nameof(DoorBirdSinkMediaStreamService), @event);
-        await mediaSink.WriteEvent(mediaEvent, cancellationToken);
+        if (admission is CameraClipAdmission.Suppressed)
+        {
+            logger.LogDebug("{ClassName} suppressed a repeated {EventType} clip event",
+                nameof(DoorBirdSinkMediaStreamService), @event.DoorBirdEventType);
+            return;
+        }
+
+        if (admission is CameraClipAdmission.QueueFull)
+        {
+            logger.LogWarning("{ClassName} clip queue is full; publishing thumbnail fallback",
+                nameof(DoorBirdSinkMediaStreamService));
+        }
+
+        var source = new CameraClipSourceConfig
+        {
+            DisplayName = "FrontDoor",
+            Path = "unmapped",
+        };
+        await thumbnailPublisher.PublishThumbnail(
+            CameraClipRequest.FromDoorBird(@event, source),
+            cancellationToken);
     }
 }
