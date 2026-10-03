@@ -13,8 +13,6 @@ namespace CasCap.Services;
 /// </remarks>
 public sealed class DoorBirdClientService : HttpClientBase
 {
-    internal const string AudioHttpClientName = $"{nameof(DoorBirdClientService)}.Audio";
-
     private const int G711MuLawSampleRate = 8_000;
     private const int WaveHeaderLength = 58;
     private const ushort WaveFormatMuLaw = 7;
@@ -29,7 +27,7 @@ public sealed class DoorBirdClientService : HttpClientBase
     {
         _logger = logger;
         Client = httpClientFactory.CreateClient(nameof(DoorBirdConnectionHealthCheck));
-        _audioClient = httpClientFactory.CreateClient(AudioHttpClientName);
+        _audioClient = httpClientFactory.CreateClient(DoorBirdHttpClientNames.Audio);
     }
 
     #region Session

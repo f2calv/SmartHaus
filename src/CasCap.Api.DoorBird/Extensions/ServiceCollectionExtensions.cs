@@ -37,7 +37,7 @@ public static class ServiceCollectionExtensions
         .AddStandardResilience(nameof(DoorBirdConnectionHealthCheck))
         ;
 
-        services.AddHttpClient(DoorBirdClientService.AudioHttpClientName, (sp, client) =>
+        services.AddHttpClient(DoorBirdHttpClientNames.Audio, (sp, client) =>
         {
             var opts = sp.GetRequiredService<IOptions<DoorBirdConfig>>().Value;
             client.BaseAddress = new Uri(opts.BaseAddress);

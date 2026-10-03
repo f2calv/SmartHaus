@@ -1,7 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using System.Buffers.Binary;
 using System.Net;
-using System.Text;
 
 namespace CasCap.Tests.Unit;
 

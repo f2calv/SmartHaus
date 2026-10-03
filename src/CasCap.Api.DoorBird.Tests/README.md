@@ -15,7 +15,7 @@ responses.
 | Class | Methods | Cases | Category | Description |
 | --- | ---: | ---: | --- | --- |
 | `DoorBirdAudioCaptureTests` | 3 | 3 | Audio | Offline G.711 μ-law WAV framing, no-content, and byte-limit tests |
-| `DoorBirdClientServiceTests` | 15 | 15 | Integration | Live device info, session, snapshot, relay, and history tests |
+| `DoorBirdClientServiceTests` | 17 | 17 | Integration | Live device info, session, MJPEG video, microphone, relay, and history tests |
 
 ## Test Layout
 

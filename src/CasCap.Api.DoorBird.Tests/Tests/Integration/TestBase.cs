@@ -5,6 +5,7 @@ public abstract class TestBase : IAsyncDisposable
     protected ITestOutputHelper _output;
     protected DoorBirdClientService svc;
     protected DoorBirdConfig _config;
+    protected HttpClient _videoClient;
 
     private readonly ServiceProvider _serviceProvider;
 
@@ -40,6 +41,12 @@ public abstract class TestBase : IAsyncDisposable
         .SetHandlerLifetime(Timeout.InfiniteTimeSpan)
         //.AddPolicyHandler((provider, _) => GetStandardRetryPolicy(provider))
         ;
+        services.AddHttpClient(DoorBirdHttpClientNames.Audio, (s, client) =>
+        {
+            client.BaseAddress = new Uri(_config.BaseAddress);
+            client.Timeout = Timeout.InfiniteTimeSpan;
+            client.SetBasicAuth(_config.Username, _config.Password);
+        });
         services.AddSingleton<DoorBirdClientService>();
 
         IHostEnvironment env = new HostingEnvironment { EnvironmentName = Environments.Development };
@@ -48,11 +55,15 @@ public abstract class TestBase : IAsyncDisposable
         //assign services to be tested
         _serviceProvider = services.BuildServiceProvider();
         svc = _serviceProvider.GetRequiredService<DoorBirdClientService>();
+        _videoClient = _serviceProvider
+            .GetRequiredService<IHttpClientFactory>()
+            .CreateClient(nameof(DoorBirdConnectionHealthCheck));
     }
 
     /// <inheritdoc/>
     public async ValueTask DisposeAsync()
     {
+        _videoClient.Dispose();
         await _serviceProvider.DisposeAsync();
         GC.SuppressFinalize(this);
     }
