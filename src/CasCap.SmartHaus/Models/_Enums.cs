@@ -12,3 +12,11 @@ public enum MediaType
     /// <summary>Document (PDF, etc.).</summary>
     Document,
 }
+
+internal enum CameraClipAdmission
+{
+    NotConfigured,
+    Enqueued,
+    Suppressed,
+    QueueFull,
+}

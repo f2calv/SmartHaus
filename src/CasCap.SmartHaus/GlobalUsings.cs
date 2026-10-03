@@ -26,6 +26,7 @@ global using System.ComponentModel;
 global using System.ComponentModel.DataAnnotations;
 global using System.Diagnostics;
 global using System.Diagnostics.Metrics;
+global using System.Globalization;
 global using System.Net;
 global using System.Reflection;
 global using System.Runtime.CompilerServices;

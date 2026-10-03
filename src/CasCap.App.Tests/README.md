@@ -27,6 +27,7 @@ synthetic house and the assertions.
 | `McpPromptToolReferenceTests` | 1 | 1 | McpPrompts | Every shipped MCP prompt names only tools that exist |
 | `KnxContactSummaryTests` | 4 | 13 | Knx | Door and window contact summaries |
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Door lock summaries |
+| `CameraClipQueueTests` | 5 | 5 | CameraClips | Private-ID exclusion, source mapping, cooldown and bounded queue admission |
 
 Communications orchestration tests live in [CasCap.Comms.Tests](../CasCap.Comms.Tests/README.md), next to the
 shared projects they cover. Voice provider adapters and voice processing policy tests live in the
@@ -42,6 +43,7 @@ standalone `CasCap.Api.Voice.Tests` project, and the evaluation framework's own 
 | `ToolSurface` | Agent tool surface measurements |
 | `McpPrompts` | MCP prompt contract checks |
 | `Knx` | KNX summaries |
+| `CameraClips` | Bounded camera event-to-clip admission and privacy policy |
 
 ### Skipped tests
 

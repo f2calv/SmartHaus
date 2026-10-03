@@ -29,22 +29,23 @@ public sealed class UbiquitiQueryService(
         var (thumbnail, thumbnailMimeType) = DecodeThumbnail(webhook?.Alarm?.Thumbnail);
         var timestampUtc = GetTimestampUtc(webhook?.Timestamp);
         var webhookCameraIds = webhook?.Alarm?.Triggers
-            .Select(trigger => MaskCameraId(trigger.Device))
+            .Select(trigger => trigger.Device)
             .Where(id => id is not null)
             .Distinct(StringComparer.Ordinal)
             .ToArray() ?? [];
 
         if (cameraId is not null || webhookCameraIds.Length == 0)
         {
-            await DispatchAsync(MaskCameraId(cameraId), cancellationToken).ConfigureAwait(false);
+            await DispatchAsync(cameraId, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         foreach (var webhookCameraId in webhookCameraIds)
             await DispatchAsync(webhookCameraId, cancellationToken).ConfigureAwait(false);
 
-        async Task DispatchAsync(string? eventCameraId, CancellationToken token)
+        async Task DispatchAsync(string? sourceCameraId, CancellationToken token)
         {
+            var eventCameraId = MaskCameraId(sourceCameraId);
             logger.LogInformation("{ClassName} sending alert for event type {EventType} from camera {CameraName}",
                 nameof(UbiquitiQueryService), type, cameraName ?? eventCameraId ?? "unknown");
 
@@ -53,6 +54,7 @@ public sealed class UbiquitiQueryService(
                 UbiquitiEventType = type,
                 DateCreatedUtc = timestampUtc,
                 CameraId = eventCameraId,
+                SourceCameraId = sourceCameraId,
                 CameraName = cameraName,
                 Score = score,
                 Thumbnail = thumbnail,

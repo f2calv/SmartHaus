@@ -141,6 +141,7 @@ try
     if (enabledFeatures.Contains(FeatureNames.Ubiquiti))
     {
         builder.Services.AddMediaStreamSink();
+        builder.Services.AddCameraClipCapture();
         builder.Services.AddUbiquitiWithExtraSinks(builder.Configuration,
             lite: !enabledFeatures.Contains(FeatureNames.Ubiquiti),
             additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);

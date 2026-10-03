@@ -25,6 +25,22 @@ public static class HausServiceCollectionExtensions
         services.TryAddSingleton<IEventSink<MediaEvent>, MediaStreamSinkService>();
     }
 
+    /// <summary>Registers bounded MediaMTX event-clip capture for the Ubiquiti feature.</summary>
+    public static void AddCameraClipCapture(this IServiceCollection services)
+    {
+        services.AddCasCapConfiguration<CameraClipConfig>();
+        services.TryAddSingleton<CameraClipQueue>();
+        services.TryAddSingleton<UbiquitiMediaPublisher>();
+        services.AddHttpClient(nameof(UbiquitiClipBgService), (sp, client) =>
+        {
+            var options = sp.GetRequiredService<IOptions<CameraClipConfig>>().Value;
+            client.BaseAddress = new Uri(options.PlaybackBaseAddress);
+            client.Timeout = Timeout.InfiniteTimeSpan;
+        });
+        services.TryAddEnumerable(
+            ServiceDescriptor.Singleton<IBgFeature, UbiquitiClipBgService>());
+    }
+
     /// <summary>
     /// Registers the shared Signalizr communications pipeline with the SmartHaus comms agent, the
     /// media stream consumer, and the <see cref="CommunicationsBgService"/> and <see cref="MediaBgService"/>

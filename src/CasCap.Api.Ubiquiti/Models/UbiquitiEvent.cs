@@ -28,6 +28,13 @@ public sealed record UbiquitiEvent
     public string? CameraId { get; init; }
 
     /// <summary>
+    /// Raw controller camera identifier used only for private in-process routing.
+    /// The value is excluded from serialized event metadata.
+    /// </summary>
+    [JsonIgnore]
+    public string? SourceCameraId { get; init; }
+
+    /// <summary>
     /// The display name of the camera that produced the event, or <see langword="null"/> if unknown.
     /// </summary>
     public string? CameraName { get; init; }
