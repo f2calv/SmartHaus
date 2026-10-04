@@ -28,12 +28,12 @@ public sealed class CameraClipBgService(
         httpClientFactory.CreateClient(nameof(CameraClipBgService));
 
     /// <inheritdoc/>
-    protected override async Task ExecuteAsync(CancellationToken cancellationToken)
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         if (!config.Value.Enabled)
         {
             logger.LogInformation("{ClassName} is disabled", nameof(CameraClipBgService));
-            await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, cancellationToken);
+            await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, stoppingToken);
             return;
         }
 
@@ -42,24 +42,25 @@ public sealed class CameraClipBgService(
             nameof(CameraClipBgService),
             config.Value.Sources.Count + (config.Value.DoorBirdSource is null ? 0 : 1));
 
-        await foreach (var request in clipQueue.Reader.ReadAllAsync(cancellationToken))
+        await foreach (var request in clipQueue.Reader.ReadAllAsync(stoppingToken))
         {
             try
             {
-                await ProcessClip(request, cancellationToken);
+                await ProcessClip(request, stoppingToken);
             }
-            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
             {
                 throw;
             }
             catch (Exception ex)
             {
                 logger.LogError(
+                    ex,
                     "{ClassName} failed to produce a clip for {Camera}; ErrorType={ErrorType}",
                     nameof(CameraClipBgService),
                     request.Source.DisplayName,
                     ex.GetType().Name);
-                await PublishFallback(request, cancellationToken);
+                await PublishFallback(request, stoppingToken);
             }
         }
     }

@@ -64,9 +64,9 @@ public sealed class DoorBirdQueryService(
                 doorBirdConfig.Value.AudioCaptureMaxBytes,
                 budget.Token);
         }
-        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException ex) when (!cancellationToken.IsCancellationRequested)
         {
-            logger.LogWarning("{ClassName} microphone capture timed out", nameof(DoorBirdQueryService));
+            logger.LogWarning(ex, "{ClassName} microphone capture timed out", nameof(DoorBirdQueryService));
             return null;
         }
 

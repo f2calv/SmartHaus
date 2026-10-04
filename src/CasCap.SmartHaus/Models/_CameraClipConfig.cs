@@ -44,7 +44,10 @@ public sealed record CameraClipConfig : IAppConfig
 
     /// <summary>Writable directory used for bounded source and remux files.</summary>
     [Required, MinLength(1)]
-    public string WorkingDirectory { get; init; } = "/tmp/camera-clips";
+    public string WorkingDirectory { get; init; } = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        "smarthaus",
+        "camera-clips");
 
     /// <summary>FFmpeg executable path.</summary>
     [Required, MinLength(1)]

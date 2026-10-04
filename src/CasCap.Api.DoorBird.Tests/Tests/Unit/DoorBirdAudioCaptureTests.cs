@@ -68,7 +68,7 @@ public sealed class DoorBirdAudioCaptureTests
         var handler = new StubHttpMessageHandler(responseFactory);
         var httpClient = new HttpClient(handler)
         {
-            BaseAddress = new Uri("http://doorbird.example.invalid"),
+            BaseAddress = new UriBuilder(Uri.UriSchemeHttps, "doorbird.example.invalid").Uri,
         };
         var service = new DoorBirdClientService(
             NullLogger<DoorBirdClientService>.Instance,

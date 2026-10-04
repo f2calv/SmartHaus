@@ -155,7 +155,7 @@ controller identifiers only in private configuration. A safe example source entr
 | `MaximumClipBytes` | `int` | `12582912` | Maximum playback and remux size |
 | `QueueCapacity` | `int` | `32` | Maximum accepted pending events |
 | `ProcessingTimeoutMs` | `int` | `30000` | Download and FFmpeg remux budget |
-| `WorkingDirectory` | `string` | `/tmp/camera-clips` | Writable bounded temporary directory |
+| `WorkingDirectory` | `string` | Local application data under `smarthaus/camera-clips` | Writable bounded temporary directory |
 | `FfmpegPath` | `string` | `ffmpeg` | FFmpeg executable used for stream-copy remux |
 
 ### `SecurityAgentConfig` (`CasCap:AIConfig:Agents:SecurityAgent:Settings`)

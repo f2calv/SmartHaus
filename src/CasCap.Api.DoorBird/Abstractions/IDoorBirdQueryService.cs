@@ -35,9 +35,6 @@ public interface IDoorBirdQueryService
         TimeSpan duration,
         CancellationToken cancellationToken = default);
 
-    // TODO: Add speaker transmit only after single-writer arbitration and app-preemption behavior are measured.
-    // TODO: Add full-duplex calling only with explicit AEC/ANR hooks and a proven session-ownership model.
-
     /// <summary>
     /// DoorBird device will trigger the front/house door catch/lock relay which will allow access.
     /// </summary>

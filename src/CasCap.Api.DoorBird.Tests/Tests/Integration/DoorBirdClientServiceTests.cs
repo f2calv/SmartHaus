@@ -207,10 +207,13 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
             for (var index = 0; index < read; index++)
             {
                 var current = buffer[index];
-                if (!jpegStarted && previous == 0xFF && current == 0xD8)
-                    jpegStarted = true;
-                else if (jpegStarted && previous == 0xFF && current == 0xD9)
-                    return true;
+                if (previous == 0xFF)
+                {
+                    if (current == 0xD8)
+                        jpegStarted = true;
+                    else if (current == 0xD9 && jpegStarted)
+                        return true;
+                }
                 previous = current;
             }
         }
