@@ -1,6 +1,8 @@
 # CasCap.Api.DoorBird
 
-A .NET library that integrates with a [DoorBird](https://www.doorbird.com) IP door station via its local LAN API, captures door events (doorbell, motion, RFID), and fans them out to a configurable set of sinks for storage and streaming.
+A .NET library that integrates with a [DoorBird](https://www.doorbird.com) IP door station via its local LAN API, captures door events (doorbell, motion, RFID), and dispatches them to configurable sinks.
+
+The integration is validated against a DoorBird D2100E and uses only the model-independent surfaces exposed by the DoorBird LAN API.
 
 ## Installation
 
@@ -16,14 +18,31 @@ The library is built around one background service that forms the core pipeline:
 
 A REST API (`DoorBirdController`) exposes real-time photo, MJPEG video stream, relay trigger, and light-on endpoints, as well as event callbacks for push notifications from the device.
 
-Blob upload is handled by `BlobProcessorBgService` in the [CasCap.Api.DoorBird.Sinks](../CasCap.Api.DoorBird.Sinks) project, which reads from the internal `BlobStatics.UploadQueue` channel and uploads each image blob to Azure Blob Storage via `IDoorBirdAzBlobStorageService`.
+`DoorBirdQueryService.CaptureAudio` provides bounded receive-only microphone capture through the
+official `bha-api/audio-receive.cgi` endpoint. DoorBird returns raw 8 kHz mono G.711 μ-law audio;
+the library frames it as `audio/wav` without transcoding so downstream callers can validate,
+normalize, and transcribe it. Capture duration, byte count, and timeout are bounded by
+`DoorBirdConfig`.
 
 ### Sinks
 
 | Sink | Description |
 | --- | --- |
 | **Console** | Logs every event via the .NET logger (Debug level) |
-| **Azure Blob Storage** | Enqueues JPEG image bytes to `BlobStatics.UploadQueue` for asynchronous upload |
+| **Memory** | Tracks event counts and timestamps in memory for snapshot queries |
+| **Metrics** | Emits event counts via OpenTelemetry metrics |
+
+Optional Redis, Azure Tables, and Azure Blob Storage implementations are provided by
+[`CasCap.Api.DoorBird.Sinks`](../CasCap.Api.DoorBird.Sinks).
+
+### Receive-only audio
+
+| Setting | Default | Purpose |
+| --- | ---: | --- |
+| `AudioReceiveUri` | `bha-api/audio-receive.cgi` | Relative DoorBird microphone endpoint |
+| `AudioCaptureMaxDurationSeconds` | `30` | Maximum requested capture duration |
+| `AudioCaptureMaxBytes` | `524288` | Maximum returned WAV size |
+| `AudioCaptureTimeoutMs` | `45000` | End-to-end capture timeout |
 
 ## Event Flow
 
@@ -40,15 +59,8 @@ flowchart TD
     end
 
     SINK_CONSOLE["Console Sink\n(logger)"]
-    SINK_AZBLOB["Azure Blob Sink\n(enqueue to UploadQueue)"]
-
-    UPLOAD_QUEUE["BlobStatics.UploadQueue\n(in-process channel)"]
-
-    subgraph BlobProcessor["BlobProcessorBgService (Sinks)"]
-        UPLOAD["Upload JPEG to\nAzure Blob Storage"]
-    end
-
-    AZURE_BLOB["Azure Blob Storage"]
+    SINK_MEMORY["Memory Sink\n(event counts and timestamps)"]
+    SINK_METRICS["Metrics Sink\n(event counts)"]
 
     CLIENT["DoorBirdClientService\n(getSession, getImage, lightOn, triggerRelay, …)"]
 
@@ -56,9 +68,8 @@ flowchart TD
     CLIENT --> POLL
     LOCK --> HEALTH --> POLL --> BUILD --> DISPATCH
     DISPATCH --> SINK_CONSOLE
-    DISPATCH --> SINK_AZBLOB
-    SINK_AZBLOB --> UPLOAD_QUEUE
-    UPLOAD_QUEUE --> UPLOAD --> AZURE_BLOB
+    DISPATCH --> SINK_MEMORY
+    DISPATCH --> SINK_METRICS
 ```
 
 ## Configuration Examples
@@ -74,13 +85,9 @@ flowchart TD
       "Password": "<device-password>",
       "DoorControllerID": "<controller-id>",
       "DoorControllerRelayID": "<relay-id>",
-      "AzureBlobStorageConnectionString": "https://<account>.blob.core.windows.net",
-      "AzureBlobStorageContainerName": "doorbird",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
       "Sinks": {
         "AvailableSinks": {
-          "Console": { "Enabled": true },
-          "AzBlob": { "Enabled": true }
+          "Console": { "Enabled": true }
         }
       }
     }
@@ -105,25 +112,11 @@ flowchart TD
       "PollingIntervalMs": 60000,
       "ConnectionPollingDelayMs": 1000,
       "ConnectionLogEscalationInterval": 10,
-      "AzureBlobStorageConnectionString": "https://<account>.blob.core.windows.net",
-      "AzureBlobStorageContainerName": "doorbird",
-      "HealthCheckAzureBlobStorage": "None",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
-      "HealthCheckAzureTableStorage": "None",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
           "Memory": { "Enabled": true },
-          "Metrics": { "Enabled": true },
-          "AzureTables": { "Enabled": true },
-          "AzBlob": { "Enabled": true },
-          "Redis": {
-            "Enabled": true,
-            "Settings": {
-              "SnapshotValues": "doorbell,motionsensor,rfid"
-            }
-          },
-          "SignalR": { "Enabled": true }
+          "Metrics": { "Enabled": true }
         }
       }
     }

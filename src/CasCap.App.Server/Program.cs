@@ -87,6 +87,8 @@ try
     if (enabledFeatures.Contains(FeatureNames.DoorBird) || enabledFeatures.Contains(FeatureNames.Comms))
     {
         builder.Services.AddMediaStreamSink();
+        builder.Services.AddCameraClipCapture(
+            runWorker: enabledFeatures.Contains(FeatureNames.DoorBird));
         builder.Services.AddDoorBirdWithExtraSinks(builder.Configuration,
             lite: !enabledFeatures.Contains(FeatureNames.DoorBird),
             tokenCredential: appConfig.TokenCredential,
@@ -140,6 +142,8 @@ try
 
     if (enabledFeatures.Contains(FeatureNames.Ubiquiti))
     {
+        builder.Services.AddMediaStreamSink();
+        builder.Services.AddCameraClipCapture();
         builder.Services.AddUbiquitiWithExtraSinks(builder.Configuration,
             lite: !enabledFeatures.Contains(FeatureNames.Ubiquiti),
             additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
@@ -202,14 +206,6 @@ try
 
     #region HealthChecks
     _ = builder.Services.AddHealthChecks();
-    //if (builder.Environment.IsDevelopment())
-    //    builder.Services.AddHealthChecksUI(options =>
-    //    {
-    //        options.AddHealthCheckEndpoint(AppDomain.CurrentDomain.FriendlyName, builder.Environment.IsDevelopment() ? "http://localhost:8080/healthz-ui" : "healthz");
-    //        options.SetEvaluationTimeInSeconds(5);
-    //        options.SetMinimumSecondsBetweenFailureNotifications(10);
-    //    })
-    //    .AddInMemoryStorage();
     #endregion
 
     #region WebAPI & route config

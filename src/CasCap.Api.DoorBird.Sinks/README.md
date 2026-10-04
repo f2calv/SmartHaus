@@ -10,7 +10,10 @@ dotnet add package CasCap.Api.DoorBird.Sinks
 
 ## Purpose
 
-This project provides additional `IEventSink<DoorBirdEvent>` implementations beyond the default in-memory and Console sinks that ship with `CasCap.Api.DoorBird`. The sink assembly is scanned by `AddDoorBirdWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `DoorBirdConfig.Sinks` are registered.
+This project provides additional `IEventSink<DoorBirdEvent>` implementations beyond the Console,
+Memory, and Metrics sinks that ship with `CasCap.Api.DoorBird`. The sink assembly is scanned by
+`AddDoorBirdWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is
+`Enabled = true` in `DoorBirdConfig.Sinks` are registered.
 
 ### Sinks
 

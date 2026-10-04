@@ -129,6 +129,35 @@ query parameter (for example, `My Test Group Name` becomes `My%20Test%20Group%20
 | `StreamReadCount` | `int` | `10` | Maximum entries per `XREADGROUP` call |
 | `PollingIntervalMs` | `int` | `1000` | Polling interval for the media stream consumer |
 
+### `CameraClipConfig` (`CasCap:CameraClipConfig`)
+
+Public configuration keeps this feature disabled with an empty source map. Production maps real
+controller identifiers only in private configuration. A safe example source entry is:
+
+```json
+{
+  "CAMERA_DEVICE_ID": {
+    "DisplayName": "ExampleCamera",
+    "Path": "camera-medium",
+    "CooldownSeconds": 30
+  }
+}
+```
+
+| Setting | Type | Default | Description |
+| --- | --- | --- | --- |
+| `Enabled` | `bool` | `false` | Enables event-to-clip capture |
+| `PlaybackBaseAddress` | `string` | `http://localhost:9996` | Private MediaMTX playback endpoint |
+| `Sources` | `Dictionary<string, CameraClipSourceConfig>` | Empty | Maps private controller camera identifiers to logical names, MediaMTX paths and cooldowns |
+| `DoorBirdSource` | `CameraClipSourceConfig?` | `null` | Optional DoorBird logical name, MediaMTX path and cooldown |
+| `PreRollSeconds` | `int` | `5` | Seconds requested before the webhook timestamp |
+| `PostRollSeconds` | `int` | `10` | Seconds awaited/requested after the webhook timestamp |
+| `MaximumClipBytes` | `int` | `12582912` | Maximum playback and remux size |
+| `QueueCapacity` | `int` | `32` | Maximum accepted pending events |
+| `ProcessingTimeoutMs` | `int` | `30000` | Download and FFmpeg remux budget |
+| `WorkingDirectory` | `string` | Local application data under `smarthaus/camera-clips` | Writable bounded temporary directory |
+| `FfmpegPath` | `string` | `ffmpeg` | FFmpeg executable used for stream-copy remux |
+
 ### `SecurityAgentConfig` (`CasCap:AIConfig:Agents:SecurityAgent:Settings`)
 
 | Setting | Type | Default | Description |
@@ -193,6 +222,20 @@ Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directl
 4. **Findings** — Posts the analysis result as a `CommsEvent` to `comms:stream:events` with a `MediaReference` in `JsonPayload` (pointing to the cached image bytes), where CommunicationsBgService picks it up, fetches the image from Redis, and relays both text and image to the Signal group.
 
 This enables users to interact with the smart home AI assistant directly from the Signal mobile app, eliminating the need for a custom mobile application.
+
+### Camera event-clip flow
+
+For privately mapped Ubiquiti cameras and the optional DoorBird source, the corresponding media sink
+queues one bounded clip request rather than immediately publishing the webhook snapshot.
+`CameraClipBgService` applies the per-camera cooldown, waits for post-roll, requests the configured
+MediaMTX time range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264 video plus
+the first AAC audio track when present. The completed MP4 is cached through `CommsMediaStore` and
+delivered through the ordinary comms stream.
+
+The queue has a single reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
+output or oversized output explicitly falls back to the existing thumbnail path. Temporary source
+and output files are always deleted. Raw controller camera identifiers are in-memory routing values
+only and are excluded from serialized events and public configuration.
 
 Each domain agent's orchestration settings live in a `Settings` sub-section under the corresponding `CasCap:AIConfig:Agents:{key}` entry in `appsettings.json`, bound to a strongly-typed record (e.g. `SecurityAgentConfig`, `HeatingAgentConfig`). The dictionary key doubles as the agent identifier — `AgentKeys` provides compile-time constants for all well-known agent names. The comms pipeline itself is configured separately in `CasCap:CommsConfig`, because it is shared with other Signalizr applications.
 

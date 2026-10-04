@@ -4,6 +4,7 @@ global using CasCap.Common.Abstractions;
 global using CasCap.Common.Diagnostics.HealthChecks.Abstractions;
 global using CasCap.Common.Extensions;
 global using CasCap.Common.Services;
+global using CasCap.Constants;
 global using CasCap.HealthChecks;
 global using CasCap.Models;
 global using CasCap.Models.Dtos;

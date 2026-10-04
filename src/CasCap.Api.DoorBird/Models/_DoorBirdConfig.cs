@@ -36,6 +36,26 @@ public sealed record DoorBirdConfig : IAppConfig, IHealthCheckConfig, IAzBlobSto
     [Required, MinLength(1)]
     public required string Password { get; init; }
 
+    /// <summary>Relative DoorBird LAN API path for the receive-only microphone stream.</summary>
+    /// <remarks>Defaults to <c>bha-api/audio-receive.cgi</c>.</remarks>
+    [Required, MinLength(1)]
+    public string AudioReceiveUri { get; init; } = "bha-api/audio-receive.cgi";
+
+    /// <summary>Maximum duration in seconds accepted by a microphone capture request.</summary>
+    /// <remarks>Defaults to 30 seconds.</remarks>
+    [Range(1, 300)]
+    public int AudioCaptureMaxDurationSeconds { get; init; } = 30;
+
+    /// <summary>Maximum WAV byte count returned by one microphone capture.</summary>
+    /// <remarks>Defaults to 512 KiB, including the WAV header.</remarks>
+    [Range(59, 10 * 1024 * 1024)]
+    public int AudioCaptureMaxBytes { get; init; } = 512 * 1024;
+
+    /// <summary>Total time budget in milliseconds for one microphone capture.</summary>
+    /// <remarks>Defaults to 45 seconds.</remarks>
+    [Range(1_000, 300_000)]
+    public int AudioCaptureTimeoutMs { get; init; } = 45_000;
+
     /// <summary>
     /// The DoorBird door controller identifier.
     /// </summary>

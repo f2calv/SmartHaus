@@ -17,5 +17,13 @@ public interface IUbiquitiQueryService
     /// <param name="cameraId">Optional camera identifier that produced the event.</param>
     /// <param name="cameraName">Optional display name of the camera.</param>
     /// <param name="score">Optional smart detection confidence score (0.0–1.0).</param>
-    Task SendAlert(UbiquitiEventType type, string? cameraId = null, string? cameraName = null, double? score = null);
+    /// <param name="webhook">Optional UniFi Protect payload containing trigger metadata and a thumbnail.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    Task SendAlert(
+        UbiquitiEventType type,
+        string? cameraId = null,
+        string? cameraName = null,
+        double? score = null,
+        UbiquitiWebhookRequest? webhook = null,
+        CancellationToken cancellationToken = default);
 }

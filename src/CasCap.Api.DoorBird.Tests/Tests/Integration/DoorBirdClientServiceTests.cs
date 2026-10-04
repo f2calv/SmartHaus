@@ -47,6 +47,41 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
     }
 
     [Fact]
+    public async Task GetVideoStream_ReturnsMultipartJpegFrame()
+    {
+        using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(10), TimeProvider.System);
+        using var response = await _videoClient.GetAsync(
+            svc.GetVideoStreamUrl(),
+            HttpCompletionOption.ResponseHeadersRead,
+            timeout.Token);
+
+        response.EnsureSuccessStatusCode();
+        Assert.Equal("multipart/x-mixed-replace", response.Content.Headers.ContentType?.MediaType);
+
+        await using var stream = await response.Content.ReadAsStreamAsync(timeout.Token);
+        var containsJpeg = await ContainsJpegFrame(stream, timeout.Token);
+        Assert.True(containsJpeg, "The bounded MJPEG probe did not contain a complete JPEG frame.");
+    }
+
+    [Fact]
+    public async Task CaptureAudio_ReturnsMuLawWave()
+    {
+        var result = await svc.CaptureAudio(
+            _config.AudioReceiveUri,
+            TimeSpan.FromSeconds(1),
+            _config.AudioCaptureMaxBytes,
+            TestContext.Current.CancellationToken);
+
+        Assert.NotNull(result);
+        Assert.True(result.Length > 58);
+        Assert.Equal("RIFF", Encoding.ASCII.GetString(result, 0, 4));
+        Assert.Equal("WAVE", Encoding.ASCII.GetString(result, 8, 4));
+        Assert.Equal(7, BinaryPrimitives.ReadUInt16LittleEndian(result.AsSpan(20, 2)));
+        Assert.Equal(8_000, BinaryPrimitives.ReadInt32LittleEndian(result.AsSpan(24, 4)));
+        _output.WriteLine($"Captured {result.Length - 58} G.711 audio bytes.");
+    }
+
+    [Fact]
     public async Task TriggerRelay_ReturnsTrue()
     {
         var result = await svc.TriggerRelay(_config.DoorControllerID, _config.DoorControllerRelayID);
@@ -150,5 +185,36 @@ public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(out
         var unsubscribed = await svc.UnsubscribeNotification(testUrl, eventType);
         Assert.True(unsubscribed);
         _output.WriteLine("Unsubscribed successfully");
+    }
+
+    private static async Task<bool> ContainsJpegFrame(
+        Stream stream,
+        CancellationToken cancellationToken)
+    {
+        const int maximumProbeBytes = 2 * 1024 * 1024;
+        var buffer = new byte[16 * 1024];
+        var previous = -1;
+        var jpegStarted = false;
+        var total = 0;
+
+        while (total < maximumProbeBytes)
+        {
+            var read = await stream.ReadAsync(buffer, cancellationToken);
+            if (read == 0)
+                return false;
+
+            total += read;
+            for (var index = 0; index < read; index++)
+            {
+                var current = buffer[index];
+                if (previous == 0xFF && current == 0xD8)
+                    jpegStarted = true;
+                if (previous == 0xFF && current == 0xD9)
+                    return jpegStarted;
+                previous = current;
+            }
+        }
+
+        return false;
     }
 }

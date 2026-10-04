@@ -37,6 +37,15 @@ public static class ServiceCollectionExtensions
         .AddStandardResilience(nameof(DoorBirdConnectionHealthCheck))
         ;
 
+        services.AddHttpClient(DoorBirdHttpClientNames.Audio, (sp, client) =>
+        {
+            var opts = sp.GetRequiredService<IOptions<DoorBirdConfig>>().Value;
+            client.BaseAddress = new Uri(opts.BaseAddress);
+            client.Timeout = Timeout.InfiniteTimeSpan;
+            client.SetBasicAuth(opts.Username, opts.Password);
+        })
+        .SetHandlerLifetime(Timeout.InfiniteTimeSpan);
+
         // Auto-register all sinks decorated with [SinkType] whose type is enabled
         services.AddEventSinks<DoorBirdEvent>(config.Sinks, typeof(ServiceCollectionExtensions).Assembly);
 

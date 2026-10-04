@@ -10,7 +10,10 @@ dotnet add package CasCap.Api.Fronius.Sinks
 
 ## Purpose
 
-This project provides additional `IEventSink<FroniusEvent>` implementations beyond the default in-memory and Console sinks that ship with `CasCap.Api.Fronius`. The sink assembly is scanned by `AddFroniusWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `FroniusConfig.Sinks` are registered.
+This project provides additional `IEventSink<FroniusEvent>` implementations beyond the Console,
+Memory, and Metrics sinks that ship with `CasCap.Api.Fronius`. The sink assembly is scanned by
+`AddFroniusWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is
+`Enabled = true` in `FroniusConfig.Sinks` are registered.
 
 ### Sinks
 

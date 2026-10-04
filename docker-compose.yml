@@ -70,7 +70,7 @@ services:
         condition: service_healthy
 
   otelcol:
-    image: otel/opentelemetry-collector:0.161.0
+    image: otel/opentelemetry-collector:0.161.0-386
     ports:
       - 4317:4317
       - 4318:4318
@@ -91,7 +91,7 @@ services:
 
   ollama:
     profiles: [ demo ]
-    image: ollama/ollama:0.34.2
+    image: ollama/ollama:0.34.4
     ports:
       - 11434:11434
     volumes:
@@ -119,7 +119,7 @@ services:
   # Monitor progress: docker compose --profile demo logs ollama-init -f
   ollama-init:
     profiles: [ demo ]
-    image: ollama/ollama:0.34.2
+    image: ollama/ollama:0.34.4
     depends_on:
       ollama:
         condition: service_healthy
@@ -139,7 +139,7 @@ services:
     profiles: [ demo ]
     # 0.100 bundles signal-cli 0.14.5, which fixes the sealed-sender receive NullPointerException
     # that broke all inbound reception on 0.14.1-0.14.4.1.
-    image: bbernhard/signal-cli-rest-api:0.100
+    image: bbernhard/signal-cli-rest-api:0.101
     ports:
       - 8081:8080
     environment:
@@ -156,7 +156,7 @@ services:
   # Applies Signalizr's SQLite migrations before the gateway starts.
   signalizr-migrate:
     profiles: [ demo ]
-    image: ghcr.io/f2calv/signalizr:0.0.15
+    image: ghcr.io/f2calv/signalizr:0.1.2
     environment:
       CasCap__FeatureConfig__EnabledFeatures: DbMigrator
       CasCap__DatabaseConfig__Provider: Sqlite
@@ -169,7 +169,7 @@ services:
   # Owns the signal-cli receive stream and exposes durable named-group delivery.
   signalizr:
     profiles: [ demo ]
-    image: ghcr.io/f2calv/signalizr:0.0.15
+    image: ghcr.io/f2calv/signalizr:0.1.2
     ports:
       - 8090:8080
       - 5001:5001

@@ -1,3 +1,5 @@
+using System.Buffers.Binary;
+using System.Net;
 using CasCap.Common.Services;
 
 namespace CasCap.Services;
@@ -7,10 +9,16 @@ namespace CasCap.Services;
 /// </summary>
 /// <remarks>
 /// See <see href="https://www.doorbird.com/downloads/api_lan.pdf?rev=0.36"/> for the full API specification.
-/// Our device model is a DoorBird D2101V, but this client should work with any DoorBird device that supports the LAN API.
+/// The integration is validated against a DoorBird D2100E, but this client should work with any DoorBird device that supports the LAN API.
 /// </remarks>
 public sealed class DoorBirdClientService : HttpClientBase
 {
+    private const int G711MuLawSampleRate = 8_000;
+    private const int WaveHeaderLength = 58;
+    private const ushort WaveFormatMuLaw = 7;
+
+    private readonly HttpClient _audioClient;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="DoorBirdClientService"/> class.
     /// </summary>
@@ -19,6 +27,7 @@ public sealed class DoorBirdClientService : HttpClientBase
     {
         _logger = logger;
         Client = httpClientFactory.CreateClient(nameof(DoorBirdConnectionHealthCheck));
+        _audioClient = httpClientFactory.CreateClient(DoorBirdHttpClientNames.Audio);
     }
 
     #region Session
@@ -89,6 +98,88 @@ public sealed class DoorBirdClientService : HttpClientBase
     public Uri GetVideoStreamUrl()
     {
         return new Uri(Client.BaseAddress!, "bha-api/video.cgi");
+    }
+
+    /// <summary>
+    /// Captures a bounded amount of raw G.711 μ-law microphone audio and frames it as a WAV file.
+    /// </summary>
+    /// <param name="requestUri">Relative DoorBird audio receive endpoint.</param>
+    /// <param name="duration">Requested capture duration.</param>
+    /// <param name="maximumBytes">Maximum returned WAV byte count.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Complete WAV bytes, or <see langword="null"/> when the device returns no audio.</returns>
+    public async Task<byte[]?> CaptureAudio(
+        string requestUri,
+        TimeSpan duration,
+        int maximumBytes,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(requestUri);
+        if (duration <= TimeSpan.Zero)
+            throw new ArgumentOutOfRangeException(nameof(duration), duration, "Duration must be positive.");
+
+        var targetAudioBytes = checked((int)Math.Ceiling(duration.TotalSeconds * G711MuLawSampleRate));
+        if (targetAudioBytes + WaveHeaderLength > maximumBytes)
+            throw new ArgumentOutOfRangeException(nameof(duration), duration, "Requested audio exceeds the configured byte limit.");
+
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUri);
+        try
+        {
+            using var response = await _audioClient.SendAsync(
+                request,
+                HttpCompletionOption.ResponseHeadersRead,
+                cancellationToken).ConfigureAwait(false);
+
+            if (response.StatusCode is HttpStatusCode.NoContent)
+                return null;
+
+            response.EnsureSuccessStatusCode();
+            await using var stream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+
+            var audio = GC.AllocateUninitializedArray<byte>(targetAudioBytes);
+            var bytesRead = 0;
+            while (bytesRead < audio.Length)
+            {
+                var read = await stream.ReadAsync(audio.AsMemory(bytesRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                    break;
+                bytesRead += read;
+            }
+
+            if (bytesRead == 0)
+                return null;
+
+            return CreateMuLawWave(audio.AsSpan(0, bytesRead));
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogWarning(ex, "{ClassName} failed to capture microphone audio", nameof(DoorBirdClientService));
+            return null;
+        }
+    }
+
+    private static byte[] CreateMuLawWave(ReadOnlySpan<byte> audio)
+    {
+        var wave = GC.AllocateUninitializedArray<byte>(WaveHeaderLength + audio.Length);
+        "RIFF"u8.CopyTo(wave);
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(4), wave.Length - 8);
+        "WAVE"u8.CopyTo(wave.AsSpan(8));
+        "fmt "u8.CopyTo(wave.AsSpan(12));
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(16), 18);
+        BinaryPrimitives.WriteUInt16LittleEndian(wave.AsSpan(20), WaveFormatMuLaw);
+        BinaryPrimitives.WriteUInt16LittleEndian(wave.AsSpan(22), 1);
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(24), G711MuLawSampleRate);
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(28), G711MuLawSampleRate);
+        BinaryPrimitives.WriteUInt16LittleEndian(wave.AsSpan(32), 1);
+        BinaryPrimitives.WriteUInt16LittleEndian(wave.AsSpan(34), 8);
+        BinaryPrimitives.WriteUInt16LittleEndian(wave.AsSpan(36), 0);
+        "fact"u8.CopyTo(wave.AsSpan(38));
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(42), 4);
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(46), audio.Length);
+        "data"u8.CopyTo(wave.AsSpan(50));
+        BinaryPrimitives.WriteInt32LittleEndian(wave.AsSpan(54), audio.Length);
+        audio.CopyTo(wave.AsSpan(WaveHeaderLength));
+        return wave;
     }
 
     #endregion

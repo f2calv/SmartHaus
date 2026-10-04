@@ -24,6 +24,18 @@ The single `HostApplicationBuilderExtensions.InitializeConfiguration` extension 
 
 All option sections use `AddOptionsWithValidateOnStart` with `ValidateDataAnnotations` for fail-fast validation.
 
+### Azure Certificate Authentication
+
+Local Key Vault access installs the client certificate with its private key into the current user's
+Personal certificate store. Set `AppConfig:AzureEntraCertThumbprint` in this repository's
+user-secrets store; never commit a workstation thumbprint or certificate path. Each consuming
+repository has its own `UserSecretsId`, so a certificate rotation must update every consumer's store.
+
+The credential factory accepts exactly one of certificate-store thumbprint, combined PEM path, or
+PFX path. Kubernetes supplies its deployment-specific path through environment configuration; do
+not copy that path into a local configuration provider that is loaded alongside the thumbprint.
+Rotate the certificate consistently for every consumer before removing the previous credential.
+
 ## Configuration Hierarchy
 
 Configuration initialization flow and option binding:

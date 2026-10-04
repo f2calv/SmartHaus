@@ -26,6 +26,16 @@ public interface IDoorBirdQueryService
     Uri GetVideoStreamUrl();
 
     /// <summary>
+    /// Captures a bounded receive-only microphone sample as G.711 μ-law WAV audio.
+    /// </summary>
+    /// <param name="duration">Requested capture duration.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>The captured WAV clip, or <see langword="null"/> when audio is unavailable.</returns>
+    Task<DoorBirdAudioClip?> CaptureAudio(
+        TimeSpan duration,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// DoorBird device will trigger the front/house door catch/lock relay which will allow access.
     /// </summary>
     /// <param name="doorControllerID">Optional, e.g. abcdef, lkjhgf, etc...</param>

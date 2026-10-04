@@ -3,6 +3,10 @@
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="CasCap.App.Tests" />
+  </ItemGroup>
   <ItemGroup>
 
     <EmbeddedResource Include="Resources\SecurityAgent.instructions.md" />

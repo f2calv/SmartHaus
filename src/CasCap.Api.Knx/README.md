@@ -132,13 +132,10 @@ The `Translations` section in `KnxConfig` maps English enum values to localised 
 | Sink | Description |
 | --- | --- |
 | **Console** | Logs every telegram via Serilog (configurable verbosity filter) |
-| **Redis** | Persists the latest decoded value for each group address to Redis |
-| **Channel** | Exposes telegrams on an in-process `Channel<KnxTelegram>` for MCP/AI tooling |
-| **Azure Tables** | Writes historical readings and a rolling snapshot to Azure Table Storage |
-| **Azure CEMI Tables** | Stores raw CEMI L-Data frames (batched) to a separate Azure Table |
-| **State Change** | Tracks last-known state per group address and sends SMS alerts on transitions |
-| **OpenTelemetry** | Emits OpenTelemetry metrics |
-| **gRPC** | Streams telegrams to connected gRPC clients |
+| **Metrics** | Emits OpenTelemetry metrics |
+
+Optional Redis and Azure Tables implementations are provided by
+[`CasCap.Api.Knx.Sinks`](../CasCap.Api.Knx.Sinks).
 
 ### Deployment Matrix
 
@@ -322,23 +319,10 @@ flowchart TD
       "ReconnectMaxBackoffMs": 60000,
       "TelegramBrokerMode": "Redis",
       "TelegramConsumerGroupStartId": "0",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
-      "HealthCheckAzureTableStorage": "None",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
-          "Memory": { "Enabled": true },
-          "Metrics": { "Enabled": true },
-          "AzureTables": { "Enabled": true },
-          "AzureTablesCemi": { "Enabled": true },
-          "Redis": {
-            "Enabled": true,
-            "Settings": {
-              "SnapshotValues": "all"
-            }
-          },
-          "CommsStream": { "Enabled": true },
-          "SignalR": { "Enabled": true }
+          "Metrics": { "Enabled": true }
         }
       },
       "Translations": {

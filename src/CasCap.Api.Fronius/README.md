@@ -1,6 +1,6 @@
 # CasCap.Api.Fronius
 
-A .NET library that integrates with a [Fronius](https://www.fronius.com) solar inverter (Symo Gen24) via its local Solar API v1, samples power-flow data every second, and fans each reading out to a configurable set of sinks for persistence, streaming, and observability.
+A .NET library that integrates with a [Fronius](https://www.fronius.com) solar inverter (Symo Gen24) via its local Solar API v1, samples power-flow data every second, and dispatches each reading to configurable sinks.
 
 ## Installation
 
@@ -21,11 +21,11 @@ A REST API (`FroniusController`) exposes endpoints for real-time power flow, inv
 | Sink | Description |
 | --- | --- |
 | **Console** | Logs every event via the .NET logger (Debug level) |
-| **Redis** | Persists the latest five power metrics to a Redis hash (`SOC`, `P_Akku`, `P_Grid`, `P_Load`, `P_PV`) |
-| **Channel** | Exposes events on an in-process `Channel<FroniusEvent>` (capacity 1,000) for MCP/AI tooling |
-| **Azure Tables** | Writes detailed readings and a rolling snapshot to Azure Table Storage |
-| **OpenTelemetry** | Emits power and percentage gauges via OpenTelemetry metrics |
-| **gRPC** | Streams events to connected gRPC clients (backed by a dedicated channel) |
+| **Memory** | Tracks the latest power-flow reading in memory for snapshot queries |
+| **Metrics** | Emits power and percentage gauges via OpenTelemetry metrics |
+
+Optional Redis and Azure Tables implementations are provided by
+[`CasCap.Api.Fronius.Sinks`](../CasCap.Api.Fronius.Sinks).
 
 ## Event Flow
 
@@ -42,11 +42,8 @@ flowchart TD
     end
 
     SINK_CONSOLE["Console Sink\n(logger)"]
-    SINK_REDIS["Redis Sink\n(latest snapshot hash)"]
-    SINK_CHANNEL["Channel Sink\n(in-process, capacity 1,000)"]
-    SINK_AZTABLES["Azure Tables Sink\n(readings + snapshot)"]
-    SINK_OTEL["OpenTelemetry Sink\n(power gauges)"]
-    SINK_GRPC["gRPC Sink\n(streaming, dedicated channel)"]
+    SINK_MEMORY["Memory Sink\n(latest power-flow reading)"]
+    SINK_METRICS["Metrics Sink\n(power gauges)"]
 
     CLIENT["FroniusClientService\n(powerflow, inverter, meter, storage, …)"]
 
@@ -54,11 +51,8 @@ flowchart TD
     CLIENT --> FETCH
     HEALTH --> FETCH --> BUILD --> METRICS --> DISPATCH
     DISPATCH --> SINK_CONSOLE
-    DISPATCH --> SINK_REDIS
-    DISPATCH --> SINK_CHANNEL
-    DISPATCH --> SINK_AZTABLES
-    DISPATCH --> SINK_OTEL
-    DISPATCH --> SINK_GRPC
+    DISPATCH --> SINK_MEMORY
+    DISPATCH --> SINK_METRICS
 ```
 
 ## Configuration Examples
@@ -70,7 +64,6 @@ flowchart TD
   "CasCap": {
     "FroniusConfig": {
       "BaseAddress": "http://192.168.1.248",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
@@ -97,22 +90,11 @@ flowchart TD
       "SocAlertThreshold": 0.95,
       "SocAlertHysteresis": 0.05,
       "SocAlertCooldownMs": 300000,
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
-      "HealthCheckAzureTableStorage": "None",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
           "Memory": { "Enabled": true },
-          "Metrics": { "Enabled": true },
-          "AzureTables": { "Enabled": true },
-          "Redis": {
-            "Enabled": true,
-            "Settings": {
-              "SnapshotValues": "SOC,P_Akku,P_Grid,P_Load,P_PV"
-            }
-          },
-          "CommsStream": { "Enabled": true },
-          "SignalR": { "Enabled": true }
+          "Metrics": { "Enabled": true }
         }
       }
     }

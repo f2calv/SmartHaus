@@ -25,6 +25,33 @@ public static class HausServiceCollectionExtensions
         services.TryAddSingleton<IEventSink<MediaEvent>, MediaStreamSinkService>();
     }
 
+    /// <summary>Registers bounded MediaMTX event-clip capture for camera features.</summary>
+    /// <param name="services">Service collection.</param>
+    /// <param name="runWorker">Whether this process owns clip queue processing.</param>
+    public static void AddCameraClipCapture(
+        this IServiceCollection services,
+        bool runWorker = true)
+    {
+        if (!services.Any(descriptor => descriptor.ServiceType == typeof(CameraClipQueue)))
+        {
+            services.AddCasCapConfiguration<CameraClipConfig>();
+            services.TryAddSingleton<CameraClipQueue>();
+            services.TryAddSingleton<CameraThumbnailPublisher>();
+            services.AddHttpClient(nameof(CameraClipBgService), (sp, client) =>
+            {
+                var options = sp.GetRequiredService<IOptions<CameraClipConfig>>().Value;
+                client.BaseAddress = new Uri(options.PlaybackBaseAddress);
+                client.Timeout = Timeout.InfiniteTimeSpan;
+            });
+        }
+
+        if (runWorker)
+        {
+            services.TryAddEnumerable(
+                ServiceDescriptor.Singleton<IHostedService, CameraClipBgService>());
+        }
+    }
+
     /// <summary>
     /// Registers the shared Signalizr communications pipeline with the SmartHaus comms agent, the
     /// media stream consumer, and the <see cref="CommunicationsBgService"/> and <see cref="MediaBgService"/>

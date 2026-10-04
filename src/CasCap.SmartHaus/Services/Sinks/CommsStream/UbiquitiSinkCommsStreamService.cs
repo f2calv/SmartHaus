@@ -7,6 +7,7 @@ namespace CasCap.Services;
 [SinkType("CommsStream")]
 public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStreamService> logger,
     IHostEnvironment env,
+    CameraClipQueue clipQueue,
     IEventSink<CommsEvent> commsSink) : IEventSink<UbiquitiEvent>
 {
     /// <inheritdoc/>
@@ -16,7 +17,16 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
     /// <inheritdoc/>
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
-        logger.LogDebug("{ClassName} {@UbiquitiEvent}", nameof(UbiquitiSinkCommsStreamService), @event);
+        logger.LogDebug(
+            "{ClassName} processing EventType={EventType}, Camera={Camera}, Score={Score}, ThumbnailBytes={ThumbnailBytes}",
+            nameof(UbiquitiSinkCommsStreamService),
+            @event.UbiquitiEventType,
+            @event.CameraName ?? @event.CameraId,
+            @event.Score,
+            @event.Thumbnail?.Length ?? 0);
+
+        if (@event.Thumbnail is not null || clipQueue.IsUbiquitiConfigured(@event.SourceCameraId))
+            return;
 
         var commsEvent = new CommsEvent
         {
