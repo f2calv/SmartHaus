@@ -15,14 +15,14 @@ The library is built around webhook endpoints that form the core pipeline:
 | **Console** | Logs every event via the .NET logger (Debug level) |
 | **Memory** | Tracks event counts and timestamps in-memory per event type; provides snapshot queries |
 | **Metrics** | Publishes event counts as OpenTelemetry gauge metrics |
-| **CommsStream** | Writes metadata-only events directly to the communications stream |
-| **MediaStream** | Caches webhook thumbnails with a bounded TTL and routes them through camera image analysis |
+
+Optional Redis and Azure Tables implementations are provided by
+[`CasCap.Api.Ubiquiti.Sinks`](../CasCap.Api.Ubiquiti.Sinks).
 
 UniFi Protect Alarm Manager POST payloads can include a base64-encoded thumbnail under
-`alarm.thumbnail`. Thumbnail bytes are never logged or serialized into event metadata. When the
-`MediaStream` sink is enabled, SmartHaus caches the decoded image in Redis and publishes only its
-short-lived reference to the media stream. Events without thumbnails continue through
-`CommsStream` directly.
+`alarm.thumbnail`. The library exposes decoded thumbnail bytes on the event model without defining
+how an application stores, analyzes, or publishes them. Thumbnail bytes are never logged or
+serialized into event metadata.
 
 ## Event Flow
 
@@ -91,23 +91,11 @@ flowchart TD
       "BaseAddress": "https://192.168.1.100",
       "Username": "<controller-username>",
       "Password": "<controller-password>",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
-      "HealthCheckAzureTableStorage": "None",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
           "Memory": { "Enabled": true },
-          "Metrics": { "Enabled": true },
-          "AzureTables": { "Enabled": true },
-          "Redis": {
-            "Enabled": true,
-            "Settings": {
-              "SnapshotValues": "ubiquiti:snapshot",
-              "SeriesValues": "ubiquiti:series"
-            }
-          },
-          "CommsStream": { "Enabled": true },
-          "MediaStream": { "Enabled": true }
+          "Metrics": { "Enabled": true }
         }
       }
     }

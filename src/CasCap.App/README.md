@@ -34,7 +34,7 @@ repository has its own `UserSecretsId`, so a certificate rotation must update ev
 The credential factory accepts exactly one of certificate-store thumbprint, combined PEM path, or
 PFX path. Kubernetes supplies its deployment-specific path through environment configuration; do
 not copy that path into a local configuration provider that is loaded alongside the thumbprint.
-The infrastructure repository's `azure-service-principals` skill is the canonical rotation runbook.
+Rotate the certificate consistently for every consumer before removing the previous credential.
 
 ## Configuration Hierarchy
 

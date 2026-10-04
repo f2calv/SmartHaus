@@ -1,6 +1,6 @@
 # CasCap.Api.Buderus
 
-A .NET library that integrates with a [Buderus](https://www.buderus.com) KM200 heat-pump controller via its encrypted HTTPS local API, polls temperature datapoints every 60 seconds, and fans each reading out to a configurable set of sinks for persistence, streaming, and observability.
+A .NET library that integrates with a [Buderus](https://www.buderus.com) KM200 heat-pump controller via its encrypted HTTPS local API, polls temperature datapoints every 60 seconds, and dispatches each reading to configurable sinks.
 
 ## Installation
 
@@ -21,11 +21,11 @@ A REST API (`BuderusController`) exposes endpoints for listing all current datap
 | Sink | Description |
 | --- | --- |
 | **Console** | Logs every event via the .NET logger (Debug level) |
-| **Redis** | Persists the latest value for each datapoint ID to a Redis hash |
-| **Channel** | Exposes events on an in-process `Channel<BuderusEvent>` (capacity 1,000) for MCP/AI tooling |
-| **Azure Tables** | Writes detailed readings and a rolling snapshot to Azure Table Storage |
-| **OpenTelemetry** | Emits temperature gauges via OpenTelemetry metrics |
-| **gRPC** | Streams events to connected gRPC clients (backed by a dedicated channel) |
+| **Memory** | Tracks the latest values and timestamps in memory for snapshot queries |
+| **Metrics** | Emits temperature gauges via OpenTelemetry metrics |
+
+Optional Redis and Azure Tables implementations are provided by
+[`CasCap.Api.Buderus.Sinks`](../CasCap.Api.Buderus.Sinks).
 
 ## Event Flow
 
@@ -43,11 +43,8 @@ flowchart TD
     end
 
     SINK_CONSOLE["Console Sink\n(logger)"]
-    SINK_REDIS["Redis Sink\n(latest value per datapoint)"]
-    SINK_CHANNEL["Channel Sink\n(in-process, capacity 1,000)"]
-    SINK_AZTABLES["Azure Tables Sink\n(readings + snapshot)"]
-    SINK_OTEL["OpenTelemetry Sink\n(temperature gauges)"]
-    SINK_GRPC["gRPC Sink\n(streaming, dedicated channel)"]
+    SINK_MEMORY["Memory Sink\n(latest values and timestamps)"]
+    SINK_METRICS["Metrics Sink\n(temperature gauges)"]
 
     CLIENT["BuderusKm200ClientService\n(encrypted GET/POST, recursive datapoint discovery)"]
 
@@ -57,11 +54,8 @@ flowchart TD
     LOOP -->|GetDataPoint| CLIENT
     LOOP --> BUILD --> DISPATCH
     DISPATCH --> SINK_CONSOLE
-    DISPATCH --> SINK_REDIS
-    DISPATCH --> SINK_CHANNEL
-    DISPATCH --> SINK_AZTABLES
-    DISPATCH --> SINK_OTEL
-    DISPATCH --> SINK_GRPC
+    DISPATCH --> SINK_MEMORY
+    DISPATCH --> SINK_METRICS
 ```
 
 ## Configuration Examples
@@ -75,7 +69,6 @@ flowchart TD
       "BaseAddress": "http://192.168.1.248",
       "GatewayPassword": "<gateway-password>",
       "PrivatePassword": "<private-password>",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
@@ -103,8 +96,6 @@ flowchart TD
       "DatapointDelayMs": 500,
       "ConnectionPollingDelayMs": 1000,
       "ConnectionLogEscalationInterval": 10,
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
-      "HealthCheckAzureTableStorage": "None",
       "DatapointMappings": {
         "/dhwCircuits/dhw1/actualTemp": {
           "ColumnName": "Dhw1ActualTemp",
@@ -123,16 +114,7 @@ flowchart TD
         "AvailableSinks": {
           "Console": { "Enabled": true },
           "Memory": { "Enabled": true },
-          "Metrics": { "Enabled": true },
-          "AzureTables": { "Enabled": true },
-          "Redis": {
-            "Enabled": true,
-            "Settings": {
-              "SnapshotValues": "Dhw1ActualTemp,OutdoorTemperature"
-            }
-          },
-          "CommsStream": { "Enabled": true },
-          "SignalR": { "Enabled": true }
+          "Metrics": { "Enabled": true }
         }
       }
     }

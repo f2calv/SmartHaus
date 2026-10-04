@@ -10,7 +10,10 @@ dotnet add package CasCap.Api.Buderus.Sinks
 
 ## Purpose
 
-This project provides additional `IEventSink<BuderusEvent>` implementations beyond the default in-memory and Console sinks that ship with `CasCap.Api.Buderus`. The sink assembly is scanned by `AddBuderusWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is `Enabled = true` in `BuderusConfig.Sinks` are registered.
+This project provides additional `IEventSink<BuderusEvent>` implementations beyond the Console,
+Memory, and Metrics sinks that ship with `CasCap.Api.Buderus`. The sink assembly is scanned by
+`AddBuderusWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is
+`Enabled = true` in `BuderusConfig.Sinks` are registered.
 
 ### Sinks
 
