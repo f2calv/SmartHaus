@@ -17,12 +17,21 @@ public static partial class AppHost
         var result = 0;
         try
         {
+            // Host builder
             var builder = WebApplication.CreateBuilder(args);
+
+            // Configuration
             var (appConfig, aiConfig, apiAuthConfig, enabledFeatures, gitMetadata) =
                 builder.InitializeConfiguration(entryAssembly);
+
+            // Logging
             var logger = SerilogWebApplicationBuilderExtensions.InitializeSerilog(builder);
+
+            // Infrastructure
             var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
                 ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
+
+            // Observability
             builder.InitializeOpenTelemetry(
                 (IMetricsConfig)appConfig,
                 gitMetadata,
@@ -35,6 +44,7 @@ public static partial class AppHost
                     tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
                 });
 
+            // Feature validation and startup diagnostics
             if (enabledFeatures.Count == 0)
                 throw new GenericException(
                     $"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");
@@ -45,19 +55,26 @@ public static partial class AppHost
                 appConfig.NodeName ?? Environment.MachineName,
                 enabledFeatures);
 
+            // Feature registration
             var signalRHubConfig = AddFeatures(
                 builder,
                 appConfig,
                 aiConfig,
                 enabledFeatures,
                 connectionMultiplexer);
+
+            // Web API registration
             AddWebApi(builder, enabledFeatures);
 
+            // Build
             var app = builder.Build();
 
             logger.LogInformation("{ClassName} starting", nameof(Program));
+
+            // Endpoint mapping
             MapEndpoints(app, appConfig, aiConfig, enabledFeatures, signalRHubConfig);
 
+            // Run
             await app.RunAsync();
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException)

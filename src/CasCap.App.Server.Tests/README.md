@@ -18,14 +18,23 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | Class | Methods | Cases | Category | Description |
 | --- | --- | --- | --- | --- |
 | `FeatureServiceRegistrationTests` | 4 | 4 | Integration | `IBgFeature` registrations and enabled-feature filtering |
+| `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
+| `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
 
 ## Trait Categories
 
 | Category | Meaning |
 | --- | --- |
+| `Configuration` | Exercises deterministic configuration parsing without starting the host |
 | `Integration` | Boots the in-process ASP.NET Core host and exercises its services or endpoints |
+
+`InitializeConfiguration` owns the standard provider chain and unconditionally adds the required
+`appsettings.json`, user secrets, and environment variables. It therefore cannot be exercised with
+a cleared, in-memory-only configuration root. Configuration failure behavior is covered directly at
+the `FeatureConfig` boundary; host binding is covered through `CasCapAppWebApplicationFactory` with
+Key Vault disabled before startup.
 
 ## Skipped Tests
 
@@ -50,6 +59,11 @@ CasCap.App.Server.Tests/
 ├── Infrastructure/
 │   ├── CasCapAppWebApplicationFactory.cs
 │   └── WebApiTestBase.cs
+├── Tests/
+│   ├── Integration/
+│   │   └── HostStartupConfigurationTests.cs
+│   └── Unit/
+│       └── FeatureConfigTests.cs
 ├── GlobalUsings.cs
 └── xunit.runner.json
 ```

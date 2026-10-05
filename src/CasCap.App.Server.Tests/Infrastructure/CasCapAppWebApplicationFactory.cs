@@ -38,6 +38,9 @@ namespace CasCap.Tests.Infrastructure;
 /// </remarks>
 public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoint>
 {
+    /// <summary>The installation name injected into the test configuration.</summary>
+    internal const string TestHausName = "TestHaus";
+
     /// <summary>
     /// The Basic-auth username injected into the test configuration.
     /// </summary>
@@ -103,6 +106,10 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoin
         {
             config.AddInMemoryCollection(new Dictionary<string, string?>
             {
+                // ── AppConfig ──────────────────────────────────────────────────────────
+                [$"{AppConfig.ConfigurationSectionName}:{nameof(AppConfig.KeyVaultName)}"] = "skip",
+                [$"{AppConfig.ConfigurationSectionName}:{nameof(AppConfig.HausName)}"] = TestHausName,
+
                 // ── FeatureConfig ──────────────────────────────────────────────────────
                 // Set a minimal EnabledFeatures (Test only) so none of the hardware feature flags
                 // (Knx, Buderus, DoorBird …) are activated, keeping startup fast and
