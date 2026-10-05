@@ -3,35 +3,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
-    <RootNamespace>CasCap.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
   </PropertyGroup>
-
-  <ItemGroup>
-    <Content Include="..\..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="Always" />
-    <Content Include="..\..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.json')" />
-    <Content Include="..\..\appsettings.Development.json" Link="appsettings.Development.json" CopyToOutputDirectory="Always" />
-    <Content Include="..\..\appsettings.Local.Development.json" Link="appsettings.Local.Development.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.Development.json')" />
-    <Content Include="appsettings.Tests.Local.json" CopyToOutputDirectory="Always" Condition="Exists('appsettings.Tests.Local.json')" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\CasCap.Api.Knx\CasCap.Api.Knx.csproj" />
-    <ProjectReference Include="..\CasCap.SmartHaus\CasCap.Backend.csproj" />
-    <ProjectReference Include="..\CasCap.App.Server\CasCap.App.Server.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(Configuration)'=='Debug'">
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI.Evaluation\CasCap.Common.AI.Evaluation.csproj" />
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Configuration\CasCap.Common.Configuration.csproj" />
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Testing\CasCap.Common.Testing.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <PackageReference Include="CasCap.Common.AI.Evaluation" />
-    <PackageReference Include="CasCap.Common.Configuration" />
-    <PackageReference Include="CasCap.Common.Testing" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
@@ -39,5 +13,18 @@
     <PackageReference Include="xunit.v3" />
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\CasCap.App.Server\CasCap.App.Server.csproj" />
+  </ItemGroup>
 
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Testing\CasCap.Common.Testing.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.Testing" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="xunit.runner.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
 </Project>

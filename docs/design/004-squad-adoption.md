@@ -138,7 +138,7 @@ This is the heart of brownfield adoption: teach the Squad the rules, then point 
 The brownfield insight: have the team **learn one well-bounded module first**, so subsequent work is coordinated against real, understood code rather than the whole 30-project solution at once.
 
 - [ ] **`SQ-11` (High)** — Choose the **first module for the team to learn**. Recommended: a single, self-contained, README-documented module rather than the whole app. Good candidates:
-  - [`Comms`](../../src/CasCap.SmartHaus/README.md) — the Signal messaging + agent pipeline (rich behaviour, already has design docs [001](001-signalcli-audit-remediation.md)/[002](002-signalcli-receive-heartbeat.md)).
+  - [`Comms`](../../src/CasCap.Backend/README.md) — the Signal messaging + agent pipeline (rich behaviour, already has design docs [001](001-signalcli-audit-remediation.md)/[002](002-signalcli-receive-heartbeat.md)).
   - [`EdgeHardware`](../../src/CasCap.Api.EdgeHardware/README.md) — CPU/GPU telemetry (small, self-contained, demo-enabled).
 
 - [ ] **`SQ-12` (High)** — In a Squad session, have the relevant members read the chosen module (README + source) and record what they learned into their decision archives — its purpose, feature flag, public surface, and patterns. Example:
@@ -164,7 +164,7 @@ Demonstrate the full coordinated loop on genuine, small enhancements so the team
 
   Gate any execution behind the repo's **"never run tests automatically"** rule — review generated work before any test execution.
 
-- [ ] **`SQ-16` (Low)** — **Example B (new module within the brownfield solution).** Have the team scaffold a brand-new small feature module (e.g. a new device integration stub) to show Squad's 0-to-1 flow inside the existing solution, respecting the established module layout (`CasCap.Api.<Name>` + `.Sinks` + `.Tests`, feature flag in [`FeatureNames`](../../src/CasCap.SmartHaus/Models/FeatureNames.cs)).
+- [ ] **`SQ-16` (Low)** — **Example B (new module within the brownfield solution).** Have the team scaffold a brand-new small feature module (e.g. a new device integration stub) to show Squad's 0-to-1 flow inside the existing solution, respecting the established module layout (`CasCap.Api.<Name>` + `.Sinks` + `.Tests`, feature flag in [`FeatureNames`](../../src/CasCap.Backend/Models/FeatureNames.cs)).
 
 - [ ] **`SQ-17` (Low)** — Capture lessons in a short retrospective appended here (what the team got right/wrong, which charter rules needed tightening), and fold any reusable rule back into the `.squad/` charters and the relevant `.github/instructions/` file. Run `squad nap` periodically for context hygiene (compress/prune/archive).
 

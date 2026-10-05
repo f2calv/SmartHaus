@@ -32,8 +32,8 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 ## Highlights
 
 - **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
-- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
-- **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.SmartHaus/README.md#speech-to-text-providers)
+- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.Backend README](src/CasCap.Backend/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.Backend/README.md#speech-to-text-providers)
 - **Feature-flag driven** — enable only the integrations you need; each feature is an independent module with its own data pipeline, sinks, and [MCP tools](https://modelcontextprotocol.io/specification/2025-03-26/server/tools)
 - **Azure cloud integration** — optional [Azure Table Storage](https://learn.microsoft.com/en-us/azure/storage/tables/) and [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/) sinks for telemetry persistence, with local [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulation for development
 - **Azure Key Vault** — optional [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/) integration for secrets management (disabled via `KeyVaultName=skip` for local development)
@@ -72,12 +72,12 @@ See the [Docker Compose](#docker-compose) section below for full details, includ
 
 ## Features
 
-Defined as constants in [`FeatureNames`](src/CasCap.SmartHaus/Models/FeatureNames.cs), validated at startup by [`FeatureConfig.GetEnabledFeatures()`](src/CasCap.App/Models/_FeatureConfig.cs).
+Defined as constants in [`FeatureNames`](src/CasCap.Backend/Models/FeatureNames.cs), validated at startup by [`FeatureConfig.GetEnabledFeatures()`](src/CasCap.App/Models/_FeatureConfig.cs).
 
 | Name | Description |
 | --- | --- |
 | [`Buderus`](src/CasCap.Api.Buderus/README.md) | Buderus heating system integration |
-| [`Comms`](src/CasCap.SmartHaus/README.md) | Single-instance communications service that consumes a Redis Stream of key events and forwards agent-processed decisions |
+| [`Comms`](src/CasCap.Backend/README.md) | Single-instance communications service that consumes a Redis Stream of key events and forwards agent-processed decisions |
 | [`DDns`](src/CasCap.Api.DDns/README.md) | Dynamic DNS service |
 | [`DoorBird`](src/CasCap.Api.DoorBird/README.md) | DoorBird video doorbell integration |
 | [`EdgeHardware`](src/CasCap.Api.EdgeHardware/README.md) | Edge hardware monitoring — GPU telemetry via `nvidia-smi`, CPU temperature, and Raspberry Pi GPIO sensors. CPU monitoring is always enabled; GPU is auto-detected via ILGPU at startup |
@@ -86,7 +86,7 @@ Defined as constants in [`FeatureNames`](src/CasCap.SmartHaus/Models/FeatureName
 | [`Miele`](src/CasCap.Api.Miele/README.md) | Miele appliance integration |
 | [`Shelly`](src/CasCap.Api.Shelly/README.md) | Shelly smart plug integration |
 | [`Sicce`](src/CasCap.Api.Sicce/README.md) | Sicce aquarium pump integration |
-| [`SignalRHub`](src/CasCap.SmartHaus/README.md) | Consolidated SignalR hub server, providing a single real-time event endpoint for all features. Can run as a standalone pod for separation of responsibility |
+| [`SignalRHub`](src/CasCap.Backend/README.md) | Consolidated SignalR hub server, providing a single real-time event endpoint for all features. Can run as a standalone pod for separation of responsibility |
 | [`Ubiquiti`](src/CasCap.Api.Ubiquiti/README.md) | Ubiquiti network device integration |
 | [`Wiz`](src/CasCap.Api.Wiz/README.md) | Wiz smart lighting integration |
 
@@ -101,42 +101,42 @@ Multiple application deployment targets;
 
 SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchestrates domain-specific sub-agents, each with their own [MCP](https://modelcontextprotocol.io/) tools and instruction prompts. Users interact with the system via [Signal Messenger](https://signal.org/) — no custom mobile app required.
 
-> For detailed configuration, Redis Stream settings, and implementation specifics, see the [CasCap.SmartHaus README](src/CasCap.SmartHaus/README.md).
+> For detailed configuration, Redis Stream settings, and implementation specifics, see the [CasCap.Backend README](src/CasCap.Backend/README.md).
 
 ### Agents
 
 | Agent | Role | MCP Tools |
 | --- | --- | --- |
-| **[CommsAgent](src/CasCap.SmartHaus/Resources/CommsAgent.instructions.md)** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
-| **[SecurityAgent](src/CasCap.SmartHaus/Resources/SecurityAgent.instructions.md)** | Front door intercom, IP cameras, door lighting | 17 |
-| **[HeatingAgent](src/CasCap.SmartHaus/Resources/HeatingAgent.instructions.md)** | Heat pump control, KNX heating zones | 11 |
-| **[EnergyAgent](src/CasCap.SmartHaus/Resources/EnergyAgent.instructions.md)** | Solar inverter telemetry and battery status | 13 |
-| **[HomeControlAgent](src/CasCap.SmartHaus/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 37 |
-| **[InfraAgent](src/CasCap.SmartHaus/Resources/InfraAgent.instructions.md)** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
-| **[AppliancesAgent](src/CasCap.SmartHaus/Resources/AppliancesAgent.instructions.md)** | Miele appliance control (disabled — planned) | 15 |
+| **[CommsAgent](src/CasCap.Backend/Resources/CommsAgent.instructions.md)** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
+| **[SecurityAgent](src/CasCap.Backend/Resources/SecurityAgent.instructions.md)** | Front door intercom, IP cameras, door lighting | 17 |
+| **[HeatingAgent](src/CasCap.Backend/Resources/HeatingAgent.instructions.md)** | Heat pump control, KNX heating zones | 11 |
+| **[EnergyAgent](src/CasCap.Backend/Resources/EnergyAgent.instructions.md)** | Solar inverter telemetry and battery status | 13 |
+| **[HomeControlAgent](src/CasCap.Backend/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 37 |
+| **[InfraAgent](src/CasCap.Backend/Resources/InfraAgent.instructions.md)** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
+| **[AppliancesAgent](src/CasCap.Backend/Resources/AppliancesAgent.instructions.md)** | Miele appliance control (disabled — planned) | 15 |
 
 ### MCP Tool Services
 
 [MCP](https://modelcontextprotocol.io/specification/2025-03-26/server/tools) query services expose 70+ tools and 25 prompts to AI agents, conditionally registered based on enabled features.
 
-The [MCP source reference](src/CasCap.SmartHaus/README.md#mcp-server-surface) links the
+The [MCP source reference](src/CasCap.Backend/README.md#mcp-server-surface) links the
 `*McpPrompts` classes, `HausMcpServiceCollectionExtensions` and dedicated MCP response DTOs.
-The [Signal group configuration](src/CasCap.SmartHaus/README.md#commsconfig-cascapcommsconfig)
+The [Signal group configuration](src/CasCap.Backend/README.md#commsconfig-cascapcommsconfig)
 defines `GroupName` and `MonitorGroupName` for messaging.
 
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
-| [`SystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
-| [`BusSystemMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/BusSystemMcpQueryService.cs) | 21 | 5 | Door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
-| [`HeatPumpMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
-| [`InverterMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |
-| [`FrontDoorMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/FrontDoorMcpQueryService.cs) | 8 | 5 | DoorBird intercom — photos, video, unlock |
-| [`AppliancesMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/AppliancesMcpQueryService.cs) | 9 | 5 | Miele appliance management |
-| [`EdgeHardwareMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/EdgeHardwareMcpQueryService.cs) | 1 | — | GPU/CPU telemetry snapshots |
-| [`IpCameraMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/IpCameraMcpQueryService.cs) | 1 | — | UniFi Protect event status |
-| [`AquariumMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/AquariumMcpQueryService.cs) | 2 | — | Sicce water pump control |
-| [`SmartPlugMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SmartPlugMcpQueryService.cs) | 3 | — | Shelly smart plug control |
-| [`SmartLightingMcpQueryService`](src/CasCap.SmartHaus/Services/Mcp/SmartLightingMcpQueryService.cs) | 15 | — | KNX ceiling/wall lights and Wiz smart bulbs |
+| [`SystemMcpQueryService`](src/CasCap.Backend/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
+| [`BusSystemMcpQueryService`](src/CasCap.Backend/Services/Mcp/BusSystemMcpQueryService.cs) | 21 | 5 | Door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
+| [`HeatPumpMcpQueryService`](src/CasCap.Backend/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
+| [`InverterMcpQueryService`](src/CasCap.Backend/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |
+| [`FrontDoorMcpQueryService`](src/CasCap.Backend/Services/Mcp/FrontDoorMcpQueryService.cs) | 8 | 5 | DoorBird intercom — photos, video, unlock |
+| [`AppliancesMcpQueryService`](src/CasCap.Backend/Services/Mcp/AppliancesMcpQueryService.cs) | 9 | 5 | Miele appliance management |
+| [`EdgeHardwareMcpQueryService`](src/CasCap.Backend/Services/Mcp/EdgeHardwareMcpQueryService.cs) | 1 | — | GPU/CPU telemetry snapshots |
+| [`IpCameraMcpQueryService`](src/CasCap.Backend/Services/Mcp/IpCameraMcpQueryService.cs) | 1 | — | UniFi Protect event status |
+| [`AquariumMcpQueryService`](src/CasCap.Backend/Services/Mcp/AquariumMcpQueryService.cs) | 2 | — | Sicce water pump control |
+| [`SmartPlugMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartPlugMcpQueryService.cs) | 3 | — | Shelly smart plug control |
+| [`SmartLightingMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartLightingMcpQueryService.cs) | 15 | — | KNX ceiling/wall lights and Wiz smart bulbs |
 | [`MessagingMcpQueryService`](src/CasCap.Comms.AI/Services/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
 
 ### Service Architecture
@@ -153,13 +153,13 @@ flowchart TD
         DOORBIRD_MEDIA["DoorBirdSinkMediaStreamService"]
     end
 
-    subgraph Hub["CasCap.SmartHaus (HausHub @ /hubs/haus)"]
+    subgraph Hub["CasCap.Backend (HausHub @ /hubs/haus)"]
         HAUSHUB["HausHub\n[Authorize]"]
         HUB_CONSOLE["HausHubSinkConsoleService"]
         HUB_METRICS["HausHubSinkMetricsService"]
     end
 
-    subgraph Comms["CasCap.SmartHaus (Comms instance — gateway + media analysis)"]
+    subgraph Comms["CasCap.Backend (Comms instance — gateway + media analysis)"]
         COMMS_BG["CommunicationsBgService"]
         COMMS_AGENT(("CommsAgent"))
         STT(("Speech-to-text\n(selected provider)"))
@@ -223,7 +223,7 @@ graph TD
 
     %% ── Core Orchestration ──────────────────────────────────────────────────
     subgraph core ["⚙️ Core"]
-        HAUS["CasCap.SmartHaus"]
+        HAUS["CasCap.Backend"]
     end
 
     %% ── Feature Libraries ───────────────────────────────────────────────────

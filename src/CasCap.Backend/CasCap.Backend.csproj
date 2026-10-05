@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CasCap.App.Tests" />
+    <InternalsVisibleTo Include="CasCap.Backend.Tests" />
   </ItemGroup>
   <ItemGroup>
 

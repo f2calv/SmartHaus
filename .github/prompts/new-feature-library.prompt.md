@@ -348,7 +348,7 @@ public static void Add{Domain}Mcp(this IServiceCollection services)
 
 #### 4.1 Update `FeatureNames.cs`
 
-File: `src/CasCap.SmartHaus/Models/FeatureNames.cs`
+File: `src/CasCap.Backend/Models/FeatureNames.cs`
 
 Add:
 

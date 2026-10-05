@@ -21,12 +21,12 @@ namespace CasCap.Tests.Api;
 public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
-    /// <c>GET /api/system</c> returns 200 and an <see cref="AppConfig"/> payload when
+    /// <c>GET /api/system</c> returns 200 and a <see cref="GitMetadata"/> payload when
     /// called with the authorized client.
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetSystem_WithAuthorizedClient_Returns200AndAppConfig()
+    public async Task GetSystem_WithAuthorizedClient_Returns200AndGitMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
 
@@ -35,39 +35,34 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         output.WriteLine($"GET /api/system → {json[..Math.Min(200, json.Length)]}");
 
-        // The returned JSON must at minimum contain the EnabledFeatures field.
-        var doc = JsonDocument.Parse(json);
-        Assert.True(
-            doc.RootElement.TryGetProperty("EnabledFeatures", out _),
-            "Response JSON should contain 'EnabledFeatures' property");
+        var metadata = JsonSerializer.Deserialize<GitMetadata>(
+            json,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+
+        Assert.NotNull(metadata);
     }
 
     /// <summary>
-    /// The <c>EnabledFeatures</c> returned by <c>GET /api/system</c> should match the value
-    /// injected by the test factory (<c>Api</c>).
+    /// The metadata returned by <c>GET /api/system</c> matches the registered singleton.
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetSystem_EnabledFeatures_MatchesTestConfiguration()
+    public async Task GetSystem_ReturnsRegisteredGitMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        var doc = JsonDocument.Parse(json);
+        var actual = JsonSerializer.Deserialize<GitMetadata>(
+            json,
+            new JsonSerializerOptions(JsonSerializerDefaults.Web));
+        var expected = Services.GetRequiredService<GitMetadata>();
 
-        // EnabledFeatures is a comma-separated string (e.g. "Api").
-        var EnabledFeaturesElement = doc.RootElement.TryGetProperty("EnabledFeatures", out var el)
-            ? el
-            : doc.RootElement.GetProperty("EnabledFeatures");
-
-        output.WriteLine($"EnabledFeatures value in response: {EnabledFeaturesElement}");
-
-        var isApiMode =
-            EnabledFeaturesElement.ValueKind == JsonValueKind.String &&
-            EnabledFeaturesElement.GetString() == FeatureNames.Test;
-
-        Assert.True(isApiMode, $"Expected EnabledFeatures to be '{FeatureNames.Test}' but was '{EnabledFeaturesElement}'");
+        Assert.NotNull(actual);
+        Assert.Equal(expected.GIT_REPOSITORY, actual.GIT_REPOSITORY);
+        Assert.Equal(expected.GIT_BRANCH, actual.GIT_BRANCH);
+        Assert.Equal(expected.GIT_COMMIT, actual.GIT_COMMIT);
+        Assert.Equal(expected.GIT_TAG, actual.GIT_TAG);
     }
 
     /// <summary>

@@ -1,4 +1,4 @@
-# CasCap.SmartHaus
+# CasCap.Backend
 
 The central ASP.NET Core library that hosts the consolidated [SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction) hub, coordinates real-time event broadcasting across all home automation features, and provides supporting services for AI agents, dynamic DNS, and Signal messenger notifications.
 
@@ -315,13 +315,13 @@ flowchart TD
         DOORBIRD_MEDIA["DoorBirdSinkMediaStreamService"]
     end
 
-    subgraph Hub["CasCap.SmartHaus (HausHub @ /hubs/haus)"]
+    subgraph Hub["CasCap.Backend (HausHub @ /hubs/haus)"]
         HAUSHUB["HausHub\n[Authorize]"]
         HUB_CONSOLE["HausHubSinkConsoleService"]
         HUB_METRICS["HausHubSinkMetricsService"]
     end
 
-    subgraph Comms["CasCap.SmartHaus (Comms instance — gateway + media analysis)"]
+    subgraph Comms["CasCap.Backend (Comms instance — gateway + media analysis)"]
         COMMS_BG["CommunicationsBgService"]
         COMMS_AGENT(("CommsAgent"))
         STT(("Speech-to-text\n(selected provider)"))

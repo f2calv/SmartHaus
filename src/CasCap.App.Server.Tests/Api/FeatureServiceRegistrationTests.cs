@@ -15,25 +15,21 @@ namespace CasCap.Tests.Api;
 /// </para>
 /// <para>
 /// The <see cref="CasCapAppWebApplicationFactory"/> boots the application with
-/// <c>EnabledFeatures = "Api"</c>, so:
+/// <c>EnabledFeatures = "Test"</c>, so:
 /// </para>
 /// <list type="bullet">
-///   <item><see cref="GitMetadataBgService"/> – registered as a standalone hosted service via <c>addGitMetadataService: true</c>.</item>
-///   <item><see cref="GpuTestBgService"/>  – <c>FeatureName = "EdgeHardware"</c> → registered only when EdgeHardware flag is set.</item>
-///   <item><see cref="CommunicationsBgService"/> – <c>FeatureName = "Comms"</c> → registered but NOT started unless Comms flag is set.</item>
+///   <item>No hardware or communications background feature is registered.</item>
+///   <item>Hosted execution is removed by the factory; tests inspect registrations only.</item>
 /// </list>
 /// </remarks>
 public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
-    /// <see cref="CommunicationsBgService"/> must be registered with the DI container
-    /// as <see cref="IBgFeature"/> regardless of <c>EnabledFeatures</c>, because it is
-    /// registered unconditionally in <c>Program.cs</c>.
-    /// <see cref="GpuTestBgService"/> is only registered when the <c>EdgeHardware</c> feature is set.
+    /// The synthetic Test feature must not register domain background features.
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public void AllAlwaysRegisteredFeatures_ArePresent_InDiContainer()
+    public void TestFeature_RegistersNoBackgroundFeatures()
     {
         var features = Services
             .GetServices<IBgFeature>()
@@ -43,15 +39,11 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
         foreach (var f in features)
             output.WriteLine($"  {f.GetType().Name} – FeatureName={f.FeatureName}");
 
-        // Verify by type identity (the service IS the correct implementation)
-        Assert.Contains(features, f => f is CommunicationsBgService);
-
-        // Verify by FeatureName (the services declare the right feature name)
-        Assert.Contains(features, f => f is CommunicationsBgService && f.FeatureName == FeatureNames.Comms);
+        Assert.Empty(features);
     }
 
     /// <summary>
-    /// With <c>EnabledFeatures = "Api"</c> no hardware-specific features should be registered
+    /// With <c>EnabledFeatures = "Test"</c> no hardware-specific features should be registered
     /// (Knx, Buderus, DoorBird, Fronius, Sicce, RaspberryPi…).
     /// </summary>
     [Fact]
@@ -108,8 +100,10 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
             output.WriteLine($"  {feature.GetType().Name}: FeatureName={feature.FeatureName}, Compatible={compatible}");
         }
 
-        // At a minimum, the unconditionally-registered Comms service must be present and compatible.
-        Assert.Contains(features, f => f.FeatureName == FeatureNames.Comms);
+        Assert.All(features, feature =>
+            Assert.True(
+                string.Equals(feature.FeatureName, IBgFeature.AlwaysEnabled, StringComparison.OrdinalIgnoreCase)
+                || featureFlagConfig.EnabledFeatures.Contains(feature.FeatureName)));
     }
 
     /// <summary>

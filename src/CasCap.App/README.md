@@ -89,7 +89,7 @@ flowchart TD
 
 | Project | Purpose |
 | --- | --- |
-| `CasCap.SmartHaus` | Core orchestration, SignalR hub, AI agent extensions |
+| `CasCap.Backend` | Core orchestration, SignalR hub, AI agent extensions |
 | `CasCap.Common.Configuration` | `AddStandardConfiguration` and `AddKeyVaultConfiguration` helpers |
 | `CasCap.Common.Extensions.Diagnostics.HealthChecks` | Kubernetes probe tag helpers |
 

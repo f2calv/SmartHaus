@@ -1,7 +1,7 @@
 namespace CasCap.Extensions;
 
 /// <summary>
-/// Extension methods for registering MCP tools from the <c>CasCap.SmartHaus</c> assembly.
+/// Extension methods for registering MCP tools from the <c>CasCap.Backend</c> assembly.
 /// </summary>
 public static class HausMcpServiceCollectionExtensions
 {

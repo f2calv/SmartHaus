@@ -96,7 +96,7 @@ Generate (or update) a Mermaid `flowchart TD` diagram that visualises:
 6. **Disabled agents** — style with a dashed border and a `disabled` label.
 
 Place the diagram in a fenced `mermaid` code block inside the project's
-`src/CasCap.SmartHaus/README.md` file under a `## Agent Architecture` heading. If the
+`src/CasCap.Backend/README.md` file under a `## Agent Architecture` heading. If the
 heading already exists, replace the existing diagram.
 
 ---

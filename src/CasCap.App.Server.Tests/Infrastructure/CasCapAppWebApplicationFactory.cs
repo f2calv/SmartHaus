@@ -2,18 +2,20 @@ using CasCap.Common.Authentication;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Hosting;
 using System.Security.Cryptography;
 
 namespace CasCap.Tests.Infrastructure;
 
 /// <summary>
-/// A <see cref="WebApplicationFactory{TProgram}"/> for CasCap.App, configured for
+/// A <see cref="WebApplicationFactory{TEntryPoint}"/> for CasCap.App.Server, configured for
 /// integration testing without requiring live infrastructure (Redis, Azure Key Vault,
 /// Signalizr, etc.).
 /// </summary>
 /// <remarks>
 /// <para>
-/// The factory boots the full <c>Program</c> startup pipeline and then applies a set of
+/// The factory boots the full server startup pipeline and then applies a set of
 /// in-memory configuration overrides and service replacements that make the application
 /// suitable for automated tests:
 /// </para>
@@ -34,11 +36,7 @@ namespace CasCap.Tests.Infrastructure;
 /// where those dependencies are absent.
 /// </para>
 /// </remarks>
-// TODO: Review the WebApplicationFactory test boundary and its dependencies. Program binds required
-// configuration before ConfigureWebHost applies these overrides; once supplied earlier, the synthetic
-// Test feature starts no background service and Serilog request logging lacks DiagnosticContext. Replace
-// this with a deterministic test bootstrap, then remove the TODO when all API tests start without live services.
-public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
+public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoint>
 {
     /// <summary>
     /// The Basic-auth username injected into the test configuration.
@@ -55,6 +53,39 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
     /// Matches the path that <see cref="FeatureConfig"/> binds to at runtime.
     /// </summary>
     public const string EnabledFeaturesConfigKey = "CasCap:FeatureConfig:EnabledFeatures";
+
+    private static readonly IReadOnlyDictionary<string, string?> _startupEnvironment =
+        new Dictionary<string, string?>
+        {
+            ["AppConfig__KeyVaultName"] = "skip",
+            ["CasCap__ApiAuthConfig__Password"] = TestPassword,
+            ["CasCap__ApiAuthConfig__Username"] = TestUsername,
+            ["CasCap__CachingConfig__DistributedLockingEnabled"] = bool.TrueString,
+            ["CasCap__CachingConfig__RemoteCacheConnectionString"] = "localhost:6379,abortConnect=false",
+            ["CasCap__FeatureConfig__EnabledFeatures"] = FeatureNames.Test,
+        };
+
+    /// <inheritdoc/>
+    protected override IHost CreateHost(IHostBuilder builder)
+    {
+        var previous = _startupEnvironment.Keys.ToDictionary(
+            key => key,
+            Environment.GetEnvironmentVariable,
+            StringComparer.Ordinal);
+
+        foreach (var (key, value) in _startupEnvironment)
+            Environment.SetEnvironmentVariable(key, value);
+
+        try
+        {
+            return base.CreateHost(builder);
+        }
+        finally
+        {
+            foreach (var (key, value) in previous)
+                Environment.SetEnvironmentVariable(key, value);
+        }
+    }
 
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
@@ -96,6 +127,10 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<Program>
 
         builder.ConfigureServices(services =>
         {
+            // Host integration tests inspect registrations and HTTP behavior; background workers would
+            // start external integrations or stop the host when the synthetic Test feature has no workers.
+            services.RemoveAll<IHostedService>();
+
             // Replace the default authorization policy with one that always succeeds.
             // This mirrors what Program.cs does in IsDevelopment() and lets tests hit
             // protected endpoints without managing credentials.

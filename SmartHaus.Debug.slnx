@@ -85,8 +85,9 @@
   <Folder Name="/SmartHaus/">
     <Project Path="src/CasCap.App.Console/CasCap.App.Console.csproj" />
     <Project Path="src/CasCap.App.Server/CasCap.App.Server.csproj" />
-    <Project Path="src/CasCap.App.Tests/CasCap.App.Server.Tests.csproj" />
+    <Project Path="src/CasCap.App.Server.Tests/CasCap.App.Server.Tests.csproj" />
     <Project Path="src/CasCap.App/CasCap.App.csproj" />
-    <Project Path="src/CasCap.SmartHaus/CasCap.Backend.csproj" />
+    <Project Path="src/CasCap.Backend.Tests/CasCap.Backend.Tests.csproj" />
+    <Project Path="src/CasCap.Backend/CasCap.Backend.csproj" />
   </Folder>
 </Solution>

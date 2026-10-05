@@ -5,7 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CasCap.SmartHaus\CasCap.Backend.csproj" />
+    <ProjectReference Include="..\CasCap.Backend\CasCap.Backend.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
