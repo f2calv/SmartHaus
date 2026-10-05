@@ -87,6 +87,6 @@
     <Project Path="src/CasCap.App.Server/CasCap.App.Server.csproj" />
     <Project Path="src/CasCap.App.Tests/CasCap.App.Tests.csproj" />
     <Project Path="src/CasCap.App/CasCap.App.csproj" />
-    <Project Path="src/CasCap.SmartHaus/CasCap.SmartHaus.csproj" />
+    <Project Path="src/CasCap.SmartHaus/CasCap.Backend.csproj" />
   </Folder>
 </Solution>
