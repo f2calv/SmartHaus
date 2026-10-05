@@ -1,0 +1,25 @@
+<!--
+  Shared MSBuild wiring for SmartHaus entry hosts. Each executable owns its runtime-specific
+  packages while this file keeps appsettings content and shared application references aligned.
+-->
+<Project>
+
+  <ItemGroup>
+    <Content Include="$(MSBuildThisFileDirectory)..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="Always" />
+    <Content Include="$(MSBuildThisFileDirectory)..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('$(MSBuildThisFileDirectory)..\appsettings.Local.json')" />
+    <Content Include="$(MSBuildThisFileDirectory)..\appsettings.Development.json" Link="appsettings.Development.json" CopyToOutputDirectory="Always" />
+    <Content Include="$(MSBuildThisFileDirectory)..\appsettings.Local.Development.json" Link="appsettings.Local.Development.json" CopyToOutputDirectory="Always" Condition="Exists('$(MSBuildThisFileDirectory)..\appsettings.Local.Development.json')" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="$(MSBuildThisFileDirectory)..\..\CasCap.Common\src\CasCap.Common.Hosting.AspNetCore\CasCap.Common.Hosting.AspNetCore.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.Common.Hosting.AspNetCore" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)CasCap.App\CasCap.App.csproj" />
+  </ItemGroup>
+
+</Project>

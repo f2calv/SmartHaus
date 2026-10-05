@@ -6,6 +6,9 @@ A Spectre.Console-based interactive terminal application for local MCP/AI agent 
 
 `CasCap.App.Console` is a developer tool for exercising AI agents against the home automation MCP tools without deploying to Kubernetes. It registers a subset of feature libraries in "lite" mode (monitor background services disabled) and runs an interactive prompt loop with streaming responses.
 
+`Program.cs` is a thin entry point. `AppHost.cs` owns logging, configuration, host construction,
+cancellation, and execution, while `AppHost.Features.cs` owns the lite feature and MCP registrations.
+
 ### Startup Sequence
 
 1. Configures Serilog logging (Warning minimum, Information for `CasCap` namespace).

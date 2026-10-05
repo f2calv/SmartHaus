@@ -6,6 +6,10 @@ The main ASP.NET Core executable that composes and hosts the entire home automat
 
 `CasCap.App.Server` is the single deployable process that conditionally activates features at startup based on the `FeatureConfig.EnabledFeatures` comma-separated string. This enables the same binary to be deployed as different service profiles (e.g. KNX-only pod, full all-in-one instance).
 
+`Program.cs` is a thin entry point. Application composition is split across `AppHost.cs`,
+`AppHost.Features.cs`, `AppHost.WebApi.cs`, and `AppHost.Endpoints.cs`; configuration, logging,
+caching, and telemetry ordering remains visible in the main `AppHost.RunAsync` lifecycle.
+
 ### Feature Flag Registration
 
 Each feature name activates a distinct set of services at DI registration time. At runtime, the non-generic `FeatureFlagBgService` matches each `IBgFeature.FeatureName` string against the enabled features set:

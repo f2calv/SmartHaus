@@ -2,6 +2,9 @@
 
 Shared bootstrap library that provides configuration initialization for all application hosts (`CasCap.App.Server` and `CasCap.App.Console`). This project is a library — not an executable — that centralizes the configuration and DI wiring common to every entry point.
 
+The sibling `CasCap.App.Host.props` file centralizes the appsettings content links, shared hosting
+dependency, and reference to this project for both executable hosts.
+
 ## Purpose
 
 The single `HostApplicationBuilderExtensions.InitializeConfiguration` extension method performs the full configuration bootstrap sequence:
