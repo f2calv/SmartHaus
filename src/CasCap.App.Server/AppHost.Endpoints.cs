@@ -80,19 +80,6 @@ public static partial class AppHost
         if (app.Environment.IsDevelopment() && appConfig.OtlpExporterEndpoint is not null)
             app.UseOpenTelemetryPrometheusScrapingEndpoint();
 
-        app.Services.AddStaticLogging();
-
-        app.UseSerilogRequestLogging(options =>
-        {
-            options.GetLevel = (httpContext, _, exception) =>
-            {
-                if (exception is null
-                    && httpContext.Response.StatusCode == StatusCodes.Status200OK
-                    && httpContext.Request.Path.StartsWithSegments("/healthz"))
-                    return Serilog.Events.LogEventLevel.Verbose;
-
-                return Serilog.Events.LogEventLevel.Information;
-            };
-        });
+        app.UseCasCapRequestLogging();
     }
 }
