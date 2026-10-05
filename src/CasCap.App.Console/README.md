@@ -79,7 +79,7 @@ Uses the same `appsettings.json` / `appsettings.Development.json` as the server 
 | Project | Purpose |
 | --- | --- |
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
-| `CasCap.Common.Logging.Serilog` | Serilog structured logging pipeline |
+| `CasCap.Common.Hosting.AspNetCore` | Serilog structured logging pipeline |
 | `CasCap.Common.AI` | Consolidated MCP tool and prompt registration for all smart-home integrations |
 | `CasCap.Api.Fronius.Sinks` | Fronius event sinks |
 | `CasCap.Api.Buderus.Sinks` | Buderus event sinks |

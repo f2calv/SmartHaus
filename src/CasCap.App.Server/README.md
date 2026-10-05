@@ -131,8 +131,7 @@ Key configuration sections:
 | Project | Purpose |
 | --- | --- |
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
-| `CasCap.Common.Logging.Serilog` | Serilog structured logging pipeline |
-| `CasCap.Common.OpenTelemetry` | Reusable OpenTelemetry metrics, traces, and log exporters |
+| `CasCap.Common.Hosting.AspNetCore` | Serilog hosting and OpenTelemetry metrics, traces, and log exporters |
 
 ## License
 

@@ -29,10 +29,9 @@
     <PackageVersion Include="CasCap.Common.Configuration" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Extensions" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Extensions.Diagnostics.HealthChecks" Version="4.14.4" />
+    <PackageVersion Include="CasCap.Common.Hosting.AspNetCore" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Logging" Version="4.14.4" />
-    <PackageVersion Include="CasCap.Common.Logging.Serilog" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Net" Version="4.14.4" />
-    <PackageVersion Include="CasCap.Common.OpenTelemetry" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Serialization.Json" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Serialization.MessagePack" Version="4.14.4" />
     <PackageVersion Include="CasCap.Common.Services" Version="4.14.4" />

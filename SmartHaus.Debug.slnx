@@ -39,11 +39,10 @@
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Diagnostics.HealthChecks/CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Tests/CasCap.Common.Extensions.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions/CasCap.Common.Extensions.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.Logging.Serilog/CasCap.Common.Logging.Serilog.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Hosting.AspNetCore/CasCap.Common.Hosting.AspNetCore.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Logging/CasCap.Common.Logging.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Net.Tests/CasCap.Common.Net.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Net/CasCap.Common.Net.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.OpenTelemetry/CasCap.Common.OpenTelemetry.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Json/CasCap.Common.Serialization.Json.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.MessagePack/CasCap.Common.Serialization.MessagePack.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Tests/CasCap.Common.Serialization.Tests.csproj" />

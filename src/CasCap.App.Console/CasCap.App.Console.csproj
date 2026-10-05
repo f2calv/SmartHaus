@@ -14,10 +14,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Logging.Serilog\CasCap.Common.Logging.Serilog.csproj" />
+    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Hosting.AspNetCore\CasCap.Common.Hosting.AspNetCore.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <PackageReference Include="CasCap.Common.Logging.Serilog" />
+    <PackageReference Include="CasCap.Common.Hosting.AspNetCore" />
   </ItemGroup>
 
   <ItemGroup>
