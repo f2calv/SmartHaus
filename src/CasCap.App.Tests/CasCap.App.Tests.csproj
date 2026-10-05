@@ -18,7 +18,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CasCap.Api.Knx\CasCap.Api.Knx.csproj" />
-    <ProjectReference Include="..\CasCap.SmartHaus\CasCap.SmartHaus.csproj" />
+    <ProjectReference Include="..\CasCap.SmartHaus\CasCap.Backend.csproj" />
     <ProjectReference Include="..\CasCap.App.Server\CasCap.App.Server.csproj" />
   </ItemGroup>
 
