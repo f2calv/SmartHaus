@@ -46,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\signalizr\src\CasCap.Comms.AI\CasCap.Comms.AI.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI\CasCap.Common.AI.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Logging\CasCap.Common.Logging.csproj" />
@@ -65,7 +66,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\CasCap.Comms.AI\CasCap.Comms.AI.csproj" />
     <ProjectReference Include="..\CasCap.Api.DDns\CasCap.Api.DDns.csproj" />
     <ProjectReference Include="..\CasCap.Api.Buderus.Sinks\CasCap.Api.Buderus.Sinks.csproj" />
     <ProjectReference Include="..\CasCap.Api.DoorBird.Sinks\CasCap.Api.DoorBird.Sinks.csproj" />

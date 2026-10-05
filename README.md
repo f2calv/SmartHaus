@@ -137,7 +137,7 @@ defines `GroupName` and `MonitorGroupName` for messaging.
 | [`AquariumMcpQueryService`](src/CasCap.Backend/Services/Mcp/AquariumMcpQueryService.cs) | 2 | — | Sicce water pump control |
 | [`SmartPlugMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartPlugMcpQueryService.cs) | 3 | — | Shelly smart plug control |
 | [`SmartLightingMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartLightingMcpQueryService.cs) | 15 | — | KNX ceiling/wall lights and Wiz smart bulbs |
-| [`MessagingMcpQueryService`](src/CasCap.Comms.AI/Services/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
+| [`MessagingMcpQueryService`](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI/Services/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
 
 ### Service Architecture
 

@@ -111,7 +111,7 @@ Key configuration sections:
 | `CasCap:KnxConfig` | `KnxConfig` | KNX bus settings |
 | `CasCap:SicceConfig` | `SicceConfig` | Sicce pump settings |
 | `CasCap:SignalizrClientConfig` | `SignalizrClientConfig` | Signalizr gateway addresses and durable subscriber name |
-| `CasCap:CommsConfig` | `CommsConfig` | Shared Signalizr communications pipeline settings; see [CasCap.Comms](../CasCap.Comms/README.md) |
+| `CasCap:CommsConfig` | `CommsConfig` | Shared Signalizr communications pipeline settings; see [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) |
 | `CasCap:SecurityAgentConfig` | `SecurityAgentConfig` | Security/vision agent settings |
 | `CasCap:HeatingAgentConfig` | `HeatingAgentConfig` | Heating agent settings (DHW1 alert hysteresis, cooldown) |
 | `CasCap:DDnsConfig` | `DDnsConfig` | Dynamic DNS settings |

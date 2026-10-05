@@ -36,14 +36,14 @@ These sinks are registered in the feature pods and forward domain events to the 
 | --- | --- |
 | `HausHubSinkConsoleService` | Logs every `HubEvent` via the .NET logger |
 | `HausHubSinkMetricsService` | Records OpenTelemetry metrics per `HubEvent` type |
-| `CommsStreamSinkService` | Writes/reads `CommsEvent` entries to/from the Redis Stream configured by `CommsConfig.StreamKey`. Lives in [CasCap.Comms](../CasCap.Comms/README.md) |
+| `CommsStreamSinkService` | Writes/reads `CommsEvent` entries to/from the Redis Stream configured by `CommsConfig.StreamKey`. Lives in [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) |
 | `MediaStreamSinkService` | Writes/reads `MediaEvent` entries to/from the Redis Stream configured by `MediaConfig.StreamKey` |
 
 ### Background Services
 
 | Service | Description |
 | --- | --- |
-| `CommunicationsBgService` | Gateway service from [CasCap.Comms](../CasCap.Comms/README.md) — consumes the comms Redis Stream and incoming Signal messages, routes both through the CommsAgent via `AgentCommsResponder` from [CasCap.Comms.AI](../CasCap.Comms.AI/README.md), and relays responses to the Signalizr chat group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorGroupName` group |
+| `CommunicationsBgService` | Gateway service from [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) — consumes the comms Redis Stream and incoming Signal messages, routes both through the CommsAgent via `AgentCommsResponder` from [CasCap.Comms.AI](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI), and relays responses to the Signalizr chat group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorGroupName` group |
 | `EdgeHardwareAgentRunEnricher` | `IAgentRunEnricher` that records edge GPU energy use for each CommsAgent run and adds it, with Fronius solar context, to the reply footer and the monitor-group timeline |
 | `MediaBgService` | Consumes the media Redis Stream (`MediaConfig.StreamKey`), routes media to the domain agent configured in `MediaConfig.SourceAgentMap` (e.g. DoorBird → SecurityAgent), and posts analysis findings back to the comms stream. Runs in the Comms pod alongside `CommunicationsBgService` |
 | `HausHubSinksBgService` | Initialises the hub-side `IEventSink<HubEvent>` implementations |
@@ -90,7 +90,7 @@ tool and prompt names describe their capabilities independently of CLR type name
 
 ### `CommsConfig` (`CasCap:CommsConfig`)
 
-Defined in [CasCap.Comms](../CasCap.Comms/README.md), which documents every setting. The
+Defined in [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms), which documents every setting. The
 settings SmartHaus deployments usually change are:
 
 | Setting | Type | Default | Description |
@@ -203,7 +203,7 @@ endpoints are nullable and are read only when that provider is selected.
 
 ### CommsAgent — the gateway agent
 
-`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It comes from the shared [CasCap.Comms](../CasCap.Comms/README.md) project, and SmartHaus answers through `AgentCommsResponder` from [CasCap.Comms.AI](../CasCap.Comms.AI/README.md). It acts as a gateway between the smart home and the user:
+`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It comes from the shared [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) project, and SmartHaus answers through `AgentCommsResponder` from [CasCap.Comms.AI](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI). It acts as a gateway between the smart home and the user:
 
 1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
 2. **Incoming messages** — Subscribes to the configured Signalizr group over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.

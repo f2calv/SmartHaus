@@ -26,6 +26,9 @@
     <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice.Testing/CasCap.Api.Voice.Testing.csproj" />
   </Folder>
   <Folder Name="/signalizr/">
+    <Project Path="../signalizr/src/CasCap.Comms.AI/CasCap.Comms.AI.csproj" />
+    <Project Path="../signalizr/src/CasCap.Comms.Tests/CasCap.Comms.Tests.csproj" />
+    <Project Path="../signalizr/src/CasCap.Comms/CasCap.Comms.csproj" />
     <Project Path="../signalizr/src/CasCap.Signalizr.Client/CasCap.Signalizr.Client.csproj" />
     <Project Path="../signalizr/src/CasCap.Signalizr.Client.Testing/CasCap.Signalizr.Client.Testing.csproj" />
   </Folder>
@@ -76,11 +79,6 @@
     <Project Path="src/CasCap.Api.Ubiquiti/CasCap.Api.Ubiquiti.csproj" />
     <Project Path="src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj" />
-  </Folder>
-  <Folder Name="/SmartHaus/comms/">
-    <Project Path="src/CasCap.Comms.AI/CasCap.Comms.AI.csproj" />
-    <Project Path="src/CasCap.Comms.Tests/CasCap.Comms.Tests.csproj" />
-    <Project Path="src/CasCap.Comms/CasCap.Comms.csproj" />
   </Folder>
   <Folder Name="/SmartHaus/">
     <Project Path="src/CasCap.App.Console/CasCap.App.Console.csproj" />
