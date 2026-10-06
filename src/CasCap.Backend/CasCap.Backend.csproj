@@ -46,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
+    <ProjectReference Include="..\..\..\agentizr\src\CasCap.AgentRuntime.Contracts\CasCap.AgentRuntime.Contracts.csproj" />
     <ProjectReference Include="..\..\..\signalizr\src\CasCap.Comms.AI\CasCap.Comms.AI.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI\CasCap.Common.AI.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />

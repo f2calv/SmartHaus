@@ -32,6 +32,10 @@
     <Project Path="../signalizr/src/CasCap.Signalizr.Client/CasCap.Signalizr.Client.csproj" />
     <Project Path="../signalizr/src/CasCap.Signalizr.Client.Testing/CasCap.Signalizr.Client.Testing.csproj" />
   </Folder>
+  <Folder Name="/agentizr/">
+    <Project Path="../agentizr/src/CasCap.AgentRuntime.Client/CasCap.AgentRuntime.Client.csproj" />
+    <Project Path="../agentizr/src/CasCap.AgentRuntime.Contracts/CasCap.AgentRuntime.Contracts.csproj" />
+  </Folder>
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />

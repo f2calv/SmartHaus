@@ -3,10 +3,10 @@ using CasCap.Models;
 namespace CasCap.Extensions;
 
 /// <summary>
-/// Domain-specific GPU and energy metric extensions for <see cref="AgentRunResult"/>,
-/// backed by <see cref="AgentRunResult.AdditionalProperties"/>.
+/// Domain-specific GPU and energy metric extensions for <see cref="CommsAgentRunResult"/>,
+/// backed by <see cref="CommsAgentRunResult.AdditionalProperties"/>.
 /// </summary>
-public static class AgentRunResultExtensions
+public static class CommsAgentRunResultExtensions
 {
     const string EstimatedEnergyWhKey = nameof(EstimatedEnergyWhKey);
     const string GpuPowerDrawWKey = nameof(GpuPowerDrawWKey);
@@ -14,35 +14,35 @@ public static class AgentRunResultExtensions
     const string GpuUtilizationPercentKey = nameof(GpuUtilizationPercentKey);
 
     /// <summary>Gets the estimated energy consumed by this inference run in watt-hours.</summary>
-    public static double? GetEstimatedEnergyWh(this AgentRunResult result) =>
+    public static double? GetEstimatedEnergyWh(this CommsAgentRunResult result) =>
         result.AdditionalProperties.TryGetValue(EstimatedEnergyWhKey, out var v) ? v as double? : null;
 
     /// <summary>Sets the estimated energy consumed by this inference run in watt-hours.</summary>
-    public static void SetEstimatedEnergyWh(this AgentRunResult result, double? value) =>
+    public static void SetEstimatedEnergyWh(this CommsAgentRunResult result, double? value) =>
         result.AdditionalProperties[EstimatedEnergyWhKey] = value;
 
     /// <summary>Gets the average GPU power draw during inference in watts.</summary>
-    public static double? GetGpuPowerDrawW(this AgentRunResult result) =>
+    public static double? GetGpuPowerDrawW(this CommsAgentRunResult result) =>
         result.AdditionalProperties.TryGetValue(GpuPowerDrawWKey, out var v) ? v as double? : null;
 
     /// <summary>Sets the average GPU power draw during inference in watts.</summary>
-    public static void SetGpuPowerDrawW(this AgentRunResult result, double? value) =>
+    public static void SetGpuPowerDrawW(this CommsAgentRunResult result, double? value) =>
         result.AdditionalProperties[GpuPowerDrawWKey] = value;
 
     /// <summary>Gets the GPU temperature at inference completion in degrees Celsius.</summary>
-    public static double? GetGpuTemperatureC(this AgentRunResult result) =>
+    public static double? GetGpuTemperatureC(this CommsAgentRunResult result) =>
         result.AdditionalProperties.TryGetValue(GpuTemperatureCKey, out var v) ? v as double? : null;
 
     /// <summary>Sets the GPU temperature at inference completion in degrees Celsius.</summary>
-    public static void SetGpuTemperatureC(this AgentRunResult result, double? value) =>
+    public static void SetGpuTemperatureC(this CommsAgentRunResult result, double? value) =>
         result.AdditionalProperties[GpuTemperatureCKey] = value;
 
     /// <summary>Gets the GPU utilization at inference completion as a percentage (0–100).</summary>
-    public static double? GetGpuUtilizationPercent(this AgentRunResult result) =>
+    public static double? GetGpuUtilizationPercent(this CommsAgentRunResult result) =>
         result.AdditionalProperties.TryGetValue(GpuUtilizationPercentKey, out var v) ? v as double? : null;
 
     /// <summary>Sets the GPU utilization at inference completion as a percentage (0–100).</summary>
-    public static void SetGpuUtilizationPercent(this AgentRunResult result, double? value) =>
+    public static void SetGpuUtilizationPercent(this CommsAgentRunResult result, double? value) =>
         result.AdditionalProperties[GpuUtilizationPercentKey] = value;
 
     /// <summary>
@@ -51,7 +51,7 @@ public static class AgentRunResultExtensions
     /// live GPU metrics are unavailable.
     /// </summary>
     public static void PopulateEnergyMetrics(
-        this AgentRunResult result,
+        this CommsAgentRunResult result,
         EdgeHardwareSnapshot? preSnapshot,
         EdgeHardwareSnapshot? postSnapshot,
         EdgeHardwareConfig? edgeHardwareConfig)

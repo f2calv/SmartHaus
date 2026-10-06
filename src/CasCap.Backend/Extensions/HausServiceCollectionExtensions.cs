@@ -67,7 +67,7 @@ public static class HausServiceCollectionExtensions
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
         builder.Services.AddMediaStreamSink();
         builder.Services.AddComms(builder.Configuration, lite);
-        builder.Services.AddCommsAgent(AgentKeys.CommsAgent, typeof(HausServiceCollectionExtensions).Assembly);
+        builder.Services.AddCommsAgent();
         builder.Services.AddSingleton<IAgentRunEnricher, EdgeHardwareAgentRunEnricher>();
 
         if (!lite)

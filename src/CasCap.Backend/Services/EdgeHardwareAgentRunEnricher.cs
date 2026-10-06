@@ -18,14 +18,14 @@ public sealed class EdgeHardwareAgentRunEnricher(
         await GetLatestSnapshotAsync();
 
     /// <inheritdoc/>
-    public async Task AfterRunAsync(AgentRunResult result, object? state, CancellationToken cancellationToken)
+    public async Task AfterRunAsync(CommsAgentRunResult result, object? state, CancellationToken cancellationToken)
     {
         var postSnapshot = await GetLatestSnapshotAsync();
         result.PopulateEnergyMetrics(state as EdgeHardwareSnapshot, postSnapshot, edgeHardwareConfig.Value);
     }
 
     /// <inheritdoc/>
-    public async Task<string?> FormatFooterLineAsync(AgentRunResult result, CancellationToken cancellationToken)
+    public async Task<string?> FormatFooterLineAsync(CommsAgentRunResult result, CancellationToken cancellationToken)
     {
         var energyWh = result.GetEstimatedEnergyWh();
         var gpuTemp = result.GetGpuTemperatureC();
@@ -81,7 +81,7 @@ public sealed class EdgeHardwareAgentRunEnricher(
     }
 
     /// <inheritdoc/>
-    public IEnumerable<string> FormatDebugLines(AgentRunResult result)
+    public IEnumerable<string> FormatDebugLines(CommsAgentRunResult result)
     {
         if (result.GetEstimatedEnergyWh() is > 0 and var energy)
             yield return $"\u26A1 Energy: {energy:F4} Wh";
