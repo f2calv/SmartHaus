@@ -73,11 +73,6 @@ public static partial class AppHost
         builder.Services.AddMessagingMcpStub();
         builder.Services.AddFeatureFlagService(enabledFeatures);
 
-        builder.Services.AddSingleton<InMemorySessionStore>();
-        builder.Services.AddSingleton<ISessionStore>(serviceProvider =>
-            serviceProvider.GetRequiredService<InMemorySessionStore>());
-        builder.Services.AddSingleton<AgentCommandHandler>();
-
         // Index tool service and prompt types after all MCP registrations.
         builder.Services.AddAgentTypeRegistry(typeof(HausServiceCollectionExtensions).Assembly);
         builder.Services.AddSingleton<ConsoleApp>();

@@ -35,24 +35,6 @@ cancellation, and execution, while `AppHost.Features.cs` owns the lite feature a
 - **Session summary**: two-column panel showing provider, agent, usage statistics, and middleware diagnostics.
 - **Navigation**: Escape returns to agent selector; `exit`/`quit` or Ctrl+C ends the session.
 
-### Slash Commands
-
-Typing a slash-command at the prompt intercepts the input before it reaches the AI agent. The same commands are also recognised by `CommunicationsBgService` when received via the Signal messenger interface. Available commands (defined in the `ChatCommand` enum in `CasCap.Common.AI`):
-
-| Command | Description |
-| --- | --- |
-| `/help` | List all available commands. |
-| `/session info` | Display technical information about the current session (size in bytes, message count, StateBag keys). |
-| `/session reset` | Discard the current session and start a fresh conversation on the next message. |
-| `/session bypass <prompt>` | Send a one-off prompt to the agent without loading or saving the active session. |
-| `/session compact <count>` | Reduce the session to the newest N messages, removing older history. |
-| `/session disable` | Disable session persistence; each message starts a fresh conversation. |
-| `/session enable` | Re-enable session persistence. |
-| `/session save <name>` | Save a named snapshot of the active session for later analysis. |
-| `/session load <name>` | Load a previously saved snapshot into the active session. |
-| `/session delete <name>` | Delete a previously saved session snapshot. |
-| `/model <modelName>` | Override the model used for subsequent requests. Omit the argument to print the current override. |
-
 ## Configuration
 
 Uses the same `appsettings.json` / `appsettings.Development.json` as the server application. AI agent selection is driven by the `AIConfig` section.

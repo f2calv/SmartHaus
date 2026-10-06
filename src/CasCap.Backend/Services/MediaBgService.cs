@@ -28,7 +28,6 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
     TimeProvider timeProvider,
     IRemoteCache remoteCache,
     IEventSink<CommsEvent> commsSink,
-    AgentCommandHandler commandHandler,
     IServiceProvider serviceProvider) : IBgFeature
 {
     private readonly IDatabase _db = remoteCache.Db;
@@ -159,8 +158,6 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
 
         try
         {
-            var session = await commandHandler.LoadSessionAsync(agent, agentConfig.Name);
-
             var (prompt, binaryContent, mimeType) = mediaEvent.MediaType switch
             {
                 MediaType.Image => (agentConfig.Prompt, mediaBytes, mediaEvent.Media.MimeType ?? "image/jpeg"),
@@ -179,7 +176,7 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                 agentConfig,
                 message,
                 chatOptions,
-                session: session,
+                session: null,
                 cancellationToken: cancellationToken,
                 logger: logger);
 

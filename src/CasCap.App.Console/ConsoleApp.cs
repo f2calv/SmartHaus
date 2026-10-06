@@ -10,7 +10,7 @@ namespace CasCap.App.Console;
 /// Main console application. Connects to the first <see cref="AgentConfig"/> from
 /// <see cref="AIConfig"/> and runs a simple interactive prompt loop with streaming responses.
 /// </summary>
-public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConfig, IOptions<ApiAuthConfig> apiAuthConfig, AgentCommandHandler commandHandler, IServiceProvider serviceProvider)
+public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig> aiConfig, IOptions<ApiAuthConfig> apiAuthConfig, IServiceProvider serviceProvider)
 {
     /// <summary>
     /// Approximate tokenizer for input token counting. Uses the <c>cl100k_base</c> encoding
@@ -157,42 +157,6 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
                         return;
 
                     AnsiConsole.WriteLine();
-
-                    // ── Slash-command handling ───────────────────────────────────────
-                    if (ChatCommandParser.TryParseCommand(promptLine, out var chatCmd, out var cmdArg))
-                    {
-                        // SessionBypass needs local streaming — handle before delegating.
-                        if (chatCmd is ChatCommand.SessionBypass)
-                        {
-                            if (string.IsNullOrWhiteSpace(cmdArg))
-                                AnsiConsole.MarkupLine("[red]Usage: /session bypass <prompt>[/]");
-                            else
-                                await RunStreamingAndDisplayAsync(agent, agentConfig, provider, chatOptions,
-                                    AgentExtensions.BuildChatMessage(cmdArg), bypassSession: null, cancellationToken);
-                        }
-                        else
-                        {
-                            // Sync live session to the store so commands see current state.
-                            if (session is not null)
-                                await commandHandler.SaveSessionAsync(agent, agentConfig.Name, session);
-
-                            var response = await commandHandler.HandleCommandAsync(
-                                chatCmd, cmdArg, agent, agentConfig.Name);
-
-                            if (response is not null)
-                                AnsiConsole.MarkupLine($"[green]{Markup.Escape(response)}[/]");
-
-                            // Reload session from store (may have been reset or compacted).
-                            session = await commandHandler.LoadSessionAsync(agent, agentConfig.Name);
-
-                            // Keep chatOptions in sync with model and instructions overrides.
-                            commandHandler.ApplyModelOverride(chatOptions, agentConfig.Name);
-                            commandHandler.ApplyInstructionsOverride(chatOptions, agentConfig.Name, aiConfig.Value);
-                        }
-
-                        AnsiConsole.WriteLine();
-                        continue;
-                    }
 
                     if (promptLine.TrimStart().StartsWith('/'))
                     {
@@ -676,70 +640,6 @@ public sealed class ConsoleApp(IOptions<AppConfig> appConfig, IOptions<AIConfig>
         AnsiConsole.Write(container);
         AnsiConsole.WriteLine();
     }
-
-    #region commands
-
-    /// <summary>
-    /// Runs the agent against <paramref name="message"/> using <paramref name="bypassSession"/>
-    /// (typically <see langword="null"/> to bypass the active session) and streams the response
-    /// to the console. The caller's session is not modified.
-    /// </summary>
-    private static async Task RunStreamingAndDisplayAsync(
-        AIAgent agent,
-        AgentConfig agentConfig,
-        ProviderConfig provider,
-        ChatOptions chatOptions,
-        ChatMessage message,
-        AgentSession? bypassSession,
-        CancellationToken cancellationToken)
-    {
-        var result = new AgentRunResult(agentConfig.Name);
-        var sw = Stopwatch.StartNew();
-
-        try
-        {
-            AgentRunOptions runOptions = new ChatClientAgentRunOptions(chatOptions);
-
-            using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
-            timeoutCts.CancelAfter(TimeSpan.FromMinutes(5));
-
-            var enumerator = agent.RunStreamingAsync(
-                [message], bypassSession, runOptions, timeoutCts.Token).GetAsyncEnumerator(timeoutCts.Token);
-
-            await AnsiConsole.Status()
-                .Spinner(Spinner.Known.Dots)
-                .StartAsync($"Waiting for {Markup.Escape(provider.ModelName)}…", async _ =>
-                {
-                    while (await enumerator.MoveNextAsync())
-                    {
-                        ProcessUpdate(enumerator.Current, result, sw);
-                        if (result.TimeToFirstToken.HasValue)
-                            break;
-                    }
-                });
-
-            while (await enumerator.MoveNextAsync())
-                ProcessUpdate(enumerator.Current, result, sw);
-        }
-        catch (OperationCanceledException)
-        {
-            result.AppendText("(cancelled)");
-        }
-        catch (Exception ex)
-        {
-            result.Error = ex;
-        }
-
-        result.Elapsed = sw.Elapsed;
-        result.IsComplete = result.Error is null;
-        AnsiConsole.WriteLine();
-        AnsiConsole.WriteLine();
-
-        if (result.Error is not null)
-            AnsiConsole.WriteException(result.Error, ExceptionFormats.ShortenEverything);
-    }
-
-    #endregion
 
     #region middleware
 
