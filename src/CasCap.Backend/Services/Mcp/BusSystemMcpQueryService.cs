@@ -7,7 +7,7 @@ namespace CasCap.Services;
 public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySvc, IKnxState knxState)
 {
     //TODO: I dont like these group addresses hardcoded here, need to change this
-    const string FrontDoorContactGroupName = "EG-BI-Entrance(FrontDoor)-East-STATE";
+    private const string FrontDoorContactGroupName = "EG-BI-Entrance(FrontDoor)-East-STATE";
 
     /// <inheritdoc cref="IKnxQueryService.SetShutterState"/>
     [McpServerTool]

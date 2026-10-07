@@ -13,5 +13,5 @@ public interface IKnxConnectionNotifier
     /// A <see cref="ChannelReader{T}"/> that yields <see cref="KnxConnectionStateChange"/>
     /// events as they occur.
     /// </summary>
-    ChannelReader<KnxConnectionStateChange> Reader { get; }
+    public ChannelReader<KnxConnectionStateChange> Reader { get; }
 }

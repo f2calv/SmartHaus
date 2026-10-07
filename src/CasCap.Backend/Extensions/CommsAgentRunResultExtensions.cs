@@ -8,10 +8,10 @@ namespace CasCap.Extensions;
 /// </summary>
 public static class CommsAgentRunResultExtensions
 {
-    const string EstimatedEnergyWhKey = nameof(EstimatedEnergyWhKey);
-    const string GpuPowerDrawWKey = nameof(GpuPowerDrawWKey);
-    const string GpuTemperatureCKey = nameof(GpuTemperatureCKey);
-    const string GpuUtilizationPercentKey = nameof(GpuUtilizationPercentKey);
+    private const string EstimatedEnergyWhKey = nameof(EstimatedEnergyWhKey);
+    private const string GpuPowerDrawWKey = nameof(GpuPowerDrawWKey);
+    private const string GpuTemperatureCKey = nameof(GpuTemperatureCKey);
+    private const string GpuUtilizationPercentKey = nameof(GpuUtilizationPercentKey);
 
     /// <summary>Gets the estimated energy consumed by this inference run in watt-hours.</summary>
     public static double? GetEstimatedEnergyWh(this CommsAgentRunResult result) =>

@@ -4,8 +4,8 @@
 public interface IMotionDetectionDevice
 {
     /// <summary>Raised when motion state changes.</summary>
-    event EventHandler<MotionDetectedEventArgs> MotionDetectedEvent;
+    public event EventHandler<MotionDetectedEventArgs> MotionDetectedEvent;
 
     /// <summary>Gets whether motion is currently detected.</summary>
-    bool IsMotionDetected { get; }
+    public bool IsMotionDetected { get; }
 }

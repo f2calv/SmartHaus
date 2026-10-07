@@ -11,9 +11,9 @@ public sealed class WizClientService(
     IOptions<WizConfig> config,
     TimeProvider timeProvider)
 {
-    const string DiscoveryPhoneMac = "AAAAAAAAAAAA";
-    const string DiscoveryPhoneIp = "1.2.3.4";
-    const string DiscoveryId = "1";
+    private const string DiscoveryPhoneMac = "AAAAAAAAAAAA";
+    private const string DiscoveryPhoneIp = "1.2.3.4";
+    private const string DiscoveryId = "1";
 
     private static readonly JsonSerializerOptions s_jsonOptions = new()
     {

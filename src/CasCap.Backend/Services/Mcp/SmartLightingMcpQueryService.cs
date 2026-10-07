@@ -17,9 +17,9 @@ public sealed partial class SmartLightingMcpQueryService(
     IShellyQueryService? shellyQuerySvc = null)
 {
     //TODO: I dont like these group addresses hardcoded here, need to change this
-    const string DoorLightGroupName = "EG-LI-Entrance(FrontDoor)-Outdoor-DL";
-    const string OfficeLightGroupName = "DG-LI-Office-DL-South";
-    const string DeskLampDeviceName = "DG-SD-Office(DeskLamp)";
+    private const string DoorLightGroupName = "EG-LI-Entrance(FrontDoor)-Outdoor-DL";
+    private const string OfficeLightGroupName = "DG-LI-Office-DL-South";
+    private const string DeskLampDeviceName = "DG-SD-Office(DeskLamp)";
 
     /// <inheritdoc cref="IKnxQueryService.SetLightState"/>
     [McpServerTool]

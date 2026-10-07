@@ -4,5 +4,5 @@ namespace CasCap.Abstractions;
 public interface IWizQuery
 {
     /// <summary>Retrieves the latest snapshot per discovered bulb.</summary>
-    Task<List<WizSnapshot>> GetSnapshots();
+    public Task<List<WizSnapshot>> GetSnapshots();
 }

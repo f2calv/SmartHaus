@@ -42,7 +42,7 @@ public sealed class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> log
     /// - 0.144 litres per second
     /// - 427 pulses per litre
     /// </summary>
-    const int PulsesPerLiterConstant = 427;//Note: official data sheet says 450 pulses per minute
+    private const int PulsesPerLiterConstant = 427;//Note: official data sheet says 450 pulses per minute
 
     private async Task ReadFromSensor(CancellationToken cancellationToken)
     {

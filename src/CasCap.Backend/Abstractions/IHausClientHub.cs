@@ -7,17 +7,17 @@ namespace CasCap.Abstractions;
 public interface IHausClientHub
 {
     /// <summary>Delivers a text message from the specified user.</summary>
-    Task ReceiveMessage(string user, string message, DateTime date);
+    public Task ReceiveMessage(string user, string message, DateTime date);
 
     /// <summary>Delivers a <see cref="FroniusEvent"/> to the client.</summary>
-    Task ReceiveFroniusEvent(FroniusEvent e);
+    public Task ReceiveFroniusEvent(FroniusEvent e);
 
     /// <summary>Delivers a <see cref="KnxEvent"/> to the client.</summary>
-    Task ReceiveKnxEvent(KnxEvent e);
+    public Task ReceiveKnxEvent(KnxEvent e);
 
     /// <summary>Delivers a <see cref="DoorBirdEvent"/> to the client.</summary>
-    Task ReceiveDoorBirdEvent(DoorBirdEvent e);
+    public Task ReceiveDoorBirdEvent(DoorBirdEvent e);
 
     /// <summary>Delivers a <see cref="BuderusEvent"/> to the client.</summary>
-    Task ReceiveBuderusEvent(BuderusEvent e);
+    public Task ReceiveBuderusEvent(BuderusEvent e);
 }

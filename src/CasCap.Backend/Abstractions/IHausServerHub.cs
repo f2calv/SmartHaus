@@ -10,20 +10,20 @@ namespace CasCap.Abstractions;
 public interface IHausServerHub
 {
     /// <summary>Broadcasts a text message to all other connected clients.</summary>
-    Task SendMessage(string user, string message, DateTime date);
+    public Task SendMessage(string user, string message, DateTime date);
 
     /// <summary>Broadcasts a text message to all connected clients.</summary>
-    Task Broadcast(string message);
+    public Task Broadcast(string message);
 
     /// <summary>Broadcasts a <see cref="BuderusEvent"/> to all connected clients.</summary>
-    Task SendBuderusEvent() => throw new NotImplementedException();
+    public Task SendBuderusEvent() => throw new NotImplementedException();
 
     /// <summary>Broadcasts a <see cref="DoorBirdEvent"/> to all connected clients.</summary>
-    Task SendDoorBirdEvent() => throw new NotImplementedException();
+    public Task SendDoorBirdEvent() => throw new NotImplementedException();
 
     /// <summary>Broadcasts a <see cref="FroniusEvent"/> to all connected clients.</summary>
-    Task SendFroniusEvent() => throw new NotImplementedException();
+    public Task SendFroniusEvent() => throw new NotImplementedException();
 
     /// <summary>Broadcasts a <c>KnxTelegram</c> to all connected clients.</summary>
-    Task SendKnxTelegram() => throw new NotImplementedException();
+    public Task SendKnxTelegram() => throw new NotImplementedException();
 }

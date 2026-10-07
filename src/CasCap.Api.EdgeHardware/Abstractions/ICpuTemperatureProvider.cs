@@ -10,5 +10,5 @@ namespace CasCap.Abstractions;
 public interface ICpuTemperatureProvider
 {
     /// <summary>Returns the current CPU temperature in Celsius, or <see langword="null"/> when unavailable.</summary>
-    double? GetTempInCelsius();
+    public double? GetTempInCelsius();
 }
