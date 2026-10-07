@@ -138,7 +138,10 @@ public static partial class AppHost
         }
 
         if (enabledFeatures.Contains(FeatureNames.Comms))
+        {
             builder.AddComms();
+            mcpBuilder.WithToolsFromAssembly(typeof(MessagingMcpQueryService).Assembly);
+        }
 
         // Index tool service and prompt types by name so agent config resolves them deterministically,
         // rather than scanning every loaded assembly. Must run after the AddXxxMcp registrations above.
