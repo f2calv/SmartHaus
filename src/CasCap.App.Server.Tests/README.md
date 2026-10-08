@@ -21,6 +21,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
+| `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
 
 ## Trait Categories
@@ -55,9 +56,11 @@ CasCap.App.Server.Tests/
 ├── Api/
 │   ├── FeatureServiceRegistrationTests.cs
 │   ├── HealthTests.cs
+│   ├── McpAuthenticationTests.cs
 │   └── SystemControllerTests.cs
 ├── Infrastructure/
 │   ├── CasCapAppWebApplicationFactory.cs
+│   ├── StrictAuthCasCapAppWebApplicationFactory.cs
 │   └── WebApiTestBase.cs
 ├── Tests/
 │   ├── Integration/

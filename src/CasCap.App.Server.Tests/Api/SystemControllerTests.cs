@@ -110,29 +110,4 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         output.WriteLine($"GET /api/system (correct creds) → {(int)response.StatusCode}");
     }
 
-    /// <summary>
-    /// A variant of <see cref="CasCapAppWebApplicationFactory"/> that does NOT replace the
-    /// default authorization policy, enabling tests that verify real 401 / 403 behaviour.
-    /// </summary>
-    private sealed class StrictAuthCasCapAppWebApplicationFactory : CasCapAppWebApplicationFactory
-    {
-        /// <inheritdoc/>
-        protected override void ConfigureWebHost(Microsoft.AspNetCore.Hosting.IWebHostBuilder builder)
-        {
-            // Apply all the base overrides (config, environment …) but skip the permissive
-            // authorization replacement added in CasCapAppWebApplicationFactory.ConfigureWebHost.
-            // We do this by calling base first and then re-registering a strict policy.
-            base.ConfigureWebHost(builder);
-
-            builder.ConfigureServices(services =>
-            {
-                services.AddAuthorizationBuilder()
-                    .SetDefaultPolicy(
-                        new Microsoft.AspNetCore.Authorization.AuthorizationPolicyBuilder()
-                            .AddAuthenticationSchemes(BasicAuthenticationHandler.SchemeName)
-                            .RequireAuthenticatedUser()
-                            .Build());
-            });
-        }
-    }
 }

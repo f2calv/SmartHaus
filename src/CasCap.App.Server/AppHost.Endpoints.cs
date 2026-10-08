@@ -53,7 +53,9 @@ public static partial class AppHost
                 string.Join("\n", endpointSources.SelectMany(source => source.Endpoints)));
         }
 
-        app.MapMcp(aiConfig.McpUrl);
+        app.MapGroup(aiConfig.McpUrl)
+            .RequireAuthorization()
+            .MapMcp();
         app.MapControllers();
         app.MapRazorPages();
 
