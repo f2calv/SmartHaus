@@ -65,9 +65,24 @@ public static class HausServiceCollectionExtensions
     public static void AddComms(this WebApplicationBuilder builder, bool lite = false)
     {
         builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
+        builder.Services.AddCasCapConfiguration<AgentRuntimeAzureAuthConfig>();
         builder.Services.AddMediaStreamSink();
         builder.Services.AddComms(builder.Configuration, lite);
-        builder.Services.AddCommsAgent();
+        var agentRuntimeClient = builder.Services.AddCommsAgent();
+        var runtimeAuthConfig = builder.Configuration
+            .GetSection(AgentRuntimeAzureAuthConfig.ConfigurationSectionName)
+            .Get<AgentRuntimeAzureAuthConfig>() ?? new AgentRuntimeAzureAuthConfig();
+        if (runtimeAuthConfig.Enabled)
+        {
+            builder.Services.AddTransient(serviceProvider =>
+            {
+                var authOptions = serviceProvider.GetRequiredService<IOptions<AgentRuntimeAzureAuthConfig>>();
+                return new TokenCredentialBearerHandler(
+                    authOptions.Value.TokenCredential,
+                    authOptions.Value.Scope!);
+            });
+            agentRuntimeClient.AddHttpMessageHandler<TokenCredentialBearerHandler>();
+        }
         builder.Services.AddSingleton<IAgentRunEnricher, EdgeHardwareAgentRunEnricher>();
 
         if (!lite)

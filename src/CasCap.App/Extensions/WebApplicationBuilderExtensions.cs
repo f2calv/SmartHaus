@@ -25,7 +25,15 @@ public static class HostApplicationBuilderExtensions
         var appConfig = builder.Configuration.GetSection(AppConfig.ConfigurationSectionName).Get<AppConfig>()
             ?? throw new GenericException($"{nameof(AppConfig)} cannot be null!");
         if (appConfig.IsKeyVaultEnabled)
-            builder.Configuration.AddKeyVaultConfiguration(appConfig.KeyVaultUri, appConfig.TokenCredential);
+        {
+            builder.Configuration.AddKeyVaultConfiguration(
+                appConfig.KeyVaultUri,
+                appConfig.TokenCredential,
+                new PrefixKeyVaultSecretManager(
+                    "AgentRuntime--SmartHaus--Exec",
+                    AgentRuntimeAzureAuthConfig.ConfigurationSectionName,
+                    "AgentRuntime"));
+        }
         builder.Services.AddCasCapConfiguration<AppConfig>();
         builder.Services.AddCasCapConfiguration<AzureAuthConfig>();
 
