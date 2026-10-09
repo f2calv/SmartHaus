@@ -13,15 +13,15 @@ The single `HostApplicationBuilderExtensions.InitializeConfiguration` extension 
 2. Binds `AppConfig` to extract Key Vault connection details.
 3. If `IsKeyVaultEnabled` is `true`, adds Azure Key Vault as a configuration source (skipped when `KeyVaultName = "skip"`).
 4. Re-binds `AppConfig` with the newly available Key Vault secrets (or the original sources when Key Vault is skipped).
-5. Binds and registers all strongly-typed option sections used across the solution.
+5. Binds and registers the shared strongly-typed options needed by both application hosts.
 
 ### Registered Options
 
 | Section | Type | Description |
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics, sensors) |
-| `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub connection strings |
-| `AIConfig` | `AIConfig` | AI agent configuration (named providers and agents) |
+| `CasCap:AzureAuthConfig` | `AzureAuthConfig` | Shared Azure credential settings |
+| `CasCap:FeatureConfig` | `FeatureConfig` | Enabled application feature names |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic authentication credentials for the REST API |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | SignalR hub path and sink configuration |
 
@@ -56,8 +56,8 @@ flowchart TD
 
     subgraph Binding["Option Binding (IOptions)"]
         APP["AppConfig<br/>(Feature flags, Azure, metrics)"]
-        CONN["ConnectionStrings<br/>(Redis, Storage, SignalR)"]
-        AI["AIConfig<br/>(Providers, agents)"]
+        AZURE["AzureAuthConfig<br/>(Shared Azure credentials)"]
+        FEATURES["FeatureConfig<br/>(Enabled features)"]
         AUTH["ApiAuthConfig<br/>(Basic auth credentials)"]
         HUB["SignalRHubConfig<br/>(Hub path, sinks)"]
     end
@@ -70,15 +70,15 @@ flowchart TD
     SECRETS --> APP
     APP -."IsKeyVaultEnabled?".-> KV_CHECK{"KeyVaultName<br/>= 'skip'?"}
     KV_CHECK -->|"No"| KV
-    KV_CHECK -->|"Yes — skip KV"| CONN
-    KV --> CONN
-    KV --> AI
+    KV_CHECK -->|"Yes — skip KV"| AZURE
+    KV --> AZURE
+    KV --> FEATURES
     KV --> AUTH
     KV --> HUB
 
     APP --> VALIDATION["ValidateDataAnnotations<br/>(fail-fast on startup)"]
-    CONN --> VALIDATION
-    AI --> VALIDATION
+    AZURE --> VALIDATION
+    FEATURES --> VALIDATION
     AUTH --> VALIDATION
     HUB --> VALIDATION
 ```
@@ -89,7 +89,7 @@ flowchart TD
 
 | Project | Purpose |
 | --- | --- |
-| `CasCap.Backend` | Core orchestration, SignalR hub, AI agent extensions |
+| `CasCap.Backend` | Core orchestration and SignalR hub configuration |
 | `CasCap.Common.Configuration` | `AddStandardConfiguration` and `AddKeyVaultConfiguration` helpers |
 | `CasCap.Common.Extensions.Diagnostics.HealthChecks` | Kubernetes probe tag helpers |
 

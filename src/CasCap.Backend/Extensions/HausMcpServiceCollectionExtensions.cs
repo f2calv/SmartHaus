@@ -6,12 +6,6 @@ namespace CasCap.Extensions;
 public static class HausMcpServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the <see cref="Services.SystemMcpQueryService"/> for local console agents.
-    /// </summary>
-    public static void AddSystemMcp(this IServiceCollection services) =>
-        services.AddSingleton<SystemMcpQueryService>();
-
-    /// <summary>
     /// Registers the <see cref="Services.HeatPumpMcpQueryService"/> to expose heat pump data via MCP tools.
     /// </summary>
     public static void AddHeatPumpMcp(this IServiceCollection services) =>

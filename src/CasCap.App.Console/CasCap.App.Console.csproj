@@ -11,9 +11,6 @@
     <PackageReference Include="Microsoft.Extensions.Hosting" />
     <PackageReference Include="Microsoft.ML.Tokenizers.Data.Cl100kBase" />
     <PackageReference Include="Spectre.Console" />
-    <PackageReference Include="Spectre.Console.ImageSharp" />
-    <PackageReference Include="Spectre.Console.Json" />
   </ItemGroup>
-
 
 </Project>

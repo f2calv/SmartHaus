@@ -85,7 +85,8 @@ Each feature library registers its own device connectivity health check when the
 
 ### Agent Runtime
 
-The server does not construct local agents. Signal and media turns execute through tenant-scoped definitions in the remote Agent Runtime. `AIConfig` remains temporarily for the MCP route and metadata tools until those settings move to dedicated options.
+The server does not construct local agents or bind `AIConfig`. Signal and media turns execute through
+tenant-scoped definitions in the remote Agent Runtime.
 
 ## Configuration
 
@@ -102,7 +103,6 @@ Key configuration sections:
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics) |
 | `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub |
-| `AIConfig` | `AIConfig` | Transitional MCP route and agent/provider metadata; not an execution authority |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic auth credentials |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | Hub path and sink configuration |
 | `CasCap:BuderusConfig` | `BuderusConfig` | Buderus KM200 device settings |

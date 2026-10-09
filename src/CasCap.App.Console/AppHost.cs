@@ -24,14 +24,25 @@ public static partial class AppHost
             var builder = Host.CreateApplicationBuilder();
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(Log.Logger);
-            var (_, _, enabledFeatures, _) = builder.InitializeConfiguration(entryAssembly);
-            builder.Services.AddCasCapConfiguration<AIConfig>();
-
-            if (enabledFeatures.Count == 0)
-                throw new InvalidOperationException(
-                    $"{nameof(enabledFeatures)} is empty - set CasCap:FeatureConfig:EnabledFeatures in appsettings or environment variables.");
-
-            AddFeatures(builder, enabledFeatures);
+            builder.InitializeConfiguration(entryAssembly);
+            builder.Services.AddCasCapConfiguration<AgentRuntimeConsoleConfig>();
+            builder.Services.AddCasCapConfiguration<AgentRuntimeAzureAuthConfig>();
+            var agentRuntimeClient = builder.Services.AddAgentRuntimeClient();
+            var runtimeAuthConfig = builder.Configuration
+                .GetSection(AgentRuntimeAzureAuthConfig.ConfigurationSectionName)
+                .Get<AgentRuntimeAzureAuthConfig>() ?? new AgentRuntimeAzureAuthConfig();
+            if (runtimeAuthConfig.Enabled)
+            {
+                builder.Services.AddTransient(serviceProvider =>
+                {
+                    var authOptions = serviceProvider.GetRequiredService<IOptions<AgentRuntimeAzureAuthConfig>>();
+                    return new TokenCredentialBearerHandler(
+                        authOptions.Value.TokenCredential,
+                        authOptions.Value.Scope!);
+                });
+                agentRuntimeClient.AddHttpMessageHandler<TokenCredentialBearerHandler>();
+            }
+            builder.Services.AddSingleton<ConsoleApp>();
 
             using var host = builder.Build();
             using var cancellationTokenSource = new CancellationTokenSource();

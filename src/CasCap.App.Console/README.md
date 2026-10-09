@@ -1,10 +1,14 @@
 # CasCap.App.Console
 
-A Spectre.Console-based interactive terminal application for local MCP/AI agent development and testing. Connects to configured AI providers (Ollama, OpenAI, Azure OpenAI, Azure AI Foundry) and exposes in-process MCP tools from the feature libraries.
+A Spectre.Console-based interactive client for exercising tenant-scoped agents hosted by the remote
+Agent Runtime.
 
 ## Purpose
 
-`CasCap.App.Console` is a developer tool for exercising AI agents against the home automation MCP tools without deploying to Kubernetes. It registers a subset of feature libraries in "lite" mode (monitor background services disabled) and runs an interactive prompt loop with streaming responses.
+`CasCap.App.Console` is a developer tool for exercising the same immutable agent definitions used by
+SmartHaus deployments. Agent construction, providers, credentials, tools, prompts and session state
+remain owned by the Agent Runtime; the console sends prompts and renders execution events and the
+final response.
 
 `Program.cs` is a thin entry point. `AppHost.cs` owns logging, configuration, host construction,
 cancellation, and execution, while `AppHost.Features.cs` owns the lite feature and MCP registrations.
@@ -12,32 +16,59 @@ cancellation, and execution, while `AppHost.Features.cs` owns the lite feature a
 ### Startup Sequence
 
 1. Configures Serilog logging (Warning minimum, Information for `CasCap` namespace).
-2. Calls `InitializeConfiguration` from `CasCap.App` to bootstrap all strongly-typed options.
-3. Registers feature libraries with their sinks and MCP tool services (lite mode — no polling).
-4. Launches a `ConsoleApp` interactive session.
-
-### Registered Features
-
-| Feature | Registration | MCP tools |
-| --- | --- | --- |
-| Fronius | `AddFroniusWithExtraSinks` (lite) + `AddInverterMcp` | `InverterMcpQueryService` |
-| Buderus | `AddBuderusWithExtraSinks` (lite) + `AddHeatPumpMcp` | `HeatPumpMcpQueryService` |
-| DoorBird | `AddDoorBirdWithExtraSinks` (lite) + `AddFrontDoorMcp` | `FrontDoorMcpQueryService` |
-| KNX | `AddKnxWithExtraSinks` (lite) + `AddBusSystemMcp` | `BusSystemMcpQueryService` |
+2. Calls `InitializeConfiguration` from `CasCap.App` to load the standard configuration providers.
+3. Registers the typed Agent Runtime client and optional certificate bearer authentication.
+4. Launches the interactive `ConsoleApp` session.
 
 ### Interactive Loop
 
-- **Agent selector**: presents all agents from `AIConfig.Agents`; auto-selects when only one is configured.
-- **Tool discovery**: gathers in-process MCP tools (from `ToolSource.Service`) and remote MCP tools (from `ToolSource.Endpoint`), with include/exclude filtering per `ToolSource`.
-- **Prompt discovery**: gathers in-process MCP prompts (from `PromptSource.Service`) and remote MCP prompts (from `PromptSource.Endpoint`), with include/exclude filtering per `PromptSource`.
+- **Agent selector**: presents the configured `AgentRuntimeConsoleConfig.AgentNames`; auto-selects when only one is configured.
 - **Prompt input**: custom line editor with live approximate token count (`cl100k_base` tokenizer), Up/Down history navigation, and Ctrl+Left/Right word boundary movement.
-- **Streaming output**: thinking/reasoning content rendered in grey, regular text in default colour.
-- **Session summary**: two-column panel showing provider, agent, usage statistics, and middleware diagnostics.
+- **Streaming events**: delegation and compaction activity updates the waiting status while the runtime executes.
+- **Session summary**: reports the definition version, model, timing, usage, tool calls, attachments and session status returned by the runtime.
 - **Navigation**: Escape returns to agent selector; `exit`/`quit` or Ctrl+C ends the session.
 
 ## Configuration
 
-Uses the same `appsettings.json` / `appsettings.Development.json` as the server application. AI agent selection is driven by the `AIConfig` section.
+Uses the same configuration provider chain as the server application. The endpoint comes from
+`AgentRuntimeClientOptions`; optional Entra certificate authentication comes from
+`AgentRuntimeAzureAuthConfig`.
+
+`AgentRuntimeConsoleConfig` has public-safe defaults and supports these overrides:
+
+| Property | Default | Purpose |
+| --- | --- | --- |
+| `AgentNames` | `CommsAgent` | Tenant agent names shown in the selector |
+| `SessionId` | `smarthaus-console` | Caller-owned persistent session identifier |
+| `DiagnosticDetailsEnabled` | `false` | Requests operator-only diagnostic properties |
+
+## Configuration Examples
+
+The built-in defaults select the SmartHaus communications agent with a persistent console session:
+
+```json
+{
+  "CasCap": {
+    "AgentRuntimeConsoleConfig": {
+      "AgentNames": ["CommsAgent"]
+    }
+  }
+}
+```
+
+A local override can expose several tenant agents and request operator diagnostics:
+
+```json
+{
+  "CasCap": {
+    "AgentRuntimeConsoleConfig": {
+      "AgentNames": ["CommsAgent", "SecurityAgent"],
+      "SessionId": "smarthaus-console",
+      "DiagnosticDetailsEnabled": true
+    }
+  }
+}
+```
 
 ### Required Data Files
 
@@ -55,9 +86,6 @@ Uses the same `appsettings.json` / `appsettings.Development.json` as the server 
 | [Microsoft.Extensions.Hosting](https://www.nuget.org/packages/microsoft.extensions.hosting) | Generic host builder |
 | [Microsoft.ML.Tokenizers.Data.Cl100kBase](https://www.nuget.org/packages/microsoft.ml.tokenizers.data.cl100kbase) | Approximate token counting for prompt input |
 | [Spectre.Console](https://www.nuget.org/packages/spectre.console) | Rich terminal UI (markup, tables, status spinners) |
-| [Spectre.Console.ImageSharp](https://www.nuget.org/packages/spectre.console.imagesharp) | Image rendering in terminal |
-| [Spectre.Console.Json](https://www.nuget.org/packages/spectre.console.json) | JSON rendering in terminal |
-| [CasCap.Common.Net](https://www.nuget.org/packages/cascap.common.net) | HTTP client helpers |
 
 ### Project references
 
@@ -65,11 +93,6 @@ Uses the same `appsettings.json` / `appsettings.Development.json` as the server 
 | --- | --- |
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
 | `CasCap.Common.Hosting.AspNetCore` | Serilog structured logging pipeline |
-| `CasCap.Common.AI` | Consolidated MCP tool and prompt registration for all smart-home integrations |
-| `CasCap.Api.Fronius.Sinks` | Fronius event sinks |
-| `CasCap.Api.Buderus.Sinks` | Buderus event sinks |
-| `CasCap.Api.Knx.Sinks` | KNX event sinks |
-| `CasCap.Api.DoorBird.Sinks` | DoorBird event sinks |
 
 ## License
 

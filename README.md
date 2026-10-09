@@ -95,7 +95,7 @@ Features are configured via `CasCap:FeatureConfig:EnabledFeatures` as a comma-se
 Multiple application deployment targets;
 
 - **`CasCap.App.Server`** — Containerized backend services for Kubernetes, runnable locally during development. Visual Studio users should set this as the startup project to run the backend.
-- **`CasCap.App.Console`** — Console application for local MCP/AI agent development and testing. Leverages many of the same MCP tools as the backend, providing a client-side console test environment. Visual Studio users should launch this project to interactively test MCP tools and agent behaviour.
+- **`CasCap.App.Console`** — Interactive client for tenant-scoped agents hosted by the remote Agent Runtime. Visual Studio users can launch it to test the same versioned definitions, tools and session behavior used by deployed SmartHaus workloads.
 
 ## Agentic AI Architecture
 
@@ -212,7 +212,7 @@ graph TD
     %% ── Applications ────────────────────────────────────────────────────────
     subgraph apps ["🖥️ Applications"]
         SERVER["CasCap.App.Server<br/><sub>ASP.NET Core · K8s</sub>"]
-        CONSOLE["CasCap.App.Console<br/><sub>Spectre.Console · Dev tool</sub>"]
+        CONSOLE["CasCap.App.Console<br/><sub>Spectre.Console · Agent Runtime client</sub>"]
     end
 
     %% ── Shared App Bootstrap ────────────────────────────────────────────────
