@@ -114,4 +114,9 @@ public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, I
     /// <remarks>Defaults to <c>"/mcp"</c>.</remarks>
     [Required, MinLength(1)]
     public string McpUrl { get; init; } = "/mcp";
+
+    /// <summary>IANA time zone identifier used by house-local system tools.</summary>
+    /// <remarks>Defaults to <c>"Europe/Berlin"</c>.</remarks>
+    [Required, MinLength(1)]
+    public string TimeZoneId { get; init; } = "Europe/Berlin";
 }

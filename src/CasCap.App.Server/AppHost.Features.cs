@@ -15,9 +15,6 @@ public static partial class AppHost
         var mcpBuilder = builder.Services.AddMcpServer()
             .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless);
 
-        // SystemMcpQueryService is referenced by all agents - register unconditionally.
-        builder.Services.AddSystemMcp();
-
         // Register SignalR services unconditionally so IHubContext<> is always resolvable for
         // HausHub sinks discovered during assembly scanning (e.g. BuderusSinkSignalRService).
         // The hub endpoint mapping and Redis backplane are configured later when SignalRHub is enabled.

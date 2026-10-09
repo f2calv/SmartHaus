@@ -6,7 +6,7 @@ namespace CasCap.Extensions;
 public static class HausMcpServiceCollectionExtensions
 {
     /// <summary>
-    /// Registers the <see cref="Services.SystemMcpQueryService"/> to expose general system tools available to all agents.
+    /// Registers the <see cref="Services.SystemMcpQueryService"/> for local console agents.
     /// </summary>
     public static void AddSystemMcp(this IServiceCollection services) =>
         services.AddSingleton<SystemMcpQueryService>();

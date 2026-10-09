@@ -21,7 +21,7 @@ public static partial class AppHost
             var builder = WebApplication.CreateBuilder(args);
 
             // Configuration
-            var (appConfig, aiConfig, apiAuthConfig, enabledFeatures, gitMetadata) =
+            var (appConfig, apiAuthConfig, enabledFeatures, gitMetadata) =
                 builder.InitializeConfiguration(entryAssembly);
 
             // Logging

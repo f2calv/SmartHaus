@@ -16,7 +16,7 @@ public static class HostApplicationBuilderExtensions
     /// <param name="assembly">
     /// Assembly used for user-secrets loading. Pass <c>typeof(Program).Assembly</c> from the entry point.
     /// </param>
-    public static (AppConfig appConfig, AIConfig aiConfig, ApiAuthConfig apiAuthConfig, HashSet<string> enabledFeatures, GitMetadata gitMetadata) InitializeConfiguration(
+    public static (AppConfig appConfig, ApiAuthConfig apiAuthConfig, HashSet<string> enabledFeatures, GitMetadata gitMetadata) InitializeConfiguration(
         this IHostApplicationBuilder builder, Assembly assembly)
     {
         builder.Configuration.AddStandardConfiguration(builder.Environment.EnvironmentName, assembly);
@@ -47,13 +47,12 @@ public static class HostApplicationBuilderExtensions
 
         var featureConfig = builder.Services.AddAndGetCasCapConfiguration<FeatureConfig>(builder.Configuration);
         var enabledFeatures = featureConfig.GetEnabledFeatures();
-        var aiConfig = builder.Services.AddAndGetCasCapConfiguration<AIConfig>(builder.Configuration);
         var apiAuthConfig = builder.Services.AddAndGetCasCapConfiguration<ApiAuthConfig>(builder.Configuration);
 
         // Always bind SignalRHubConfig — hub-client pods read HubPath from this section;
         // falls back to built-in defaults if the section is absent from appsettings.json.
         builder.Services.AddCasCapConfiguration<SignalRHubConfig>();
 
-        return (appConfig, aiConfig, apiAuthConfig, enabledFeatures, gitMetadata);
+        return (appConfig, apiAuthConfig, enabledFeatures, gitMetadata);
     }
 }

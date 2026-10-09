@@ -370,7 +370,6 @@ MCP query services registered by `HausMcpServiceCollectionExtensions` expose dom
 
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
-| `SystemMcpQueryService` | 3 | — | System-level tools available to all agents (date/time, provider list, agent list) |
 | `BusSystemMcpQueryService` | 21 | 5 | Bus system — door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
 | `HeatPumpMcpQueryService` | 2 | 5 | Heat pump |
 | `InverterMcpQueryService` | 7 | 5 | Solar inverter |
@@ -388,7 +387,6 @@ MCP query services registered by `HausMcpServiceCollectionExtensions` expose dom
 Register individually per feature flag (as done in `Program.cs`):
 
 ```csharp
-services.AddSystemMcp();
 services.AddBusSystemMcp();
 services.AddHeatPumpMcp();
 services.AddInverterMcp();
@@ -412,10 +410,6 @@ graph TD
 
     REG["Program.cs<br/>(feature-gated registration)"]:::core
 
-    subgraph System["System Tools"]
-        SYS["SystemMcpQueryService<br/>(3 tools)"]:::system
-    end
-
     subgraph HomeAutomation["Home Automation"]
         BUS["BusSystemMcpQueryService<br/>(21 tools, 5 prompts)"]:::integration
         HEAT["HeatPumpMcpQueryService<br/>(2 tools, 5 prompts)"]:::integration
@@ -433,7 +427,6 @@ graph TD
         MSG["MessagingMcpQueryService<br/>(3 tools)"]:::system
     end
 
-    REG --> SYS
     REG --> BUS
     REG --> HEAT
     REG --> INVERTER
@@ -489,7 +482,6 @@ Audio["Speech-to-text<br/>(selected provider)"]:::stt
     Comms -.->|audio STT| Audio
 
     subgraph SharedSvc["Shared Services"]
-        SYS["SystemMcpQueryService<br/>get_current_datetime_state · get_providers · get_agents"]:::shared
         MSG["MessagingMcpQueryService<br/>create_poll · close_poll · get_poll_status"]:::shared
     end
 

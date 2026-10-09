@@ -24,7 +24,8 @@ public static partial class AppHost
             var builder = Host.CreateApplicationBuilder();
             builder.Logging.ClearProviders();
             builder.Logging.AddSerilog(Log.Logger);
-            var (_, _, _, enabledFeatures, _) = builder.InitializeConfiguration(entryAssembly);
+            var (_, _, enabledFeatures, _) = builder.InitializeConfiguration(entryAssembly);
+            builder.Services.AddCasCapConfiguration<AIConfig>();
 
             if (enabledFeatures.Count == 0)
                 throw new InvalidOperationException(
