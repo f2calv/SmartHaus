@@ -431,6 +431,7 @@ FodyWeavers.xsd
 
 # custom
 .docker/*
+!.docker/llama-cpp-models.ini
 !.docker/postgres
 !.docker/otelcol.yaml
 !.docker/p3x.json

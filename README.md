@@ -32,7 +32,7 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 ## Highlights
 
 - **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
-- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.Backend README](src/CasCap.Backend/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [Ollama](https://ollama.com/) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
+- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously — see the [CasCap.Backend README](src/CasCap.Backend/README.md) for the full agent architecture, MCP tool registry, and Signal messenger integration. Run locally with [llama.cpp](https://github.com/ggml-org/llama.cpp) or connect to [Azure OpenAI](https://learn.microsoft.com/en-us/azure/ai-services/openai/)
 - **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.Backend/README.md#speech-to-text-providers)
 - **Feature-flag driven** — enable only the integrations you need; each feature is an independent module with its own data pipeline, sinks, and [MCP tools](https://modelcontextprotocol.io/specification/2025-03-26/server/tools)
 - **Azure cloud integration** — optional [Azure Table Storage](https://learn.microsoft.com/en-us/azure/storage/tables/) and [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/) sinks for telemetry persistence, with local [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulation for development
@@ -43,9 +43,9 @@ An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.
 
 ## Quick Start
 
-Clone the repo and run the self-contained demo — no external hardware or Azure subscription required.
+Clone the repo and run the device/API demo — no external hardware or Azure subscription required.
 
-**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with an NVIDIA GPU and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) for GPU-accelerated LLM inference. CPU-only mode works by removing the `deploy` block from the Ollama service in `docker-compose.yml`.
+**Prerequisites:** [Docker](https://docs.docker.com/get-docker/) with an NVIDIA GPU and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) for GPU-accelerated LLM inference. CPU-only mode works by removing the `deploy` block from the llama.cpp service in `docker-compose.yml`.
 
 ```bash
 git clone https://github.com/f2calv/SmartHaus.git
@@ -53,13 +53,23 @@ cd SmartHaus
 docker compose --profile demo up --build
 ```
 
-This builds the application from source and launches **EdgeHardware** (CPU/GPU telemetry monitoring), **Ubiquiti** (webhook-based camera events), and **Comms** (Signal messaging pipeline) with local infrastructure: Redis, Azurite, OpenTelemetry Collector, Ollama, and signal-cli.
+This builds the application from source and launches **EdgeHardware** (CPU/GPU telemetry monitoring),
+**Ubiquiti** (webhook-based camera events), and **Comms** (Signal messaging pipeline) with local
+infrastructure: Redis, Azurite, OpenTelemetry Collector, llama.cpp, and signal-cli. Device/API flows
+are self-contained; Comms agent execution requires a separately running Agent Runtime, defaulting to
+<http://localhost:5090>. Configure that runtime to use the llama.cpp endpoint at
+<http://localhost:11434>, or override `AGENTRUNTIME_BASE_ADDRESS`.
 
-Wait for the Ollama model pull to finish:
+Wait for the llama.cpp model download and server startup to finish:
 
 ```bash
-docker compose --profile demo logs ollama-init -f
+docker compose --profile demo logs llama-cpp -f
 ```
+
+The demo mirrors the homelab llama.cpp model-router mode with at most one resident model. Its default
+is text-only `Qwen3.5-4B-Q5_K_M` with a 4k quantized KV cache, sized for a 4 GB laptop GPU. A smaller
+Qwen3.5 0.8B vision companion is configured for dynamic loading when requested. Per-model settings
+live in [`.docker/llama-cpp-models.ini`](.docker/llama-cpp-models.ini).
 
 Then explore:
 
@@ -104,6 +114,9 @@ orchestrates domain-specific sub-agents over SmartHaus [MCP](https://modelcontex
 Users interact through [Signal Messenger](https://signal.org/) without a custom mobile application.
 
 > For detailed configuration, Redis Stream settings, and implementation specifics, see the [CasCap.Backend README](src/CasCap.Backend/README.md).
+
+Early SmartHaus versions used Ollama; the project switched to llama.cpp for its more open ecosystem
+and superior inference performance.
 
 ### Agents
 
@@ -392,7 +405,7 @@ Standalone device API libraries published from this repository. *Some libraries 
 
 - **.NET SDK**: 10.0.x stable (see `global.json` — `allowPrerelease: false`)
 - **Docker**: Required for local infrastructure (Redis, Azurite, OpenTelemetry Collector)
-- **NVIDIA GPU + [Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)**: Required for GPU-accelerated Ollama inference in the demo profile (CPU-only mode available by removing the `deploy` block)
+- **NVIDIA GPU + [Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)**: Required for GPU-accelerated llama.cpp inference in the demo profile (CPU-only mode available by removing the `deploy` block)
 - **Azure subscription** *(optional)*: For cloud sinks (Table Storage, Blob Storage) and Key Vault secrets management. Not required for local development — Azurite emulates Azure Storage locally
 
 ## Docker Compose
@@ -421,9 +434,12 @@ dotnet build --no-restore
 
 ### `demo` Profile — Visitor Demo
 
-Self-contained demo for new visitors — see [Quick Start](#quick-start) above to get running in minutes.
+Device/API demo for new visitors — see [Quick Start](#quick-start) above to get running in minutes.
 
-Builds the application from source and launches **EdgeHardware** + **Ubiquiti** + **Comms** features with local AI inference via Ollama. No external hardware or Azure subscription required.
+Builds the application from source and launches **EdgeHardware** + **Ubiquiti** + **Comms** features
+plus local llama.cpp inference. No external hardware or Azure subscription is required. Comms
+execution additionally requires an Agent Runtime running on the host or at
+`AGENTRUNTIME_BASE_ADDRESS`.
 
 ```bash
 docker compose --profile demo up --build
@@ -436,7 +452,11 @@ Additional services started by the `demo` profile:
 | SmartHaus | 8080 | Application with Swagger UI at `/swagger` |
 | signal-cli REST | 8081 | Signal wrapper, owned by Signalizr |
 | Signalizr | 8090, 5001 | Signal gateway: REST group operations and the gRPC subscription |
-| Ollama | 11434 | Local LLM inference (GPU) |
+| llama.cpp | 11434 | Local LLM inference (GPU) |
+
+The Agent Runtime is intentionally not bundled here: it owns definitions, credentials and sessions,
+and can run from its own repository or a remote deployment. When run locally, configure its provider
+endpoint as `http://localhost:11434`.
 
 #### Signal Messaging Setup
 

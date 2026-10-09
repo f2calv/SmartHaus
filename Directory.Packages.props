@@ -64,7 +64,6 @@
     <!--<PackageVersion Include="Microsoft.Web.LibraryManager.Build" Version="2.1.175" />-->
     <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
     <PackageVersion Include="ModelContextProtocol.AspNetCore" Version="2.2.0" />
-    <PackageVersion Include="OllamaSharp" Version="5.5.0" />
     <PackageVersion Include="OpenWiz" Version="1.1.0" />
     <!--<PackageVersion Include="OpenAI" Version="2.8.0" />-->
     <PackageVersion Include="OpenTelemetry" Version="1.19.1" />

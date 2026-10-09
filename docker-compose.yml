@@ -11,14 +11,14 @@
 #   docker compose up
 #
 # ── Visitor Demo ─────────────────────────────────────────────────────────────
-#   Self-contained demo. Builds the app from source and launches the EdgeHardware
-#   feature — monitors CPU temperature and GPU telemetry with no external hardware
-#   dependencies. Ollama provides local LLM inference with GPU support.
+#   Builds the app from source and launches device/API infrastructure with no
+#   external hardware dependencies. llama.cpp provides local inference for a
+#   separately running Agent Runtime on the host.
 #
 #   docker compose --profile demo up --build
 #
-#   After startup, wait for the Ollama model pull to finish:
-#     docker compose --profile demo logs ollama-init -f
+#   The model downloads while llama.cpp starts; monitor progress with:
+#     docker compose --profile demo logs llama-cpp -f
 #
 #   Then send test events using requests/ubiquiti-demo.http or curl:
 #     curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
@@ -31,7 +31,8 @@
 #   P3x Redis UI     : http://localhost:7843
 #   OTEL Collector   : localhost:4317 (gRPC) / 4318 (HTTP)
 #   Azurite          : localhost:10000 (Blob) / 10001 (Queue) / 10002 (Table)
-#   Ollama           : http://localhost:11434        [demo profile]
+#   llama.cpp        : http://localhost:11434        [demo profile]
+#   Agent Runtime    : http://localhost:5090         [run separately on host]
 #   signal-cli REST  : http://localhost:8081          [demo profile]
 #   Signalizr REST   : http://localhost:8090          [demo profile]
 #   Signalizr gRPC   : localhost:5001                 [demo profile]
@@ -87,18 +88,30 @@ services:
     volumes:
       - azurite_data:/data
 
-  # ---------- Demo profile: Ollama ----------
+  # ---------- Demo profile: llama.cpp ----------
 
-  ollama:
+  llama-cpp:
     profiles: [ demo ]
-    image: ollama/ollama:0.34.4
+    # Upstream's server-cuda tag is moving; pin its multi-architecture digest for reproducibility.
+    image: ghcr.io/ggml-org/llama.cpp:server-cuda@sha256:fff6185edd2fbc4093aa5970bf6db53ed11c283e3a1c52a3e244cf27047264f4
     ports:
-      - 11434:11434
+      - 11434:8080
     volumes:
-      - ollama_data:/root/.ollama
+      - llama_cpp_models:/models
+      - ./.docker/llama-cpp-models.ini:/config/models.ini:ro
     environment:
-      OLLAMA_NUM_PARALLEL: 1
-      OLLAMA_MAX_LOADED_MODELS: 1
+      LLAMA_CACHE: /models
+    command:
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8080"
+      - --models-preset
+      - /config/models.ini
+      - --models-max
+      - "1"
+      - --metrics
+      - --jinja
     # GPU support — requires NVIDIA Container Toolkit on the host.
     # To run on CPU only, remove or comment out the deploy block.
     deploy:
@@ -108,25 +121,6 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [ gpu ]
-    healthcheck:
-      test: [ "CMD-SHELL", "curl -sf http://localhost:11434 || exit 1" ]
-      interval: 5s
-      timeout: 3s
-      retries: 30
-      start_period: 10s
-
-  # One-shot service that pulls the Ollama model after the server is healthy.
-  # Monitor progress: docker compose --profile demo logs ollama-init -f
-  ollama-init:
-    profiles: [ demo ]
-    image: ollama/ollama:0.34.4
-    depends_on:
-      ollama:
-        condition: service_healthy
-    environment:
-      OLLAMA_HOST: http://ollama:11434
-    entrypoint: [ "sh", "-c", "ollama pull qwen3.5:4b" ]
-    restart: "no"
 
   # ---------- Demo profile: signal-cli ----------
 
@@ -202,6 +196,8 @@ services:
         CONFIGURATION: Release
     ports:
       - 8080:8080
+    extra_hosts:
+      - host.docker.internal:host-gateway
     environment:
       ASPNETCORE_ENVIRONMENT: Development
 
@@ -213,6 +209,7 @@ services:
       CasCap__SignalRHubConfig__SignalRHub: http://smarthaus:8080
       CasCap__SignalizrClientConfig__BaseAddress: http://signalizr:8080
       CasCap__SignalizrClientConfig__GrpcAddress: http://signalizr:5001
+      CasCap__AgentRuntimeClientOptions__BaseAddress: ${AGENTRUNTIME_BASE_ADDRESS:-http://host.docker.internal:5090}
 
       # Azurite connection strings (compose uses azurite hostname instead of 127.0.0.1)
       CasCap__EdgeHardwareConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
@@ -225,7 +222,6 @@ services:
       CasCap__ShellyConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
       CasCap__MieleConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
       CasCap__WizConfig__AzureTableStorageConnectionString: DefaultEndpointsProtocol=http;AccountName=devstoreaccount1;AccountKey=Eby8vdM02xNOcqFlqUwJPLlmEtlCDXJ1OUzFT50uSRZ6IFsuFq2UVErCz4I6tq/K1SZFPTOtr/KBHBeksoGMGw==;TableEndpoint=http://azurite:10002/devstoreaccount1;
-      # AI — all providers point at the single Ollama instance
     depends_on:
       redis:
         condition: service_healthy
@@ -246,6 +242,6 @@ services:
 # =============================================================================
 volumes:
   azurite_data:
-  ollama_data:
+  llama_cpp_models:
   signalcli_data:
   signalizr_data:
