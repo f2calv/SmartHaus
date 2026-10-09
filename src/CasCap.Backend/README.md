@@ -149,7 +149,8 @@ It combines two input paths:
 2. It receives durable Signal messages over the Signalizr gRPC subscription identified by
    `SignalizrClientConfig.SubscriberName`.
 3. Events listed in `CommsConfig.MonitorSources` bypass the agent and go directly to the operator
-   monitor group.
+   monitor group, and events listed in `CommsConfig.DirectDeliverySources` bypass the agent and go
+   directly to the chat group.
 4. Other events and user messages are sent to `CommsConfig.AgentName` through
    `IAgentRuntimeClient`.
 5. The response is delivered through Signalizr with the configured reaction, typing, poll, and
@@ -180,6 +181,10 @@ video and the first AAC audio track when present.
 The queue has one reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
 output, or oversized output falls back to the existing thumbnail path. Temporary files are always
 deleted, and private controller identifiers are not serialized into events.
+
+The base configuration lists `CameraClipBgService` in `CommsConfig.DirectDeliverySources`, so clips
+are sent straight to the chat group without an agent turn. Still images continue through
+`MediaBgService` and the security agent.
 
 ## Voice Flow
 
@@ -324,6 +329,7 @@ settings SmartHaus commonly overrides:
 | `CasCap:CommsConfig:MonitorGroupName` | `null` | Exact operator-only diagnostics group; unset disables diagnostics |
 | `CasCap:CommsConfig:MonitorSources` | Empty | Event sources sent directly to the monitor group |
 | `CasCap:CommsConfig:StreamEventTurnsEnabled` | `true` | Whether chat-bound stream events become agent turns |
+| `CasCap:CommsConfig:DirectDeliverySources` | Empty | Event sources sent directly to the chat group without an agent turn |
 | `CasCap:CommsConfig:EchoTranscriptToDebugChat` | `false` | Echoes successful transcripts to the monitor group |
 | `CasCap:CommsConfig:DelegationMessagesEnabled` | `true` | Sends delegation status as a separate message |
 | `CasCap:CommsConfig:AgentName` | Required by deployment | Remote agent definition name |
