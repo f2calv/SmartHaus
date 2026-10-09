@@ -1,650 +1,454 @@
 # CasCap.Backend
 
-The central ASP.NET Core library that hosts the consolidated [SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/introduction) hub, coordinates real-time event broadcasting across all home automation features, and provides supporting services for AI agents, dynamic DNS, and Signal messenger notifications.
+CasCap.Backend is SmartHaus's shared ASP.NET Core application library. It owns the SignalR hub,
+communications and media orchestration, MCP tool implementations, and the application-side clients
+for Signalizr and the remote Agent Runtime.
 
 ## Purpose
 
-### SignalR Hub — `HausHub`
+The project provides four application-facing capabilities:
 
-`HausHub` is an `[Authorize]` SignalR hub mounted at `/hubs/haus` (configurable via `SignalRHubConfig.HubPath`). It implements `IHausServerHub` and broadcasts the four core event types to all connected clients:
+- `HausHub` broadcasts Fronius, KNX, DoorBird, and Buderus events to authenticated SignalR clients.
+- `CommunicationsBgService` connects SmartHaus events and inbound Signal messages to the remote
+  `CommsAgent` through `CasCap.Comms` and `CasCap.Comms.AI`.
+- `MediaBgService` sends cached binary media to a configured remote domain agent and returns its
+  findings to the communications stream.
+- MCP query services expose SmartHaus domain data and operations to agents without moving those
+  implementations into the Agent Runtime.
 
-| Server method | Payload type | Description |
-| --- | --- | --- |
-| `SendFroniusEvent(e)` | `FroniusEvent` | Broadcasts a solar inverter reading |
-| `SendKnxTelegram(e)` | `KnxEvent` | Broadcasts a KNX bus telegram |
-| `SendDoorBirdEvent(e)` | `DoorBirdEvent` | Broadcasts a door station event |
-| `SendBuderusEvent(e)` | `BuderusEvent` | Broadcasts a heating system reading |
-| `SendMessage(user, message, date)` | — | Broadcasts a text message to all other clients |
-| `Broadcast(message)` | — | Broadcasts a text message to all clients (including sender) |
+SmartHaus does not construct language-model agents or select inference providers. Those concerns
+belong to the multi-tenant Agent Runtime maintained by
+[agentizr](https://github.com/f2calv/agentizr).
 
-After broadcasting, each event is also written to the server-side `IEventSink<HubEvent>` implementations registered in `SignalRHubConfig.Sinks`.
+## Ownership Boundary
 
-### Client-Side Event Sinks (forward to hub)
-
-These sinks are registered in the feature pods and forward domain events to the hub:
-
-| Sink | Forwards |
+| Owner | Responsibilities |
 | --- | --- |
-| `FroniusSinkSignalRService` | `FroniusEvent` → `SendFroniusEvent` |
-| `KnxSinkSignalRService` | `KnxEvent` → `SendKnxTelegram` |
-| `DoorBirdSinkSignalRService` | `DoorBirdEvent` → `SendDoorBirdEvent` |
-| `BuderusSinkSignalRService` | `BuderusEvent` → `SendBuderusEvent` |
+| SmartHaus | Domain services, MCP tools and prompts, SignalR, Redis stream producers and consumers, media caching, speech transcription, and runtime client calls |
+| Agent Runtime | Tenant-scoped agent definitions, instructions, provider and model selection, delegation, sessions, overrides, credentials, and definition activation |
+| Signalizr | Signal account ownership, exact group resolution, durable inbound delivery, attachments, reactions, typing, polls, and outbound sends |
+| `CasCap.Comms` | Shared communications stream and Signal gateway pipeline |
+| `CasCap.Comms.AI` | Agent Runtime responder, session commands, delegation diagnostics, and poll-tool adaptation for the communications pipeline |
 
-### Hub-Side Event Sinks (server process)
-
-| Sink | Description |
-| --- | --- |
-| `HausHubSinkConsoleService` | Logs every `HubEvent` via the .NET logger |
-| `HausHubSinkMetricsService` | Records OpenTelemetry metrics per `HubEvent` type |
-| `CommsStreamSinkService` | Writes/reads `CommsEvent` entries to/from the Redis Stream configured by `CommsConfig.StreamKey`. Lives in [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) |
-| `MediaStreamSinkService` | Writes/reads `MediaEvent` entries to/from the Redis Stream configured by `MediaConfig.StreamKey` |
-
-### Background Services
-
-| Service | Description |
-| --- | --- |
-| `CommunicationsBgService` | Gateway service from [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) — consumes the comms Redis Stream and incoming Signal messages, routes both through the CommsAgent via `AgentCommsResponder` from [CasCap.Comms.AI](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI), and relays responses to the Signalizr chat group. Voice attachments are transcribed by `VoiceMessageTranscriptionService` before CommsAgent sees them, and only the transcript is forwarded. Posts pipeline timelines, stream-event copies and session compaction notices to the `MonitorGroupName` group |
-| `EdgeHardwareAgentRunEnricher` | `IAgentRunEnricher` that records edge GPU energy use for each CommsAgent run and adds it, with Fronius solar context, to the reply footer and the monitor-group timeline |
-| `MediaBgService` | Consumes the media Redis Stream (`MediaConfig.StreamKey`), routes media to the domain agent configured in `MediaConfig.SourceAgentMap` (e.g. DoorBird → SecurityAgent), and posts analysis findings back to the comms stream. Runs in the Comms pod alongside `CommunicationsBgService` |
-| `HausHubSinksBgService` | Initialises the hub-side `IEventSink<HubEvent>` implementations |
-| `FroniusSymoSignalRClientService` | Connects to the hub as a SignalR client |
-| `UbiquitiBgService` | Ubiquiti network integration (planned) |
-
-### REST API
-
-| Endpoint | Auth | Description |
-| --- | --- | --- |
-| `GET /api/system` | Required | Returns git build metadata (`GitMetadata`) |
-
-### MCP Server Surface
-
-Server tool facades live in [Services/Mcp](Services/Mcp), with registrations in
-[HausMcpServiceCollectionExtensions](Extensions/HausMcpServiceCollectionExtensions.cs).
-MCP-only response DTOs live in [Models/Mcp](Models/Mcp) under the `CasCap.Models` namespace.
-Shared domain DTOs and query services remain with their owning features; endpoint composition
-stays in the server application's entry point.
-
-| Prompt class | Purpose |
-| --- | --- |
-| [AppliancesMcpPrompts](Models/AppliancesMcpPrompts.cs) | Appliance status, programs and efficiency |
-| [BusSystemMcpPrompts](Models/BusSystemMcpPrompts.cs) | Home status, floors, lighting and heating |
-| [FrontDoorMcpPrompts](Models/FrontDoorMcpPrompts.cs) | Intercom images, events and access guidance |
-| [HeatPumpMcpPrompts](Models/HeatPumpMcpPrompts.cs) | Heating status, hot water, health and circuit comparison |
-| [InverterMcpPrompts](Models/InverterMcpPrompts.cs) | Solar production, power flow and battery status |
-
-Prompts supply reusable conversation guidance, while tools perform the requested operations.
-The `Mcp` filename or directory identifies MCP-specific code for scoped instructions; exposed
-tool and prompt names describe their capabilities independently of CLR type names.
-
-## Configuration
-
-### `SignalRHubConfig` (`CasCap:SignalRHubConfig`)
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `HubPath` | `string` | `"/hubs/haus"` | URL path at which the hub is mounted |
-| `Sinks.AvailableSinks` | `Dictionary<string, SinkConfigParams>` | `Console=true, Metrics=true` | Hub-side event sinks to enable |
-| `ConsoleLogIntervalMs` | `int` | `30000` | Logging interval in milliseconds for the console sink periodic event count output |
-| `MetricsBatchSize` | `int` | `10` | Number of events to accumulate before flushing to the OpenTelemetry counter |
-| `MetricsFlushIntervalMs` | `int` | `60000` | Periodic flush interval in milliseconds for the metrics sink |
-
-### `CommsConfig` (`CasCap:CommsConfig`)
-
-Defined in [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms), which documents every setting. The
-settings SmartHaus deployments usually change are:
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `GroupName` | `string` | `"My Test Group Name"` | Exact Signal group display name for the user-facing chat: messages, reactions, typing and polls |
-| `MonitorGroupName` | `string?` | `null` | Exact Signal group display name for operator diagnostics; its group must contain only the operator. Unset disables diagnostics |
-| `MonitorSources` | `HashSet<string>` | empty | `CommsEvent.Source` values delivered directly to `MonitorGroupName` instead of becoming CommsAgent prompts |
-| `StreamEventTurnsEnabled` | `bool` | `true` | Whether chat-bound stream events become CommsAgent prompts; `false` sends them directly |
-| `EchoTranscriptToDebugChat` | `bool` | `false` | Whether a successful voice transcript is echoed to `MonitorGroupName` |
-| `DelegationMessagesEnabled` | `bool` | `true` | Whether a separate status message is sent when CommsAgent delegates to a sub-agent |
-
-Both group settings must match names returned by the gateway's `GET /api/v1/groups`
-(`GetGroupsAsync`) exactly, including spaces and case.
-Configure those same names in the gateway's `CasCap:GroupConfig:GroupNames` array.
-Pass unescaped names to `ISignalizrClient`; direct REST callers must URL-encode the `groupName`
-query parameter (for example, `My Test Group Name` becomes `My%20Test%20Group%20Name`).
-
-### `SignalizrClientConfig` (`CasCap:SignalizrClientConfig`)
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `BaseAddress` | `string` | `http://localhost:8090` | Signalizr REST endpoint used for group discovery, sends, and attachment downloads |
-| `GrpcAddress` | `string` | `http://localhost:5001` | Signalizr gRPC endpoint used for durable inbound subscriptions |
-| `SubscriberName` | `string` | `smarthaus-comms` | Stable durable cursor identity retained across restarts |
-
-### `MediaConfig` (`CasCap:MediaConfig`)
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `SourceAgentMap` | `Dictionary<string, string>` | — | Maps event source names (e.g. `"DoorBird"`) to agent keys (e.g. `"SecurityAgent"`) for media analysis routing |
-| `ImageCacheKeyPrefix` | `string` | `"security:image"` | Redis key prefix for cached camera images |
-| `ImageCacheTtlMs` | `int` | `300000` | Time-to-live in milliseconds for cached camera images |
-| `StreamKey` | `string` | `"media:stream:events"` | Redis Stream key for source-agnostic media events |
-| `ConsumerGroup` | `string` | `"media:processors"` | Redis consumer group name |
-| `ConsumerName` | `string` | `"media-0"` | Consumer name within the group |
-| `ConsumerGroupStartId` | `string` | `"0"` | Starting ID when creating the consumer group (`"0"` = from beginning, `"$"` = new only) |
-| `StreamReadPosition` | `string` | `">"` | Read position passed to `XREADGROUP` |
-| `StreamReadCount` | `int` | `10` | Maximum entries per `XREADGROUP` call |
-| `PollingIntervalMs` | `int` | `1000` | Polling interval for the media stream consumer |
-
-### `CameraClipConfig` (`CasCap:CameraClipConfig`)
-
-Public configuration keeps this feature disabled with an empty source map. Production maps real
-controller identifiers only in private configuration. A safe example source entry is:
-
-```json
-{
-  "CAMERA_DEVICE_ID": {
-    "DisplayName": "ExampleCamera",
-    "Path": "camera-medium",
-    "CooldownSeconds": 30
-  }
-}
-```
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `Enabled` | `bool` | `false` | Enables event-to-clip capture |
-| `PlaybackBaseAddress` | `string` | `http://localhost:9996` | Private MediaMTX playback endpoint |
-| `Sources` | `Dictionary<string, CameraClipSourceConfig>` | Empty | Maps private controller camera identifiers to logical names, MediaMTX paths and cooldowns |
-| `DoorBirdSource` | `CameraClipSourceConfig?` | `null` | Optional DoorBird logical name, MediaMTX path and cooldown |
-| `PreRollSeconds` | `int` | `5` | Seconds requested before the webhook timestamp |
-| `PostRollSeconds` | `int` | `10` | Seconds awaited/requested after the webhook timestamp |
-| `MaximumClipBytes` | `int` | `12582912` | Maximum playback and remux size |
-| `QueueCapacity` | `int` | `32` | Maximum accepted pending events |
-| `ProcessingTimeoutMs` | `int` | `30000` | Download and FFmpeg remux budget |
-| `WorkingDirectory` | `string` | Local application data under `smarthaus/camera-clips` | Writable bounded temporary directory |
-| `FfmpegPath` | `string` | `ffmpeg` | FFmpeg executable used for stream-copy remux |
-
-### `BuderusCommsConfig` (`CasCap:BuderusCommsConfig`)
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `Dhw1AlertHysteresis` | `double` | `1.0` | Hysteresis in °C for the DHW1 setpoint alert |
-| `Dhw1AlertCooldownMs` | `int` | `3600000` | Minimum cooldown in milliseconds between consecutive DHW1 setpoint alerts |
-
-### Voice configuration (`CasCap.Api.Voice`)
-
-Speech-to-text and text-to-speech processing is owned by the adjacent `CasCap.Api.Voice` library and
-registered through its DI extensions. SmartHaus supplies the application configuration and retains
-only communications orchestration such as `EchoTranscriptToDebugChat`.
-
-### `SpeechToTextConfig` (`CasCap:SpeechToTextConfig`)
-
-Every setting has a safe default, so the section may be omitted entirely. The provider-specific
-endpoints are nullable and are read only when that provider is selected.
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `Mode` | `VoiceProcessingMode` | `Disabled` | `Disabled` rejects voice without downloading, `Shadow` transcribes for measurement without replying, `Enabled` drives a normal text turn |
-| `Provider` | `SpeechToTextProvider` | `WhisperAsr` | Which backend transcribes: `WhisperAsr`, `WhisperCpp` or `Azure` |
-| `WhisperAsrEndpoint` | `string` | `http://localhost:9000` | Base address of the openai-whisper-asr-webservice deployment |
-| `WhisperCppEndpoint` | `string?` | `null` | Base address of the whisper.cpp `whisper-server` deployment; required for `WhisperCpp` |
-| `AzureEndpoint` | `string?` | `null` | Azure AI Speech resource endpoint; required for `Azure`. Authenticates with the ambient token credential, so no key is stored |
-| `AzureLocales` | `string[]?` | `null` | Candidate locales such as `en-GB`. Empty lets the multilingual model identify the language itself. Azure requires a full locale, not the bare code in `Language` |
-| `Language` | `string` | `en` | ISO 639-1 code passed to the whisper backends |
-| `ModelId` | `string?` | `null` | Optional model identifier reported alongside a transcription |
-| `TimeoutMs` | `int` | `120000` | Total budget for one transcription, including admission and conversion |
-| `MaxCompressedBytes` | `int` | `5242880` | Largest accepted attachment before any conversion |
-| `MaxDecodedBytes` | `int` | `19200000` | Largest accepted decoded WAV, about 10 minutes of 16 kHz mono PCM |
-| `MaxDurationSeconds` | `int` | `300` | Longest accepted recording |
-| `FfmpegPath` | `string` | `ffmpeg` | ffmpeg executable used to normalise non-WAV audio |
-
-## Agent Integration — Signal Messenger
-
-### CommsAgent — the gateway agent
-
-`CommunicationsBgService` is the **sole SmartHaus component that communicates with Signal**. It comes from the shared [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) project, and SmartHaus answers through `AgentCommsResponder` from [CasCap.Comms.AI](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI). It acts as a gateway between the smart home and the user:
-
-1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
-2. **Incoming messages** — Subscribes to the configured Signalizr group over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.
-3. **Agent routing** — Routes both stream events and incoming user messages through the tenant-scoped `CommsAgent` in the remote Agent Runtime, which decides how to respond. Events whose source is in `CommsConfig.MonitorSources` skip the agent and go straight to the monitor group.
-4. **Outbound** — Sends the agent's response, progress reactions, typing indicators and polls to the configured Signalizr group. SmartHaus has no direct Signal access: the gateway owns the account, its groups and its profile name.
-
-Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directly**. They publish their findings to the comms stream, and CommsAgent relays, aggregates, or suppresses notifications as appropriate.
-
-### Media pipeline — source-agnostic media analysis (Comms pod)
-
-`MediaBgService` runs alongside `CommunicationsBgService` in the Comms pod and provides a dedicated pipeline for binary media (images, audio, documents):
-
-1. **Media stream** — Consumes `MediaEvent` entries from the Redis Stream configured by `MediaConfig.StreamKey` (default `media:stream:events`), published by source-specific sinks (e.g. `DoorBirdSinkMediaStreamService`).
-2. **Agent routing** — Looks up `MediaConfig.SourceAgentMap` to find the domain agent for the event source (e.g. `"DoorBird" → "SecurityAgent"`).
-3. **Analysis** — Fetches cached media bytes from Redis and sends a stateless binary turn to the tenant-scoped domain agent in the remote Agent Runtime (e.g. a vision-capable SecurityAgent).
-4. **Findings** — Posts the analysis result as a `CommsEvent` to `comms:stream:events` with a `MediaReference` in `JsonPayload` (pointing to the cached image bytes), where CommunicationsBgService picks it up, fetches the image from Redis, and relays both text and image to the Signal group.
-
-This enables users to interact with the smart home AI assistant directly from the Signal mobile app, eliminating the need for a custom mobile application.
-
-### Camera event-clip flow
-
-For privately mapped Ubiquiti cameras and the optional DoorBird source, the corresponding media sink
-queues one bounded clip request rather than immediately publishing the webhook snapshot.
-`CameraClipBgService` applies the per-camera cooldown, waits for post-roll, requests the configured
-MediaMTX time range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264 video plus
-the first AAC audio track when present. The completed MP4 is cached through `CommsMediaStore` and
-delivered through the ordinary comms stream.
-
-The queue has a single reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
-output or oversized output explicitly falls back to the existing thumbnail path. Temporary source
-and output files are always deleted. Raw controller camera identifiers are in-memory routing values
-only and are excluded from serialized events and public configuration.
-
-SmartHaus-owned orchestration settings bind from dedicated sections such as `CasCap:MediaConfig` and `CasCap:BuderusCommsConfig`. Remote definition names use `AgentKeys`, while execution definitions and providers remain authoritative in agentizr. The comms pipeline is configured separately in `CasCap:CommsConfig`, because it is shared with other Signalizr applications.
-
-### Audio attachment flow — speech-to-text transcription
-
-When a user sends an audio clip (e.g. a voice message) via Signal, `CommunicationsBgService` intercepts it before the comms agent sees it:
-
-1. **Download** — The selected attachment bytes and MIME type (`audio/aac`, `audio/ogg`, etc.) are downloaded from Signalizr's durable store. Signalizr owns wrapper cleanup and retention, so SmartHaus does not delete inbound attachments.
-2. **Validate** — `VoiceMessageTranscriptionService` checks the declared media type against the payload's own file signature and enforces the configured compressed-size, decoded-size and duration limits. Nothing is transmitted until those pass.
-3. **Normalise** — Audio that is not already 16 kHz mono signed 16-bit PCM WAV is piped through `ffmpeg` (stdin to stdout), so it never touches the file system.
-4. **Transcribe** — The WAV is handed to an `ISpeechToTextClient`, the `Microsoft.Extensions.AI` abstraction. Which implementation runs is chosen by `CasCap:SpeechToTextConfig:Provider`; see [Speech-to-text providers](#speech-to-text-providers) below. Switching provider is a configuration change, not a code change.
-5. **Inject** — Only the normalised transcript reaches CommsAgent, which processes it as ordinary text. Raw audio is never forwarded, and a failed transcription produces one concise reply with no agent turn and nothing persisted to the conversation.
-
-`CasCap:SpeechToTextConfig:Mode` gates the whole path: `Disabled` rejects voice without downloading, `Shadow` transcribes for measurement without replying, and `Enabled` drives a normal text turn.
-
-```mermaid
-flowchart LR
-    SIGNAL(["Signal<br/>voice message"]) -->|audio/aac bytes| DOWNLOAD["Download<br/>attachment"]
-    DOWNLOAD --> TRANSCODE["ffmpeg<br/>AAC → WAV<br/>(16kHz mono PCM)"]
-    TRANSCODE --> STT(("ISpeechToTextClient<br/>(selected provider)"))
-    STT -->|transcribed text| INJECT["Replace the prompt<br/>with the transcript"]
-    INJECT --> COMMS(("CommsAgent"))
-    COMMS -->|response| SIGNAL
-```
-
-### Speech-to-text providers
-
-Three interchangeable implementations of `ISpeechToTextClient` are shipped. `Provider` selects one; the
-others stay dormant and resolve no configuration or credentials.
-
-| Provider | Implementation | Transport |
-| --- | --- | --- |
-| `WhisperAsr` | `WhisperAsrSpeechToTextClient` | multipart `POST /asr`, part `audio_file`, with `task`, `language`, `encode` and `output` query parameters. `encode=false` for WAV so the server skips its own ffmpeg pass |
-| `WhisperCpp` | `WhisperCppSpeechToTextClient` | multipart `POST /inference`, part `file`, with `response_format` and `language` form fields |
-| `Azure` | `AzureSpeechToTextClient` | Azure AI Speech fast transcription, via `ISpeechService` in `CasCap.Api.Azure.CognitiveServices` |
-
-The route and the multipart part name differ between the two whisper servers, which is why they are
-separate adapters rather than one adapter with a mode flag.
-
-#### Measured comparison
-
-All figures are a single voice message through the full pipeline on the same hardware. *Realtime* is
-seconds of audio per second of wall clock, so above `1.0` is faster than playback.
-
-| Provider | Model | Transcribe | Realtime | ms per audio second |
-| --- | --- | --- | --- | --- |
-| `WhisperAsr` (`openai_whisper`) | small | 14,847 ms | 0.2x | 4,013 |
-| `WhisperAsr` (`faster_whisper`) | small | 7,881 ms | 0.4x | 2,627 |
-| `WhisperCpp` (Vulkan GPU) | small | ~7,000 ms | ~0.4x | ~2,333 |
-| `Azure` | fast transcription | **718 ms** | **5.6x** | **180** |
-
-| Provider | Advantages | Disadvantages |
-| --- | --- | --- |
-| `WhisperAsr` | Audio never leaves the network. No account, key or quota. Swappable engine and model through its own environment variables | Slowest. CPU-bound, and competes with every other workload on the node |
-| `WhisperCpp` | Audio never leaves the network. Can offload to a GPU. Smallest runtime footprint | Needs a GPU to be worth running, and the published arm64 images do not execute on every Arm CPU, so an image build may be required |
-| `Azure` | By far the fastest, and the only one whose cost scales with the length of the recording. Best accuracy observed. No local compute at all | Audio leaves the network. Needs an Azure resource, a credential and a role assignment. Per-transaction cost, and a quota |
-
-The whisper figures are dominated by a design detail rather than the hardware: Whisper pads every
-recording to a fixed 30-second window, so a three-second message costs the same as a thirty-second
-one. That is why the realtime factor stays below `1.0` no matter how briefly you speak, and why only
-the Azure figure improves with shorter audio.
-
-Speed is not the only axis. Both whisper providers keep household audio on the local network, which
-may outweigh latency once a voice message can come from someone other than the operator.
+Names such as `CommsAgent` and `SecurityAgent` are references to active remote definitions. Public
+examples under [docs/agent-examples](../../docs/agent-examples/README.md) illustrate expected
+behaviour but are not runtime authority.
 
 ## Service Architecture
 
 ```mermaid
-flowchart TD
-    subgraph FeaturePods["Feature pods (Fronius / KNX / DoorBird / Buderus)"]
-        FRONIUS_SINK["FroniusSinkSignalRService"]
-        KNX_SINK["KnxSinkSignalRService"]
-        DOORBIRD_SINK["DoorBirdSinkSignalRService"]
-        BUDERUS_SINK["BuderusSinkSignalRService"]
-        FRONIUS_COMMS["FroniusSinkCommsStreamService"]
-        KNX_COMMS["KnxSinkCommsStreamService"]
-        DOORBIRD_MEDIA["DoorBirdSinkMediaStreamService"]
+flowchart LR
+    classDef local fill:#e0f2fe,stroke:#0369a1,color:#082f49
+    classDef remote fill:#dcfce7,stroke:#15803d,color:#052e16
+    classDef state fill:#fef3c7,stroke:#b45309,color:#451a03
+
+    subgraph Features["SmartHaus feature processes"]
+        FEATURE_SINKS["Domain event sinks"]:::local
+        MCP_SERVICES["MCP query services"]:::local
     end
 
-    subgraph Hub["CasCap.Backend (HausHub @ /hubs/haus)"]
-        HAUSHUB["HausHub\n[Authorize]"]
-        HUB_CONSOLE["HausHubSinkConsoleService"]
-        HUB_METRICS["HausHubSinkMetricsService"]
+    subgraph Backend["SmartHaus application process"]
+        HUB["HausHub"]:::local
+        COMMS["CommunicationsBgService"]:::local
+        MEDIA["MediaBgService"]:::local
+        STT["VoiceMessageTranscriptionService"]:::local
     end
 
-    subgraph Comms["CasCap.Backend (Comms instance — gateway + media analysis)"]
-        COMMS_BG["CommunicationsBgService"]
-        COMMS_AGENT(("CommsAgent"))
-        STT(("Speech-to-text\n(selected provider)"))
-        MEDIA_BG["MediaBgService"]
-        SECURITY_AGENT(("SecurityAgent\n(vision)"))
-    end
+    SIGNALR_CLIENTS["SignalR clients"]:::remote
+    REDIS[("Redis streams and media cache")]:::state
+    RUNTIME["Agent Runtime<br/>agentizr"]:::remote
+    SIGNALIZR["Signalizr<br/>REST and gRPC"]:::remote
 
-    MEDIA_STREAM[("Redis Stream\nMediaConfig.StreamKey")]
-    COMMS_STREAM[("Redis Stream\nCommsConfig.StreamKey")]
-    REDIS_CACHE[("Redis\nimage cache")]
-    CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
-    SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
-
-    %% SignalR path
-    FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
-    KNX_SINK -->|SendKnxTelegram| HAUSHUB
-    DOORBIRD_SINK -->|SendDoorBirdEvent| HAUSHUB
-    BUDERUS_SINK -->|SendBuderusEvent| HAUSHUB
-    HAUSHUB -->|ReceiveFroniusEvent etc.| CLIENTS
-    HAUSHUB --> HUB_CONSOLE
-    HAUSHUB --> HUB_METRICS
-
-    %% Comms stream path (text events)
-    FRONIUS_COMMS -->|CommsEvent| COMMS_STREAM
-    KNX_COMMS -->|CommsEvent| COMMS_STREAM
-
-    %% Media stream path (binary media)
-    DOORBIRD_MEDIA -->|cache bytes| REDIS_CACHE
-    DOORBIRD_MEDIA -->|MediaEvent| MEDIA_STREAM
-    MEDIA_STREAM --> MEDIA_BG
-    MEDIA_BG -->|fetch bytes| REDIS_CACHE
-    MEDIA_BG --> SECURITY_AGENT
-    SECURITY_AGENT -->|analysis CommsEvent| COMMS_STREAM
-
-    %% CommsAgent gateway
-    COMMS_STREAM --> COMMS_BG
-    COMMS_BG -->|audio attachment| STT
-    STT -->|transcript| COMMS_BG
-    COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|send, react, poll| SIGNALIZR
-    SIGNALIZR -->|durable subscription| COMMS_BG
+    FEATURE_SINKS --> HUB
+    HUB --> SIGNALR_CLIENTS
+    FEATURE_SINKS --> REDIS
+    REDIS --> COMMS
+    REDIS --> MEDIA
+    SIGNALIZR -->|"durable inbound messages"| COMMS
+    COMMS --> STT
+    COMMS -->|"text or transcript"| RUNTIME
+    MEDIA -->|"binary agent turn"| RUNTIME
+    RUNTIME -->|"MCP calls"| MCP_SERVICES
+    RUNTIME -->|"agent result"| COMMS
+    RUNTIME -->|"media analysis"| MEDIA
+    MEDIA --> REDIS
+    COMMS -->|"send, react, type, poll"| SIGNALIZR
 ```
 
-## Agent Instructions
+The Agent Runtime may use llama.cpp, Ollama, Azure OpenAI, or another supported provider without a
+SmartHaus deployment. Provider changes are definition-level changes in agentizr, not SmartHaus
+configuration changes.
 
-Agent instruction markdown files are compiled as embedded resources in this project and resolved at runtime by `AgentExtensions.ResolveInstructions` in `CasCap.Common.AI`. To update an agent's behaviour, edit the corresponding file and redeploy.
+## Public Surface
 
-## MCP Query Services
+### SignalR Hub
 
-MCP query services registered by `HausMcpServiceCollectionExtensions` expose domain tools and prompts to AI agents. Each service is conditionally registered based on enabled features.
+`HausHub` is an `[Authorize]` hub mounted at `SignalRHubConfig.HubPath`. It implements
+`IHausServerHub` and broadcasts these events:
+
+| Server method | Payload | Description |
+| --- | --- | --- |
+| `SendFroniusEvent` | `FroniusEvent` | Solar inverter reading |
+| `SendKnxTelegram` | `KnxEvent` | KNX bus telegram |
+| `SendDoorBirdEvent` | `DoorBirdEvent` | Door station event |
+| `SendBuderusEvent` | `BuderusEvent` | Heating system reading |
+| `SendMessage` | User, message, date | Text to all other clients |
+| `Broadcast` | Message | Text to every client, including the sender |
+
+After broadcasting, domain events are forwarded to the configured `IEventSink<HubEvent>`
+implementations. Console and OpenTelemetry metric sinks are enabled by default.
+
+Feature projects provide the corresponding SignalR client sinks:
+
+| Sink | Hub call |
+| --- | --- |
+| `FroniusSinkSignalRService` | `SendFroniusEvent` |
+| `KnxSinkSignalRService` | `SendKnxTelegram` |
+| `DoorBirdSinkSignalRService` | `SendDoorBirdEvent` |
+| `BuderusSinkSignalRService` | `SendBuderusEvent` |
+
+### REST API
+
+| Endpoint | Authentication | Description |
+| --- | --- | --- |
+| `GET /api/system` | Required | Returns `GitMetadata` for the running build |
+
+### MCP Server
+
+The server application exposes one stateless Streamable HTTP MCP endpoint at `AppConfig.McpUrl`.
+Tool implementations live under [Services/Mcp](Services/Mcp), MCP-only DTOs live under
+[Models/Mcp](Models/Mcp), and reusable prompt classes remain in [Models](Models).
+
+Feature registration adds the owning query service and then calls `WithToolsFromAssembly` for its
+assembly. The server does not maintain an agent session or execute a model when servicing an MCP
+request.
 
 | Service | Tools | Prompts | Domain |
-| --- | --- | --- | --- |
-| `BusSystemMcpQueryService` | 21 | 5 | Bus system — door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
-| `HeatPumpMcpQueryService` | 2 | 5 | Heat pump |
-| `InverterMcpQueryService` | 7 | 5 | Solar inverter |
-| `FrontDoorMcpQueryService` | 8 | 5 | Front door intercom |
-| `AppliancesMcpQueryService` | 9 | 5 | Home appliances |
-| `EdgeHardwareMcpQueryService` | 1 | — | Edge hardware monitoring (GPU/CPU metrics) |
-| `IpCameraMcpQueryService` | 1 | — | IP cameras (UniFi Protect event status) |
-| `AquariumMcpQueryService` | 2 | — | Aquarium water pump (Sicce) |
-| `SmartPlugMcpQueryService` | 3 | — | Smart plugs (Shelly) |
-| `SmartLightingMcpQueryService` | 15 | — | Lighting — KNX ceiling/wall lights and Wiz smart bulbs |
-| `MessagingMcpQueryService` | 3 | — | Signal messaging polls (create, close, status) |
+| --- | ---: | ---: | --- |
+| `BusSystemMcpQueryService` | 21 | 4 | Contacts, locks, shutters, HVAC, outlets, rooms, floors, and diagnostics |
+| `HeatPumpMcpQueryService` | 2 | 4 | Heat-pump state and writable data points |
+| `InverterMcpQueryService` | 7 | 5 | Solar production, power flow, meters, and battery state |
+| `FrontDoorMcpQueryService` | 8 | 5 | Door state, images, history, access, night vision, and stream URL |
+| `AppliancesMcpQueryService` | 9 | 5 | Appliance state, actions, and programs |
+| `EdgeHardwareMcpQueryService` | 1 | 0 | Edge CPU and GPU snapshots |
+| `IpCameraMcpQueryService` | 1 | 0 | Camera event status |
+| `AquariumMcpQueryService` | 2 | 0 | Aquarium pump state and control |
+| `SmartPlugMcpQueryService` | 3 | 0 | Smart-plug state and control |
+| `SmartLightingMcpQueryService` | 15 | 0 | KNX and WiZ lighting state and control |
+| `MessagingMcpQueryService` | 3 | 0 | Signal poll creation, closure, and status |
 
-### MCP Registration
+This table is the available SmartHaus MCP catalogue. Which tools an agent can call is selected by
+its active definition in agentizr; SmartHaus deliberately carries no agent-to-tool assignment map.
 
-Register individually per feature flag (as done in `Program.cs`):
+## Communications Flow
 
-```csharp
-services.AddBusSystemMcp();
-services.AddHeatPumpMcp();
-services.AddInverterMcp();
-services.AddFrontDoorMcp();
-services.AddAppliancesMcp();
-services.AddEdgeHardwareMcp();
-services.AddCamerasMcp();
-services.AddAquariumMcp();
-services.AddSmartPlugMcp();
-services.AddSmartLightingMcp();
-services.AddMessagingMcp(groupName);
-```
+`CommunicationsBgService` is the only SmartHaus service that exchanges messages with Signalizr.
+It combines two input paths:
 
-### MCP Service Architecture
+1. It consumes `CommsEvent` records from the Redis stream configured by `CommsConfig.StreamKey`.
+2. It receives durable Signal messages over the Signalizr gRPC subscription identified by
+   `SignalizrClientConfig.SubscriberName`.
+3. Events listed in `CommsConfig.MonitorSources` bypass the agent and go directly to the operator
+   monitor group.
+4. Other events and user messages are sent to `CommsConfig.AgentName` through
+   `IAgentRuntimeClient`.
+5. The response is delivered through Signalizr with the configured reaction, typing, poll, and
+   diagnostic behaviour.
 
-```mermaid
-graph TD
-    classDef system fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
-    classDef integration fill:#fef3c7,stroke:#f59e0b,color:#78350f
-    classDef core fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
+`EdgeHardwareAgentRunEnricher` measures edge GPU energy use for each communications-agent run and
+adds available energy and solar context to the reply footer and monitor timeline.
 
-    REG["Program.cs<br/>(feature-gated registration)"]:::core
+## Media Flow
 
-    subgraph HomeAutomation["Home Automation"]
-        BUS["BusSystemMcpQueryService<br/>(21 tools, 5 prompts)"]:::integration
-        HEAT["HeatPumpMcpQueryService<br/>(2 tools, 5 prompts)"]:::integration
-        INVERTER["InverterMcpQueryService<br/>(7 tools, 5 prompts)"]:::integration
-        DOOR["FrontDoorMcpQueryService<br/>(8 tools, 5 prompts)"]:::integration
-        APPLIANCES["AppliancesMcpQueryService<br/>(9 tools, 5 prompts)"]:::integration
-        CAMERAS["IpCameraMcpQueryService<br/>(1 tool)"]:::integration
-        AQUARIUM["AquariumMcpQueryService<br/>(2 tools)"]:::integration
-        PLUGS["SmartPlugMcpQueryService<br/>(3 tools)"]:::integration
-        LIGHTS["SmartLightingMcpQueryService<br/>(15 tools)"]:::integration
-    end
+`MediaBgService` is a separate binary path so images and other media are not embedded in the text
+communications stream:
 
-    subgraph Platform["Platform Services"]
-        EDGE["EdgeHardwareMcpQueryService<br/>(1 tool)"]:::system
-        MSG["MessagingMcpQueryService<br/>(3 tools)"]:::system
-    end
+1. A source sink caches the bytes in Redis and writes a `MediaEvent` to `MediaConfig.StreamKey`.
+2. `MediaBgService` maps the event source to a remote definition through
+   `MediaConfig.SourceAgentMap`.
+3. It fetches the cached bytes and sends a stateless binary turn to that definition.
+4. It publishes the result as a `CommsEvent`, retaining a `MediaReference` to the cached bytes.
+5. `CommunicationsBgService` relays the result and media to the configured Signal group.
 
-    REG --> BUS
-    REG --> HEAT
-    REG --> INVERTER
-    REG --> DOOR
-    REG --> APPLIANCES
-    REG --> CAMERAS
-    REG --> AQUARIUM
-    REG --> PLUGS
-    REG --> LIGHTS
-    REG --> EDGE
-    REG --> MSG
+### Camera Clips
 
-    BUS -.uses.-> KNX["CasCap.Api.Knx"]
-    HEAT -.uses.-> BUDERUS["CasCap.Api.Buderus"]
-    INVERTER -.uses.-> FRONIUS["CasCap.Api.Fronius"]
-    DOOR -.uses.-> DOORBIRD["CasCap.Api.DoorBird"]
-    APPLIANCES -.uses.-> MIELE["CasCap.Api.Miele"]
-    CAMERAS -.uses.-> UBIQUITI["CasCap.Api.Ubiquiti"]
-    AQUARIUM -.uses.-> SICCE["CasCap.Api.Sicce"]
-    PLUGS -.uses.-> SHELLY["CasCap.Api.Shelly"]
-    LIGHTS -.uses.-> WIZ["CasCap.Api.Wiz"]
-```
+For configured Ubiquiti cameras and the optional DoorBird source, the media sink queues a bounded
+clip request. `CameraClipBgService` applies the per-camera cooldown, waits for post-roll, downloads
+the MediaMTX playback range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264
+video and the first AAC audio track when present.
 
-## Agent Architecture
+The queue has one reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
+output, or oversized output falls back to the existing thumbnail path. Temporary files are always
+deleted, and private controller identifiers are not serialized into events.
 
-How agents delegate to sub-agents and consume tool services:
+## Voice Flow
+
+Voice attachments are normalized before an agent sees them:
+
+1. `VoiceMessageTranscriptionService` downloads the selected attachment from Signalizr.
+2. It verifies the declared media type against the payload signature and enforces compressed,
+   decoded, and duration limits.
+3. Non-WAV input is piped through FFmpeg to 16 kHz mono signed 16-bit PCM WAV without a temporary
+   file.
+4. The configured `ISpeechToTextClient` transcribes the normalized audio.
+5. Only the transcript is sent to the remote agent. Raw audio is never included in the agent turn.
+6. When spoken replies are enabled and the inbound message was voice, the configured
+  `ITextToSpeechClient` synthesizes the agent's text response for Signalizr delivery.
 
 ```mermaid
-flowchart TD
-    classDef orchestrator fill:#dbeafe,stroke:#3b82f6,color:#1e3a8a
-    classDef specialist fill:#d1fae5,stroke:#10b981,color:#064e3b
-    classDef disabled fill:#f3f4f6,stroke:#9ca3af,color:#6b7280,stroke-dasharray:5 5
-    classDef shared fill:#fef3c7,stroke:#f59e0b,color:#78350f
-    classDef stt fill:#ede9fe,stroke:#8b5cf6,color:#4c1d95
-    classDef unassigned fill:#fee2e2,stroke:#ef4444,color:#991b1b
+sequenceDiagram
+    participant User as Signal user
+    participant Gateway as Signalizr
+    participant Comms as CommunicationsBgService
+    participant Speech as ISpeechToTextClient
+    participant Runtime as Agent Runtime
+    participant Synthesis as ITextToSpeechClient
 
-    Comms(["CommsAgent<br/>(orchestrator)"]):::orchestrator
-
-    Security["SecurityAgent"]:::specialist
-    Heating["HeatingAgent"]:::specialist
-    Energy["EnergyAgent"]:::specialist
-    HomeControl["HomeControlAgent"]:::specialist
-    Infra["InfraAgent"]:::specialist
-    Appliances["AppliancesAgent<br/>(disabled)"]:::disabled
-Audio["Speech-to-text<br/>(selected provider)"]:::stt
-
-    Comms -->|delegates| Security
-    Comms -->|delegates| Heating
-    Comms -->|delegates| Energy
-    Comms -->|delegates| HomeControl
-    Comms -->|delegates| Infra
-    Comms -->|delegates| Appliances
-    Comms -.->|audio STT| Audio
-
-    subgraph SharedSvc["Shared Services"]
-        MSG["MessagingMcpQueryService<br/>create_poll · close_poll · get_poll_status"]:::shared
+    User->>Gateway: Voice attachment
+    Gateway->>Comms: Durable message and attachment
+    Comms->>Comms: Validate and normalize audio
+    Comms->>Speech: 16 kHz mono PCM WAV
+    Speech-->>Comms: Transcript
+    Comms->>Runtime: Text turn
+    Runtime-->>Comms: Agent result
+    opt Spoken replies enabled and inbound was voice
+      Comms->>Synthesis: Agent result text
+      Synthesis-->>Comms: Audio reply
     end
-
-    Comms -.-> SharedSvc
-    Security -.-> SharedSvc
-    Heating -.-> SharedSvc
-    Energy -.-> SharedSvc
-    HomeControl -.-> SharedSvc
-    Infra -.-> SharedSvc
-    Appliances -.-> SharedSvc
-
-    subgraph AudioPipeline["Audio Transcription"]
-        AUDIO_IN["audio/aac bytes"] --> FFMPEG["ffmpeg<br/>AAC → WAV<br/>(16kHz mono PCM)"]
-        FFMPEG --> WHISPER["ISpeechToTextClient<br/>(selected provider)"]
-        WHISPER --> TRANSCRIPTION["transcribed text"]
-    end
-    Audio --> AudioPipeline
-
-    subgraph FrontDoor["FrontDoorMcpQueryService (8 tools)"]
-        FD_state["get_house_door_state"]
-        FD_photo["get_house_door_photo"]
-        FD_info["get_house_door_photo_info"]
-        FD_unlock["unlock_house_door"]
-        FD_night["enable_house_door_night_vision"]
-        FD_video["get_house_door_video_stream_url"]
-        FD_hist["get_house_door_history_image"]
-        FD_histInfo["get_house_door_history_image_info"]
-    end
-    Security --> FrontDoor
-
-    subgraph SecurityBus["BusSystemMcpQueryService (SecurityAgent)"]
-        SB_door["get_house_front_door_state"]
-    end
-    Security --> SB_door
-
-    subgraph SecurityLights["SmartLightingMcpQueryService (SecurityAgent)"]
-        SL_doorOn["turn_on_house_door_light"]
-        SL_doorOff["turn_off_house_door_light"]
-    end
-    Security --> SL_doorOn
-    Security --> SL_doorOff
-
-    subgraph CommsBus["BusSystemMcpQueryService (CommsAgent)"]
-        CB_rooms["get_house_rooms"]
-        CB_floors["get_house_floors"]
-    end
-    Comms --> CB_rooms
-    Comms --> CB_floors
-
-    subgraph HeatPump["HeatPumpMcpQueryService"]
-        HP_state["get_heat_pump_state"]
-        HP_set["set_heat_pump_data_point"]
-    end
-    Heating --> HeatPump
-
-    subgraph KnxHvac["Remote: mcp/knx (heating zones)"]
-        KH_change["change_house_heating_zone"]
-        KH_zones["get_house_heating_zones"]
-        KH_zone["get_house_heating_zone"]
-    end
-    Heating --> KnxHvac
-
-    subgraph Inverter["InverterMcpQueryService (7 tools)"]
-        INV_flow["get_inverter_power_flow"]
-        INV_elec["get_inverter_electrical_readings"]
-        INV_info["get_inverter_info"]
-        INV_devices["get_inverter_connected_devices"]
-        INV_meter["get_inverter_meter_readings"]
-        INV_battery["get_inverter_battery_status"]
-        INV_snap["get_inverter_snapshot"]
-    end
-    Energy --> Inverter
-
-    subgraph BusHome["BusSystemMcpQueryService (HomeControl, 18 tools)"]
-        BH_note["shutters · outlets · rooms · floors<br/>diagnostics · front door state<br/>(excludes 3 heating zone tools)"]
-    end
-    HomeControl --> BusHome
-
-    subgraph LightsHome["SmartLightingMcpQueryService (HomeControl, all 15 tools)"]
-        LH_note["KNX ceiling/wall lights · WiZ smart bulbs<br/>on/off · status · all-on/all-off"]
-    end
-    HomeControl --> LightsHome
-
-    subgraph EdgeHW["EdgeHardwareMcpQueryService"]
-        EDGE_snap["get_edge_hardware_snapshots"]
-    end
-    Infra --> EdgeHW
-
-    subgraph AppSvc["AppliancesMcpQueryService (9 tools)"]
-        APP_all["get_all_appliances · summary"]
-        APP_detail["get_appliance · identification · state · actions"]
-        APP_exec["execute_appliance_action · get/start_programs"]
-    end
-    Appliances --> AppSvc
-
-    subgraph Unassigned["Unassigned Services"]
-        UA_cam["IpCameraMcpQueryService · 1 tool"]:::unassigned
-        UA_plug["SmartPlugMcpQueryService · 3 tools"]:::unassigned
-        UA_aqua["AquariumMcpQueryService · 2 tools"]:::unassigned
-    end
+    Comms->>Gateway: Text and optional audio reply
 ```
 
-### Agent Tools Summary
+`SpeechToTextConfig.Mode` controls the path: `Disabled` rejects voice without downloading,
+`Shadow` transcribes for measurement without replying, and `Enabled` drives a normal agent turn.
 
-| Agent | Direct Tools | Via Delegation | Total |
+Three `ISpeechToTextClient` implementations are available:
+
+| Provider | Implementation | Transport |
+| --- | --- | --- |
+| `WhisperAsr` | `WhisperAsrSpeechToTextClient` | Multipart `POST /asr` |
+| `WhisperCpp` | `WhisperCppSpeechToTextClient` | Multipart `POST /inference` |
+| `Azure` | `AzureSpeechToTextClient` | Azure AI Speech fast transcription using the ambient token credential |
+
+The two whisper adapters are separate because their routes, multipart names, and options differ.
+Both keep audio on the local network. Azure minimizes latency but sends audio to the configured
+Azure resource.
+
+Spoken replies use `TextToSpeechConfig`. `Disabled` keeps every reply text-only, while enabled mode
+synthesizes only replies to inbound voice messages. `AzureSpeech`, `AzureOpenAi`, and `Piper`
+providers are available; their provider-specific endpoints and voices are read only when selected.
+
+## Configuration
+
+### Configuration Examples
+
+Minimal local configuration uses unauthenticated local Agent Runtime and Signalizr endpoints:
+
+```json
+{
+  "AppConfig": {
+    "McpUrl": "/mcp"
+  },
+  "CasCap": {
+    "AgentRuntimeClientOptions": {
+      "BaseAddress": "http://localhost:5090"
+    },
+    "CommsConfig": {
+      "GroupName": "Example Group",
+      "AgentName": "CommsAgent"
+    },
+    "SignalizrClientConfig": {
+      "BaseAddress": "http://localhost:8090",
+      "GrpcAddress": "http://localhost:5001",
+      "SubscriberName": "smarthaus-comms"
+    }
+  }
+}
+```
+
+A deployment that authenticates to the Agent Runtime supplies identifiers through public
+configuration and the PEM certificate through a secret-backed provider:
+
+```json
+{
+  "CasCap": {
+    "AgentRuntimeClientOptions": {
+      "BaseAddress": "https://agent-runtime.example.com",
+      "TimeoutMinutes": 10
+    },
+    "AgentRuntimeAzureAuthConfig": {
+      "Enabled": true,
+      "TenantId": "00000000-0000-0000-0000-000000000000",
+      "ClientId": "00000000-0000-0000-0000-000000000000",
+      "Certificate": null,
+      "Scope": "api://00000000-0000-0000-0000-000000000000/.default"
+    }
+  }
+}
+```
+
+Never commit the certificate or real tenant, application, endpoint, group, camera, or device
+identifiers.
+
+### Application and Runtime
+
+| Section | Setting | Default | Description |
 | --- | --- | --- | --- |
-| SecurityAgent | 17 | — | 17 |
-| HeatingAgent | 11 | — | 11 |
-| EnergyAgent | 13 | — | 13 |
-| HomeControlAgent | 37 | — | 37 |
-| InfraAgent | 7 | — | 7 |
-| AppliancesAgent | 15 | — | 15 |
-| CommsAgent | 8 | 100 | 108 |
+| `AppConfig` | `McpUrl` | `"/mcp"` | Stateless Streamable HTTP MCP route |
+| `CasCap:AgentRuntimeClientOptions` | `BaseAddress` | Required | Agent Runtime service base address |
+| `CasCap:AgentRuntimeClientOptions` | `TimeoutMinutes` | `10` | Timeout for model and tool runs |
+| `CasCap:AgentRuntimeAzureAuthConfig` | `Enabled` | `false` | Enables certificate-backed bearer authentication |
+| `CasCap:AgentRuntimeAzureAuthConfig` | `TenantId` | `null` | Microsoft Entra tenant identifier; required when enabled |
+| `CasCap:AgentRuntimeAzureAuthConfig` | `ClientId` | `null` | Caller application identifier; required when enabled |
+| `CasCap:AgentRuntimeAzureAuthConfig` | `Certificate` | `null` | Combined PEM certificate and private key from private configuration |
+| `CasCap:AgentRuntimeAzureAuthConfig` | `Scope` | `null` | Runtime application scope ending in `/.default`; required when enabled |
 
-Agent instructions, provider selection, delegation and version activation are owned by agentizr.
-SmartHaus owns the MCP implementations and the stable definition names used by its domain tests.
-See the repository's [public instruction examples](../../docs/agent-examples/README.md) for
-non-authoritative orchestration and domain-specialist snapshots.
+### SignalR
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `CasCap:SignalRHubConfig:HubPath` | `"/hubs/haus"` | Authorized hub route |
+| `CasCap:SignalRHubConfig:Sinks:AvailableSinks` | Console and Metrics enabled | Hub-side event sinks |
+| `CasCap:SignalRHubConfig:ConsoleLogIntervalMs` | `30000` | Console count interval |
+| `CasCap:SignalRHubConfig:MetricsBatchSize` | `10` | Events accumulated before metric flush |
+| `CasCap:SignalRHubConfig:MetricsFlushIntervalMs` | `60000` | Periodic metric flush interval |
+
+### Communications and Signalizr
+
+`CommsConfig` is defined by
+[CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms). These are the
+settings SmartHaus commonly overrides:
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `CasCap:CommsConfig:GroupName` | `"My Test Group Name"` | Exact user-facing Signal group name |
+| `CasCap:CommsConfig:MonitorGroupName` | `null` | Exact operator-only diagnostics group; unset disables diagnostics |
+| `CasCap:CommsConfig:MonitorSources` | Empty | Event sources sent directly to the monitor group |
+| `CasCap:CommsConfig:StreamEventTurnsEnabled` | `true` | Whether chat-bound stream events become agent turns |
+| `CasCap:CommsConfig:EchoTranscriptToDebugChat` | `false` | Echoes successful transcripts to the monitor group |
+| `CasCap:CommsConfig:DelegationMessagesEnabled` | `true` | Sends delegation status as a separate message |
+| `CasCap:CommsConfig:AgentName` | Required by deployment | Remote agent definition name |
+| `CasCap:CommsConfig:AgentSessionId` | Required by deployment | Stable session identifier for the group conversation |
+| `CasCap:SignalizrClientConfig:BaseAddress` | `http://localhost:8090` | Signalizr REST endpoint |
+| `CasCap:SignalizrClientConfig:GrpcAddress` | `http://localhost:5001` | Signalizr gRPC endpoint |
+| `CasCap:SignalizrClientConfig:SubscriberName` | `smarthaus-comms` | Durable inbound cursor identity |
+
+Group names must exactly match Signalizr's `GET /api/v1/groups` output, including case and spaces.
+
+### Media and Camera Clips
+
+| Section | Setting | Default | Description |
+| --- | --- | --- | --- |
+| `CasCap:MediaConfig` | `SourceAgentMap` | Empty | Event source to remote agent-definition name |
+| `CasCap:MediaConfig` | `ImageCacheKeyPrefix` | `"security:image"` | Redis media-cache key prefix |
+| `CasCap:MediaConfig` | `ImageCacheTtlMs` | `300000` | Cached-media lifetime |
+| `CasCap:MediaConfig` | `StreamKey` | `"media:stream:events"` | Media Redis Stream key |
+| `CasCap:MediaConfig` | `ConsumerGroup` | `"media:processors"` | Redis consumer group |
+| `CasCap:MediaConfig` | `ConsumerName` | Machine and application name | Per-process consumer identity |
+| `CasCap:MediaConfig` | `ConsumerGroupStartId` | `"0"` | Initial group position |
+| `CasCap:MediaConfig` | `StreamReadPosition` | `">"` | `XREADGROUP` position |
+| `CasCap:MediaConfig` | `StreamReadCount` | `10` | Entries read per poll |
+| `CasCap:MediaConfig` | `PollingIntervalMs` | `1000` | Poll interval |
+| `CasCap:CameraClipConfig` | `Enabled` | `false` | Enables event-to-clip capture |
+| `CasCap:CameraClipConfig` | `PlaybackBaseAddress` | `http://localhost:9996` | MediaMTX playback endpoint |
+| `CasCap:CameraClipConfig` | `Sources` | Empty | Camera identifier to logical source mapping |
+| `CasCap:CameraClipConfig` | `DoorBirdSource` | `null` | Optional DoorBird source mapping |
+| `CasCap:CameraClipConfig` | `PreRollSeconds` | `5` | Requested pre-event duration |
+| `CasCap:CameraClipConfig` | `PostRollSeconds` | `10` | Requested post-event duration |
+| `CasCap:CameraClipConfig` | `MaximumClipBytes` | `12582912` | Playback and remux byte limit |
+| `CasCap:CameraClipConfig` | `QueueCapacity` | `32` | Pending request capacity |
+| `CasCap:CameraClipConfig` | `ProcessingTimeoutMs` | `30000` | Download and remux budget |
+| `CasCap:CameraClipConfig` | `FfmpegPath` | `ffmpeg` | FFmpeg executable |
+
+Real camera identifiers belong only in private configuration.
+
+### Voice
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `CasCap:SpeechToTextConfig:Mode` | `Disabled` | `Disabled`, `Shadow`, or `Enabled` |
+| `CasCap:SpeechToTextConfig:Provider` | `WhisperAsr` | `WhisperAsr`, `WhisperCpp`, or `Azure` |
+| `CasCap:SpeechToTextConfig:WhisperAsrEndpoint` | `http://localhost:9000` | openai-whisper-asr endpoint |
+| `CasCap:SpeechToTextConfig:WhisperCppEndpoint` | `null` | whisper.cpp endpoint |
+| `CasCap:SpeechToTextConfig:AzureEndpoint` | `null` | Azure AI Speech endpoint |
+| `CasCap:SpeechToTextConfig:AzureLocales` | `null` | Candidate full locale names |
+| `CasCap:SpeechToTextConfig:Language` | `en` | Whisper language code |
+| `CasCap:SpeechToTextConfig:ModelId` | `null` | Optional model identifier for diagnostics |
+| `CasCap:SpeechToTextConfig:TimeoutMs` | `120000` | End-to-end transcription budget |
+| `CasCap:SpeechToTextConfig:MaxCompressedBytes` | `5242880` | Compressed attachment limit |
+| `CasCap:SpeechToTextConfig:MaxDecodedBytes` | `19200000` | Decoded WAV limit |
+| `CasCap:SpeechToTextConfig:MaxDurationSeconds` | `300` | Recording duration limit |
+| `CasCap:SpeechToTextConfig:FfmpegPath` | `ffmpeg` | Audio normalization executable |
+
+| Setting | Default | Description |
+| --- | --- | --- |
+| `CasCap:TextToSpeechConfig:Mode` | `Disabled` | Enables spoken replies to inbound voice messages |
+| `CasCap:TextToSpeechConfig:Provider` | `AzureSpeech` | `AzureSpeech`, `AzureOpenAi`, or `Piper` |
+| `CasCap:TextToSpeechConfig:AzureSpeechEndpoint` | `null` | Azure AI Speech resource endpoint |
+| `CasCap:TextToSpeechConfig:AzureOpenAiEndpoint` | `null` | Azure OpenAI resource endpoint |
+| `CasCap:TextToSpeechConfig:AzureOpenAiDeployment` | `null` | Azure OpenAI audio deployment name |
+| `CasCap:TextToSpeechConfig:AzureOpenAiApiVersion` | `2025-03-01-preview` | Audio API version |
+| `CasCap:TextToSpeechConfig:AzureSpeechVoice` | `null` | Full Azure AI Speech voice name |
+| `CasCap:TextToSpeechConfig:AzureOpenAiVoice` | `null` | Azure OpenAI voice name |
+| `CasCap:TextToSpeechConfig:PiperEndpoint` | `null` | Wyoming protocol `host:port` endpoint |
+| `CasCap:TextToSpeechConfig:PiperVoice` | `null` | Piper voice name |
+| `CasCap:TextToSpeechConfig:FfmpegPath` | `ffmpeg` | PCM audio encoder executable |
+| `CasCap:TextToSpeechConfig:MaxCharacters` | `1000` | Longest synthesized reply |
+| `CasCap:TextToSpeechConfig:TimeoutMs` | `60000` | Synthesis time budget |
+
+### Other Application Configuration
+
+| Section | Setting | Default | Description |
+| --- | --- | --- | --- |
+| `CasCap:BuderusCommsConfig` | `Dhw1AlertHysteresis` | `1.0` | DHW1 setpoint alert hysteresis in degrees Celsius |
+| `CasCap:BuderusCommsConfig` | `Dhw1AlertCooldownMs` | `3600000` | Minimum interval between DHW1 alerts |
 
 ## Dependencies
 
-### NuGet packages
-
-| Package | Purpose |
-| --- | --- |
-| [Azure.Identity](https://www.nuget.org/packages/azure.identity) | Azure authentication |
-| [KoenZomers.UniFi.Api](https://www.nuget.org/packages/koenzomers.unifi.api) | Ubiquiti UniFi API client |
-| [ModelContextProtocol.AspNetCore](https://www.nuget.org/packages/modelcontextprotocol.aspnetcore) | MCP server middleware for ASP.NET Core |
-| [OpenTelemetry](https://www.nuget.org/packages/opentelemetry) | Telemetry SDK |
-| [OpenTelemetry.Extensions.Hosting](https://www.nuget.org/packages/opentelemetry.extensions.hosting) | OpenTelemetry host integration |
-| [Tiveria.Home.Knx](https://www.nuget.org/packages/tiveria.home.knx) | KNX protocol library |
-| [Microsoft.AspNetCore.SignalR.Client](https://www.nuget.org/packages/microsoft.aspnetcore.signalr.client) | SignalR hub client |
-| [Microsoft.AspNetCore.SignalR.Client.Core](https://www.nuget.org/packages/microsoft.aspnetcore.signalr.client.core) | SignalR hub client core |
-| [Microsoft.AspNetCore.SignalR.Protocols.MessagePack](https://www.nuget.org/packages/microsoft.aspnetcore.signalr.protocols.messagepack) | MessagePack SignalR protocol |
-| [Spectre.Console](https://www.nuget.org/packages/spectre.console) | Rich console output |
-| [CasCap.Api.Azure.Storage](https://www.nuget.org/packages/cascap.api.azure.storage) | Azure Blob Storage integration |
-| [CasCap.Common.Extensions](https://www.nuget.org/packages/cascap.common.extensions) | Shared extension helpers |
-| [CasCap.Common.Logging](https://www.nuget.org/packages/cascap.common.logging) | Structured logging helpers |
-| [CasCap.Common.Net](https://www.nuget.org/packages/cascap.common.net) | HTTP client helpers |
-| [CasCap.Common.Serialization.Json](https://www.nuget.org/packages/cascap.common.serialization.json) | JSON serialisation helpers |
-| [CasCap.Common.Caching](https://www.nuget.org/packages/cascap.common.caching) | Caching helpers |
-| [CasCap.Common.Services](https://www.nuget.org/packages/cascap.common.services) | Shared service utilities |
-| [CasCap.Api.Azure.Auth](https://www.nuget.org/packages/cascap.api.azure.auth) | Azure authentication and token credential helpers |
-| [CasCap.Api.Azure.CognitiveServices](https://www.nuget.org/packages/cascap.api.azure.cognitiveservices) | Azure AI Speech synthesis and transcription, used by the `Azure` speech-to-text provider |
-
-### Project references
+### External Application Libraries
 
 | Project | Purpose |
 | --- | --- |
-| `CasCap.Common.AI` | Consolidated MCP tools, prompts, and agent infrastructure |
-| `CasCap.Signalizr.Client` | Durable named-group Signal transport for send, receive, attachments, reactions, typing and polls |
-| `CasCap.Api.DDns` | Dynamic DNS service |
-| `CasCap.Api.Buderus.Sinks` | Buderus SignalR sink |
-| `CasCap.Api.DoorBird.Sinks` | DoorBird SignalR, Redis, Azure Table, and Blob sinks |
-| `CasCap.Api.Fronius.Sinks` | Fronius SignalR sink |
-| `CasCap.Api.Knx.Sinks` | KNX SignalR sink |
-| `CasCap.Api.Miele.Sinks` | Miele SignalR sink |
-| `CasCap.Api.EdgeHardware.Sinks` | Edge hardware SignalR sink |
-| `CasCap.Api.Shelly.Sinks` | Shelly smart plug SignalR sink |
-| `CasCap.Api.Wiz.Sinks` | Wiz smart lighting SignalR sink |
-| `CasCap.Api.Ubiquiti.Sinks` | Ubiquiti IP camera SignalR sink |
-| `CasCap.Api.Sicce.Sinks` | Sicce SignalR sink |
+| `CasCap.AgentRuntime.Contracts` | Versioned remote execution request and response contracts |
+| `CasCap.Comms` | Redis stream and Signalizr communications pipeline |
+| `CasCap.Comms.AI` | Agent Runtime responder and communications-agent integration |
+| `CasCap.Signalizr.Client` | Durable Signalizr REST and gRPC client |
+| `CasCap.Api.Voice` | Voice normalization and speech client abstractions |
+| `CasCap.Api.Azure.Auth` | Certificate and token credential support |
+| `CasCap.Api.Azure.CognitiveServices` | Azure AI Speech adapter |
+| `CasCap.Api.Azure.Storage` | Azure Blob Storage integration |
+
+Debug builds use adjacent project references for these repositories. Release builds use published
+packages where the project file defines a Release package reference.
+
+### Feature Projects
+
+The backend references the SmartHaus sink projects for Buderus, DoorBird, Fronius, KNX, Miele,
+EdgeHardware, Shelly, Sicce, Ubiquiti, and WiZ, plus `CasCap.Api.DDns`.
+
+### Direct NuGet Packages
+
+| Package | Purpose |
+| --- | --- |
+| `Azure.Identity` | Azure authentication |
+| `KoenZomers.UniFi.Api` | UniFi API client |
+| `ModelContextProtocol.AspNetCore` | Stateless Streamable HTTP MCP server |
+| `Microsoft.AspNetCore.SignalR.Client*` | SignalR client and MessagePack transport |
+| `OpenTelemetry*` | Metrics and tracing integration |
+| `Tiveria.Home.Knx` | KNX protocol support |
+| `Spectre.Console` | Console presentation |
+
+## Development
+
+Build from the repository's Debug solution so adjacent source dependencies are used:
+
+```powershell
+dotnet build SmartHaus.Debug.slnx --configuration Debug
+```
+
+The backend tests live in `src/CasCap.Backend.Tests`. Generic Agent Runtime protocol and provider
+coverage belongs to agentizr and `CasCap.Common.AI.Tests`; SmartHaus tests cover its domain tools,
+orchestration, media, and configuration boundaries.
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under [The Unlicense](../../LICENSE).
