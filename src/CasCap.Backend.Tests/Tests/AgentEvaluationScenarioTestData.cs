@@ -146,7 +146,7 @@ public static class AgentEvaluationScenarioTestData
     ];
 
     /// <summary>Scenario identifiers for theory data.</summary>
-    public static TheoryData<string> ScenarioIds => new(Scenarios.Select(s => s.Id));
+    public static TheoryData<string> ScenarioIds => [.. Scenarios.Select(s => s.Id)];
 
     /// <summary>Returns a scenario by identifier.</summary>
     /// <param name="id">The scenario identifier.</param>

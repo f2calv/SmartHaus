@@ -124,9 +124,11 @@ The [MCP source reference](src/CasCap.Backend/README.md#mcp-server-surface) link
 The [Signal group configuration](src/CasCap.Backend/README.md#commsconfig-cascapcommsconfig)
 defines `GroupName` and `MonitorGroupName` for messaging.
 
+Date/time and agent/provider metadata are runtime-owned built-ins supplied by the remote Agent Runtime,
+not SmartHaus MCP services.
+
 | Service | Tools | Prompts | Domain |
 | --- | --- | --- | --- |
-| [`SystemMcpQueryService`](src/CasCap.Backend/Services/Mcp/SystemMcpQueryService.cs) | 3 | — | Date/time, provider list, agent list |
 | [`BusSystemMcpQueryService`](src/CasCap.Backend/Services/Mcp/BusSystemMcpQueryService.cs) | 21 | 5 | Door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
 | [`HeatPumpMcpQueryService`](src/CasCap.Backend/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
 | [`InverterMcpQueryService`](src/CasCap.Backend/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |

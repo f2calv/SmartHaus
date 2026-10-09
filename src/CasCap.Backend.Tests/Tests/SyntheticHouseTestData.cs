@@ -45,7 +45,7 @@ public static class SyntheticHouseTestData
     public static IReadOnlyDictionary<string, Func<AIFunctionArguments, object?>> CommonResponses { get; } =
         new Dictionary<string, Func<AIFunctionArguments, object?>>
         {
-            ["get_current_datetime_state"] = _ => new DateTimeState
+            ["get_current_datetime_state"] = _ => new
             {
                 LocalTime = ObservedUtc.AddHours(2),
                 DayOfWeek = ObservedUtc.AddHours(2).DayOfWeek.ToString(),

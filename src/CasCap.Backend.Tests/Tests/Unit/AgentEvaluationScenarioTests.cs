@@ -1,5 +1,3 @@
-using Microsoft.Extensions.Logging.Abstractions;
-
 namespace CasCap.Tests.Unit;
 
 /// <summary>
@@ -67,14 +65,14 @@ public sealed class AgentEvaluationScenarioTests
     [Fact]
     public void Scenarios_ReferenceKnownTools()
     {
-        var aiConfig = new AIConfig
-        {
-            Providers = [],
-            Agents = AgentKeyNames.ToDictionary(k => k, k => new AgentConfig { Provider = "none", Name = k, Description = k, Prompt = k }),
-        };
         var scenarios = AgentEvaluationScenarioTestData.Scenarios;
-        var known = SmartHausEvaluationTestData.CreateHarness(NullLoggerFactory.Instance, aiConfig)
-            .GetKnownToolNames(scenarios.SelectMany(s => s.ToolSurfaceVariants));
+        var known = SmartHausEvaluationTestData.Catalog.GetAllTools().Select(tool => tool.Name)
+            .Append("get_current_datetime_state")
+            .Concat(AgentKeyNames.Select(agentName => $"invoke_{agentName.ToSnakeCase()}"))
+            .Concat(scenarios.SelectMany(scenario => scenario.ToolSurfaceVariants)
+                .SelectMany(variant => variant.CandidateTools.Values.SelectMany(tools => tools))
+                .Select(tool => tool.Name))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
 
         var unknown = scenarios
             .SelectMany(s => s.ToolResponses.Keys
