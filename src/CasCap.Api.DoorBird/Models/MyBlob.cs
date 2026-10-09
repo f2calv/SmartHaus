@@ -11,14 +11,14 @@ public sealed record MyBlob : IMyBlob
     [SetsRequiredMembers]
     public MyBlob(byte[] bytes, string blobName, DateTime dt)
     {
-        this.bytes = bytes;
+        Bytes = bytes;
         BlobName = blobName;
-        this.DateCreatedUtc = dt;
+        DateCreatedUtc = dt;
     }
 
     /// <inheritdoc/>
     [Description("Raw image bytes.")]
-    public required byte[] bytes { get; init; }
+    public required byte[] Bytes { get; init; }
 
     /// <inheritdoc/>
     [Description("UTC timestamp when the blob was created.")]
@@ -30,9 +30,9 @@ public sealed record MyBlob : IMyBlob
 
     /// <inheritdoc/>
     [Description("Size of the blob in bytes.")]
-    public int SizeInBytes => bytes.Length;
+    public int SizeInBytes => Bytes.Length;
 
     /// <inheritdoc/>
     [Description("True when the blob contains image data; false when empty.")]
-    public bool HasImage => bytes.Length > 0;
+    public bool HasImage => Bytes.Length > 0;
 }

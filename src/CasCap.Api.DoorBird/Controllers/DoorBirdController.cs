@@ -21,9 +21,9 @@ public sealed class DoorBirdController(IDoorBirdQueryService doorBirdQuerySvc) :
     public async Task<Results<FileContentHttpResult, NotFound<string>>> GetRealTimePhoto()
     {
         var blob = await doorBirdQuerySvc.GetRealTimePhoto();
-        return blob.bytes.Length == 0
+        return blob.Bytes.Length == 0
             ? TypedResults.NotFound("No image returned from DoorBird device.")
-            : TypedResults.File(blob.bytes, "image/jpeg");
+            : TypedResults.File(blob.Bytes, "image/jpeg");
     }
 
     /// <inheritdoc cref="DoorBirdQueryService.GetVideoStreamUrl"/>
