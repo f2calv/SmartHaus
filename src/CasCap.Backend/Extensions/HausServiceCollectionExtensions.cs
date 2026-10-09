@@ -1,5 +1,4 @@
 using CasCap;
-using Microsoft.Agents.AI;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 
@@ -88,60 +87,6 @@ public static class HausServiceCollectionExtensions
 
         if (!lite)
             builder.Services.AddSingleton<IBgFeature, MediaBgService>();
-    }
-
-    /// <summary>
-    /// Creates an <see cref="AIAgent"/> from the specified <see cref="ProviderConfig"/> and <see cref="AgentConfig"/>.
-    /// Delegates to <see cref="AgentExtensions.CreateAgent"/> for the core building logic,
-    /// adding development-mode authentication resolved from <see cref="IOptions{ApiAuthConfig}"/>.
-    /// </summary>
-    /// <param name="builder">The web application builder.</param>
-    /// <param name="provider">The infrastructure provider (connection, model, auth).</param>
-    /// <param name="agentConfig">The agent behavioral configuration.</param>
-    /// <param name="serviceProvider">The service provider to resolve <see cref="ApiAuthConfig"/> from.</param>
-    /// <param name="tools">Optional list of AI tools to register with the agent.</param>
-    /// <param name="otelSourceName">
-    /// Optional OpenTelemetry activity source name. Use <see cref="AgentExtensions.GetAISourceName"/> to derive
-    /// from <see cref="AppConfig.MetricNamePrefix"/>.
-    /// </param>
-    /// <param name="aiConfig">
-    /// Optional root AI configuration supplying shared <see cref="AIConfig.InstructionsPrefix"/>
-    /// and <see cref="AIConfig.InstructionsSuffix"/>.
-    /// </param>
-    public static (IChatClient chatClient, AIAgent agent, string instructions) CreateAgent(this WebApplicationBuilder builder,
-        ProviderConfig provider, AgentConfig agentConfig, IServiceProvider serviceProvider, List<AITool>? tools = null, string? otelSourceName = null, AIConfig? aiConfig = null)
-    {
-        // Infrastructure auth (k8s ingress basic auth) is only needed for Ollama
-        // when running outside the cluster. OpenAI/AzureOpenAI auth is handled separately.
-        HttpClient? httpClient = null;
-        if (provider.Type is AgentType.Ollama)
-        {
-            httpClient = new HttpClient
-            {
-                BaseAddress = provider.Endpoint,
-                Timeout = Timeout.InfiniteTimeSpan,
-            };
-            if (builder.Environment.IsDevelopment())
-            {
-                var authOpts = serviceProvider.GetRequiredService<IOptions<ApiAuthConfig>>().Value;
-                httpClient.SetBasicAuth(authOpts.Username, authOpts.Password);
-            }
-        }
-
-        // Resolve TokenCredential for Azure Entra ID-based providers (e.g. AzureOpenAI).
-        var tokenCredential = provider.Type is AgentType.AzureOpenAI
-            ? serviceProvider.GetRequiredService<IOptions<AppConfig>>().Value.TokenCredential
-            : null;
-
-        return AgentExtensions.CreateAgent(provider, agentConfig, httpClient, tools,
-            instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly,
-            aiConfig: aiConfig,
-            otelSourceName: otelSourceName,
-            tokenCredential: tokenCredential,
-            // Spans carry prompt and response content when enabled, which for this system means
-            // household activity and Signal message text — development only.
-            enableSensitiveTelemetryData: builder.Environment.IsDevelopment(),
-            loggerFactory: serviceProvider.GetService<ILoggerFactory>());
     }
 
     /// <summary>

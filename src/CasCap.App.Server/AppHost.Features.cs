@@ -9,7 +9,6 @@ public static partial class AppHost
     private static SignalRHubConfig? AddFeatures(
         WebApplicationBuilder builder,
         AppConfig appConfig,
-        AIConfig aiConfig,
         IReadOnlySet<string> enabledFeatures,
         IConnectionMultiplexer connectionMultiplexer)
     {
@@ -141,34 +140,6 @@ public static partial class AppHost
         {
             builder.AddComms();
             mcpBuilder.WithToolsFromAssembly(typeof(MessagingMcpQueryService).Assembly);
-        }
-
-        // Index tool service and prompt types by name so agent config resolves them deterministically,
-        // rather than scanning every loaded assembly. Must run after the AddXxxMcp registrations above.
-        builder.Services.AddAgentTypeRegistry(typeof(SystemMcpQueryService).Assembly);
-
-        // Register all AI agent profiles with deferred tool resolution.
-        var otelSourceName = AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix);
-        foreach (var (agentName, agentConfig) in aiConfig.Agents.Where(agent => agent.Value.Enabled))
-        {
-            var provider = aiConfig.Providers[agentConfig.Provider];
-            builder.Services.AddKeyedSingleton(agentName, (serviceProvider, _) =>
-            {
-                // Uses deferred resolution to avoid circular singleton dependencies.
-                var tools = AgentExtensions.CreateToolsForAgent(serviceProvider, agentConfig, aiConfig,
-                    deferResolution: true, isDevelopment: builder.Environment.IsDevelopment(),
-                    instructionsAssembly: typeof(HausServiceCollectionExtensions).Assembly,
-                    logger: serviceProvider.GetService<ILoggerFactory>()?.CreateLogger(nameof(AgentExtensions)));
-
-                var (_, agent, _) = builder.CreateAgent(
-                    provider,
-                    agentConfig,
-                    serviceProvider,
-                    tools,
-                    otelSourceName,
-                    aiConfig: aiConfig);
-                return agent;
-            });
         }
 
         builder.Services.AddCommsStreamSink();

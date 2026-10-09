@@ -83,9 +83,9 @@ Each feature library registers its own device connectivity health check when the
 - **Swagger UI** at `/{AppConfig.SwaggerUriRoutePrefix}` (default `/swagger`). Requires Basic auth in production.
 - **MCP server** at `{AppConfig.McpUrl}` (default `/mcp`). Each enabled feature registers its `[McpServerTool]`-decorated query service methods.
 
-### AI Agents
+### Agent Runtime
 
-Named `AgentConfig` entries in `AIConfig.Agents` are each registered as a keyed singleton `AIAgent`. Each agent references a `ProviderConfig` and can gather tools from in-process MCP query services (via `ToolServices`) or from remote MCP server endpoints (via `ToolEndpoints`).
+The server does not construct local agents. Signal and media turns execute through tenant-scoped definitions in the remote Agent Runtime. `AIConfig` remains temporarily for the MCP route and metadata tools until those settings move to dedicated options.
 
 ## Configuration
 
@@ -102,7 +102,7 @@ Key configuration sections:
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics) |
 | `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub |
-| `AIConfig` | `AIConfig` | AI agent configuration (providers, agents) |
+| `AIConfig` | `AIConfig` | Transitional MCP route and agent/provider metadata; not an execution authority |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic auth credentials |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | Hub path and sink configuration |
 | `CasCap:BuderusConfig` | `BuderusConfig` | Buderus KM200 device settings |

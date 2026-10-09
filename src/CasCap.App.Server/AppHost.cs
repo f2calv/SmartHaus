@@ -59,7 +59,6 @@ public static partial class AppHost
             var signalRHubConfig = AddFeatures(
                 builder,
                 appConfig,
-                aiConfig,
                 enabledFeatures,
                 connectionMultiplexer);
 
