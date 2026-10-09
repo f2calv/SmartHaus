@@ -300,5 +300,5 @@ ffmpeg:
 - [workload](https://github.com/f2calv/helm-charts/tree/main/charts/workload) renders every alias.
 - [NVIDIA container runtime](https://github.com/NVIDIA/nvidia-container-toolkit) provides the
   `nvidia` runtime class used by `edge-gpu`.
-- [SmartHaus Grafana dashboards](../smarthaus-dashboards/README.md) is the independent dashboard
-  chart.
+- [SmartHaus Grafana dashboards](../smarthaus-dashboards/README.md) is the bundled dashboard
+  subchart, enabled by `dashboards.enabled`.

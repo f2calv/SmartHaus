@@ -28,7 +28,6 @@ jobs:
       matrix:
         chart:
           - charts/smarthaus
-          - charts/smarthaus-dashboards
     permissions:
       contents: read
     steps:

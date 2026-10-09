@@ -1,4 +1,7 @@
 dependencies:
+- name: smarthaus-dashboards
+  repository: file://../smarthaus-dashboards
+  version: 0.1.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
   version: 1.1.0
@@ -38,5 +41,5 @@ dependencies:
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
   version: 1.1.0
-digest: sha256:a775b887d327b971a770d713fa77c96efd0ec9e1c9cca916d4dd262325c10696
-generated: "2026-09-25T21:25:12.3518671+02:00"
+digest: sha256:e1d1712822674fd20ee7b094500816607716791f3a79c95fb23512dfc62af04d
+generated: "2026-10-09T19:49:20.1658587+02:00"

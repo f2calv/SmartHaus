@@ -6,6 +6,12 @@ version: 0.2.0
 appVersion: "1.16.0"
 
 dependencies:
+  - name: smarthaus-dashboards
+    version: 0.1.0
+    repository: file://../smarthaus-dashboards
+    alias: dashboards
+    condition: dashboards.enabled
+
   - name: workload
     version: 1.1.0
     repository: oci://ghcr.io/f2calv/charts
