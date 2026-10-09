@@ -4,8 +4,8 @@ namespace CasCap.Services;
 /// Writes a <see cref="CommsEvent"/> to the comms Redis Stream when the hot water
 /// temperature reaches the configured target. The alert fires only once per threshold
 /// crossing (rising edge) and is debounced via hysteresis
-/// (<see cref="HeatingAgentConfig.Dhw1AlertHysteresis"/>) and a cooldown period
-/// (<see cref="HeatingAgentConfig.Dhw1AlertCooldownMs"/>) to prevent alert flooding when
+/// (<see cref="BuderusCommsConfig.Dhw1AlertHysteresis"/>) and a cooldown period
+/// (<see cref="BuderusCommsConfig.Dhw1AlertCooldownMs"/>) to prevent alert flooding when
 /// the temperature oscillates around the target.
 /// </summary>
 /// <remarks>
@@ -14,13 +14,13 @@ namespace CasCap.Services;
 /// effectively using the hot water tank as a thermal battery.
 /// </remarks>
 [SinkType("CommsStream")]
-public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IHostEnvironment env, IOptions<HeatingAgentConfig> heatingAgentConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
+public sealed class BuderusSinkCommsStreamService(ILogger<BuderusSinkCommsStreamService> logger, IHostEnvironment env, IOptions<BuderusCommsConfig> buderusCommsConfig, IEventSink<CommsEvent> commsSink) : IEventSink<BuderusEvent>
 {
     /// <inheritdoc/>
     public string SinkType => "CommsStream";
 
-    private readonly double _hysteresis = heatingAgentConfig.Value.Dhw1AlertHysteresis;
-    private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(heatingAgentConfig.Value.Dhw1AlertCooldownMs);
+    private readonly double _hysteresis = buderusCommsConfig.Value.Dhw1AlertHysteresis;
+    private readonly TimeSpan _cooldown = TimeSpan.FromMilliseconds(buderusCommsConfig.Value.Dhw1AlertCooldownMs);
 
     private double? _currentSetpoint;
     private double? _lastActualTemp;

@@ -71,7 +71,7 @@ public static partial class AppHost
             logger.LogInformation("{ClassName} starting", nameof(Program));
 
             // Endpoint mapping
-            MapEndpoints(app, appConfig, aiConfig, enabledFeatures, signalRHubConfig);
+            MapEndpoints(app, appConfig, enabledFeatures, signalRHubConfig);
 
             // Run
             await app.RunAsync();

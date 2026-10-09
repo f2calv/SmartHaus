@@ -18,6 +18,16 @@ public sealed record MediaConfig : IAppConfig
     /// <remarks>Defaults to an empty dictionary; sources not mapped are logged and skipped.</remarks>
     public Dictionary<string, string> SourceAgentMap { get; init; } = [];
 
+    /// <summary>Redis key prefix used when caching camera images for media analysis.</summary>
+    /// <remarks>Defaults to <c>"security:image"</c>. Used by <see cref="CasCap.Services.CameraThumbnailPublisher"/>.</remarks>
+    [Required, MinLength(1)]
+    public string ImageCacheKeyPrefix { get; init; } = "security:image";
+
+    /// <summary>Time-to-live in milliseconds for cached camera images.</summary>
+    /// <remarks>Defaults to <c>300000</c> (5 minutes). Used by <see cref="CasCap.Services.CameraThumbnailPublisher"/>.</remarks>
+    [Range(1, int.MaxValue)]
+    public int ImageCacheTtlMs { get; init; } = 300_000;
+
     /// <summary>Redis Stream key for source-agnostic media events (images, audio, documents).</summary>
     /// <remarks>Defaults to <c>"media:stream:events"</c>. Used by <see cref="CasCap.Services.MediaBgService"/>.</remarks>
     [Required, MinLength(1)]

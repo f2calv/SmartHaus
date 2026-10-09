@@ -10,7 +10,7 @@ public static class HausServiceCollectionExtensions
 
     /// <summary>
     /// Registers <see cref="MediaStreamSinkService"/> and its configuration dependencies
-    /// (<see cref="SecurityAgentConfig"/>, <see cref="MediaConfig"/>).
+    /// (<see cref="MediaConfig"/>).
     /// Safe to call multiple times; uses <see cref="ServiceCollectionDescriptorExtensions.TryAddSingleton{TService,TImplementation}"/>
     /// to avoid duplicate registrations.
     /// </summary>
@@ -20,7 +20,6 @@ public static class HausServiceCollectionExtensions
     /// </remarks>
     public static void AddMediaStreamSink(this IServiceCollection services)
     {
-        services.AddCasCapConfiguration<SecurityAgentConfig>();
         services.AddCasCapConfiguration<MediaConfig>();
         services.TryAddSingleton<IEventSink<MediaEvent>, MediaStreamSinkService>();
     }
@@ -64,7 +63,7 @@ public static class HausServiceCollectionExtensions
     /// </param>
     public static void AddComms(this WebApplicationBuilder builder, bool lite = false)
     {
-        builder.Services.AddCasCapConfiguration<HeatingAgentConfig>();
+        builder.Services.AddCasCapConfiguration<BuderusCommsConfig>();
         builder.Services.AddCasCapConfiguration<AgentRuntimeAzureAuthConfig>();
         builder.Services.AddMediaStreamSink();
         builder.Services.AddComms(builder.Configuration, lite);

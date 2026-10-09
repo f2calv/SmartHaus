@@ -2,12 +2,12 @@ namespace CasCap.Services;
 
 /// <summary>Publishes a bounded camera thumbnail to the shared media stream.</summary>
 /// <param name="logger">Logger.</param>
-/// <param name="securityAgentConfig">Security media-cache options.</param>
+/// <param name="mediaConfig">Media stream and cache options.</param>
 /// <param name="mediaSink">Shared media stream sink.</param>
 /// <param name="remoteCache">Redis cache used for bounded image bytes.</param>
 public sealed class CameraThumbnailPublisher(
     ILogger<CameraThumbnailPublisher> logger,
-    IOptions<SecurityAgentConfig> securityAgentConfig,
+    IOptions<MediaConfig> mediaConfig,
     IEventSink<MediaEvent> mediaSink,
     IRemoteCache remoteCache)
 {
@@ -21,12 +21,12 @@ public sealed class CameraThumbnailPublisher(
         if (request.Thumbnail is null)
             return;
 
-        var imageRedisKey = $"{securityAgentConfig.Value.ImageCacheKeyPrefix}:"
+        var imageRedisKey = $"{mediaConfig.Value.ImageCacheKeyPrefix}:"
             + $"{request.MediaSource.ToLowerInvariant()}:{request.EventId}";
         await remoteCache.Db.StringSetAsync(
             imageRedisKey,
             request.Thumbnail,
-            TimeSpan.FromMilliseconds(securityAgentConfig.Value.ImageCacheTtlMs));
+            TimeSpan.FromMilliseconds(mediaConfig.Value.ImageCacheTtlMs));
 
         var mediaEvent = new MediaEvent
         {

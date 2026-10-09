@@ -121,6 +121,8 @@ query parameter (for example, `My Test Group Name` becomes `My%20Test%20Group%20
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `SourceAgentMap` | `Dictionary<string, string>` | — | Maps event source names (e.g. `"DoorBird"`) to agent keys (e.g. `"SecurityAgent"`) for media analysis routing |
+| `ImageCacheKeyPrefix` | `string` | `"security:image"` | Redis key prefix for cached camera images |
+| `ImageCacheTtlMs` | `int` | `300000` | Time-to-live in milliseconds for cached camera images |
 | `StreamKey` | `string` | `"media:stream:events"` | Redis Stream key for source-agnostic media events |
 | `ConsumerGroup` | `string` | `"media:processors"` | Redis consumer group name |
 | `ConsumerName` | `string` | `"media-0"` | Consumer name within the group |
@@ -158,14 +160,7 @@ controller identifiers only in private configuration. A safe example source entr
 | `WorkingDirectory` | `string` | Local application data under `smarthaus/camera-clips` | Writable bounded temporary directory |
 | `FfmpegPath` | `string` | `ffmpeg` | FFmpeg executable used for stream-copy remux |
 
-### `SecurityAgentConfig` (`CasCap:AIConfig:Agents:SecurityAgent:Settings`)
-
-| Setting | Type | Default | Description |
-| --- | --- | --- | --- |
-| `ImageCacheKeyPrefix` | `string` | — | Redis key prefix for cached image bytes |
-| `ImageCacheTtlMs` | `int` | `300000` | Time-to-live in milliseconds for cached image bytes in Redis |
-
-### `HeatingAgentConfig` (`CasCap:AIConfig:Agents:HeatingAgent:Settings`)
+### `BuderusCommsConfig` (`CasCap:BuderusCommsConfig`)
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
@@ -237,7 +232,7 @@ output or oversized output explicitly falls back to the existing thumbnail path.
 and output files are always deleted. Raw controller camera identifiers are in-memory routing values
 only and are excluded from serialized events and public configuration.
 
-Each domain agent's orchestration settings live in a `Settings` sub-section under the corresponding `CasCap:AIConfig:Agents:{key}` entry in `appsettings.json`, bound to a strongly-typed record (e.g. `SecurityAgentConfig`, `HeatingAgentConfig`). The dictionary key doubles as the agent identifier — `AgentKeys` provides compile-time constants for all well-known agent names. The comms pipeline itself is configured separately in `CasCap:CommsConfig`, because it is shared with other Signalizr applications.
+SmartHaus-owned orchestration settings bind from dedicated sections such as `CasCap:MediaConfig` and `CasCap:BuderusCommsConfig`. Remote definition names use `AgentKeys`, while execution definitions and providers remain authoritative in agentizr. The comms pipeline is configured separately in `CasCap:CommsConfig`, because it is shared with other Signalizr applications.
 
 ### Audio attachment flow — speech-to-text transcription
 

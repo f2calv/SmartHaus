@@ -11,7 +11,6 @@ public static partial class AppHost
     private static void MapEndpoints(
         WebApplication app,
         AppConfig appConfig,
-        AIConfig aiConfig,
         IReadOnlySet<string> enabledFeatures,
         SignalRHubConfig? signalRHubConfig)
     {
@@ -53,7 +52,7 @@ public static partial class AppHost
                 string.Join("\n", endpointSources.SelectMany(source => source.Endpoints)));
         }
 
-        app.MapGroup(aiConfig.McpUrl)
+        app.MapGroup(appConfig.McpUrl)
             .RequireAuthorization()
             .MapMcp();
         app.MapControllers();

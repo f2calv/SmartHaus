@@ -109,4 +109,9 @@ public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, I
     /// </remarks>
     public Dictionary<string, string> SwaggerEndpoints { get; init; } = new();
     #endregion
+
+    /// <summary>The URL path for the MCP server endpoint.</summary>
+    /// <remarks>Defaults to <c>"/mcp"</c>.</remarks>
+    [Required, MinLength(1)]
+    public string McpUrl { get; init; } = "/mcp";
 }

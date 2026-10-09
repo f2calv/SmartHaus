@@ -1,23 +1,8 @@
 namespace CasCap.Constants;
 
-/// <summary>Well-known constants for <c>AIConfig.Agents</c> configuration paths.</summary>
-/// <remarks>
-/// Use these constants instead of string literals to keep configuration paths
-/// refactor-safe. The path segment constants mirror the corresponding names on
-/// <c>AIConfig</c> and <c>AgentConfig</c> (defined in CasCap.Common.AI) without
-/// introducing a project reference.
-/// </remarks>
+/// <summary>Well-known remote Agent Runtime definition names.</summary>
 public static class AgentKeys
 {
-    /// <summary>Root configuration section name (<c>"AIConfig"</c>).</summary>
-    public const string AIConfig = nameof(AIConfig);
-
-    /// <summary>Configuration path segment for the <c>Agents</c> dictionary.</summary>
-    public const string Agents = nameof(Agents);
-
-    /// <summary>Configuration path segment for the agent-specific <c>Settings</c> sub-section.</summary>
-    public const string Settings = nameof(Settings);
-
     /// <summary>Security / DoorBird vision agent.</summary>
     public const string SecurityAgent = nameof(SecurityAgent);
 

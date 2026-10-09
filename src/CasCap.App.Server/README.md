@@ -112,8 +112,8 @@ Key configuration sections:
 | `CasCap:SicceConfig` | `SicceConfig` | Sicce pump settings |
 | `CasCap:SignalizrClientConfig` | `SignalizrClientConfig` | Signalizr gateway addresses and durable subscriber name |
 | `CasCap:CommsConfig` | `CommsConfig` | Shared Signalizr communications pipeline settings; see [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) |
-| `CasCap:SecurityAgentConfig` | `SecurityAgentConfig` | Security/vision agent settings |
-| `CasCap:HeatingAgentConfig` | `HeatingAgentConfig` | Heating agent settings (DHW1 alert hysteresis, cooldown) |
+| `CasCap:MediaConfig` | `MediaConfig` | Media routing, Redis image cache, and stream processing settings |
+| `CasCap:BuderusCommsConfig` | `BuderusCommsConfig` | Buderus DHW alert hysteresis and cooldown settings |
 | `CasCap:DDnsConfig` | `DDnsConfig` | Dynamic DNS settings |
 
 ## Dependencies

@@ -1,20 +1,18 @@
 namespace CasCap.Models;
 
 /// <summary>
-/// Configuration for the heating agent that monitors Buderus DHW setpoint events
+/// Configuration for Buderus DHW setpoint events
 /// and posts alerts to the comms stream.
 /// </summary>
 /// <remarks>
 /// These settings are consumed by <c>BuderusSinkCommsStreamService</c> — they are
 /// application-level orchestration concerns rather than Buderus KM200 device settings.
-/// Bound from the <c>Settings</c> sub-section of <see cref="AgentKeys.HeatingAgent"/>
-/// in <c>AIConfig.Agents</c>.
+/// Bound from <c>CasCap:BuderusCommsConfig</c>.
 /// </remarks>
-public sealed record HeatingAgentConfig : IAppConfig
+public sealed record BuderusCommsConfig : IAppConfig
 {
     /// <inheritdoc/>
-    public static string ConfigurationSectionName =>
-        $"{nameof(CasCap)}:{nameof(AgentKeys.AIConfig)}:{nameof(AgentKeys.Agents)}:{nameof(AgentKeys.HeatingAgent)}:{nameof(AgentKeys.Settings)}";
+    public static string ConfigurationSectionName => $"{nameof(CasCap)}:{nameof(BuderusCommsConfig)}";
 
     /// <summary>
     /// Hysteresis in °C for the DHW1 setpoint alert.
