@@ -207,7 +207,7 @@ endpoints are nullable and are read only when that provider is selected.
 
 1. **Comms stream** — Consumes `CommsEvent` entries from the Redis Stream configured by `CommsConfig.StreamKey` (default `comms:stream:events`). These are published by feature-pod sinks (KNX state changes, Fronius SOC alerts, DDNS changes) and by `MediaBgService` (analysis results from domain agents such as SecurityAgent).
 2. **Incoming messages** — Subscribes to the configured Signalizr group over gRPC. Signalizr persists messages and attachments before delivery and resumes the stable subscriber after its last acknowledgement.
-3. **Agent routing** — Routes both stream events and incoming user messages through the `CommsAgent` (`AIAgent` resolved from `AIConfig.Agents[AgentKeys.CommsAgent]`), which decides how to respond. Events whose source is in `CommsConfig.MonitorSources` skip the agent and go straight to the monitor group.
+3. **Agent routing** — Routes both stream events and incoming user messages through the tenant-scoped `CommsAgent` in the remote Agent Runtime, which decides how to respond. Events whose source is in `CommsConfig.MonitorSources` skip the agent and go straight to the monitor group.
 4. **Outbound** — Sends the agent's response, progress reactions, typing indicators and polls to the configured Signalizr group. SmartHaus has no direct Signal access: the gateway owns the account, its groups and its profile name.
 
 Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directly**. They publish their findings to the comms stream, and CommsAgent relays, aggregates, or suppresses notifications as appropriate.
@@ -218,7 +218,7 @@ Domain agents (SecurityAgent, HeatingAgent, etc.) **never talk to Signal directl
 
 1. **Media stream** — Consumes `MediaEvent` entries from the Redis Stream configured by `MediaConfig.StreamKey` (default `media:stream:events`), published by source-specific sinks (e.g. `DoorBirdSinkMediaStreamService`).
 2. **Agent routing** — Looks up `MediaConfig.SourceAgentMap` to find the domain agent for the event source (e.g. `"DoorBird" → "SecurityAgent"`).
-3. **Analysis** — Fetches cached media bytes from Redis and runs the domain agent (e.g. a vision-capable SecurityAgent) against them.
+3. **Analysis** — Fetches cached media bytes from Redis and sends a stateless binary turn to the tenant-scoped domain agent in the remote Agent Runtime (e.g. a vision-capable SecurityAgent).
 4. **Findings** — Posts the analysis result as a `CommsEvent` to `comms:stream:events` with a `MediaReference` in `JsonPayload` (pointing to the cached image bytes), where CommunicationsBgService picks it up, fetches the image from Redis, and relays both text and image to the Signal group.
 
 This enables users to interact with the smart home AI assistant directly from the Signal mobile app, eliminating the need for a custom mobile application.

@@ -1,5 +1,6 @@
+using CasCap.AgentRuntime.Client.Abstractions;
+using CasCap.AgentRuntime.Contracts.V1;
 using CasCap.Models;
-using Microsoft.Agents.AI;
 using StackExchange.Redis;
 
 namespace CasCap.Services;
@@ -23,12 +24,11 @@ namespace CasCap.Services;
 /// </remarks>
 public sealed class MediaBgService(ILogger<MediaBgService> logger,
     IOptions<MediaConfig> mediaConfig,
-    IOptions<AIConfig> aiConfig,
     IHostEnvironment env,
     TimeProvider timeProvider,
     IRemoteCache remoteCache,
     IEventSink<CommsEvent> commsSink,
-    IServiceProvider serviceProvider) : IBgFeature
+    IAgentRuntimeClient agentRuntimeClient) : IBgFeature
 {
     private readonly IDatabase _db = remoteCache.Db;
 
@@ -128,22 +128,6 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
             return;
         }
 
-        if (!aiConfig.Value.Agents.TryGetValue(agentKey, out var agentConfig)
-            || !aiConfig.Value.Providers.TryGetValue(agentConfig.Provider, out var provider))
-        {
-            logger.LogWarning("{ClassName} agent {AgentKey} not fully configured, skipping",
-                nameof(MediaBgService), agentKey);
-            return;
-        }
-
-        var agent = serviceProvider.GetKeyedService<AIAgent>(agentKey);
-        if (agent is null)
-        {
-            logger.LogWarning("{ClassName} agent {AgentKey} not registered in DI, skipping",
-                nameof(MediaBgService), agentKey);
-            return;
-        }
-
         // Fetch cached media bytes from Redis.
         var mediaBytes = (byte[]?)await _db.StringGetAsync(mediaEvent.Media.MediaRedisKey);
         if (mediaBytes is null || mediaBytes.Length == 0)
@@ -158,30 +142,21 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
 
         try
         {
-            var (prompt, binaryContent, mimeType) = mediaEvent.MediaType switch
-            {
-                MediaType.Image => (agentConfig.Prompt, mediaBytes, mediaEvent.Media.MimeType ?? "image/jpeg"),
-                MediaType.Audio => (agentConfig.Prompt, mediaBytes, mediaEvent.Media.MimeType ?? "audio/wav"),
-                MediaType.Document => (ExtractDocumentText(mediaBytes), (byte[]?)null, (string?)null),
-                _ => (agentConfig.Prompt, mediaBytes, mediaEvent.Media.MimeType),
-            };
+            var result = await agentRuntimeClient.RunAgentAsync(
+                agentKey,
+                CreateRunRequest(mediaEvent, mediaBytes),
+                cancellationToken);
 
-            var message = AgentExtensions.BuildChatMessage(prompt,
-                binaryContent: binaryContent, mimeType: mimeType);
-            var instructions = AgentExtensions.ResolveInstructions(agentConfig,
-                typeof(HausServiceCollectionExtensions).Assembly, aiConfig.Value);
-            var chatOptions = AgentExtensions.BuildChatOptions(agentConfig, instructions);
-            var result = await agent.RunAnalysisAsync(
-                provider,
-                agentConfig,
-                message,
-                chatOptions,
-                session: null,
-                cancellationToken: cancellationToken,
-                logger: logger);
+            if (result is null)
+            {
+                logger.LogWarning("{ClassName} remote agent {AgentKey} is unavailable for {Source} {MediaType}",
+                    nameof(MediaBgService), agentKey, mediaEvent.Source, mediaEvent.MediaType);
+                await _db.KeyDeleteAsync(mediaEvent.Media.MediaRedisKey, CommandFlags.FireAndForget);
+                return;
+            }
 
             logger.LogInformation("{ClassName} {AgentKey} completed in {Duration}",
-                nameof(MediaBgService), agentKey, result.Elapsed);
+                nameof(MediaBgService), agentKey, TimeSpan.FromMilliseconds(result.ElapsedMilliseconds));
 
             // Post findings back to the comms stream.
             if (!string.IsNullOrWhiteSpace(result.OutputText))
@@ -215,6 +190,37 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
             // Analysis failed — clean up cached media.
             await _db.KeyDeleteAsync(mediaEvent.Media.MediaRedisKey, CommandFlags.FireAndForget);
         }
+    }
+
+    internal static RunAgentRequest CreateRunRequest(MediaEvent mediaEvent, byte[] mediaBytes)
+    {
+        var (input, binaryContent, mimeType) = mediaEvent.MediaType switch
+        {
+            MediaType.Image => (
+                $"Analyze this image captured by {mediaEvent.Source} for the {mediaEvent.EventType} event. "
+                    + "Describe concisely who or what is present and any relevant security finding.",
+                mediaBytes,
+                mediaEvent.Media.MimeType ?? "image/jpeg"),
+            MediaType.Audio => (
+                $"Analyze this audio captured by {mediaEvent.Source} for the {mediaEvent.EventType} event. "
+                    + "Describe concisely the relevant sounds or speech.",
+                mediaBytes,
+                mediaEvent.Media.MimeType ?? "audio/wav"),
+            MediaType.Document => (ExtractDocumentText(mediaBytes), null, null),
+            _ => (
+                $"Analyze this media captured by {mediaEvent.Source} for the {mediaEvent.EventType} event.",
+                mediaBytes,
+                mediaEvent.Media.MimeType ?? "application/octet-stream"),
+        };
+
+        return new RunAgentRequest
+        {
+            SessionId = $"media-{Guid.NewGuid():N}",
+            Input = input,
+            BinaryContent = binaryContent,
+            MimeType = mimeType,
+            BypassSession = true,
+        };
     }
 
     /// <summary>

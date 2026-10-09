@@ -25,6 +25,7 @@ Host endpoint and application-bootstrap coverage lives in
 | `KnxContactSummaryTests` | 4 | 13 | Knx | Verifies door and window contact summaries |
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Verifies door lock summaries |
 | `CameraClipQueueTests` | 7 | 7 | CameraClips | Verifies privacy filtering, mappings, cooldown, and bounded admission |
+| `MediaBgServiceTests` | 1 | 3 | Media | Verifies stateless Agent Runtime requests for image, audio, and document events |
 
 ## Trait Categories
 
@@ -36,6 +37,7 @@ Host endpoint and application-bootstrap coverage lives in
 | `McpPrompts` | MCP prompt contract checks |
 | `Knx` | KNX contact and door-lock summaries |
 | `CameraClips` | Camera event-to-clip admission and privacy policy |
+| `Media` | Media-event translation into remote Agent Runtime requests |
 
 ## Skipped Tests
 
