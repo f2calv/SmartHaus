@@ -7,16 +7,6 @@
   <ItemGroup>
     <InternalsVisibleTo Include="CasCap.Backend.Tests" />
   </ItemGroup>
-  <ItemGroup>
-
-    <EmbeddedResource Include="Resources\SecurityAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\HeatingAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\EnergyAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\HomeControlAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\CommsAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\InfraAgent.instructions.md" />
-    <EmbeddedResource Include="Resources\AppliancesAgent.instructions.md" />
-  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Azure.Identity" />
@@ -48,7 +38,6 @@
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
     <ProjectReference Include="..\..\..\agentizr\src\CasCap.AgentRuntime.Contracts\CasCap.AgentRuntime.Contracts.csproj" />
     <ProjectReference Include="..\..\..\signalizr\src\CasCap.Comms.AI\CasCap.Comms.AI.csproj" />
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI\CasCap.Common.AI.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Extensions\CasCap.Common.Extensions.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Logging\CasCap.Common.Logging.csproj" />
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Net\CasCap.Common.Net.csproj" />
@@ -57,7 +46,6 @@
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Services\CasCap.Common.Services.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <PackageReference Include="CasCap.Common.AI" />
     <PackageReference Include="CasCap.Common.Extensions" />
     <PackageReference Include="CasCap.Common.Logging" />
     <PackageReference Include="CasCap.Common.Net" />

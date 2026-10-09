@@ -596,17 +596,10 @@ Audio["Speech-to-text<br/>(selected provider)"]:::stt
 | AppliancesAgent | 15 | — | 15 |
 | CommsAgent | 8 | 100 | 108 |
 
-## Agent Instruction Files
-
-| Agent | Instruction file |
-| --- | --- |
-| SecurityAgent | [SecurityAgent.instructions.md](Resources/SecurityAgent.instructions.md) |
-| HeatingAgent | [HeatingAgent.instructions.md](Resources/HeatingAgent.instructions.md) |
-| EnergyAgent | [EnergyAgent.instructions.md](Resources/EnergyAgent.instructions.md) |
-| HomeControlAgent | [HomeControlAgent.instructions.md](Resources/HomeControlAgent.instructions.md) |
-| CommsAgent | [CommsAgent.instructions.md](Resources/CommsAgent.instructions.md) |
-| InfraAgent | [InfraAgent.instructions.md](Resources/InfraAgent.instructions.md) |
-| AppliancesAgent | [AppliancesAgent.instructions.md](Resources/AppliancesAgent.instructions.md) |
+Agent instructions, provider selection, delegation and version activation are owned by agentizr.
+SmartHaus owns the MCP implementations and the stable definition names used by its domain tests.
+See the repository's [public instruction examples](../../docs/agent-examples/README.md) for
+non-authoritative orchestration and domain-specialist snapshots.
 
 ## Dependencies
 

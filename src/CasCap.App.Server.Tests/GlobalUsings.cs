@@ -5,7 +5,6 @@ global using CasCap.Common.Services;
 global using CasCap.Constants;
 global using CasCap.Models;
 global using CasCap.Services;
-global using Microsoft.Agents.AI;
 global using Microsoft.Extensions.AI;
 global using Microsoft.Extensions.Configuration;
 global using Microsoft.Extensions.DependencyInjection;

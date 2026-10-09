@@ -38,11 +38,7 @@ public static partial class AppHost
                 connectionMultiplexer,
                 apiAuthConfig,
                 configureMetrics: metricsBuilder => metricsBuilder
-                    .AddHistogramView(appConfig.MetricNamePrefix, "test_processing.time", 5, 10, 15, 20),
-                configureTracing: tracingBuilder =>
-                {
-                    tracingBuilder.AddSource(AgentExtensions.GetAISourceName(appConfig.MetricNamePrefix));
-                });
+                    .AddHistogramView(appConfig.MetricNamePrefix, "test_processing.time", 5, 10, 15, 20));
 
             // Feature validation and startup diagnostics
             if (enabledFeatures.Count == 0)

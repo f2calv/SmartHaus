@@ -56,7 +56,7 @@ public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorB
     /// <remarks>
     /// TODO (C5 part 2): this now returns the same payload as
     /// <see cref="GetHouseDoorHistoryImage"/> — <see cref="IDoorBirdQueryService.GetHistoryImageSummary"/>
-    /// is documented as omitting the raw image data but <see cref="MyBlob.bytes"/> is a required
+    /// is documented as omitting the raw image data but <see cref="MyBlob.Bytes"/> is a required
     /// member, so the bytes are always present and the framework strips and delivers them either
     /// way. Two tools with identical behaviour but different descriptions is confusing for the
     /// model. Reconcile when the tool-result transform moves to <c>MarshalResult</c>: either give

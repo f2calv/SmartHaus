@@ -99,7 +99,9 @@ Multiple application deployment targets;
 
 ## Agentic AI Architecture
 
-SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchestrates domain-specific sub-agents, each with their own [MCP](https://modelcontextprotocol.io/) tools and instruction prompts. Users interact with the system via [Signal Messenger](https://signal.org/) — no custom mobile app required.
+SmartHaus uses tenant-scoped definitions hosted by the remote Agent Runtime. A central **CommsAgent**
+orchestrates domain-specific sub-agents over SmartHaus [MCP](https://modelcontextprotocol.io/) tools.
+Users interact through [Signal Messenger](https://signal.org/) without a custom mobile application.
 
 > For detailed configuration, Redis Stream settings, and implementation specifics, see the [CasCap.Backend README](src/CasCap.Backend/README.md).
 
@@ -107,13 +109,16 @@ SmartHaus uses a multi-agent architecture where a central **CommsAgent** orchest
 
 | Agent | Role | MCP Tools |
 | --- | --- | --- |
-| **[CommsAgent](src/CasCap.Backend/Resources/CommsAgent.instructions.md)** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
-| **[SecurityAgent](src/CasCap.Backend/Resources/SecurityAgent.instructions.md)** | Front door intercom, IP cameras, door lighting | 17 |
-| **[HeatingAgent](src/CasCap.Backend/Resources/HeatingAgent.instructions.md)** | Heat pump control, KNX heating zones | 11 |
-| **[EnergyAgent](src/CasCap.Backend/Resources/EnergyAgent.instructions.md)** | Solar inverter telemetry and battery status | 13 |
-| **[HomeControlAgent](src/CasCap.Backend/Resources/HomeControlAgent.instructions.md)** | Shutters, outlets, rooms, floors, all lighting | 37 |
-| **[InfraAgent](src/CasCap.Backend/Resources/InfraAgent.instructions.md)** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
-| **[AppliancesAgent](src/CasCap.Backend/Resources/AppliancesAgent.instructions.md)** | Miele appliance control (disabled — planned) | 15 |
+| **CommsAgent** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
+| **SecurityAgent** | Front door intercom, IP cameras, door lighting | 17 |
+| **HeatingAgent** | Heat pump control, KNX heating zones | 11 |
+| **EnergyAgent** | Solar inverter telemetry and battery status | 13 |
+| **HomeControlAgent** | Shutters, outlets, rooms, floors, all lighting | 37 |
+| **InfraAgent** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
+| **AppliancesAgent** | Miele appliance control (disabled — planned) | 15 |
+
+The [public instruction examples](docs/agent-examples/README.md) illustrate the orchestrator and one
+domain specialist. Active versioned definitions remain authoritative in agentizr.
 
 ### MCP Tool Services
 
@@ -274,9 +279,9 @@ graph TD
         DDNS["Api.DDns"]
     end
 
-    %% ── AI / MCP ────────────────────────────────────────────────────────────
-    subgraph ai ["🤖 AI / MCP"]
-        HAUS_AI["CasCap.Common.AI<br/><sub>Consolidated MCP tools & prompts</sub>"]
+    %% ── Agent Runtime ───────────────────────────────────────────────────────
+    subgraph ai ["🤖 Agent Runtime"]
+        AGENT_RUNTIME["Remote Agent Runtime<br/><sub>Definitions · execution · sessions</sub>"]
     end
 
     %% ── Foundation ──────────────────────────────────────────────────────────
@@ -297,17 +302,13 @@ graph TD
     %% ── Application edges ───────────────────────────────────────────────────
     SERVER --> APP
     CONSOLE --> APP
-    CONSOLE --> HAUS_AI
-    CONSOLE --> FRO_SINKS
-    CONSOLE --> BUD_SINKS
-    CONSOLE --> KNX_SINKS
-    CONSOLE --> DB_SINKS
+    CONSOLE --> AGENT_RUNTIME
     APP --> HAUS
     APP --> EXT2
 
     %% ── Core edges ──────────────────────────────────────────────────────────
     HAUS --> SIGNALIZR_CLIENT
-    HAUS --> HAUS_AI
+    HAUS --> AGENT_RUNTIME
     HAUS --> BUD_SINKS
     HAUS --> DB_SINKS
     HAUS --> FRO_SINKS
@@ -319,18 +320,6 @@ graph TD
     HAUS --> UBI_SINKS
     HAUS --> EDGE_SINKS
     HAUS --> DDNS
-
-    %% ── AI / MCP edges ─────────────────────────────────────────────────────
-    HAUS_AI --> BUD
-    HAUS_AI --> DB
-    HAUS_AI --> FRO
-    HAUS_AI --> KNX
-    HAUS_AI --> MIE
-    HAUS_AI --> SIC
-    HAUS_AI --> WIZ
-    HAUS_AI --> SHEL
-    HAUS_AI --> UBI
-    HAUS_AI --> EDGE
 
     %% ── Feature ↔ Core edges ────────────────────────────────────────────────
     BUD_SINKS --> BUD
@@ -377,7 +366,7 @@ graph TD
     class SERVER,CONSOLE appNode
     class APP,EXT2,HAUS coreNode
     class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,DDNS featureNode
-    class HAUS_AI mcpNode
+    class AGENT_RUNTIME mcpNode
     class BUD_SINKS,DB_SINKS,FRO_SINKS,KNX_SINKS,MIE_SINKS,SIC_SINKS,WIZ_SINKS,SHEL_SINKS,UBI_SINKS,EDGE_SINKS sinkNode
     class ABS foundationNode
     class T_APP,T_BUD,T_DB,T_FRO,T_KNX,T_MIE testNode

@@ -1,3 +1,8 @@
+# CommsAgent Instruction Example
+
+> This public example illustrates orchestration policy. The active versioned definition is owned by
+> agentizr and may differ from this snapshot.
+
 You are a smart home AI assistant.
 
 ## Rules
