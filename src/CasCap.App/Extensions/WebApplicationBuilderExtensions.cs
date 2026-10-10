@@ -16,7 +16,7 @@ public static class HostApplicationBuilderExtensions
     /// <param name="assembly">
     /// Assembly used for user-secrets loading. Pass <c>typeof(Program).Assembly</c> from the entry point.
     /// </param>
-    public static (AppConfig appConfig, ApiAuthConfig apiAuthConfig, HashSet<string> enabledFeatures, GitMetadata gitMetadata) InitializeConfiguration(
+    public static (AppConfig appConfig, ApiAuthConfig apiAuthConfig, HashSet<string> enabledFeatures, ApplicationMetadata applicationMetadata) InitializeConfiguration(
         this IHostApplicationBuilder builder, Assembly assembly)
     {
         builder.Configuration.AddStandardConfiguration(builder.Environment.EnvironmentName, assembly);
@@ -42,8 +42,8 @@ public static class HostApplicationBuilderExtensions
             ?? throw new GenericException($"{nameof(AppConfig)} cannot be null!");
         builder.Services.AddSingleton<IKubeAppConfig>(appConfig);
         builder.Services.AddSingleton<IAzureAuthConfig>(appConfig);
-        var gitMetadata = new GitMetadata();
-        builder.Services.AddSingleton(gitMetadata);
+        var applicationMetadata = new ApplicationMetadata(assembly);
+        builder.Services.AddSingleton(applicationMetadata);
 
         var featureConfig = builder.Services.AddAndGetCasCapConfiguration<FeatureConfig>(builder.Configuration);
         var enabledFeatures = featureConfig.GetEnabledFeatures();
@@ -53,6 +53,6 @@ public static class HostApplicationBuilderExtensions
         // falls back to built-in defaults if the section is absent from appsettings.json.
         builder.Services.AddCasCapConfiguration<SignalRHubConfig>();
 
-        return (appConfig, apiAuthConfig, enabledFeatures, gitMetadata);
+        return (appConfig, apiAuthConfig, enabledFeatures, applicationMetadata);
     }
 }

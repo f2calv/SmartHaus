@@ -22,6 +22,6 @@ public class HostStartupConfigurationTests : WebApiTestBase
         Assert.Single(featureFlagConfig.EnabledFeatures, FeatureNames.Test);
         Assert.Same(TimeProvider.System, Services.GetRequiredService<TimeProvider>());
         Assert.NotNull(Services.GetRequiredService<ILocalCache>());
-        Assert.NotNull(Services.GetRequiredService<GitMetadata>());
+        Assert.NotNull(Services.GetRequiredService<ApplicationMetadata>());
     }
 }

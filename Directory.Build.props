@@ -8,6 +8,7 @@
     <Nullable>enable</Nullable>
     <UserSecretsId>75a41453-de3c-4bd8-ad0b-068430f8bb20</UserSecretsId>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
     <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
@@ -38,6 +39,15 @@
   <PropertyGroup Condition="'$(GITHUB_ACTIONS)' == 'true' OR '$(TF_BUILD)' == 'true'">
     <ContinuousIntegrationBuild>true</ContinuousIntegrationBuild>
   </PropertyGroup>
+
+  <ItemGroup>
+    <AssemblyMetadata Include="GitRepository" Value="$(GitRepository)" Condition="'$(GitRepository)' != ''"/>
+    <AssemblyMetadata Include="GitBranch" Value="$(GitBranch)" Condition="'$(GitBranch)' != ''"/>
+    <AssemblyMetadata Include="GitCommit" Value="$(SourceRevisionId)" Condition="'$(SourceRevisionId)' != ''"/>
+    <AssemblyMetadata Include="BuildWorkflow" Value="$(BuildWorkflow)" Condition="'$(BuildWorkflow)' != ''"/>
+    <AssemblyMetadata Include="BuildRunId" Value="$(BuildRunId)" Condition="'$(BuildRunId)' != ''"/>
+    <AssemblyMetadata Include="BuildRunNumber" Value="$(BuildRunNumber)" Condition="'$(BuildRunNumber)' != ''"/>
+  </ItemGroup>
 
   <PropertyGroup>
     <!-- CS1574 - XML comment has cref attribute that could not be resolved -->

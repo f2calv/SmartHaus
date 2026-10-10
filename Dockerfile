@@ -14,10 +14,19 @@
 # ------------------------------------------------------------------------------
 FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /repo
-COPY ["Directory.Build.props", "Directory.Packages.props", "./"]
+COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
 ARG WORKLOAD=CasCap.App.Server
+ARG PROJECT=src/${WORKLOAD}/${WORKLOAD}.csproj
 ARG CONFIGURATION=Release
+ARG TARGET_FRAMEWORK=net10.0
+ARG VERSION=0.0.0-local
+ARG GIT_REPOSITORY=n/a
+ARG GIT_BRANCH=n/a
+ARG GIT_COMMIT=n/a
+ARG GITHUB_WORKFLOW=n/a
+ARG GITHUB_RUN_ID=0
+ARG GITHUB_RUN_NUMBER=0
 
 # -- Dependency layer ----------------------------------------------------------
 # Cached until a csproj/props or package version changes. Copy every project manifest first
@@ -28,11 +37,12 @@ ARG CONFIGURATION=Release
 # Configuration is passed because Release and Debug resolve different package references.
 COPY --parents src/**/*.csproj ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
-    dotnet restore "src/$WORKLOAD/$WORKLOAD.csproj" -p:Configuration="$CONFIGURATION" \
+    dotnet restore "$PROJECT" \
+    -p:Configuration="$CONFIGURATION" \
     "-p:RuntimeIdentifiers=\"linux-x64;linux-arm64;linux-arm\""
 
 # -- Compile layer -------------------------------------------------------------
-COPY . .
+COPY --exclude=src/*.Tests . .
 
 # buildx injects TARGETARCH/TARGETVARIANT automatically:
 #   linux/amd64 -> amd64, linux/arm64 -> arm64, linux/arm/v7 -> arm + v7
@@ -49,8 +59,21 @@ case "${TARGETARCH}${TARGETVARIANT}" in
     armv7) RID=linux-arm   ;;
     *) echo "unsupported platform: linux/${TARGETARCH}/${TARGETVARIANT}" >&2; exit 1 ;;
 esac
-dotnet publish "src/$WORKLOAD/$WORKLOAD.csproj" -c "$CONFIGURATION" -o /app/publish -r "$RID" \
-    --self-contained false --no-restore
+dotnet publish "$PROJECT" \
+    --configuration "$CONFIGURATION" \
+    --framework "$TARGET_FRAMEWORK" \
+    --output /app/publish \
+    --runtime "$RID" \
+    --self-contained false \
+    --no-restore \
+    -p:Version="$VERSION" \
+    -p:SourceRevisionId="$GIT_COMMIT" \
+    -p:GitRepository="$GIT_REPOSITORY" \
+    -p:GitBranch="$GIT_BRANCH" \
+    -p:BuildWorkflow="$GITHUB_WORKFLOW" \
+    -p:BuildRunId="$GITHUB_RUN_ID" \
+    -p:BuildRunNumber="$GITHUB_RUN_NUMBER"
+ln -s "$WORKLOAD.dll" /app/publish/entrypoint.dll
 EOF
 
 # ------------------------------------------------------------------------------
@@ -95,25 +118,17 @@ COPY ["wait-for-it.sh", "ffmpeg-record.sh", "./"]
 
 # -- Provenance ----------------------------------------------------------------
 # Supplied by the CI workflow (.github/workflows/ci.yml) or by build.ps1/build.sh.
+ARG WORKLOAD=CasCap.App.Server
 ARG GIT_REPOSITORY=n/a
-ENV GIT_REPOSITORY=$GIT_REPOSITORY
 ARG GIT_BRANCH=n/a
-ENV GIT_BRANCH=$GIT_BRANCH
 ARG GIT_COMMIT=n/a
-ENV GIT_COMMIT=$GIT_COMMIT
 ARG GIT_TAG=n/a
-ENV GIT_TAG=$GIT_TAG
 
 ARG GITHUB_WORKFLOW=n/a
-ENV GITHUB_WORKFLOW=$GITHUB_WORKFLOW
 ARG GITHUB_RUN_ID=0
-ENV GITHUB_RUN_ID=$GITHUB_RUN_ID
 ARG GITHUB_RUN_NUMBER=0
-ENV GITHUB_RUN_NUMBER=$GITHUB_RUN_NUMBER
 
 EXPOSE 8080
-ARG WORKLOAD=CasCap.App.Server
-ENV WORKLOAD=$WORKLOAD
 
 # https://github.com/opencontainers/image-spec/blob/main/annotations.md
 LABEL org.opencontainers.image.title="$WORKLOAD" \
@@ -125,8 +140,8 @@ LABEL org.opencontainers.image.title="$WORKLOAD" \
 
 USER $APP_UID
 
-# exec replaces the shell so dotnet becomes PID 1 and receives SIGTERM for a clean shutdown.
-ENTRYPOINT ["sh", "-c", "exec dotnet ${WORKLOAD}.dll"]
+# Exec form makes dotnet PID 1 so it receives SIGTERM for a clean shutdown.
+ENTRYPOINT ["dotnet", "entrypoint.dll"]
 
 # ------------------------------------------------------------------------------
 # Optional stage: debug

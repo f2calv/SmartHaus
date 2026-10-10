@@ -20,7 +20,7 @@ public static partial class AppHost
             var builder = WebApplication.CreateBuilder(args);
 
             // Configuration
-            var (appConfig, apiAuthConfig, enabledFeatures, gitMetadata) =
+            var (appConfig, apiAuthConfig, enabledFeatures, applicationMetadata) =
                 builder.InitializeConfiguration(entryAssembly);
 
             // Logging
@@ -33,7 +33,7 @@ public static partial class AppHost
             // Observability
             builder.InitializeOpenTelemetry(
                 (IMetricsConfig)appConfig,
-                gitMetadata,
+                applicationMetadata,
                 connectionMultiplexer,
                 apiAuthConfig,
                 configureMetrics: metricsBuilder => metricsBuilder

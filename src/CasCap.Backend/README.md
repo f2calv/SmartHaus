@@ -111,7 +111,7 @@ Feature projects provide the corresponding SignalR client sinks:
 
 | Endpoint | Authentication | Description |
 | --- | --- | --- |
-| `GET /api/system` | Required | Returns `GitMetadata` for the running build |
+| `GET /api/system` | Required | Returns assembly-backed `ApplicationMetadata` for the running build |
 
 ### MCP Server
 

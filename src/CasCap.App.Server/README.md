@@ -34,8 +34,8 @@ The following services are registered regardless of feature flags:
 
 | Service | Description |
 | --- | --- |
-| `GitMetadataBgService` | Periodically logs git build metadata from environment variables (registered via `AddFeatureFlagService`) |
-| `SystemController` | `GET /api/system` — returns `AppConfig` |
+| `ApplicationMetadataBgService` | Logs assembly-backed application metadata at startup and periodically (registered via `AddFeatureFlagService`) |
+| `SystemController` | `GET /api/system` — returns assembly-backed `ApplicationMetadata` |
 
 ### Authentication
 

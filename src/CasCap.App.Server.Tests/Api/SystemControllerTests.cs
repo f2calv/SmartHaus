@@ -21,12 +21,12 @@ namespace CasCap.Tests.Api;
 public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
-    /// <c>GET /api/system</c> returns 200 and a <see cref="GitMetadata"/> payload when
+    /// <c>GET /api/system</c> returns 200 and an <see cref="ApplicationMetadata"/> payload when
     /// called with the authorized client.
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetSystem_WithAuthorizedClient_Returns200AndGitMetadata()
+    public async Task GetSystem_WithAuthorizedClient_Returns200AndApplicationMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
 
@@ -35,7 +35,7 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
         var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
         output.WriteLine($"GET /api/system → {json[..Math.Min(200, json.Length)]}");
 
-        var metadata = JsonSerializer.Deserialize<GitMetadata>(
+        var metadata = JsonSerializer.Deserialize<ApplicationMetadata>(
             json,
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
 
@@ -47,22 +47,22 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public async Task GetSystem_ReturnsRegisteredGitMetadata()
+    public async Task GetSystem_ReturnsRegisteredApplicationMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
         response.EnsureSuccessStatusCode();
 
         var json = await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken);
-        var actual = JsonSerializer.Deserialize<GitMetadata>(
+        var actual = JsonSerializer.Deserialize<ApplicationMetadata>(
             json,
             new JsonSerializerOptions(JsonSerializerDefaults.Web));
-        var expected = Services.GetRequiredService<GitMetadata>();
+        var expected = Services.GetRequiredService<ApplicationMetadata>();
 
         Assert.NotNull(actual);
-        Assert.Equal(expected.GIT_REPOSITORY, actual.GIT_REPOSITORY);
-        Assert.Equal(expected.GIT_BRANCH, actual.GIT_BRANCH);
-        Assert.Equal(expected.GIT_COMMIT, actual.GIT_COMMIT);
-        Assert.Equal(expected.GIT_TAG, actual.GIT_TAG);
+        Assert.Equal(expected.Repository, actual.Repository);
+        Assert.Equal(expected.Branch, actual.Branch);
+        Assert.Equal(expected.Commit, actual.Commit);
+        Assert.Equal(expected.Version, actual.Version);
     }
 
     /// <summary>
