@@ -14,7 +14,6 @@ public static partial class AppHost
     {
         SerilogExtensions.GetBootstrapLogger();
 
-        var result = 0;
         try
         {
             // Host builder
@@ -44,12 +43,14 @@ public static partial class AppHost
             if (enabledFeatures.Count == 0)
                 throw new GenericException(
                     $"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");
-
-            logger.LogInformation("{ClassName} {AppName} running on {NodeName} with features {@Flags}",
-                nameof(Program),
-                appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName,
-                appConfig.NodeName ?? Environment.MachineName,
-                enabledFeatures);
+            if (logger.IsEnabled(LogLevel.Information))
+            {
+                logger.LogInformation("{ClassName} {AppName} running on {NodeName} with features {@Flags}",
+                    nameof(AppHost),
+                    appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName,
+                    appConfig.NodeName ?? Environment.MachineName,
+                    enabledFeatures);
+            }
 
             // Feature registration
             var signalRHubConfig = AddFeatures(
@@ -64,7 +65,8 @@ public static partial class AppHost
             // Build
             var app = builder.Build();
 
-            logger.LogInformation("{ClassName} starting", nameof(Program));
+            if (logger.IsEnabled(LogLevel.Information))
+                logger.LogInformation("{ClassName} starting", nameof(AppHost));
 
             // Endpoint mapping
             MapEndpoints(app, appConfig, enabledFeatures, signalRHubConfig);
@@ -74,13 +76,8 @@ public static partial class AppHost
         }
         catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException)
         {
-            result = 1;
             Log.Fatal(exception, "{AppName} terminated unexpectedly", AppDomain.CurrentDomain.FriendlyName);
-        }
-        catch (Exception exception)
-        {
-            result = 1;
-            Log.Fatal(exception, "Unhandled exception");
+            throw new InvalidOperationException("Application host terminated unexpectedly.", exception);
         }
         finally
         {
@@ -88,6 +85,6 @@ public static partial class AppHost
             await Log.CloseAndFlushAsync();
         }
 
-        return result;
+        return 0;
     }
 }
