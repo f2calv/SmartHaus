@@ -31,7 +31,7 @@ ARG GITHUB_RUN_NUMBER=0
 # structure) so editing application/dep source (.cs) files reuses the cached restore.
 # The /./ pivot drops the deps/ prefix so deps/CasCap.Common/... lands at /CasCap.Common/...
 COPY --parents deps/./**/*.csproj deps/./**/*.props /
-COPY --parents src/**/*.csproj ./
+COPY --parents src/**/*.csproj src/**/*.props ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" \
     -p:Configuration="$CONFIGURATION" \

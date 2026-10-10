@@ -35,7 +35,7 @@ ARG GITHUB_RUN_NUMBER=0
 # platform-agnostic, so keep it before ARG TARGETARCH to share it across architectures, and
 # restore every runtime identifier so each platform's publish runs offline with --no-restore.
 # Configuration is passed because Release and Debug resolve different package references.
-COPY --parents src/**/*.csproj ./
+COPY --parents src/**/*.csproj src/**/*.props ./
 RUN --mount=type=cache,target=/root/.nuget/packages,sharing=locked \
     dotnet restore "$PROJECT" \
     -p:Configuration="$CONFIGURATION" \
