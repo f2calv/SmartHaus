@@ -1,10 +1,11 @@
 using CasCap.Extensions;
+using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
 using System.Reflection;
 
 namespace CasCap.Tests.Unit;
 
-/// <summary>Verifies that each feature exposes only its own MCP tools and prompts.</summary>
+/// <summary>Verifies that each feature exposes only its own MCP tools and prompts, with explicit risk hints.</summary>
 [Trait("Category", "Mcp")]
 public sealed class HausMcpToolSetTests
 {
@@ -76,6 +77,36 @@ public sealed class HausMcpToolSetTests
     [InlineData(FeatureNames.DDns)]
     public void GetToolSets_FeatureWithoutToolsExposesNothing(string feature) =>
         Assert.Empty(GetToolTypes(feature));
+
+    [Fact]
+    public void AllTools_DeclareExplicitRiskHints()
+    {
+        var unannotated = GetAnnotations()
+            .Where(tool => tool.Annotations?.ReadOnlyHint is null || tool.Annotations.DestructiveHint is null)
+            .Select(tool => tool.Name);
+
+        Assert.Empty(unannotated);
+    }
+
+    [Theory]
+    [InlineData("unlock_house_door")]
+    [InlineData("set_heat_pump_data_point")]
+    [InlineData("execute_appliance_action")]
+    [InlineData("start_appliance_program")]
+    public void SafetySensitiveTools_AreDestructive(string toolName)
+    {
+        var annotations = GetAnnotations().Single(tool => tool.Name == toolName).Annotations!;
+
+        Assert.False(annotations.ReadOnlyHint);
+        Assert.True(annotations.DestructiveHint);
+    }
+
+    private static IEnumerable<(string Name, ToolAnnotations? Annotations)> GetAnnotations() =>
+        HausMcpServiceCollectionExtensions.AllToolSets
+            .SelectMany(set => set.ToolType.GetMethods(BindingFlags.Public | BindingFlags.Instance))
+            .Where(method => method.GetCustomAttribute<McpServerToolAttribute>() is not null)
+            .Select(method => McpServerTool.Create(method, _ => null!).ProtocolTool)
+            .Select(tool => (tool.Name, tool.Annotations));
 
     private static string[] GetToolTypes(string feature) =>
         [.. HausMcpServiceCollectionExtensions

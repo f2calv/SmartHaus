@@ -22,7 +22,7 @@ public sealed partial class SmartLightingMcpQueryService(
     private const string DeskLampDeviceName = "DG-SD-Office(DeskLamp)";
 
     /// <inheritdoc cref="IKnxQueryService.SetLightState"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Changes a single light — switch on/off, dim or set colour. Requires KNX feature.")]
     public Task<KnxStateChangeResponse> ChangeHouseLightState(
         [Description("GroupName (LI category) plus exactly one of: IsOn, DimValue (0–100) or HexColour (6-char hex).")]
@@ -35,7 +35,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IKnxQueryService.TurnAllLightsOff"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns off every light that is currently on in the house. Requires KNX feature.")]
     public Task<string[]> SwitchOffAllHouseLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
@@ -43,7 +43,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns on the exterior light at the front door.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns on the exterior light at the front door.")]
     public Task<KnxStateChangeResponse> TurnOnHouseDoorLight(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
@@ -51,7 +51,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns off the exterior light at the front door.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns off the exterior light at the front door.")]
     public Task<KnxStateChangeResponse> TurnOffHouseDoorLight(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
@@ -59,7 +59,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns on all lights in the DG Office.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns on all lights in the top-floor (DG) office.")]
     public Task<KnxStateChangeResponse> TurnOnHouseOfficeLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
@@ -67,7 +67,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns off all lights in the DG Office.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns off all lights in the top-floor (DG) office.")]
     public Task<KnxStateChangeResponse> TurnOffHouseOfficeLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
@@ -75,7 +75,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IKnxQueryService.ListLights"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Lists all lights with full detail — switch, dim, colour and lux, optionally filtered by room.")]
     public Task<List<KnxLight>> GetHouseSmartLights(
         [Description("Room filter (e.g. Kitchen, Office, LivingRoom).")]
@@ -86,7 +86,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IKnxQueryService.GetLight"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Gets one light by group name — switch, dim, colour and lux.")]
     public Task<KnxLight?> GetHouseLightState(
         [Description("e.g. DG-LI-Office-DL-South.")]
@@ -97,7 +97,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IKnxQueryService.GetAllLighting(string?, string?, CancellationToken)"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Quick on/off overview of all lights, filterable by floor and orientation.")]
     public Task<Dictionary<string, State?>> GetHouseLightStates(
         [Description("Values: KG (basement), EG (ground), OG (upper), DG (top).")]
@@ -110,7 +110,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IWizQueryService.GetDiscoveredBulbs"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Lists all smart bulbs currently discovered on the local network with their state and configuration. Requires Wiz feature.")]
     public IReadOnlyDictionary<string, WizBulb> GetSmartLights()
         => wizQuerySvc is not null
@@ -118,7 +118,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("Wiz feature is not enabled.");
 
     /// <inheritdoc cref="IWizQueryService.GetPilot"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Current state of one smart bulb — on/off, brightness, colour, colour temperature and active scene.")]
     public Task<WizPilotState?> GetSmartLightState(
         [Description("Device name, MAC address, or IP address of the target bulb.")]
@@ -129,7 +129,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("Wiz feature is not enabled.");
 
     /// <inheritdoc cref="IWizQueryService.SetPilot"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Adjusts brightness, colour, temperature or scene of one smart bulb.")]
     public Task<bool> AdjustSmartLightOutput(
         [Description("Device name, MAC address, or IP address of the target bulb.")]
@@ -142,7 +142,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("Wiz feature is not enabled.");
 
     /// <inheritdoc cref="IWizQueryService.SetPowerState"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns a single smart bulb on or off.")]
     public Task<bool> SetSmartLightPower(
         [Description("Device name, MAC address, or IP address of the target bulb.")]
@@ -155,7 +155,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("Wiz feature is not enabled.");
 
     /// <summary>Turns on the desk lamp in the top-floor (DG) office via Shelly smart plug.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns on the desk lamp in the top-floor (DG) office.")]
     public Task<ShellyRelayControlResponse?> TurnOnOfficeDeskLamp()
         => shellyQuerySvc is not null
@@ -163,7 +163,7 @@ public sealed partial class SmartLightingMcpQueryService(
             : throw new InvalidOperationException("Shelly feature is not enabled.");
 
     /// <summary>Turns off the desk lamp in the top-floor (DG) office via Shelly smart plug.</summary>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Turns off the desk lamp in the top-floor (DG) office.")]
     public Task<ShellyRelayControlResponse?> TurnOffOfficeDeskLamp()
         => shellyQuerySvc is not null

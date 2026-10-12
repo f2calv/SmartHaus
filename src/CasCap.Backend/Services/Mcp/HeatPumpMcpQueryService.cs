@@ -7,12 +7,12 @@ namespace CasCap.Services;
 public sealed partial class HeatPumpMcpQueryService(IBuderusQueryService buderusQuerySvc)
 {
     /// <inheritdoc cref="IBuderusQueryService.GetSnapshot"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Current state of the heat pump — temperatures, setpoints and operating mode.")]
     public Task<BuderusSnapshot> GetHeatPumpState() => buderusQuerySvc.GetSnapshot();
 
     /// <inheritdoc cref="IBuderusQueryService.SetDataPoint"/>
-    [McpServerTool]
+    [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = true, OpenWorld = false)]
     [Description("Writes a value to a writeable heat pump datapoint.")]
     public Task<bool> SetHeatPumpDataPoint(
         [Description("Datapoint path, e.g. /dhwCircuits/dhw1/setTemperature.")]
