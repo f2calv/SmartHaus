@@ -155,12 +155,18 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             return null;
         }
 
-        var lastDirectionDown = directionState.Value is "Down" or "1";
+        var lastDirectionDown = IsDirectionDown(directionState);
         if (logger.IsEnabled(LogLevel.Information))
             logger.LogInformation("{ClassName} {GroupAddress} {Function}={DirectionValue}, {DirectionLabel}={LastDirectionDown}",
                 nameof(KnxQueryService), groupName, nameof(ShutterFunction.DIRECTION), directionState.Value, nameof(lastDirectionDown), lastDirectionDown);
         return lastDirectionDown;
     }
+
+    // DPT 1.008: 1 is Down; the bus state stores it as "True" with the label "Down".
+    internal static bool IsDirectionDown(State directionState)
+        => directionState.ValueLabel is not null && Enum.TryParse<DptUpDown>(directionState.ValueLabel, true, out var direction)
+            ? direction is DptUpDown.Down
+            : directionState.Value is "True" or "1" or "Down";
 
     /// <summary>
     /// Switches a KNX power outlet on or off by sending the <see cref="PowerOutletFunction.SD_SW"/>
@@ -533,7 +539,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             .Where(p => p.Category == GroupAddressCategory.BL
                 && p.Floor is not null
                 && p.Room is not null
-                && p.Orientation is not null)
+                && p.Orientation is not null
+                && HasPosition(p))
             .Select(KnxShutter.FromGroup)
             .Where(shutter => !KnxShutterMovement.IsAt(shutter.Position, 0, tolerance))
             .Select(shutter => new KnxShutterTarget { GroupName = shutter.GroupName, Position = 0 })
@@ -558,7 +565,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         await BindState(groups, cancellationToken).ConfigureAwait(false);
         var targets = new List<KnxShutterTarget>();
-        foreach (var group in groups.Where(p => p.Category == GroupAddressCategory.BL && p.Floor is not null && p.Room is not null))
+        foreach (var group in groups.Where(p => p.Category == GroupAddressCategory.BL && p.Floor is not null && p.Room is not null && HasPosition(p)))
         {
             var shutter = KnxShutter.FromGroup(group);
             var hasSlats = group.Children.Any(c => c.Function == ShutterFunction.POSSLATS.ToString());
@@ -575,6 +582,11 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
                 nameof(KnxQueryService), targets.Count, targets.Select(t => t.GroupName));
         return [.. targets];
     }
+
+    // Room-level blind groups carry only up/down commands; position-tracked moves need POS and POS_FB.
+    private static bool HasPosition(KnxGroupAddressGroup group)
+        => group.Children.Any(c => c.Function == nameof(ShutterFunction.POS))
+            && group.Children.Any(c => c.Function == nameof(ShutterFunction.POS_FB));
 
     private async Task BindState(List<KnxGroupAddressGroup> groups, CancellationToken cancellationToken = default)
     {

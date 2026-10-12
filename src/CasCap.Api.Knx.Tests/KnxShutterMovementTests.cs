@@ -63,4 +63,13 @@ public sealed class KnxShutterMovementTests
     [InlineData(null, 0d, false)]
     public void IsAt_AppliesTolerance(double? actual, double desired, bool expected)
         => Assert.Equal(expected, KnxShutterMovement.IsAt(actual, desired, 5));
+
+    [Theory]
+    [InlineData("True", "Down", true)]
+    [InlineData("True", null, true)]
+    [InlineData("1", null, true)]
+    [InlineData("False", "Up", false)]
+    [InlineData("0", null, false)]
+    public void IsDirectionDown_ReadsDpt1008(string value, string? label, bool expected)
+        => Assert.Equal(expected, KnxQueryService.IsDirectionDown(new State("EG-BL-Kitchen-South-DIRECTION", value, label, DateTime.UnixEpoch)));
 }
