@@ -32,6 +32,13 @@ public interface IKnxQueryService
     public Task<KnxStateChangeResponse> SetShutterState(KnxShutterStateChangeRequest request, bool dryRun = false, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Sends shutter position and/or slat commands without waiting for feedback.
+    /// </summary>
+    /// <param name="request">The shutter and its desired position and/or slats.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public Task MoveShutter(KnxShutterStateChangeRequest request, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Switches a KNX power outlet on or off.
     /// </summary>
     /// <param name="request">The <see cref="KnxPowerOutletStateChangeRequest"/> containing the group address base name and desired on/off state.</param>
@@ -76,16 +83,16 @@ public interface IKnxQueryService
     public Task<string[]> TurnAllLightsOff(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Opens all closed shutters in the house (sets position to 0%).
+    /// Starts opening all shutters that are not already open, without waiting for travel to finish.
     /// </summary>
-    /// <returns>An array of group names that were affected by the change.</returns>
-    public Task<string[]> OpenAllShutters(CancellationToken cancellationToken = default);
+    /// <returns>The shutters commanded and their targets.</returns>
+    public Task<KnxShutterTarget[]> OpenAllShutters(CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Closes all open shutters in the house (sets position to 100%).
+    /// Starts closing all shutters that are not already closed, including blind slats, without waiting for travel to finish.
     /// </summary>
-    /// <returns>An array of group names that were affected by the change.</returns>
-    public Task<string[]> CloseAllShutters(CancellationToken cancellationToken = default);
+    /// <returns>The shutters commanded and their targets.</returns>
+    public Task<KnxShutterTarget[]> CloseAllShutters(CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Returns the names of group addresses filtered by the specified criteria: <see cref="GroupAddressCategory"/>, <see cref="FloorType"/> and <see cref="CompassOrientation"/>.

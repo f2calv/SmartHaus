@@ -129,6 +129,16 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     [Required, Range(1, int.MaxValue)]
     public required int StateChangeMaxPollIterations { get; init; } = 20;
 
+    /// <summary>Accepted deviation in percentage points when judging whether a shutter or its slats reached a target.</summary>
+    /// <remarks>Actuators commonly report 98 or 99 for a fully closed shutter. Defaults to <c>5</c>.</remarks>
+    [Required, Range(0, 50)]
+    public required double ShutterPositionTolerancePct { get; init; } = 5;
+
+    /// <summary>Time to wait for commanded shutters to reach their targets before reporting the rest as unconfirmed.</summary>
+    /// <remarks>A shutter can take about a minute to travel and slats move after it stops. Defaults to <c>180000</c> ms.</remarks>
+    [Required, Range(1_000, int.MaxValue)]
+    public required int ShutterMovementTimeoutMs { get; init; } = 180_000;
+
     /// <summary>Delay in milliseconds between each poll of the <see cref="CasCap.Abstractions.IStateChangeQueue"/> when empty.</summary>
     /// <remarks>Used by <see cref="CasCap.Services.KnxAutomationBgService"/>. Defaults to <c>50</c> ms.</remarks>
     [Required, Range(1, int.MaxValue)]

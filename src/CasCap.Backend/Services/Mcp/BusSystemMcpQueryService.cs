@@ -4,21 +4,40 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IKnxQueryService"/> that exposes bus system operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySvc, IKnxState knxState)
+public sealed partial class BusSystemMcpQueryService(
+    IKnxQueryService knxQuerySvc,
+    IKnxState knxState,
+    ITrackedOperationService trackedOperations,
+    IOptions<KnxConfig> knxConfig)
 {
     //TODO: I dont like these group addresses hardcoded here, need to change this
     private const string FrontDoorContactGroupName = "EG-BI-Entrance(FrontDoor)-East-STATE";
 
-    /// <inheritdoc cref="IKnxQueryService.SetShutterState"/>
+    /// <summary>Starts moving one shutter or blind; completion is reported later in the chat.</summary>
     [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Moves a single shutter or blind to a target position and/or slat angle. IMPORTANT: KNX position convention is 0=fully open, 100=fully closed.")]
-    public Task<KnxStateChangeResponse> ChangeHouseShutterState(
+    [Description("Starts moving a single shutter or blind to a target position and/or slat angle and returns immediately; completion is posted to the chat later. IMPORTANT: KNX position convention is 0=fully open, 100=fully closed. When closing a blind for privacy, also set Slats=100.")]
+    public async Task<ShutterMovementStarted> ChangeHouseShutterState(
         [Description("GroupName (BL category) plus at least one of: VPosition or Slats. IMPORTANT: 0=fully open, 100=fully closed (KNX convention).")]
         KnxShutterStateChangeRequest request,
         [Description("When true, validates without sending commands.")]
         bool dryRun = false,
         CancellationToken cancellationToken = default)
-        => knxQuerySvc.SetShutterState(request, dryRun, cancellationToken);
+    {
+        if (dryRun)
+        {
+            var validation = await knxQuerySvc.SetShutterState(request, dryRun: true, cancellationToken);
+            return new ShutterMovementStarted
+            {
+                Shutters = [],
+                Message = $"Dry run only, nothing was sent: {string.Join(", ", validation.Results.Select(r => $"{r.GroupAddress}={r.Outcome}"))}.",
+            };
+        }
+
+        // Slats move only after vertical travel stops, so the tracked operation sends them later.
+        await knxQuerySvc.MoveShutter(request with { Slats = request.VPosition is null ? request.Slats : null }, cancellationToken);
+        KnxShutterTarget target = new() { GroupName = request.GroupName, Position = request.VPosition, Slats = request.Slats };
+        return Track($"Moving {request.GroupName}", [target], "Movement started for 1 shutter");
+    }
 
     /// <inheritdoc cref="IKnxQueryService.SetPowerOutletState"/>
     [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -76,17 +95,46 @@ public sealed partial class BusSystemMcpQueryService(IKnxQueryService knxQuerySv
         };
     }
 
-    /// <inheritdoc cref="IKnxQueryService.OpenAllShutters"/>
+    /// <summary>Starts opening every shutter that is not already open; completion is reported later in the chat.</summary>
     [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Opens every shutter and blind that is not already fully open (sets position to 0).")]
-    public Task<string[]> OpenAllHouseShutters(CancellationToken cancellationToken = default)
-        => knxQuerySvc.OpenAllShutters(cancellationToken);
+    [Description("Starts opening every shutter and blind that is not already fully open and returns immediately; shutters take up to a minute to travel and completion is posted to the chat later.")]
+    public async Task<ShutterMovementStarted> OpenAllHouseShutters(CancellationToken cancellationToken = default)
+    {
+        var targets = await knxQuerySvc.OpenAllShutters(cancellationToken);
+        return Track($"Opening {targets.Length} shutters", targets, $"Opening started for {targets.Length} shutters");
+    }
 
-    /// <inheritdoc cref="IKnxQueryService.CloseAllShutters"/>
+    /// <summary>Starts closing every shutter and blind slat; completion is reported later in the chat.</summary>
     [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
-    [Description("Closes every shutter and blind that is not already fully closed (sets position to 100).")]
-    public Task<string[]> CloseAllHouseShutters(CancellationToken cancellationToken = default)
-        => knxQuerySvc.CloseAllShutters(cancellationToken);
+    [Description("Starts closing every shutter and blind that is not already fully closed, then closes blind slats for privacy, and returns immediately; shutters take up to a minute to travel and completion is posted to the chat later.")]
+    public async Task<ShutterMovementStarted> CloseAllHouseShutters(CancellationToken cancellationToken = default)
+    {
+        var targets = await knxQuerySvc.CloseAllShutters(cancellationToken);
+        return Track($"Closing {targets.Length} shutters", targets, $"Closing started for {targets.Length} shutters");
+    }
+
+    private ShutterMovementStarted Track(string description, KnxShutterTarget[] targets, string started)
+    {
+        if (targets.Length == 0)
+            return new ShutterMovementStarted { Shutters = [], Message = "Nothing to do: every shutter is already at its target." };
+
+        var config = knxConfig.Value;
+        var movement = new KnxShutterMovement(
+            targets,
+            config.ShutterPositionTolerancePct,
+            ct => knxQuerySvc.ListShutters(cancellationToken: ct),
+            knxQuerySvc.MoveShutter);
+        var operationId = trackedOperations.Start(new ShutterMovementOperation(
+            description,
+            movement,
+            TimeSpan.FromMilliseconds(config.ShutterMovementTimeoutMs)));
+        return new ShutterMovementStarted
+        {
+            OperationId = operationId,
+            Shutters = targets,
+            Message = $"{started}. They have not finished moving yet; progress and completion will be posted to the chat.",
+        };
+    }
 
     /// <inheritdoc cref="IKnxQueryService.FilterGroupAddresses"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]

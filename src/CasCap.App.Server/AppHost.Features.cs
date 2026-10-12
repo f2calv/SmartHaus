@@ -100,7 +100,7 @@ public static partial class AppHost
             builder.AddComms();
 
         builder.Services.AddHausMcp(enabledFeatures);
-        builder.Services.AddCommsStreamSink();
+        builder.Services.AddTrackedOperations();
         builder.Services.AddFeatureFlagService(enabledFeatures);
 
         if (!enabledFeatures.Contains(FeatureNames.SignalRHub))

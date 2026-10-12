@@ -121,24 +121,45 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
-        bool? lastDirectionDown = null;
-        if (request.Slats is not null)
+        var lastDirectionDown = request.Slats is null
+            ? null
+            : await GetLastDirectionDownAsync(request.GroupName, cancellationToken).ConfigureAwait(false);
+        return await ResolveAndSendAsync(request.GroupName, request.Resolve(lastDirectionDown), dryRun, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Sends shutter position and/or slat commands without waiting for feedback, because a shutter can
+    /// take about a minute to travel. Observe progress with <see cref="KnxShutterMovement"/>.
+    /// </summary>
+    /// <param name="request">The shutter and its desired position and/or slats.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    public async Task MoveShutter(KnxShutterStateChangeRequest request, CancellationToken cancellationToken = default)
+    {
+        var lastDirectionDown = request.Slats is null
+            ? null
+            : await GetLastDirectionDownAsync(request.GroupName, cancellationToken).ConfigureAwait(false);
+        foreach (var (function, _, value) in request.Resolve(lastDirectionDown) ?? [])
+            await SendDirectAsync($"{request.GroupName}-{function}", value, cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task<bool?> GetLastDirectionDownAsync(string groupName, CancellationToken cancellationToken)
+    {
+        await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
+        var directionName = $"{groupName}-{ShutterFunction.DIRECTION}";
+        var directionState = await knxState.GetKnxState(directionName, cancellationToken).ConfigureAwait(false);
+        if (directionState is null)
         {
-            await knxGroupAddressLookupSvc.GetLookup(cancellationToken).ConfigureAwait(false);
-            var directionName = $"{request.GroupName}-{ShutterFunction.DIRECTION}";
-            var directionState = await knxState.GetKnxState(directionName, cancellationToken).ConfigureAwait(false);
-            if (directionState is not null)
-            {
-                lastDirectionDown = directionState.Value == "Down" || directionState.Value == "1";
-                logger.LogInformation("{ClassName} {GroupAddress} {Function}={DirectionValue}, {DirectionLabel}={LastDirectionDown}",
-                    nameof(KnxQueryService), request.GroupName, nameof(ShutterFunction.DIRECTION), directionState.Value, nameof(lastDirectionDown), lastDirectionDown);
-            }
-            else
+            if (logger.IsEnabled(LogLevel.Warning))
                 logger.LogWarning("{ClassName} {GroupAddress} has no {Function} state, slats value will not be adjusted",
-                    nameof(KnxQueryService), request.GroupName, nameof(ShutterFunction.DIRECTION));
+                    nameof(KnxQueryService), groupName, nameof(ShutterFunction.DIRECTION));
+            return null;
         }
 
-        return await ResolveAndSendAsync(request.GroupName, request.Resolve(lastDirectionDown), dryRun, cancellationToken).ConfigureAwait(false);
+        var lastDirectionDown = directionState.Value is "Down" or "1";
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} {GroupAddress} {Function}={DirectionValue}, {DirectionLabel}={LastDirectionDown}",
+                nameof(KnxQueryService), groupName, nameof(ShutterFunction.DIRECTION), directionState.Value, nameof(lastDirectionDown), lastDirectionDown);
+        return lastDirectionDown;
     }
 
     /// <summary>
@@ -500,44 +521,59 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     }
 
     /// <summary>
-    /// Open all closed shutters in the house.
+    /// Starts opening every shutter that is not already open, without waiting for travel to finish.
     /// </summary>
-    /// <returns>An array of group names that will be affected by the change.</returns>
-    public async Task<string[]> OpenAllShutters(CancellationToken cancellationToken = default)
+    /// <returns>The shutters commanded and their targets; observe them with <see cref="KnxShutterMovement"/>.</returns>
+    public async Task<KnxShutterTarget[]> OpenAllShutters(CancellationToken cancellationToken = default)
     {
+        var tolerance = config.Value.ShutterPositionTolerancePct;
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         await BindState(groups, cancellationToken).ConfigureAwait(false);
-        var shutters = groups.Where(p => p.Category == GroupAddressCategory.BL
-            && p.Floor is not null
-            && p.Room is not null
-            && p.Orientation is not null).ToList();
-        shutters = shutters.Where(p => p.Children.Any(c => c.Function == ShutterFunction.POS_FB.ToString() && c?.Value != "0")).ToList();
-        var groupNames = shutters.Select(p => p.GroupName).ToArray();
-        logger.LogInformation("{ClassName} found {Count} closed shutters to open {@Shutters}",
-            nameof(KnxQueryService), groupNames.Length, groupNames);
-        foreach (var shutter in shutters)
-            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 0 }, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return groupNames;
+        var targets = groups
+            .Where(p => p.Category == GroupAddressCategory.BL
+                && p.Floor is not null
+                && p.Room is not null
+                && p.Orientation is not null)
+            .Select(KnxShutter.FromGroup)
+            .Where(shutter => !KnxShutterMovement.IsAt(shutter.Position, 0, tolerance))
+            .Select(shutter => new KnxShutterTarget { GroupName = shutter.GroupName, Position = 0 })
+            .ToArray();
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} found {Count} closed shutters to open {@Shutters}",
+                nameof(KnxQueryService), targets.Length, targets.Select(t => t.GroupName));
+        foreach (var target in targets)
+            await MoveShutter(new KnxShutterStateChangeRequest { GroupName = target.GroupName, VPosition = 0 }, cancellationToken).ConfigureAwait(false);
+        return targets;
     }
 
     /// <summary>
-    /// Close all open shutters in the house.
+    /// Starts closing every shutter that is not already closed, without waiting for travel to finish.
+    /// Blinds also get their slats closed so the house cannot be seen into; slats are commanded by
+    /// <see cref="KnxShutterMovement"/> once each blind stops, because a slat command interrupts travel.
     /// </summary>
-    /// <returns>An array of group names that will be affected by the change.</returns>
-    public async Task<string[]> CloseAllShutters(CancellationToken cancellationToken = default)
+    /// <returns>The shutters commanded and their targets; observe them with <see cref="KnxShutterMovement"/>.</returns>
+    public async Task<KnxShutterTarget[]> CloseAllShutters(CancellationToken cancellationToken = default)
     {
+        var tolerance = config.Value.ShutterPositionTolerancePct;
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         await BindState(groups, cancellationToken).ConfigureAwait(false);
-        var shutters = groups.Where(p => p.Category == GroupAddressCategory.BL
-            && p.Floor is not null
-            && p.Room is not null
-            && p.Children.Any(c => c.Function == ShutterFunction.POS_FB.ToString() && c?.Value != "100")).ToList();
-        var groupNames = shutters.Select(p => p.GroupName).ToArray();
-        logger.LogInformation("{ClassName} found {Count} opened shutters to close {@Shutters}",
-            nameof(KnxQueryService), groupNames.Length, groupNames);
-        foreach (var shutter in shutters)
-            await SetShutterState(new KnxShutterStateChangeRequest { GroupName = shutter.GroupName, VPosition = 100 }, cancellationToken: cancellationToken).ConfigureAwait(false);
-        return groupNames;
+        var targets = new List<KnxShutterTarget>();
+        foreach (var group in groups.Where(p => p.Category == GroupAddressCategory.BL && p.Floor is not null && p.Room is not null))
+        {
+            var shutter = KnxShutter.FromGroup(group);
+            var hasSlats = group.Children.Any(c => c.Function == ShutterFunction.POSSLATS.ToString());
+            var closed = KnxShutterMovement.IsAt(shutter.Position, 100, tolerance);
+            if (closed && (!hasSlats || KnxShutterMovement.IsAt(shutter.SlatsPosition, 100, tolerance)))
+                continue;
+
+            targets.Add(new KnxShutterTarget { GroupName = group.GroupName, Position = 100, Slats = hasSlats ? 100 : null });
+            if (!closed)
+                await MoveShutter(new KnxShutterStateChangeRequest { GroupName = group.GroupName, VPosition = 100 }, cancellationToken).ConfigureAwait(false);
+        }
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} found {Count} shutters to close {@Shutters}",
+                nameof(KnxQueryService), targets.Count, targets.Select(t => t.GroupName));
+        return [.. targets];
     }
 
     private async Task BindState(List<KnxGroupAddressGroup> groups, CancellationToken cancellationToken = default)

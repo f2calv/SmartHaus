@@ -1,0 +1,66 @@
+using CasCap.Models.Dtos;
+
+namespace CasCap.Tests;
+
+/// <summary>Verifies shutter progress tracking and deferred slat commands.</summary>
+public sealed class KnxShutterMovementTests
+{
+    private const string Kitchen = "EG-BL-Kitchen-South";
+
+    [Fact]
+    public async Task AdvanceAsync_SendsSlatsOnceAfterPositionIsReached()
+    {
+        var states = new Queue<KnxShutter>(
+        [
+            new() { GroupName = Kitchen, Position = 40, SlatsPosition = 50 },
+            new() { GroupName = Kitchen, Position = 98, SlatsPosition = 50 },
+            new() { GroupName = Kitchen, Position = 98, SlatsPosition = 50 },
+            new() { GroupName = Kitchen, Position = 98, SlatsPosition = 100 },
+        ]);
+        var commands = new List<KnxShutterStateChangeRequest>();
+        var movement = new KnxShutterMovement(
+            [new KnxShutterTarget { GroupName = Kitchen, Position = 100, Slats = 100 }],
+            5,
+            _ => Task.FromResult(new List<KnxShutter> { states.Dequeue() }),
+            (request, _) =>
+            {
+                commands.Add(request);
+                return Task.CompletedTask;
+            });
+        var token = TestContext.Current.CancellationToken;
+
+        Assert.Equal(0, (await movement.AdvanceAsync(token)).Completed);
+        Assert.Empty(commands);
+        Assert.Equal(0, (await movement.AdvanceAsync(token)).Completed);
+        Assert.Equal(0, (await movement.AdvanceAsync(token)).Completed);
+        var final = await movement.AdvanceAsync(token);
+
+        var command = Assert.Single(commands);
+        Assert.Equal(100, command.Slats);
+        Assert.Null(command.VPosition);
+        Assert.Equal(1, final.Completed);
+        Assert.Empty(final.Pending);
+    }
+
+    [Fact]
+    public async Task AdvanceAsync_UnknownShutterRemainsPending()
+    {
+        var movement = new KnxShutterMovement(
+            [new KnxShutterTarget { GroupName = Kitchen, Position = 0 }],
+            5,
+            _ => Task.FromResult(new List<KnxShutter>()),
+            (_, _) => Task.CompletedTask);
+
+        var (completed, pending) = await movement.AdvanceAsync(TestContext.Current.CancellationToken);
+
+        Assert.Equal(0, completed);
+        Assert.Equal([Kitchen], pending);
+    }
+
+    [Theory]
+    [InlineData(98d, 100d, true)]
+    [InlineData(94d, 100d, false)]
+    [InlineData(null, 0d, false)]
+    public void IsAt_AppliesTolerance(double? actual, double desired, bool expected)
+        => Assert.Equal(expected, KnxShutterMovement.IsAt(actual, desired, 5));
+}
