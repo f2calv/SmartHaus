@@ -1,70 +1,64 @@
+using ModelContextProtocol.AspNetCore;
+
 namespace CasCap.Extensions;
 
 /// <summary>
-/// Extension methods for registering MCP tools from the <c>CasCap.Backend</c> assembly.
+/// Registers the MCP server with only the tool and prompt types whose features are enabled.
 /// </summary>
 public static class HausMcpServiceCollectionExtensions
 {
-    /// <summary>
-    /// Registers the <see cref="Services.HeatPumpMcpQueryService"/> to expose heat pump data via MCP tools.
-    /// </summary>
-    public static void AddHeatPumpMcp(this IServiceCollection services) =>
-        services.AddSingleton<HeatPumpMcpQueryService>();
+    private static readonly HausMcpToolSet[] ToolSets =
+    [
+        new([FeatureNames.Buderus, FeatureNames.Comms], typeof(HeatPumpMcpQueryService), [typeof(HeatPumpMcpPrompts)],
+            services => services.AddSingleton<HeatPumpMcpQueryService>()),
+        new([FeatureNames.EdgeHardware, FeatureNames.Comms], typeof(EdgeHardwareMcpQueryService), [],
+            services => services.AddSingleton<EdgeHardwareMcpQueryService>()),
+        new([FeatureNames.DoorBird, FeatureNames.Comms], typeof(FrontDoorMcpQueryService), [typeof(FrontDoorMcpPrompts)],
+            services => services.AddSingleton<FrontDoorMcpQueryService>()),
+        new([FeatureNames.Knx, FeatureNames.Comms], typeof(BusSystemMcpQueryService), [typeof(BusSystemMcpPrompts)],
+            services => services.AddSingleton<BusSystemMcpQueryService>()),
+        new([FeatureNames.Fronius, FeatureNames.Comms], typeof(InverterMcpQueryService), [typeof(InverterMcpPrompts)],
+            services => services.AddSingleton<InverterMcpQueryService>()),
+        new([FeatureNames.Shelly, FeatureNames.Comms], typeof(SmartPlugMcpQueryService), [],
+            services => services.AddSingleton<SmartPlugMcpQueryService>()),
+        // Spans Wiz, KNX and Shelly, so each query service is optional.
+        new([FeatureNames.Wiz, FeatureNames.Knx, FeatureNames.Shelly, FeatureNames.Comms], typeof(SmartLightingMcpQueryService), [],
+            services => services.AddSingleton(sp => new SmartLightingMcpQueryService(
+                sp.GetService<IKnxQueryService>(),
+                sp.GetService<IWizQueryService>(),
+                sp.GetService<IShellyQueryService>()))),
+        new([FeatureNames.Ubiquiti], typeof(IpCameraMcpQueryService), [],
+            services => services.AddSingleton<IpCameraMcpQueryService>()),
+        new([FeatureNames.Miele], typeof(AppliancesMcpQueryService), [typeof(AppliancesMcpPrompts)],
+            services => services.AddSingleton<AppliancesMcpQueryService>()),
+        new([FeatureNames.Sicce], typeof(AquariumMcpQueryService), [],
+            services => services.AddSingleton<AquariumMcpQueryService>()),
+        // The Comms feature registers its poll service itself.
+        new([FeatureNames.Comms], typeof(MessagingMcpQueryService), [], _ => { }),
+    ];
+
+    /// <summary>Gets every MCP tool set known to this application.</summary>
+    public static IReadOnlyList<HausMcpToolSet> AllToolSets => ToolSets;
+
+    /// <summary>Selects the tool sets exposed for the enabled features.</summary>
+    /// <param name="enabledFeatures">The features enabled for this deployment.</param>
+    public static IReadOnlyList<HausMcpToolSet> GetToolSets(IReadOnlySet<string> enabledFeatures) =>
+        [.. ToolSets.Where(set => set.Features.Any(enabledFeatures.Contains))];
 
     /// <summary>
-    /// Registers the <see cref="Services.FrontDoorMcpQueryService"/> to expose front door intercom data via MCP tools.
+    /// Registers the stateless MCP server, exposing only the tools and prompts of enabled features.
     /// </summary>
-    public static void AddFrontDoorMcp(this IServiceCollection services) =>
-        services.AddSingleton<FrontDoorMcpQueryService>();
+    /// <param name="services">The service collection.</param>
+    /// <param name="enabledFeatures">The features enabled for this deployment.</param>
+    public static void AddHausMcp(this IServiceCollection services, IReadOnlySet<string> enabledFeatures)
+    {
+        var toolSets = GetToolSets(enabledFeatures);
+        foreach (var toolSet in toolSets)
+            toolSet.Register(services);
 
-    /// <summary>
-    /// Registers the <see cref="Services.InverterMcpQueryService"/> to expose solar inverter data via MCP tools.
-    /// </summary>
-    public static void AddInverterMcp(this IServiceCollection services) =>
-        services.AddSingleton<InverterMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.BusSystemMcpQueryService"/> to expose bus system data via MCP tools.
-    /// </summary>
-    public static void AddBusSystemMcp(this IServiceCollection services) =>
-        services.AddSingleton<BusSystemMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.AppliancesMcpQueryService"/> to expose home appliance data via MCP tools.
-    /// </summary>
-    public static void AddAppliancesMcp(this IServiceCollection services) =>
-        services.AddSingleton<AppliancesMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.EdgeHardwareMcpQueryService"/> to expose edge hardware monitoring data via MCP tools.
-    /// </summary>
-    public static void AddEdgeHardwareMcp(this IServiceCollection services) =>
-        services.AddSingleton<EdgeHardwareMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.IpCameraMcpQueryService"/> to expose IP camera data via MCP tools.
-    /// </summary>
-    public static void AddCamerasMcp(this IServiceCollection services) =>
-        services.AddSingleton<IpCameraMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.AquariumMcpQueryService"/> to expose aquarium pump data via MCP tools.
-    /// </summary>
-    public static void AddAquariumMcp(this IServiceCollection services) =>
-        services.AddSingleton<AquariumMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.SmartPlugMcpQueryService"/> to expose smart plug operations via MCP tools.
-    /// </summary>
-    public static void AddSmartPlugMcp(this IServiceCollection services) =>
-        services.AddSingleton<SmartPlugMcpQueryService>();
-
-    /// <summary>
-    /// Registers the <see cref="Services.SmartLightingMcpQueryService"/> to expose smart lighting data via MCP tools.
-    /// </summary>
-    public static void AddSmartLightingMcp(this IServiceCollection services) =>
-        services.AddSingleton(sp => new SmartLightingMcpQueryService(
-            sp.GetService<IKnxQueryService>(),
-            sp.GetService<IWizQueryService>(),
-            sp.GetService<IShellyQueryService>()));
+        services.AddMcpServer()
+            .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
+            .WithTools(toolSets.Select(set => set.ToolType))
+            .WithPrompts(toolSets.SelectMany(set => set.PromptTypes));
+    }
 }

@@ -1,5 +1,4 @@
 using CasCap.Constants;
-using ModelContextProtocol.AspNetCore;
 using StackExchange.Redis;
 
 namespace CasCap;
@@ -12,9 +11,6 @@ public static partial class AppHost
         IReadOnlySet<string> enabledFeatures,
         IConnectionMultiplexer connectionMultiplexer)
     {
-        var mcpBuilder = builder.Services.AddMcpServer()
-            .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless);
-
         // Register SignalR services unconditionally so IHubContext<> is always resolvable for
         // HausHub sinks discovered during assembly scanning (e.g. BuderusSinkSignalRService).
         // The hub endpoint mapping and Redis backplane are configured later when SignalRHub is enabled.
@@ -25,9 +21,6 @@ public static partial class AppHost
             builder.Services.AddBuderusWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Buderus),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddHeatPumpMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(HeatPumpMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(HeatPumpMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Sicce))
@@ -50,9 +43,6 @@ public static partial class AppHost
                 lite: !enabledFeatures.Contains(FeatureNames.EdgeHardware),
                 cpuEnabled: enabledFeatures.Contains(FeatureNames.EdgeHardware),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddEdgeHardwareMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(EdgeHardwareMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(EdgeHardwareMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.DoorBird) || enabledFeatures.Contains(FeatureNames.Comms))
@@ -64,9 +54,6 @@ public static partial class AppHost
                 lite: !enabledFeatures.Contains(FeatureNames.DoorBird),
                 tokenCredential: appConfig.TokenCredential,
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddFrontDoorMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(FrontDoorMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(FrontDoorMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.DDns))
@@ -77,9 +64,6 @@ public static partial class AppHost
             builder.Services.AddKnxWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Knx),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddBusSystemMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(BusSystemMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(BusSystemMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Fronius) || enabledFeatures.Contains(FeatureNames.Comms))
@@ -87,9 +71,6 @@ public static partial class AppHost
             builder.Services.AddFroniusWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Fronius),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddInverterMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(InverterMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(InverterMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Shelly) || enabledFeatures.Contains(FeatureNames.Comms))
@@ -97,18 +78,6 @@ public static partial class AppHost
             builder.Services.AddShellyWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Shelly),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddSmartPlugMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(SmartPlugMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(SmartPlugMcpQueryService).Assembly);
-        }
-
-        // SmartLightingMcp spans Wiz, KNX and Shelly - all three DI parameters are nullable.
-        if (enabledFeatures.Contains(FeatureNames.Wiz) || enabledFeatures.Contains(FeatureNames.Knx)
-            || enabledFeatures.Contains(FeatureNames.Shelly) || enabledFeatures.Contains(FeatureNames.Comms))
-        {
-            builder.Services.AddSmartLightingMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(SmartLightingMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(SmartLightingMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Ubiquiti))
@@ -118,9 +87,6 @@ public static partial class AppHost
             builder.Services.AddUbiquitiWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Ubiquiti),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddCamerasMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(IpCameraMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(IpCameraMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Miele))
@@ -128,17 +94,12 @@ public static partial class AppHost
             builder.Services.AddMieleWithExtraSinks(builder.Configuration,
                 lite: !enabledFeatures.Contains(FeatureNames.Miele),
                 additionalSinkAssemblies: [typeof(HausServiceCollectionExtensions).Assembly]);
-            builder.Services.AddAppliancesMcp();
-            mcpBuilder.WithToolsFromAssembly(typeof(AppliancesMcpQueryService).Assembly);
-            mcpBuilder.WithPromptsFromAssembly(typeof(AppliancesMcpQueryService).Assembly);
         }
 
         if (enabledFeatures.Contains(FeatureNames.Comms))
-        {
             builder.AddComms();
-            mcpBuilder.WithToolsFromAssembly(typeof(MessagingMcpQueryService).Assembly);
-        }
 
+        builder.Services.AddHausMcp(enabledFeatures);
         builder.Services.AddCommsStreamSink();
         builder.Services.AddFeatureFlagService(enabledFeatures);
 
