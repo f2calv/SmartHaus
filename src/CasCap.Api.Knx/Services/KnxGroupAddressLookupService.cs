@@ -57,7 +57,7 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     /// Returns all parsed <see cref="KnxGroupAddressParsed"/> entries grouped into
     /// <see cref="KnxGroupAddressGroup"/> records. Addresses that share the same positional
     /// and categorical metadata (everything except the function suffix) are collected
-    /// under a single group.
+    /// under a single group. Groups listed in <see cref="KnxConfig.GroupAddressIgnore"/> are omitted.
     /// Ensures the lookup has been populated first.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
@@ -65,8 +65,11 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     public async Task<List<KnxGroupAddressGroup>> GetGroupAddressesGrouped(CancellationToken cancellationToken = default)
     {
         var lookup = await GetLookup(cancellationToken).ConfigureAwait(false);
-        return BuildGroups(lookup.Values);
+        return ExcludeIgnored(BuildGroups(lookup.Values), config.Value.GroupAddressIgnore);
     }
+
+    internal static List<KnxGroupAddressGroup> ExcludeIgnored(List<KnxGroupAddressGroup> groups, string[] ignore)
+        => ignore.Length == 0 ? groups : [.. groups.Where(g => !ignore.Contains(g.GroupName, StringComparer.Ordinal))];
 
     /// <summary>
     /// Retrieve a KnxGroupAddressParsed object by its address.

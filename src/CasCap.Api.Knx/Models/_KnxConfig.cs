@@ -57,6 +57,16 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     [Required]
     public required string GroupAddressXmlFilePath { get; init; }
 
+    /// <summary>
+    /// Group names, without the function suffix (e.g. <c>OG-BL-Bedroom</c>), hidden from grouped queries
+    /// such as the shutter, light and contact tools.
+    /// </summary>
+    /// <remarks>
+    /// Use for collective addresses that drive several devices and never report feedback. Telegram
+    /// decoding and state storage are unaffected.
+    /// </remarks>
+    public string[] GroupAddressIgnore { get; init; } = [];
+
     #region DayNight
     /// <summary>Whether the day/night detection feature is enabled.</summary>
     /// <remarks>Defaults to <see langword="true"/>.</remarks>

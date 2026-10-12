@@ -580,19 +580,16 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
     }
 
     /// <summary>
-    /// Gets the blind groups that drive a single shutter with position feedback. Room-level groups without
-    /// <c>POS</c>/<c>POS_FB</c>, and collective groups such as <c>OG-BL-MasterBedroom</c> whose members
-    /// (<c>OG-BL-MasterBedroom-South</c>) report their own feedback, are excluded.
+    /// Gets the blind groups with position commands and feedback. Room-level groups without
+    /// <c>POS</c>/<c>POS_FB</c> are excluded; exclude collective groups whose feedback never reports
+    /// with <see cref="KnxConfig.GroupAddressIgnore"/>.
     /// </summary>
     internal static List<KnxGroupAddressGroup> IndividualShutterGroups(IEnumerable<KnxGroupAddressGroup> groups)
-    {
-        var blinds = groups.Where(p => p.Category == GroupAddressCategory.BL
+        => [.. groups.Where(p => p.Category == GroupAddressCategory.BL
             && p.Floor is not null
             && p.Room is not null
             && p.Children.Any(c => c.Function == nameof(ShutterFunction.POS))
-            && p.Children.Any(c => c.Function == nameof(ShutterFunction.POS_FB))).ToList();
-        return [.. blinds.Where(p => !blinds.Exists(other => other.GroupName.StartsWith($"{p.GroupName}-", StringComparison.Ordinal)))];
-    }
+            && p.Children.Any(c => c.Function == nameof(ShutterFunction.POS_FB)))];
 
     private async Task BindState(List<KnxGroupAddressGroup> groups, CancellationToken cancellationToken = default)
     {

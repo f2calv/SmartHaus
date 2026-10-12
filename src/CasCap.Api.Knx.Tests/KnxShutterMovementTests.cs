@@ -78,20 +78,19 @@ public sealed class KnxShutterMovementTests
     }
 
     [Fact]
-    public void IndividualShutterGroups_ExcludesCollectiveAndPositionlessGroups()
+    public void IndividualShutterGroups_ExcludesIgnoredAndPositionlessGroups()
     {
         KnxGroupAddressGroup[] groups =
         [
             Blind("OG-BL-MasterBedroom", "POS", "POS_FB"),
-            Blind("OG-BL-MasterBedroom-East", "POS", "POS_FB"),
-            Blind("OG-BL-MasterBedroom-East-Top", "POS", "POS_FB"),
             Blind("OG-BL-MasterBedroom-South", "POS", "POS_FB"),
             Blind("OG-BL-ChildRoom", "MOVE", "STEP"),
         ];
 
-        var names = KnxQueryService.IndividualShutterGroups(groups).Select(g => g.GroupName);
+        var visible = KnxGroupAddressLookupService.ExcludeIgnored([.. groups], ["OG-BL-MasterBedroom"]);
+        var names = KnxQueryService.IndividualShutterGroups(visible).Select(g => g.GroupName);
 
-        Assert.Equal(["OG-BL-MasterBedroom-East-Top", "OG-BL-MasterBedroom-South"], names);
+        Assert.Equal(["OG-BL-MasterBedroom-South"], names);
     }
 
     private static KnxGroupAddressGroup Blind(string groupName, params string[] functions)
