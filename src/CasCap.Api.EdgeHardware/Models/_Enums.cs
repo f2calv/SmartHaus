@@ -1,6 +1,6 @@
 namespace CasCap.Models;
 
-/// <summary>How much energy detail the debug chat reports for an agent turn.</summary>
+/// <summary>How much energy detail the reply footer reports for an agent turn.</summary>
 public enum EnergyReportingMode
 {
     /// <summary>Report no energy figure at all.</summary>

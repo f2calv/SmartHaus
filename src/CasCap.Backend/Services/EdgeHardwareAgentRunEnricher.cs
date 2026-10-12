@@ -2,12 +2,13 @@ namespace CasCap.Services;
 
 /// <summary>
 /// <see cref="IAgentRunEnricher"/> that records the edge GPU's energy use for each comms agent run and
-/// reports it, with solar context, in the reply footer and the monitor-group timeline.
+/// reports it in the monitor-group timeline and, when enabled, the reply footer.
 /// </summary>
 /// <remarks>
 /// GPU snapshots come from <see cref="IEdgeHardwareQueryService"/> when the EdgeHardware feature is
 /// registered; otherwise energy falls back to the token-based estimate in <see cref="EdgeHardwareConfig"/>.
-/// Solar context comes from <see cref="IFroniusQueryService"/> when the Fronius feature is registered.
+/// Solar context comes from <see cref="IFroniusQueryService"/> when the Fronius feature is registered
+/// and <see cref="EdgeHardwareConfig.SolarContextEnabled"/> is set.
 /// </remarks>
 public sealed class EdgeHardwareAgentRunEnricher(
     IOptions<EdgeHardwareConfig> edgeHardwareConfig,
@@ -31,33 +32,28 @@ public sealed class EdgeHardwareAgentRunEnricher(
         var gpuTemp = result.GetGpuTemperatureC();
         var gpuUtil = result.GetGpuUtilizationPercent();
         var config = edgeHardwareConfig.Value;
-        var reportEnergy = energyWh is > 0 && config.EnergyReporting is not EnergyReportingMode.Off;
 
-        if (!reportEnergy && gpuTemp is null)
+        var parts = new List<string>(4);
+        if (energyWh is > 0 && config.EnergyReporting is not EnergyReportingMode.Off)
+            parts.Add(FormatEnergy(energyWh.Value, config));
+        if (gpuTemp is not null)
+            parts.Add($"🌡 {gpuTemp:F0}°C");
+        if (gpuUtil is not null)
+            parts.Add($"⚙ {gpuUtil:F0}%");
+        if (parts.Count == 0)
             return null;
 
-        var sb = new StringBuilder();
-        if (reportEnergy)
-            AppendEnergy(sb, energyWh!.Value, config);
+        if (config.SolarContextEnabled && await GetSolarSnapshotAsync() is { } solar && DescribePowerSource(solar) is { Length: > 0 } source)
+            parts.Add(source);
 
-        if (gpuTemp is not null)
-            sb.Append($" | 🌡 {gpuTemp:F0}°C");
-
-        if (gpuUtil is not null)
-            sb.Append($" | ⚙ {gpuUtil:F0}%");
-
-        // Solar context from the Fronius snapshot (best-effort).
-        if (await GetSolarSnapshotAsync() is { } solar)
-            sb.Append(DescribePowerSource(solar));
-
-        return sb.ToString();
+        return string.Join(" | ", parts);
     }
 
-    private static void AppendEnergy(StringBuilder sb, double energyWh, EdgeHardwareConfig config)
+    private static string FormatEnergy(double energyWh, EdgeHardwareConfig config)
     {
-        sb.Append($"⚡ {energyWh:F2}Wh");
+        var energy = $"⚡ {energyWh:F2}Wh";
         if (config.EnergyReporting is not EnergyReportingMode.Verbose)
-            return;
+            return energy;
 
         // Fun comparisons.
         var comparisons = new List<string>();
@@ -67,17 +63,16 @@ public sealed class EdgeHardwareAgentRunEnricher(
             comparisons.Add($"~{energyWh / config.PhoneChargeWh:F3} phone charges");
         if (config.LedBulbHourWh > 0)
             comparisons.Add($"~{energyWh / config.LedBulbHourWh:F3} LED-bulb-hrs");
-        if (comparisons.Count > 0)
-            sb.Append($" ({string.Join(" | ", comparisons)})");
+        return comparisons.Count > 0 ? $"{energy} ({string.Join(" | ", comparisons)})" : energy;
     }
 
     private static string DescribePowerSource(InverterSnapshot solar)
     {
         if (solar.PhotovoltaicPower > Math.Abs(solar.LoadPower))
-            return " | ☀\uFE0F solar-powered";
+            return "☀\uFE0F solar-powered";
         if (solar.BatteryPower > 0)
-            return " | 🔋 battery-powered";
-        return solar.GridPower > 0 ? " | 🔌 grid" : string.Empty;
+            return "🔋 battery-powered";
+        return solar.GridPower > 0 ? "🔌 grid" : string.Empty;
     }
 
     /// <inheritdoc/>
