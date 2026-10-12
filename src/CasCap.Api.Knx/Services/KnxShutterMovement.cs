@@ -40,7 +40,10 @@ public sealed class KnxShutterMovement(
             }
 
             var positioned = target.Position is null || IsAt(shutter.Position, target.Position.Value);
-            var slatsDone = target.Slats is null || IsAt(shutter.SlatsPosition, target.Slats.Value);
+            // Some actuators never publish slat feedback; a sent command is the best confirmation available.
+            var slatsDone = target.Slats is null
+                || IsAt(shutter.SlatsPosition, target.Slats.Value)
+                || (shutter.SlatsPosition is null && _slatsCommanded.Contains(target.GroupName));
             if (positioned && !slatsDone && _slatsCommanded.Add(target.GroupName))
                 await moveShutter(new KnxShutterStateChangeRequest
                 {

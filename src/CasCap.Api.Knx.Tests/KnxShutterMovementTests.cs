@@ -57,6 +57,59 @@ public sealed class KnxShutterMovementTests
         Assert.Equal([Kitchen], pending);
     }
 
+    [Fact]
+    public async Task AdvanceAsync_SlatsWithoutFeedbackCompleteOnceCommanded()
+    {
+        var commands = new List<KnxShutterStateChangeRequest>();
+        var movement = new KnxShutterMovement(
+            [new KnxShutterTarget { GroupName = Kitchen, Position = 100, Slats = 100 }],
+            5,
+            _ => Task.FromResult(new List<KnxShutter> { new() { GroupName = Kitchen, Position = 100 } }),
+            (request, _) =>
+            {
+                commands.Add(request);
+                return Task.CompletedTask;
+            });
+        var token = TestContext.Current.CancellationToken;
+
+        Assert.Equal(0, (await movement.AdvanceAsync(token)).Completed);
+        Assert.Equal(1, (await movement.AdvanceAsync(token)).Completed);
+        Assert.Single(commands);
+    }
+
+    [Fact]
+    public void IndividualShutterGroups_ExcludesCollectiveAndPositionlessGroups()
+    {
+        KnxGroupAddressGroup[] groups =
+        [
+            Blind("OG-BL-MasterBedroom", "POS", "POS_FB"),
+            Blind("OG-BL-MasterBedroom-East", "POS", "POS_FB"),
+            Blind("OG-BL-MasterBedroom-East-Top", "POS", "POS_FB"),
+            Blind("OG-BL-MasterBedroom-South", "POS", "POS_FB"),
+            Blind("OG-BL-ChildRoom", "MOVE", "STEP"),
+        ];
+
+        var names = KnxQueryService.IndividualShutterGroups(groups).Select(g => g.GroupName);
+
+        Assert.Equal(["OG-BL-MasterBedroom-East-Top", "OG-BL-MasterBedroom-South"], names);
+    }
+
+    private static KnxGroupAddressGroup Blind(string groupName, params string[] functions)
+        => new()
+        {
+            GroupName = groupName,
+            Category = GroupAddressCategory.BL,
+            Floor = FloorType.OG,
+            Room = RoomType.MasterBedroom,
+            Children = [.. functions.Select(f => new KnxGroupAddressGroupFunction
+            {
+                Name = $"{groupName}-{f}",
+                GroupAddress = "1/2/3",
+                Function = f,
+                DPTs = "DPST-5-1",
+            })],
+        };
+
     [Theory]
     [InlineData(98d, 100d, true)]
     [InlineData(94d, 100d, false)]

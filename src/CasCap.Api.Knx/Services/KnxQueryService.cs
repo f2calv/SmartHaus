@@ -535,12 +535,8 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var tolerance = config.Value.ShutterPositionTolerancePct;
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         await BindState(groups, cancellationToken).ConfigureAwait(false);
-        var targets = groups
-            .Where(p => p.Category == GroupAddressCategory.BL
-                && p.Floor is not null
-                && p.Room is not null
-                && p.Orientation is not null
-                && HasPosition(p))
+        var targets = IndividualShutterGroups(groups)
+            .Where(p => p.Orientation is not null)
             .Select(KnxShutter.FromGroup)
             .Where(shutter => !KnxShutterMovement.IsAt(shutter.Position, 0, tolerance))
             .Select(shutter => new KnxShutterTarget { GroupName = shutter.GroupName, Position = 0 })
@@ -565,7 +561,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var groups = await knxGroupAddressLookupSvc.GetGroupAddressesGrouped(cancellationToken).ConfigureAwait(false);
         await BindState(groups, cancellationToken).ConfigureAwait(false);
         var targets = new List<KnxShutterTarget>();
-        foreach (var group in groups.Where(p => p.Category == GroupAddressCategory.BL && p.Floor is not null && p.Room is not null && HasPosition(p)))
+        foreach (var group in IndividualShutterGroups(groups))
         {
             var shutter = KnxShutter.FromGroup(group);
             var hasSlats = group.Children.Any(c => c.Function == ShutterFunction.POSSLATS.ToString());
@@ -583,10 +579,20 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         return [.. targets];
     }
 
-    // Room-level blind groups carry only up/down commands; position-tracked moves need POS and POS_FB.
-    private static bool HasPosition(KnxGroupAddressGroup group)
-        => group.Children.Any(c => c.Function == nameof(ShutterFunction.POS))
-            && group.Children.Any(c => c.Function == nameof(ShutterFunction.POS_FB));
+    /// <summary>
+    /// Gets the blind groups that drive a single shutter with position feedback. Room-level groups without
+    /// <c>POS</c>/<c>POS_FB</c>, and collective groups such as <c>OG-BL-MasterBedroom</c> whose members
+    /// (<c>OG-BL-MasterBedroom-South</c>) report their own feedback, are excluded.
+    /// </summary>
+    internal static List<KnxGroupAddressGroup> IndividualShutterGroups(IEnumerable<KnxGroupAddressGroup> groups)
+    {
+        var blinds = groups.Where(p => p.Category == GroupAddressCategory.BL
+            && p.Floor is not null
+            && p.Room is not null
+            && p.Children.Any(c => c.Function == nameof(ShutterFunction.POS))
+            && p.Children.Any(c => c.Function == nameof(ShutterFunction.POS_FB))).ToList();
+        return [.. blinds.Where(p => !blinds.Exists(other => other.GroupName.StartsWith($"{p.GroupName}-", StringComparison.Ordinal)))];
+    }
 
     private async Task BindState(List<KnxGroupAddressGroup> groups, CancellationToken cancellationToken = default)
     {
