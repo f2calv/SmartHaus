@@ -26,22 +26,7 @@ public static partial class AppHost
             builder.Logging.AddSerilog(Log.Logger);
             builder.InitializeConfiguration(entryAssembly);
             builder.Services.AddCasCapConfiguration<AgentRuntimeConsoleConfig>();
-            builder.Services.AddCasCapConfiguration<AgentRuntimeAzureAuthConfig>();
-            var agentRuntimeClient = builder.Services.AddAgentRuntimeClient();
-            var runtimeAuthConfig = builder.Configuration
-                .GetSection(AgentRuntimeAzureAuthConfig.ConfigurationSectionName)
-                .Get<AgentRuntimeAzureAuthConfig>() ?? new AgentRuntimeAzureAuthConfig();
-            if (runtimeAuthConfig.Enabled)
-            {
-                builder.Services.AddTransient(serviceProvider =>
-                {
-                    var authOptions = serviceProvider.GetRequiredService<IOptions<AgentRuntimeAzureAuthConfig>>();
-                    return new TokenCredentialBearerHandler(
-                        authOptions.Value.TokenCredential,
-                        authOptions.Value.Scope!);
-                });
-                agentRuntimeClient.AddHttpMessageHandler<TokenCredentialBearerHandler>();
-            }
+            builder.Services.AddAgentRuntimeClient().AddAgentRuntimeAzureAuthentication(builder.Configuration);
             builder.Services.AddSingleton<ConsoleApp>();
 
             using var host = builder.Build();
