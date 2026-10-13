@@ -451,8 +451,8 @@ Build from the repository's Debug solution so adjacent source dependencies are u
 dotnet build SmartHaus.Debug.slnx --configuration Debug
 ```
 
-The backend tests live in `src/CasCap.Backend.Tests`. Generic Agent Runtime protocol and provider
-coverage belongs to agentizr and `CasCap.Common.AI.Tests`; SmartHaus tests cover its domain tools,
+The backend tests live in `src/CasCap.Backend.Tests`. Generic Agent Runtime protocol, provider and
+agent-evaluation coverage belongs to agentizr; SmartHaus tests cover its domain tools,
 orchestration, media, and configuration boundaries.
 
 ## License

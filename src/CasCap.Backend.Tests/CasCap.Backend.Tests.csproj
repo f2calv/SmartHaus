@@ -17,13 +17,6 @@
     <ProjectReference Include="..\CasCap.Backend\CasCap.Backend.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(Configuration)'=='Debug'">
-    <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.AI.Evaluation\CasCap.Common.AI.Evaluation.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(Configuration)'=='Release'">
-    <PackageReference Include="CasCap.Common.AI.Evaluation" />
-  </ItemGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="xunit.v3" />

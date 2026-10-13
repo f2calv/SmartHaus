@@ -1,7 +1,7 @@
 # CasCap.Backend.Tests
 
-Credential-free tests for SmartHaus backend and domain behavior, including MCP contracts, evaluation
-scenarios, KNX summaries, camera clip policy, and Agent Runtime request translation.
+Credential-free tests for SmartHaus backend and domain behavior, including MCP prompt contracts, KNX
+summaries, camera clip policy, and Agent Runtime request translation.
 
 ## Purpose
 
@@ -16,7 +16,6 @@ Host endpoint and application-bootstrap coverage lives in
 
 | Class | Methods | Cases | Category | Description |
 | --- | --- | --- | --- | --- |
-| `AgentEvaluationScenarioTests` | 5 | 11 | AgentEvaluation | Verifies graders, tool classification, fixtures, and scenario integrity |
 | `McpPromptToolReferenceTests` | 1 | 1 | McpPrompts | Ensures shipped MCP prompts name only available tools |
 | `KnxContactSummaryTests` | 4 | 13 | Knx | Verifies door and window contact summaries |
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Verifies door lock summaries |
@@ -27,7 +26,6 @@ Host endpoint and application-bootstrap coverage lives in
 
 | Category | Meaning |
 | --- | --- |
-| `AgentEvaluation` | Agent evaluation scenarios and model runs |
 | `McpPrompts` | MCP prompt contract checks |
 | `Knx` | KNX contact and door-lock summaries |
 | `CameraClips` | Camera event-to-clip admission and privacy policy |
@@ -39,10 +37,8 @@ There are no skipped tests.
 
 ## Agent Evaluation
 
-`AgentEvaluationScenarioTestData` and `SyntheticHouseTestData` remain SmartHaus-owned domain assets.
-Their unit tests verify answer grading, tool classification, deterministic fixture behavior, and that
-every scenario names a known SmartHaus MCP tool, runtime built-in, or agent delegation. They do not
-construct local agents or duplicate Agent Runtime execution tests.
+Agent definitions are evaluated in agentizr against scenarios supplied with the definition, before
+activation. This project keeps no evaluation scenarios or fixtures.
 
 ## Running The Tests
 
@@ -57,9 +53,7 @@ dotnet test --project src/CasCap.Backend.Tests/CasCap.Backend.Tests.csproj
 CasCap.Backend.Tests/
 ├── Tests/
 │   ├── Unit/                # Self-contained backend and domain tests
-│   ├── AgentEvaluationScenarioTestData.cs
-│   ├── SmartHausEvaluationTestData.cs
-│   └── SyntheticHouseTestData.cs
+│   └── McpPromptContract.cs # Prompt-to-tool reference check
 ├── GlobalUsings.cs
 └── xunit.runner.json
 ```
@@ -72,7 +66,6 @@ CasCap.Backend.Tests/
 | --- | --- |
 | `CasCap.Backend` | Backend orchestration, MCP tools, and domain services under test |
 | `CasCap.Api.Knx` | KNX summaries and internal lookup behavior under test |
-| `CasCap.Common.AI.Evaluation` | Scenario contracts, graders, fixture tools, and MCP catalog inspection |
 
 ### Packages
 

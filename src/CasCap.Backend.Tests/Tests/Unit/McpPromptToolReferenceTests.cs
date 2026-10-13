@@ -10,7 +10,7 @@ public sealed class McpPromptToolReferenceTests
     [Fact]
     public void McpPrompts_ReferenceExistingTools()
     {
-        var missing = McpPromptContract.FindMissingToolReferences([SmartHausEvaluationTestData.HausAssembly]);
+        var missing = McpPromptContract.FindMissingToolReferences([typeof(BusSystemMcpQueryService).Assembly]);
 
         Assert.True(missing.Count == 0, string.Join(Environment.NewLine, missing));
     }

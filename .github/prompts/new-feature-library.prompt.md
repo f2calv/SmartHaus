@@ -319,7 +319,7 @@ public static class {Feature}SinksServiceCollectionExtensions
 
 ---
 
-### Phase 3: MCP Integration — `CasCap.Common.AI/`
+### Phase 3: MCP Integration — `CasCap.Backend/`
 
 #### 3.1 Create `Services/Mcp/{Domain}McpQueryService.cs`
 
