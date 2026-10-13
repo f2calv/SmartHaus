@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// MCP wrapper for <see cref="IDoorBirdQueryService"/> that exposes front door intercom operations as MCP tools.
 /// </summary>
 [McpServerToolType]
-public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorBirdQuerySvc)
+public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorBirdQuerySvc, TimeProvider timeProvider)
 {
     /// <inheritdoc cref="IDoorBirdQueryService.GetSnapshot"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -19,7 +19,7 @@ public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorB
     /// <inheritdoc cref="IDoorBirdQueryService.GetRealTimePhotoMetaDataOnly"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Takes a live photo from the front door camera and returns metadata only (size, timestamp) without image bytes.")]
-    public Task<MyBlob> GetHouseDoorPhotoInfo() => doorBirdQuerySvc.GetRealTimePhotoMetaDataOnly();
+    public Task<MyBlobInfo> GetHouseDoorPhotoInfo() => doorBirdQuerySvc.GetRealTimePhotoMetaDataOnly();
 
     /// <inheritdoc cref="IDoorBirdQueryService.UnlockFrontDoor()"/>
     [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false)]
@@ -45,26 +45,20 @@ public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorB
     /// </remarks>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Retrieves a historical JPEG snapshot from the front door camera's internal storage.")]
-    public Task<MyBlob> GetHouseDoorHistoryImage(
+    public async Task<MyBlob> GetHouseDoorHistoryImage(
         [Description("1-based index of the image (1 = most recent, max 50).")]
         int index = 1,
         [Description("Event type filter. Values: Doorbell, MotionSensor, Rfid, DoorRelay.")]
         DoorBirdEventType? doorBirdEventType = null)
-        => doorBirdQuerySvc.GetHistoryImageSummary(index, doorBirdEventType);
+        => new(
+            await doorBirdQuerySvc.GetHistoryImage(index, doorBirdEventType) ?? [],
+            nameof(GetHouseDoorHistoryImage),
+            timeProvider.GetUtcNow().UtcDateTime);
 
     /// <inheritdoc cref="IDoorBirdQueryService.GetHistoryImageSummary"/>
-    /// <remarks>
-    /// TODO (C5 part 2): this now returns the same payload as
-    /// <see cref="GetHouseDoorHistoryImage"/> — <see cref="IDoorBirdQueryService.GetHistoryImageSummary"/>
-    /// is documented as omitting the raw image data but <see cref="MyBlob.Bytes"/> is a required
-    /// member, so the bytes are always present and the framework strips and delivers them either
-    /// way. Two tools with identical behaviour but different descriptions is confusing for the
-    /// model. Reconcile when the tool-result transform moves to <c>MarshalResult</c>: either give
-    /// the summary a genuinely byte-free result type, or drop this tool.
-    /// </remarks>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Returns metadata (size, timestamp) of a historical front door snapshot without the image bytes.")]
-    public Task<MyBlob> GetHouseDoorHistoryImageInfo(
+    public Task<MyBlobInfo> GetHouseDoorHistoryImageInfo(
         [Description("1-based index of the image (1 = most recent, max 50).")]
         int index = 1,
         [Description("Event type filter. Values: Doorbell, MotionSensor, Rfid, DoorRelay.")]

@@ -100,6 +100,18 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     /// </remarks>
     public string[] DayNightAdditionalGroupAddresses { get; init; } = [];
 
+    /// <summary>Group address name of the front door contact sensor used by the front door state tool.</summary>
+    [Required]
+    public required string FrontDoorContactGroupName { get; init; } = "EG-BI-Entrance(FrontDoor)-East-STATE";
+
+    /// <summary>Group address name of the exterior front door light used by the door light tools.</summary>
+    [Required]
+    public required string FrontDoorLightGroupName { get; init; } = "EG-LI-Entrance(FrontDoor)-Outdoor-DL";
+
+    /// <summary>Group address name of the office lights used by the office light tools.</summary>
+    [Required]
+    public required string OfficeLightGroupName { get; init; } = "DG-LI-Office-DL-South";
+
     /// <summary>Delay in milliseconds between day/night state pushes to the KNX bus.</summary>
     /// <remarks>Used by <see cref="CasCap.Services.KnxAutomationBgService"/>. Defaults to <c>300000</c> ms (5 minutes). The first push occurs immediately on startup.</remarks>
     [Required, Range(1, int.MaxValue)]

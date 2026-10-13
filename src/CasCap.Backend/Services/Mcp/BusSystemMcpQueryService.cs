@@ -10,9 +10,6 @@ public sealed partial class BusSystemMcpQueryService(
     ITrackedOperationService trackedOperations,
     IOptions<KnxConfig> knxConfig)
 {
-    //TODO: I dont like these group addresses hardcoded here, need to change this
-    private const string FrontDoorContactGroupName = "EG-BI-Entrance(FrontDoor)-East-STATE";
-
     /// <summary>Starts moving one shutter or blind; completion is reported later in the chat.</summary>
     [McpServerTool(ReadOnly = false, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Starts moving a single shutter or blind to a target position and/or slat angle and returns immediately; completion is posted to the chat later. IMPORTANT: KNX position convention is 0=fully open, 100=fully closed. When closing a blind for privacy, also set Slats=100.")]
@@ -75,23 +72,18 @@ public sealed partial class BusSystemMcpQueryService(
     [Description("Gets the current open/closed state of the front door via a magnetic contact sensor. Reports whether the door is physically open or closed — this is NOT a lock sensor and cannot detect locked/unlocked.")]
     public async Task<FrontDoorContactState> GetHouseFrontDoorState(CancellationToken cancellationToken = default)
     {
-        var state = await knxState.GetKnxState(FrontDoorContactGroupName, cancellationToken);
+        var groupName = knxConfig.Value.FrontDoorContactGroupName;
+        var state = await knxState.GetKnxState(groupName, cancellationToken);
         var isOpen = state?.ValueLabel?.Equals("True", StringComparison.OrdinalIgnoreCase) == true
             || state?.Value?.Equals("True", StringComparison.OrdinalIgnoreCase) == true
             || state?.Value == "1";
+        var contacts = await knxQuerySvc.GetContactSummary(cancellationToken: cancellationToken);
         return new FrontDoorContactState
         {
             IsOpen = isOpen,
             State = isOpen ? "Open" : "Closed",
             LastUpdated = state?.TimestampUtc ?? DateTime.MinValue,
-            Contact = new KnxContact
-            {
-                GroupName = FrontDoorContactGroupName,
-                Floor = FloorType.EG,
-                Location = "FrontDoor",
-                Orientation = CompassOrientation.East,
-                State = isOpen ? DptState.Active : DptState.Inactive,
-            },
+            Contact = contacts.Contacts.FirstOrDefault(c => c.GroupName == groupName),
         };
     }
 

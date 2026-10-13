@@ -24,6 +24,7 @@ public static class HausMcpServiceCollectionExtensions
         // Spans Wiz, KNX and Shelly, so each query service is optional.
         new([FeatureNames.Wiz, FeatureNames.Knx, FeatureNames.Shelly, FeatureNames.Comms], typeof(SmartLightingMcpQueryService), [],
             services => services.AddSingleton(sp => new SmartLightingMcpQueryService(
+                sp.GetRequiredService<IOptions<KnxConfig>>(),
                 sp.GetService<IKnxQueryService>(),
                 sp.GetService<IWizQueryService>(),
                 sp.GetService<IShellyQueryService>()))),

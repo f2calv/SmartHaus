@@ -27,10 +27,15 @@ public sealed class DoorBirdQueryService(
     }
 
     /// <inheritdoc/>
-    public async Task<MyBlob> GetRealTimePhotoMetaDataOnly()
+    public async Task<MyBlobInfo> GetRealTimePhotoMetaDataOnly()
     {
         var bytes = await doorBirdClientSvc.GetImage();
-        return new MyBlob(bytes ?? [], nameof(GetRealTimePhotoMetaDataOnly), timeProvider.GetUtcNow().UtcDateTime);
+        return new MyBlobInfo
+        {
+            BlobName = nameof(GetRealTimePhotoMetaDataOnly),
+            DateCreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
+            SizeInBytes = bytes?.Length ?? 0,
+        };
     }
 
     /// <inheritdoc/>
@@ -123,12 +128,17 @@ public sealed class DoorBirdQueryService(
         => doorBirdClientSvc.GetHistoryImage(index, doorBirdEventType);
 
     /// <inheritdoc/>
-    public async Task<MyBlob> GetHistoryImageSummary(
+    public async Task<MyBlobInfo> GetHistoryImageSummary(
         int index = 1,
         DoorBirdEventType? doorBirdEventType = null)
     {
         var bytes = await doorBirdClientSvc.GetHistoryImage(index, doorBirdEventType);
-        return new MyBlob(bytes ?? [], nameof(GetHistoryImageSummary), timeProvider.GetUtcNow().UtcDateTime);
+        return new MyBlobInfo
+        {
+            BlobName = nameof(GetHistoryImageSummary),
+            DateCreatedUtc = timeProvider.GetUtcNow().UtcDateTime,
+            SizeInBytes = bytes?.Length ?? 0,
+        };
     }
 
     /// <inheritdoc/>

@@ -18,7 +18,7 @@ public interface IDoorBirdQueryService
     /// <summary>
     /// DoorBird device will take a photo at the front door and returns metadata only (size in bytes and timestamp) without the raw image data.
     /// </summary>
-    public Task<MyBlob> GetRealTimePhotoMetaDataOnly();
+    public Task<MyBlobInfo> GetRealTimePhotoMetaDataOnly();
 
     /// <summary>
     /// DoorBird device will return the URL for the live MJPEG video stream from the camera.
@@ -89,7 +89,7 @@ public interface IDoorBirdQueryService
     /// </summary>
     /// <param name="index">The 1-based index of the image (1 = most recent, max 50).</param>
     /// <param name="doorBirdEventType">Optional event type filter (doorbell or motionsensor).</param>
-    public Task<MyBlob> GetHistoryImageSummary(int index = 1, DoorBirdEventType? doorBirdEventType = null);
+    public Task<MyBlobInfo> GetHistoryImageSummary(int index = 1, DoorBirdEventType? doorBirdEventType = null);
 
     /// <summary>
     /// Retrieves the list of active notification subscriptions from the DoorBird device.

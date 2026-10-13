@@ -98,7 +98,4 @@ public static class HausServiceCollectionExtensions
 
         return config;
     }
-
-    //TODO: Ubiquiti network integration
-    //TODO: Wiz lighting integration
 }

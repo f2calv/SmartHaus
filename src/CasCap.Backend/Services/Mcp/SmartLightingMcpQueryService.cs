@@ -12,13 +12,12 @@ namespace CasCap.Services;
 /// </remarks>
 [McpServerToolType]
 public sealed partial class SmartLightingMcpQueryService(
+    IOptions<KnxConfig> knxConfig,
     IKnxQueryService? knxQuerySvc = null,
     IWizQueryService? wizQuerySvc = null,
     IShellyQueryService? shellyQuerySvc = null)
 {
-    //TODO: I dont like these group addresses hardcoded here, need to change this
-    private const string DoorLightGroupName = "EG-LI-Entrance(FrontDoor)-Outdoor-DL";
-    private const string OfficeLightGroupName = "DG-LI-Office-DL-South";
+    //TODO: move the desk lamp device name into ShellyConfig alongside the KNX names in KnxConfig.
     private const string DeskLampDeviceName = "DG-SD-Office(DeskLamp)";
 
     /// <inheritdoc cref="IKnxQueryService.SetLightState"/>
@@ -47,7 +46,7 @@ public sealed partial class SmartLightingMcpQueryService(
     [Description("Turns on the exterior light at the front door.")]
     public Task<KnxStateChangeResponse> TurnOnHouseDoorLight(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
-            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = DoorLightGroupName, IsOn = true }, cancellationToken: cancellationToken)
+            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = knxConfig.Value.FrontDoorLightGroupName, IsOn = true }, cancellationToken: cancellationToken)
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns off the exterior light at the front door.</summary>
@@ -55,7 +54,7 @@ public sealed partial class SmartLightingMcpQueryService(
     [Description("Turns off the exterior light at the front door.")]
     public Task<KnxStateChangeResponse> TurnOffHouseDoorLight(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
-            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = DoorLightGroupName, IsOn = false }, cancellationToken: cancellationToken)
+            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = knxConfig.Value.FrontDoorLightGroupName, IsOn = false }, cancellationToken: cancellationToken)
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns on all lights in the DG Office.</summary>
@@ -63,7 +62,7 @@ public sealed partial class SmartLightingMcpQueryService(
     [Description("Turns on all lights in the top-floor (DG) office.")]
     public Task<KnxStateChangeResponse> TurnOnHouseOfficeLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
-            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = OfficeLightGroupName, IsOn = true }, cancellationToken: cancellationToken)
+            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = knxConfig.Value.OfficeLightGroupName, IsOn = true }, cancellationToken: cancellationToken)
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <summary>Turns off all lights in the DG Office.</summary>
@@ -71,7 +70,7 @@ public sealed partial class SmartLightingMcpQueryService(
     [Description("Turns off all lights in the top-floor (DG) office.")]
     public Task<KnxStateChangeResponse> TurnOffHouseOfficeLights(CancellationToken cancellationToken = default)
         => knxQuerySvc is not null
-            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = OfficeLightGroupName, IsOn = false }, cancellationToken: cancellationToken)
+            ? knxQuerySvc.SetLightState(new KnxLightStateChangeRequest { GroupName = knxConfig.Value.OfficeLightGroupName, IsOn = false }, cancellationToken: cancellationToken)
             : throw new InvalidOperationException("KNX feature is not enabled.");
 
     /// <inheritdoc cref="IKnxQueryService.ListLights"/>
