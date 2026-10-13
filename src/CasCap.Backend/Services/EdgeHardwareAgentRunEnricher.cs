@@ -15,6 +15,10 @@ public sealed class EdgeHardwareAgentRunEnricher(
     IServiceProvider serviceProvider) : IAgentRunEnricher
 {
     /// <inheritdoc/>
+    /// <remarks>Energy comes from hardware snapshots and token usage, which every run returns.</remarks>
+    public bool RequiresDiagnosticDetails => false;
+
+    /// <inheritdoc/>
     public async Task<object?> BeforeRunAsync(CancellationToken cancellationToken) =>
         await GetLatestSnapshotAsync();
 
