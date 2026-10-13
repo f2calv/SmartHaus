@@ -24,10 +24,10 @@ belong to the multi-tenant Agent Runtime maintained by
 
 | Owner | Responsibilities |
 | --- | --- |
-| SmartHaus | Domain services, MCP tools and prompts, SignalR, Redis stream producers and consumers, media caching, speech transcription, and runtime client calls |
+| SmartHaus | Domain services, MCP tools and prompts, SignalR, Redis stream producers and consumers, media caching, and runtime client calls |
 | Agent Runtime | Tenant-scoped agent definitions, instructions, provider and model selection, delegation, sessions, overrides, credentials, and definition activation |
 | Signalizr | Signal account ownership, exact group resolution, durable inbound delivery, attachments, reactions, typing, polls, and outbound sends |
-| `CasCap.Comms` | Shared communications stream and Signal gateway pipeline |
+| `CasCap.Comms` | Shared communications stream and Signal gateway pipeline, including voice transcription and spoken replies |
 | `CasCap.Comms.AI` | Agent Runtime responder, session commands, delegation diagnostics, and poll-tool adaptation for the communications pipeline |
 
 Names such as `CommsAgent` and `SecurityAgent` are references to active remote definitions. Public
@@ -41,6 +41,7 @@ flowchart LR
     classDef local fill:#e0f2fe,stroke:#0369a1,color:#082f49
     classDef remote fill:#dcfce7,stroke:#15803d,color:#052e16
     classDef state fill:#fef3c7,stroke:#b45309,color:#451a03
+    classDef library fill:#ede9fe,stroke:#6d28d9,color:#2e1065
 
     subgraph Features["SmartHaus feature processes"]
         FEATURE_SINKS["Domain event sinks"]:::local
@@ -49,9 +50,9 @@ flowchart LR
 
     subgraph Backend["SmartHaus application process"]
         HUB["HausHub"]:::local
-        COMMS["CommunicationsBgService"]:::local
+        COMMS["CommunicationsBgService<br/>CasCap.Comms"]:::library
         MEDIA["MediaBgService"]:::local
-        STT["VoiceMessageTranscriptionService"]:::local
+        STT["VoiceMessageTranscriptionService<br/>CasCap.Comms"]:::library
     end
 
     SIGNALR_CLIENTS["SignalR clients"]:::remote
@@ -188,7 +189,8 @@ are sent straight to the chat group without an agent turn. Still images continue
 
 ## Voice Flow
 
-Voice attachments are normalized before an agent sees them:
+`CasCap.Comms` implements this flow inside the SmartHaus process; SmartHaus supplies only its
+configuration. Voice attachments are normalized before an agent sees them:
 
 1. `VoiceMessageTranscriptionService` downloads the selected attachment from Signalizr.
 2. It verifies the declared media type against the payload signature and enforces compressed,
@@ -418,7 +420,7 @@ Real camera identifiers belong only in private configuration.
 | `CasCap.Comms` | Redis stream and Signalizr communications pipeline |
 | `CasCap.Comms.AI` | Agent Runtime responder and communications-agent integration |
 | `CasCap.Signalizr.Client` | Durable Signalizr REST and gRPC client |
-| `CasCap.Api.Voice` | Voice normalization and speech client abstractions |
+| `CasCap.Api.Voice` | Voice normalization and speech client abstractions, referenced transitively through `CasCap.Comms` |
 | `CasCap.Api.Azure.Auth` | Certificate and token credential support |
 | `CasCap.Api.Azure.CognitiveServices` | Azure AI Speech adapter |
 | `CasCap.Api.Azure.Storage` | Azure Blob Storage integration |
