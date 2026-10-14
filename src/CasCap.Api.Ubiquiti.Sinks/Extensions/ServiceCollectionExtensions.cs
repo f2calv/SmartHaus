@@ -29,7 +29,7 @@ public static class UbiquitiSinksServiceCollectionExtensions
 
         var config = configuration.GetCasCapConfiguration<UbiquitiConfig>();
 
-        services.AddEventSinks<UbiquitiEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<UbiquitiEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(UbiquitiSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

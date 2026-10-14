@@ -15,7 +15,7 @@ public static class MieleSinksServiceCollectionExtensions
     {
         services.AddMiele(configuration, configure);
         var config = configuration.GetCasCapConfiguration<MieleConfig>();
-        services.AddEventSinks<MieleEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<MieleEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(MieleSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

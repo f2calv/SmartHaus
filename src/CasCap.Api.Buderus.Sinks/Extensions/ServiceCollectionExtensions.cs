@@ -25,7 +25,7 @@ public static class BuderusSinksServiceCollectionExtensions
         services.AddBuderus(configuration, lite, configure);
 
         var config = configuration.GetCasCapConfiguration<BuderusConfig>();
-        services.AddEventSinks<BuderusEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<BuderusEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(BuderusSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

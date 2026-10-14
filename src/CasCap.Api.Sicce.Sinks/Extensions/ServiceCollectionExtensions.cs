@@ -25,7 +25,7 @@ public static class SicceSinksServiceCollectionExtensions
         services.AddSicce(configuration, lite, configure);
 
         var config = configuration.GetCasCapConfiguration<SicceConfig>();
-        services.AddEventSinks<SicceEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<SicceEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(SicceSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

@@ -21,6 +21,7 @@ Host endpoint and application-bootstrap coverage lives in
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Verifies door lock summaries |
 | `CameraClipQueueTests` | 7 | 7 | CameraClips | Verifies privacy filtering, mappings, cooldown, and bounded admission |
 | `MediaBgServiceTests` | 1 | 3 | Media | Verifies stateless Agent Runtime requests for image, audio, and document events |
+| `LiteSinkRegistrationTests` | 1 | 9 | Sinks | Verifies lite (Comms) registration queries the live Redis sink, never the Azure Tables snapshot |
 
 ## Trait Categories
 
@@ -30,6 +31,7 @@ Host endpoint and application-bootstrap coverage lives in
 | `Knx` | KNX contact and door-lock summaries |
 | `CameraClips` | Camera event-to-clip admission and privacy policy |
 | `Media` | Media-event translation into remote Agent Runtime requests |
+| `Sinks` | Event-sink selection for lite registration |
 
 ## Skipped Tests
 

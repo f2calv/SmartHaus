@@ -25,7 +25,7 @@ public static class FroniusSinksServiceCollectionExtensions
         services.AddFronius(configuration, lite, configure);
 
         var config = configuration.GetCasCapConfiguration<FroniusConfig>();
-        services.AddEventSinks<FroniusEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<FroniusEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(FroniusSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

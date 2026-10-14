@@ -25,7 +25,7 @@ public static class ShellySinksServiceCollectionExtensions
         services.AddShelly(configuration, lite, configure);
 
         var config = configuration.GetCasCapConfiguration<ShellyConfig>();
-        services.AddEventSinks<ShellyEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<ShellyEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(ShellySinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }
