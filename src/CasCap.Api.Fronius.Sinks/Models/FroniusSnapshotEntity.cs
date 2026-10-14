@@ -14,7 +14,7 @@ public sealed class FroniusSnapshotEntity : ITableEntity
         PartitionKey = partitionKey;
         RowKey = rowKey;
 
-        SOC = Math.Round(evt.SOC, 1);
+        SOC = Math.Round(evt.SOC, 3);
         P_Akku = Math.Round(evt.P_Akku, 1);
         P_Grid = Math.Round(evt.P_Grid, 1);
         P_Load = Math.Round(evt.P_Load, 1);
