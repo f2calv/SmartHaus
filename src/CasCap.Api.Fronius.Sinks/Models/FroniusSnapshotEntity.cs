@@ -34,12 +34,12 @@ public sealed class FroniusSnapshotEntity : ITableEntity
     /// <inheritdoc />
     public ETag ETag { get; set; }
 
-    /// <summary>Battery state of charge (%).</summary>
-    [Description("Battery charge percentage")]
+    /// <summary>Battery state of charge as a 0–1 ratio.</summary>
+    [Description("Battery state of charge as a ratio from 0 to 1")]
     public double SOC { get; init; }
 
-    /// <summary>Battery power (W). Positive = charging, negative = discharging.</summary>
-    [Description("Battery charge remaining")]
+    /// <summary>Battery power (W). Positive = discharging, negative = charging.</summary>
+    [Description("Battery power in watts: positive means discharging, negative means charging")]
     public double P_Akku { get; init; }
 
     /// <summary>Grid power (W). Positive = consuming, negative = feeding.</summary>

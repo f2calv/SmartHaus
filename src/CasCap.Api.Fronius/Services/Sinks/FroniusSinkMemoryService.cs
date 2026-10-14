@@ -28,7 +28,7 @@ public sealed partial class FroniusSinkMemoryService(ILogger<FroniusSinkMemorySe
 
         return Task.FromResult(new InverterSnapshot
         {
-            StateOfCharge = _latest.SOC,
+            StateOfChargePercent = Math.Round(_latest.SOC * 100, 1),
             BatteryPower = _latest.P_Akku,
             GridPower = _latest.P_Grid,
             LoadPower = _latest.P_Load,

@@ -52,5 +52,12 @@ public sealed partial class InverterMcpQueryService(IFroniusQueryService fronius
     /// <inheritdoc cref="IFroniusQueryService.GetInverterSnapshot"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("High-level snapshot — home consumption, grid feed/draw, solar production and battery percentage in one call.")]
-    public Task<InverterSnapshot> GetInverterSnapshot() => froniusQuerySvc.GetInverterSnapshot();
+    public async Task<InverterSnapshot> GetInverterSnapshot()
+    {
+        var snapshot = await froniusQuerySvc.GetInverterSnapshot();
+        //An empty snapshot is all zeros, which a model would otherwise report as real readings.
+        return snapshot.ReadingUtc is null
+            ? throw new ModelContextProtocol.McpException("No inverter reading is available yet.")
+            : snapshot;
+    }
 }

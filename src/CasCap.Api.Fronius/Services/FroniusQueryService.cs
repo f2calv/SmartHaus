@@ -10,7 +10,8 @@ namespace CasCap.Services;
 public sealed class FroniusQueryService(
     ILogger<FroniusQueryService> logger,
     FroniusClientService clientSvc,
-    IFroniusQuery froniusQuery) : IFroniusQueryService
+    IFroniusQuery froniusQuery,
+    TimeProvider timeProvider) : IFroniusQueryService
 {
     /// <summary>
     /// Fronius Symo solar inverter raw power flow inverter object retrieval.
@@ -82,7 +83,10 @@ public sealed class FroniusQueryService(
     /// </summary>
     public async Task<InverterSnapshot> GetInverterSnapshot()
     {
-        return await froniusQuery.GetSnapshot();
+        var snapshot = await froniusQuery.GetSnapshot();
+        return snapshot.ReadingUtc is { } readingUtc
+            ? snapshot with { ReadingAgeSeconds = Math.Round((timeProvider.GetUtcNow() - readingUtc).TotalSeconds, 1) }
+            : snapshot;
     }
 
     /// <summary>
