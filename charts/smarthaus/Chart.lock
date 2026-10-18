@@ -4,42 +4,42 @@ dependencies:
   version: 0.1.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
+  version: 1.5.0
 - name: workload
   repository: oci://ghcr.io/f2calv/charts
-  version: 1.1.0
-digest: sha256:e1d1712822674fd20ee7b094500816607716791f3a79c95fb23512dfc62af04d
-generated: "2026-10-09T19:49:20.1658587+02:00"
+  version: 1.5.0
+digest: sha256:5634deeae7db5b5b9a04b9c21e5c8fdcbc9e29e4ec539cc41cee1b7b73888674
+generated: "2026-10-18T19:51:56.8070619+02:00"
