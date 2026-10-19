@@ -1,20 +1,8 @@
 ---
+name: new-feature-library
 description: Create a new Feature library (+ Sinks library) for the KNX smart home application following all established conventions.
-mode: agent
-tools:
-  - read_file
-  - replace_string_in_file
-  - multi_replace_string_in_file
-  - create_file
-  - file_search
-  - grep_search
-  - semantic_search
-  - list_dir
-  - run_in_terminal
-  - get_errors
-  - vscode_askQuestions
+disable-model-invocation: true
 ---
-
 # New Feature Library
 
 Create a new Feature integration library pair for the KNX smart home application.
