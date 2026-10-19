@@ -258,8 +258,11 @@ function Sync-AppSettingsToConfigMap {
     }
 
     $OriginalTargetBytes = [IO.File]::ReadAllBytes($ResolvedTargetPath)
+    #A carriage return cannot appear in a YAML literal block, so yq would fall back to an escaped string.
+    $NormalizedSourcePath = [IO.Path]::GetTempFileName()
     try {
-        $env:APPSETTINGS_CONFIGMAP_SOURCE_PATH = $ResolvedSourcePath
+        [IO.File]::WriteAllText($NormalizedSourcePath, ($SourceContent -replace "`r`n", "`n"))
+        $env:APPSETTINGS_CONFIGMAP_SOURCE_PATH = $NormalizedSourcePath
         $WriteExpression = "$DataExpression = load_str(strenv(APPSETTINGS_CONFIGMAP_SOURCE_PATH)) | $DataExpression style=`"literal`""
         & $Yq.Source -i $WriteExpression $ResolvedTargetPath
         if ($LASTEXITCODE -ne 0) {
@@ -282,6 +285,7 @@ function Sync-AppSettingsToConfigMap {
     }
     finally {
         Remove-Item Env:APPSETTINGS_CONFIGMAP_SOURCE_PATH -ErrorAction SilentlyContinue
+        Remove-Item -LiteralPath $NormalizedSourcePath -ErrorAction SilentlyContinue
     }
 
     Write-Host "Synchronized appsettings configuration into $RelativeTargetPath."
