@@ -1,3 +1,5 @@
+using ModelContextProtocol;
+
 namespace CasCap.Services;
 
 /// <summary>
@@ -20,6 +22,10 @@ public sealed partial class BusSystemMcpQueryService(
         bool dryRun = false,
         CancellationToken cancellationToken = default)
     {
+        var groups = await knxQuerySvc.GetGroupAddressesGrouped(GroupAddressFilter.None, cancellationToken);
+        if (ValidateShutterTarget(groups, request) is { } error)
+            throw new McpException(error);
+
         if (dryRun)
         {
             var validation = await knxQuerySvc.SetShutterState(request, dryRun: true, cancellationToken);
@@ -34,6 +40,37 @@ public sealed partial class BusSystemMcpQueryService(
         await knxQuerySvc.MoveShutter(request with { Slats = request.VPosition is null ? request.Slats : null }, cancellationToken);
         KnxShutterTarget target = new() { GroupName = request.GroupName, Position = request.VPosition, Slats = request.Slats };
         return Track($"Moving {request.GroupName}", [target], "Movement started for 1 shutter");
+    }
+
+    /// <summary>
+    /// Returns an error when the request names no blind with the commands it needs, so a group that
+    /// moves several blinds at once is rejected instead of reporting a movement that never starts.
+    /// </summary>
+    internal static string? ValidateShutterTarget(IEnumerable<KnxGroupAddressGroup> groups, KnxShutterStateChangeRequest request)
+    {
+        var blinds = groups.Where(g => g.Category == GroupAddressCategory.BL).ToList();
+        var group = blinds.Find(g => g.GroupName == request.GroupName);
+        string[] required = [.. new[] {
+            request.VPosition is null ? null : nameof(ShutterFunction.POS),
+            request.Slats is null ? null : nameof(ShutterFunction.POSSLATS),
+        }.OfType<string>()];
+        var missing = group is null
+            ? required
+            : [.. required.Where(f => !group.Children.Any(c => c.Function == f))];
+        if (missing.Length == 0)
+            return null;
+
+        var individual = blinds
+            .Where(g => g.GroupName.StartsWith(request.GroupName + "-", StringComparison.Ordinal)
+                && required.All(f => g.Children.Any(c => c.Function == f)))
+            .Select(g => g.GroupName)
+            .ToList();
+        var reason = group is null
+            ? $"'{request.GroupName}' is not a known blind."
+            : $"'{request.GroupName}' has no {string.Join(" or ", missing)} address, so it cannot be moved to a position.";
+        return individual.Count > 0
+            ? $"{reason} Move each blind separately: {string.Join(", ", individual)}."
+            : $"{reason} Use get_house_shutter_states to find blinds with position control.";
     }
 
     /// <inheritdoc cref="IKnxQueryService.SetPowerOutletState"/>
