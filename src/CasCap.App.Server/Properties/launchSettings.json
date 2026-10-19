@@ -7,7 +7,7 @@
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
         //"CasCap__FeatureConfig__EnabledFeatures": "0",
-        "CasCap__FeatureConfig__EnabledFeatures": "Comms",
+        "CasCap__FeatureConfig__EnabledFeatures": "Comms"
         //"CasCap__FeatureConfig__EnabledFeatures": "Wiz,Comms"
         //"CasCap__FeatureConfig__EnabledFeatures": "SignalRHub",
         //"CasCap__FeatureConfig__EnabledFeatures": "Comms,Buderus,DoorBird,DDns,EdgeHardware,Fronius,Knx"
