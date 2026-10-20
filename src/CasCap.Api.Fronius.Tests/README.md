@@ -40,4 +40,4 @@ dotnet test --project src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.cspr
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

@@ -69,4 +69,4 @@ dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.cs
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

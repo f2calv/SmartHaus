@@ -553,3 +553,7 @@ Additional workflows:
 - [ ] Public API has XML documentation
 - [ ] Properties separated by blank lines
 - [ ] `ServiceProvider` instances are disposed in tests
+
+## License
+
+This project is released under the [MIT License](LICENSE).

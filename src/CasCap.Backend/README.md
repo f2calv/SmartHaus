@@ -459,4 +459,4 @@ orchestration, media, and configuration boundaries.
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE).
+This project is released under the [MIT License](../../LICENSE).

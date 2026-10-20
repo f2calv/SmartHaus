@@ -44,4 +44,4 @@ dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
