@@ -4,6 +4,18 @@ CasCap.Backend is SmartHaus's shared ASP.NET Core application library. It owns t
 communications and media orchestration, MCP tool implementations, and the application-side clients
 for Signalizr and the remote Agent Runtime.
 
+## Usage
+
+This source-only .NET 10 library is composed by the
+[server host](../CasCap.App.Server/README.md); it is not an independently runnable application or
+published NuGet package. Select `Comms` for Signal messaging/media processing or `SignalRHub` for
+event broadcasts, and configure only the features you intend to use.
+
+For communications, provide reachable Redis, Signalizr REST/gRPC and Agent Runtime endpoints,
+a matching chat group and active remote agent definition. The configuration examples below are
+fragments to merge with the host's base settings, not standalone settings files. Optional voice and
+camera clips need their configured speech/playback services and FFmpeg.
+
 ## Purpose
 
 The project provides four application-facing capabilities:
@@ -85,7 +97,7 @@ configuration changes.
 ### SignalR Hub
 
 `HausHub` is an `[Authorize]` hub mounted at `SignalRHubConfig.HubPath`. It implements
-`IHausServerHub` and broadcasts these events:
+[`IHausServerHub`](Abstractions/IHausServerHub.cs) and broadcasts these events:
 
 | Server method | Payload | Description |
 | --- | --- | --- |
@@ -96,7 +108,7 @@ configuration changes.
 | `SendMessage` | User, message, date | Text to all other clients |
 | `Broadcast` | Message | Text to every client, including the sender |
 
-After broadcasting, domain events are forwarded to the configured `IEventSink<HubEvent>`
+After broadcasting, domain events are forwarded to the configured [`IEventSink<HubEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs)
 implementations. Console and OpenTelemetry metric sinks are enabled by default.
 
 Feature projects provide the corresponding SignalR client sinks:
@@ -120,17 +132,17 @@ The server application exposes one stateless Streamable HTTP MCP endpoint at `Ap
 Tool implementations live under [Services/Mcp](Services/Mcp), MCP-only DTOs live under
 [Models/Mcp](Models/Mcp), and reusable prompt classes remain in [Models](Models).
 
-Feature registration adds the owning query service and then calls `WithToolsFromAssembly` for its
-assembly. The server does not maintain an agent session or execute a model when servicing an MCP
-request.
+`HausMcpServiceCollectionExtensions.GetToolSets` selects explicit tool/prompt types from enabled
+features; `AddHausMcp` registers them with `WithTools` and `WithPrompts`. The server does not scan
+the whole backend assembly, maintain an agent session or execute a model while serving MCP.
 
 | Service | Tools | Prompts | Domain |
 | --- | ---: | ---: | --- |
-| `BusSystemMcpQueryService` | 21 | 4 | Contacts, locks, shutters, HVAC, outlets, rooms, floors, and diagnostics |
-| `HeatPumpMcpQueryService` | 2 | 4 | Heat-pump state and writable data points |
-| `InverterMcpQueryService` | 7 | 5 | Solar production, power flow, meters, and battery state |
-| `FrontDoorMcpQueryService` | 8 | 5 | Door state, images, history, access, night vision, and stream URL |
-| `AppliancesMcpQueryService` | 9 | 5 | Appliance state, actions, and programs |
+| `BusSystemMcpQueryService` | 21 | 5 | Contacts, locks, shutters, HVAC, outlets, rooms, floors, and diagnostics |
+| `HeatPumpMcpQueryService` | 2 | 5 | Heat-pump state and writable data points |
+| `InverterMcpQueryService` | 7 | 6 | Solar production, power flow, meters, and battery state |
+| `FrontDoorMcpQueryService` | 8 | 6 | Door state, images, history, access, night vision, and stream URL |
+| `AppliancesMcpQueryService` | 9 | 6 | Appliance state, actions, and programs |
 | `EdgeHardwareMcpQueryService` | 1 | 0 | Edge CPU and GPU snapshots |
 | `IpCameraMcpQueryService` | 1 | 0 | Camera event status |
 | `AquariumMcpQueryService` | 2 | 0 | Aquarium pump state and control |
@@ -153,7 +165,7 @@ It combines two input paths:
    monitor group, and events listed in `CommsConfig.DirectDeliverySources` bypass the agent and go
    directly to the chat group.
 4. Other events and user messages are sent to `CommsConfig.AgentName` through
-   `IAgentRuntimeClient`.
+   [`IAgentRuntimeClient`](https://github.com/f2calv/agentizr/blob/13aa4a19180b9dbd0f14fa08fbf95f67039b69f0/src/CasCap.AgentRuntime.Client/Abstractions/IAgentRuntimeClient.cs).
 5. The response is delivered through Signalizr with the configured reaction, typing, poll, and
    diagnostic behaviour.
 
@@ -197,10 +209,10 @@ configuration. Voice attachments are normalized before an agent sees them:
    decoded, and duration limits.
 3. Non-WAV input is piped through FFmpeg to 16 kHz mono signed 16-bit PCM WAV without a temporary
    file.
-4. The configured `ISpeechToTextClient` transcribes the normalized audio.
+4. The configured [`ISpeechToTextClient`](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Abstractions/SpeechToText/ISpeechToTextClient.cs) transcribes the normalized audio.
 5. Only the transcript is sent to the remote agent. Raw audio is never included in the agent turn.
 6. When spoken replies are enabled and the inbound message was voice, the configured
-  `ITextToSpeechClient` synthesizes the agent's text response for Signalizr delivery.
+  [`ITextToSpeechClient`](https://github.com/dotnet/extensions/blob/main/src/Libraries/Microsoft.Extensions.AI.Abstractions/TextToSpeech/ITextToSpeechClient.cs) synthesizes the agent's text response for Signalizr delivery.
 
 ```mermaid
 sequenceDiagram
@@ -237,16 +249,16 @@ Three `ISpeechToTextClient` implementations are available:
 | `Azure` | `AzureSpeechToTextClient` | Azure AI Speech fast transcription using the ambient token credential |
 
 The two whisper adapters are separate because their routes, multipart names, and options differ.
-Both keep audio on the local network. Azure minimizes latency but sends audio to the configured
-Azure resource.
+The whisper endpoints can be self-hosted; audio goes to whatever endpoint the caller configures.
+Azure sends audio to the configured Azure resource. No provider latency comparison is implied.
 
 Spoken replies use `TextToSpeechConfig`. `Disabled` keeps every reply text-only, while enabled mode
 synthesizes only replies to inbound voice messages. `AzureSpeech`, `AzureOpenAi`, and `Piper`
 providers are available; their provider-specific endpoints and voices are read only when selected.
 
-## Configuration
+## Configuration Examples
 
-### Configuration Examples
+### Local endpoints
 
 Minimal local configuration uses unauthenticated local Agent Runtime and Signalizr endpoints:
 
@@ -334,13 +346,16 @@ settings SmartHaus commonly overrides:
 | `CasCap:CommsConfig:DirectDeliverySources` | Empty | Event sources sent directly to the chat group without an agent turn |
 | `CasCap:CommsConfig:EchoTranscriptToDebugChat` | `false` | Echoes successful transcripts to the monitor group |
 | `CasCap:CommsConfig:DelegationMessagesEnabled` | `true` | Sends delegation status as a separate message |
-| `CasCap:CommsConfig:AgentName` | Required by deployment | Remote agent definition name |
-| `CasCap:CommsConfig:AgentSessionId` | Required by deployment | Stable session identifier for the group conversation |
+| `CasCap:CommsConfig:AgentName` | `"CommsAgent"` | Remote agent definition name |
+| `CasCap:CommsConfig:AgentSessionId` | `"primary-group"` | Stable session identifier for the group conversation |
+| `CasCap:CommsConfig:MonitorContentEnabled` | `false` | Opt-in prompt/transcript content in operator diagnostics; content can belong to other users |
 | `CasCap:SignalizrClientConfig:BaseAddress` | `http://localhost:8090` | Signalizr REST endpoint |
 | `CasCap:SignalizrClientConfig:GrpcAddress` | `http://localhost:5001` | Signalizr gRPC endpoint |
 | `CasCap:SignalizrClientConfig:SubscriberName` | `smarthaus-comms` | Durable inbound cursor identity |
 
 Group names must exactly match Signalizr's `GET /api/v1/groups` output, including case and spaces.
+Keep monitor-content diagnostics disabled except during a deliberate operator-controlled debugging
+session; a monitor group is not a general-purpose log destination.
 
 ### Media and Camera Clips
 
@@ -453,7 +468,12 @@ Build from the repository's Debug solution so adjacent source dependencies are u
 dotnet build SmartHaus.Debug.slnx --configuration Debug
 ```
 
-The backend tests live in `src/CasCap.Backend.Tests`. Generic Agent Runtime protocol, provider and
+The current backend project defines Agent Runtime contracts and `CasCap.Comms.AI` references only
+for Debug. Release lacks equivalent package references, so a clean Release/source-container build
+is not established by these instructions. No build or integration execution was performed for
+this documentation update.
+
+The backend tests live in [CasCap.Backend.Tests](../CasCap.Backend.Tests/README.md). Generic Agent Runtime protocol, provider and
 agent-evaluation coverage belongs to agentizr; SmartHaus tests cover its domain tools,
 orchestration, media, and configuration boundaries.
 

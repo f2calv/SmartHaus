@@ -17,9 +17,9 @@ Each file under `dashboards/` becomes a ConfigMap named `grafana-dashboard-<file
 `grafana_dashboard: "1"` label, and the datasource UID is substituted into the JSON. Grafana must
 run the dashboard sidecar with `folderAnnotation: grafana_folder` for the folder to apply.
 
-The Fronius dashboard keeps its established identity: its ConfigMap is named
-`grafana-dashboard-fronius-solar-cm` with the data key `grafana-dashboard-fronius-solar.json`, so
-upgrading from an earlier install replaces it in place rather than creating a duplicate.
+The Fronius dashboard uses ConfigMap `grafana-dashboard-fronius-solar-cm` with data key
+`grafana-dashboard-fronius-solar.json`. Keep one chart release responsible for each dashboard UID
+to avoid duplicates in Grafana.
 
 ### Default Values
 

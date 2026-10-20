@@ -4,25 +4,51 @@ Integration tests for the Miele appliance library ([CasCap.Api.Miele](../CasCap.
 
 ## Purpose
 
-These tests verify that the OAuth 2.0 token flow works correctly and that the Miele Cloud API endpoints return well-formed appliance data.
+These tests query the Miele Cloud API using a caller-supplied OAuth token. They do not implement
+token acquisition or renewal, and all seven cases are currently statically skipped.
 
-### Test classes
+## Tests
 
-| Class | Description |
-| --- | --- |
-| `MieleClientServiceTests` | Integration tests for `GetDevices`, `GetDevice`, `GetState`, `GetActions`, and `GetPrograms` endpoints |
+| Class | Methods | Expanded cases | Categories |
+| --- | ---: | ---: | --- |
+| `MieleClientServiceTests` | 7 | 7 | `Integration` |
+
+Counts describe source declarations, not a successful live run.
+
+## Skipped Tests
+
+| Reason | Cases |
+| --- | ---: |
+| Requires a valid OAuth token | 2 |
+| Requires a valid OAuth token and device ID | 5 |
+
+Supplying credentials does not remove these explicit `[Fact(Skip = ...)]` attributes.
+
+## Test Layout
+
+```text
+CasCap.Api.Miele.Tests/
+├── MieleClientServiceTests.cs
+└── TestBase.cs
+```
+
+Tests currently live at the project root rather than under `Tests/`.
 
 ## Prerequisites
 
 - A Miele account with at least one registered appliance.
-- `appsettings.json` with `AppConfig`, `ConnectionStrings`, and `CasCap:MieleConfig` sections including a valid OAuth client ID and secret.
-- `appsettings.Development.json` (optional) with OAuth credentials.
+- Standard configuration with `CasCap:MieleConfig:OAuthToken` and the required sink options.
+- Credentials supplied by local/user-secret/environment providers, never tracked JSON.
+- `TestBase` loads standard configuration and optional Key Vault through `AzureAuthConfig`.
 
 ## Running the tests
 
 ```bash
 dotnet test --project src/CasCap.Api.Miele.Tests/CasCap.Api.Miele.Tests.csproj
 ```
+
+Run from the repository root with .NET 10, xUnit v3 and Microsoft.Testing.Platform. The command
+discovers skipped cases; it is not evidence of cloud connectivity.
 
 ## Dependencies
 

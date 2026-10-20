@@ -1,51 +1,25 @@
-# SmartHaus — IoT & Agentic Smart Home on the Edge
+# SmartHaus
 
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=f2calv_SmartHaus&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=f2calv_SmartHaus)
+SmartHaus is an open-source .NET 10 smart-home and IoT application for edge hosts. It connects
+heating, solar, KNX building automation, cameras, lighting and appliance APIs to event sinks,
+versioned HTTP endpoints and Model Context Protocol (MCP) tools for AI agents.
 
-[cascap.api.buderus-badge]: https://img.shields.io/nuget/v/CasCap.Api.Buderus?color=blue
-[cascap.api.buderus-url]: https://nuget.org/packages/CasCap.Api.Buderus
-[cascap.api.buderus.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Buderus.Sinks?color=blue
-[cascap.api.buderus.sinks-url]: https://nuget.org/packages/CasCap.Api.Buderus.Sinks
-[cascap.api.doorbird-badge]: https://img.shields.io/nuget/v/CasCap.Api.DoorBird?color=blue
-[cascap.api.doorbird-url]: https://nuget.org/packages/CasCap.Api.DoorBird
-[cascap.api.doorbird.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.DoorBird.Sinks?color=blue
-[cascap.api.doorbird.sinks-url]: https://nuget.org/packages/CasCap.Api.DoorBird.Sinks
-[cascap.api.fronius-badge]: https://img.shields.io/nuget/v/CasCap.Api.Fronius?color=blue
-[cascap.api.fronius-url]: https://nuget.org/packages/CasCap.Api.Fronius
-[cascap.api.fronius.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Fronius.Sinks?color=blue
-[cascap.api.fronius.sinks-url]: https://nuget.org/packages/CasCap.Api.Fronius.Sinks
-[cascap.api.knx-badge]: https://img.shields.io/nuget/v/CasCap.Api.Knx?color=blue
-[cascap.api.knx-url]: https://nuget.org/packages/CasCap.Api.Knx
-[cascap.api.knx.sinks-badge]: https://img.shields.io/nuget/v/CasCap.Api.Knx.Sinks?color=blue
-[cascap.api.knx.sinks-url]: https://nuget.org/packages/CasCap.Api.Knx.Sinks
-[cascap.api.voice-badge]: https://img.shields.io/nuget/v/CasCap.Api.Voice?color=blue
-[cascap.api.voice-url]: https://nuget.org/packages/CasCap.Api.Voice
+[![SonarQube Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=f2calv_SmartHaus&metric=alert_status)](https://sonarcloud.io/dashboard?id=f2calv_SmartHaus)
 
-> **Early proof-of-concept / first public release.** This project is under active development — expect rough edges, breaking changes, and missing documentation. Bugs are expected and the project is **fully unsupported**. Contributions and feedback are welcome, but please set expectations accordingly.
->
-> I started this IoT/home automation project in 2022 and for four years struggled to find the time to get it over the line. In the last two months I switched to agentic development using [GitHub Copilot](https://github.com/features/copilot) — and this is the end result!
+The application is an early proof of concept: interfaces may change and it is unsupported.
+The standalone device libraries can also be used without running SmartHaus.
 
-An open-source, [.NET 10](https://dotnet.microsoft.com/en-us/download/dotnet/10.0) IoT smart-home platform designed to run on the edge — from a Raspberry Pi to a full GPU-accelerated workstation. SmartHaus connects real-world devices (solar inverters, heating systems, lighting, security cameras, smart plugs, and more) into a single, event-driven application with AI-powered decision-making via the [Microsoft Agent Framework](https://github.com/microsoft/agents) and [Model Context Protocol (MCP)](https://modelcontextprotocol.io/).
-
-![SmartHaus — Signal messenger conversation showing the CommsAgent orchestrating HeatingAgent, EnergyAgent, and SecurityAgent to provide a home status summary](docs/SmartHaus.png)
-
-## Highlights
-
-- **Edge-first architecture** — runs on ARM64 (Raspberry Pi 4/5), x64, and ARM via a cross-architecture container image published to [GitHub Container Registry](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus)
-- **Agentic AI** — 12+ [MCP](https://modelcontextprotocol.io/introduction) tool services expose device telemetry, control, and automation to LLM agents. Domain-specific agents (CommsAgent, SecurityAgent, HeatingAgent) orchestrate decisions autonomously through the remote Agent Runtime — see the [CasCap.Backend README](src/CasCap.Backend/README.md) for the MCP tool registry and Signal messenger integration
-- **Voice messages** — send a Signal voice note and it is transcoded, transcribed and answered as ordinary text. The speech-to-text backend is pluggable through one configuration value: a self-hosted [whisper-asr](https://github.com/ahmetoner/whisper-asr-webservice) service, a [whisper.cpp](https://github.com/ggml-org/whisper.cpp) server with optional GPU offload, or [Azure AI Speech](https://learn.microsoft.com/en-us/azure/ai-services/speech-service/) fast transcription — see the [provider comparison](src/CasCap.Backend/README.md#speech-to-text-providers)
-- **Feature-flag driven** — enable only the integrations you need; each feature is an independent module with its own data pipeline, sinks, and [MCP tools](https://modelcontextprotocol.io/specification/2025-03-26/server/tools)
-- **Azure cloud integration** — optional [Azure Table Storage](https://learn.microsoft.com/en-us/azure/storage/tables/) and [Azure Blob Storage](https://learn.microsoft.com/en-us/azure/storage/blobs/) sinks for telemetry persistence, with local [Azurite](https://learn.microsoft.com/en-us/azure/storage/common/storage-use-azurite) emulation for development
-- **Azure Key Vault** — optional [Azure Key Vault](https://learn.microsoft.com/en-us/azure/key-vault/) integration for secrets management (disabled via `KeyVaultName=skip` for local development)
-- **Standalone NuGet client libraries** — device-specific API libraries (Fronius, Buderus, KNX, DoorBird, and more) are designed to be 100% standalone and published as individual [NuGet](https://www.nuget.org/) packages — use them independently of SmartHaus in your own projects. *Some libraries are not yet published and require further work before release.*
-- **Real-time event streaming** — [SignalR](https://learn.microsoft.com/en-us/aspnet/core/signalr/) hub, [Redis Streams](https://redis.io/docs/latest/develop/data-types/streams/), and [OpenTelemetry](https://opentelemetry.io/) metrics for observability
-- **Kubernetes-ready** — deployment through [Helm](https://helm.sh/), with image and chart publishing through [GitHub Actions](https://github.com/features/actions). The [`smarthaus` umbrella](charts/smarthaus/README.md) consumes the public [universal `workload` chart](https://github.com/f2calv/helm-charts/tree/main/charts/workload), using sensible framework-neutral defaults for each feature pod instead of duplicating a large chart per service
+![SmartHaus Signal conversation showing domain agents answering a home-status request](docs/SmartHaus.png)
 
 ## Quick Start
 
-Clone the repo and run the device/API demo — no external hardware or Azure subscription required.
+With Docker and Compose installed:
 
-**Prerequisite:** [Docker](https://docs.docker.com/get-docker/).
+Current source limitation: the backend's Agent Runtime contracts and communications integration
+have Debug project references without corresponding Release package references. A clean Release
+build, including the source-built demo below, may therefore fail before startup. The Debug
+source-dependency path in [Development](#development) is the available alternative; this README
+does not report an executed demo.
 
 ```bash
 git clone https://github.com/f2calv/SmartHaus.git
@@ -53,507 +27,161 @@ cd SmartHaus
 docker compose --profile demo up --build
 ```
 
-This builds the application from source and launches **EdgeHardware** (CPU/GPU telemetry monitoring),
-**Ubiquiti** (webhook-based camera events), and **Comms** (Signal messaging pipeline) with local
-Redis, Azurite and OpenTelemetry infrastructure. Device/API flows are self-contained. Comms requires
-separately running Agent Runtime and Signalizr services, defaulting to host ports 5090, 8090 and 5001.
-Override `AGENTRUNTIME_BASE_ADDRESS`, `SIGNALIZR_BASE_ADDRESS` or `SIGNALIZR_GRPC_ADDRESS` as needed.
-The Agent Runtime repository provides selectable local-provider profiles.
+The demo builds the server and starts Redis, Azurite and OpenTelemetry infrastructure with
+`EdgeHardware,Ubiquiti,Comms` enabled. Device/API exploration does not require a physical device or
+Azure subscription; available CPU/GPU readings depend on the host and container access.
+The communications feature additionally requires separately configured Agent Runtime and Signalizr
+services. It is not a self-contained AI or messaging demo.
 
-Then explore:
+- [Swagger UI](http://localhost:8080/swagger) lists available HTTP endpoints.
+- [System metadata](http://localhost:8080/api/system) identifies the running application.
+- [Redis UI](http://localhost:7843) lets you inspect local event state.
+- [REST Client requests](requests/README.md) include synthetic Ubiquiti webhook examples.
 
-- **Swagger UI** — <http://localhost:8080/swagger>
-- **EdgeHardware snapshot** — `curl http://localhost:8080/api/v1.0/edgehardware`
-- **Ubiquiti test event** — `curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"`
-- **Redis UI** — <http://localhost:7843>
+For example, with the demo running, submit one synthetic camera event:
 
-See the [Docker Compose](#docker-compose) section below for full details, including Signal messaging setup.
+```bash
+curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=ExampleCamera&score=0.95"
+```
 
-## Features
+The callback returns `ok` and dispatches the event to configured sinks. It does not imply that an
+agent or Signal recipient is configured.
 
-Defined as constants in [`FeatureNames`](src/CasCap.Backend/Models/FeatureNames.cs), validated at startup by [`FeatureConfig.GetEnabledFeatures()`](src/CasCap.App/Models/_FeatureConfig.cs).
+## Projects
 
-| Name | Description |
-| --- | --- |
-| [`Buderus`](src/CasCap.Api.Buderus/README.md) | Buderus heating system integration |
-| [`Comms`](src/CasCap.Backend/README.md) | Single-instance communications service that consumes a Redis Stream of key events and forwards agent-processed decisions |
-| [`DDns`](src/CasCap.Api.DDns/README.md) | Dynamic DNS service |
-| [`DoorBird`](src/CasCap.Api.DoorBird/README.md) | DoorBird video doorbell integration |
-| [`EdgeHardware`](src/CasCap.Api.EdgeHardware/README.md) | Edge hardware monitoring — GPU telemetry via `nvidia-smi`, CPU temperature, and Raspberry Pi GPIO sensors. CPU monitoring is always enabled; GPU is auto-detected via ILGPU at startup |
-| [`Fronius`](src/CasCap.Api.Fronius/README.md) | Fronius solar inverter integration |
-| [`Knx`](src/CasCap.Api.Knx/README.md) | KNX home automation integration |
-| [`Miele`](src/CasCap.Api.Miele/README.md) | Miele appliance integration |
-| [`Shelly`](src/CasCap.Api.Shelly/README.md) | Shelly smart plug integration |
-| [`Sicce`](src/CasCap.Api.Sicce/README.md) | Sicce aquarium pump integration |
-| [`SignalRHub`](src/CasCap.Backend/README.md) | Consolidated SignalR hub server, providing a single real-time event endpoint for all features. Can run as a standalone pod for separation of responsibility |
-| [`Ubiquiti`](src/CasCap.Api.Ubiquiti/README.md) | Ubiquiti network device integration |
-| [`Wiz`](src/CasCap.Api.Wiz/README.md) | Wiz smart lighting integration |
+The eight package listings below are published on NuGet; their source targets .NET 8 and .NET 10.
+Other application libraries are source-only and target .NET 10. Each integration README describes
+its own device, cloud authentication and configuration requirements.
 
-Features are configured via `CasCap:FeatureConfig:EnabledFeatures` as a comma-separated string (e.g. `Knx,Fronius,DoorBird`).
-
-Multiple application deployment targets;
-
-- **`CasCap.App.Server`** — Containerized backend services for Kubernetes, runnable locally during development. Visual Studio users should set this as the startup project to run the backend.
-- **`CasCap.App.Console`** — Interactive client for tenant-scoped agents hosted by the remote Agent Runtime. Visual Studio users can launch it to test the same versioned definitions, tools and session behavior used by deployed SmartHaus workloads.
-
-## Agentic AI Architecture
-
-SmartHaus uses tenant-scoped definitions hosted by the remote Agent Runtime. A central **CommsAgent**
-orchestrates domain-specific sub-agents over SmartHaus [MCP](https://modelcontextprotocol.io/) tools.
-Users interact through [Signal Messenger](https://signal.org/) without a custom mobile application.
-
-> For detailed configuration, Redis Stream settings, and implementation specifics, see the [CasCap.Backend README](src/CasCap.Backend/README.md).
-
-Early SmartHaus versions used Ollama; the project switched to llama.cpp for its more open ecosystem
-and superior inference performance.
-
-### Agents
-
-| Agent | Role | MCP Tools |
-| --- | --- | --- |
-| **CommsAgent** | Gateway orchestrator — routes user messages and system events to sub-agents, relays responses to Signal | 8 direct + 100 via delegation |
-| **SecurityAgent** | Front door intercom, IP cameras, door lighting | 17 |
-| **HeatingAgent** | Heat pump control, KNX heating zones | 11 |
-| **EnergyAgent** | Solar inverter telemetry and battery status | 13 |
-| **HomeControlAgent** | Shutters, outlets, rooms, floors, all lighting | 37 |
-| **InfraAgent** | Edge hardware monitoring (CPU/GPU metrics) | 7 |
-| **AppliancesAgent** | Miele appliance control (disabled — planned) | 15 |
-
-The [public instruction examples](docs/agent-examples/README.md) illustrate the orchestrator and one
-domain specialist. Active versioned definitions remain authoritative in agentizr.
-
-### MCP Tool Services
-
-[MCP](https://modelcontextprotocol.io/specification/2025-03-26/server/tools) query services expose 70+ tools and 25 prompts to AI agents, conditionally registered based on enabled features.
-
-The [MCP source reference](src/CasCap.Backend/README.md#mcp-server-surface) links the
-`*McpPrompts` classes, `HausMcpServiceCollectionExtensions` and dedicated MCP response DTOs.
-The [Signal group configuration](src/CasCap.Backend/README.md#commsconfig-cascapcommsconfig)
-defines `GroupName` and `MonitorGroupName` for messaging.
-
-Date/time and agent/provider metadata are runtime-owned built-ins supplied by the remote Agent Runtime,
-not SmartHaus MCP services.
-
-| Service | Tools | Prompts | Domain |
+| Integration | Client and usage | Optional storage sinks | Published packages |
 | --- | --- | --- | --- |
-| [`BusSystemMcpQueryService`](src/CasCap.Backend/Services/Mcp/BusSystemMcpQueryService.cs) | 21 | 5 | Door/window contacts, door locks, shutters, HVAC, power outlets, diagnostics |
-| [`HeatPumpMcpQueryService`](src/CasCap.Backend/Services/Mcp/HeatPumpMcpQueryService.cs) | 2 | 5 | Heat pump state and control |
-| [`InverterMcpQueryService`](src/CasCap.Backend/Services/Mcp/InverterMcpQueryService.cs) | 7 | 5 | Solar inverter readings |
-| [`FrontDoorMcpQueryService`](src/CasCap.Backend/Services/Mcp/FrontDoorMcpQueryService.cs) | 8 | 5 | DoorBird intercom — photos, video, unlock |
-| [`AppliancesMcpQueryService`](src/CasCap.Backend/Services/Mcp/AppliancesMcpQueryService.cs) | 9 | 5 | Miele appliance management |
-| [`EdgeHardwareMcpQueryService`](src/CasCap.Backend/Services/Mcp/EdgeHardwareMcpQueryService.cs) | 1 | — | GPU/CPU telemetry snapshots |
-| [`IpCameraMcpQueryService`](src/CasCap.Backend/Services/Mcp/IpCameraMcpQueryService.cs) | 1 | — | UniFi Protect event status |
-| [`AquariumMcpQueryService`](src/CasCap.Backend/Services/Mcp/AquariumMcpQueryService.cs) | 2 | — | Sicce water pump control |
-| [`SmartPlugMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartPlugMcpQueryService.cs) | 3 | — | Shelly smart plug control |
-| [`SmartLightingMcpQueryService`](src/CasCap.Backend/Services/Mcp/SmartLightingMcpQueryService.cs) | 15 | — | KNX ceiling/wall lights and Wiz smart bulbs |
-| [`MessagingMcpQueryService`](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms.AI/Services/MessagingMcpQueryService.cs) | 3 | — | Signal messaging polls |
+| Buderus KM200 heating | [Client](src/CasCap.Api.Buderus/README.md) | [Redis, Azure Tables](src/CasCap.Api.Buderus.Sinks/README.md) | [Client](https://www.nuget.org/packages/CasCap.Api.Buderus), [sinks](https://www.nuget.org/packages/CasCap.Api.Buderus.Sinks) |
+| DoorBird door stations | [Client](src/CasCap.Api.DoorBird/README.md) | [Redis, Azure Tables, Blob](src/CasCap.Api.DoorBird.Sinks/README.md) | [Client](https://www.nuget.org/packages/CasCap.Api.DoorBird), [sinks](https://www.nuget.org/packages/CasCap.Api.DoorBird.Sinks) |
+| Fronius solar inverters | [Client](src/CasCap.Api.Fronius/README.md) | [Redis, Azure Tables](src/CasCap.Api.Fronius.Sinks/README.md) | [Client](https://www.nuget.org/packages/CasCap.Api.Fronius), [sinks](https://www.nuget.org/packages/CasCap.Api.Fronius.Sinks) |
+| KNX building automation | [Client](src/CasCap.Api.Knx/README.md) | [Redis, Azure Tables, raw CEMI](src/CasCap.Api.Knx.Sinks/README.md) | [Client](https://www.nuget.org/packages/CasCap.Api.Knx), [sinks](https://www.nuget.org/packages/CasCap.Api.Knx.Sinks) |
+| Edge CPU/GPU and GPIO | [Library](src/CasCap.Api.EdgeHardware/README.md) | [Redis, Azure Tables](src/CasCap.Api.EdgeHardware.Sinks/README.md) | Source only |
+| Miele appliances | [Library](src/CasCap.Api.Miele/README.md) | [Redis, Azure Tables](src/CasCap.Api.Miele.Sinks/README.md) | Source only |
+| Shelly smart plugs | [Library](src/CasCap.Api.Shelly/README.md) | [Redis, Azure Tables](src/CasCap.Api.Shelly.Sinks/README.md) | Source only |
+| Sicce water pumps | [Library](src/CasCap.Api.Sicce/README.md) | [Redis, Azure Tables](src/CasCap.Api.Sicce.Sinks/README.md) | Source only |
+| UniFi Protect webhooks | [Library](src/CasCap.Api.Ubiquiti/README.md) | [Redis, Azure Tables](src/CasCap.Api.Ubiquiti.Sinks/README.md) | Source only |
+| WiZ lighting | [Library](src/CasCap.Api.Wiz/README.md) | [Redis, Azure Tables](src/CasCap.Api.Wiz.Sinks/README.md) | Source only |
+| Azure Dynamic DNS | [Library](src/CasCap.Api.DDns/README.md) | Not an event-sink integration | Source only |
+| Application hosts | [HTTP server](src/CasCap.App.Server/README.md), [agent console](src/CasCap.App.Console/README.md) | [Shared bootstrap](src/CasCap.App/README.md) | [Container image](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus) |
+| Application orchestration | [Backend, SignalR, communications, media and MCP](src/CasCap.Backend/README.md) | Redis streams and media cache | Source only |
+| Helm charts | [Application](charts/smarthaus/README.md), [Grafana dashboards](charts/smarthaus-dashboards/README.md) | Configurable workload aliases and dashboard provisioning | `oci://ghcr.io/f2calv/charts/smarthaus` |
+| Tests | [Buderus](src/CasCap.Api.Buderus.Tests/README.md), [DoorBird](src/CasCap.Api.DoorBird.Tests/README.md), [Fronius](src/CasCap.Api.Fronius.Tests/README.md), [KNX](src/CasCap.Api.Knx.Tests/README.md), [Miele](src/CasCap.Api.Miele.Tests/README.md), [host](src/CasCap.App.Server.Tests/README.md), [backend](src/CasCap.Backend.Tests/README.md) | Source-declared inventories and prerequisites | Not published |
 
-### Service Architecture
+## Use a Standalone Library
 
-```mermaid
-flowchart TD
-    subgraph FeaturePods["Feature pods (Fronius / KNX / DoorBird / Buderus)"]
-        FRONIUS_SINK["FroniusSinkSignalRService"]
-        KNX_SINK["KnxSinkSignalRService"]
-        DOORBIRD_SINK["DoorBirdSinkSignalRService"]
-        BUDERUS_SINK["BuderusSinkSignalRService"]
-        FRONIUS_COMMS["FroniusSinkCommsStreamService"]
-        KNX_COMMS["KnxSinkCommsStreamService"]
-        DOORBIRD_MEDIA["DoorBirdSinkMediaStreamService"]
-    end
-
-    subgraph Hub["CasCap.Backend (HausHub @ /hubs/haus)"]
-        HAUSHUB["HausHub\n[Authorize]"]
-        HUB_CONSOLE["HausHubSinkConsoleService"]
-        HUB_METRICS["HausHubSinkMetricsService"]
-    end
-
-    subgraph Comms["CasCap.Backend (Comms instance — gateway + media analysis)"]
-        COMMS_BG["CommunicationsBgService"]
-        COMMS_AGENT(("CommsAgent"))
-        STT(("Speech-to-text\n(selected provider)"))
-        MEDIA_BG["MediaBgService"]
-        SECURITY_AGENT(("SecurityAgent\n(vision)"))
-    end
-
-    MEDIA_STREAM[("Redis Stream\nmedia:stream:events")]
-    COMMS_STREAM[("Redis Stream\ncomms:stream:events")]
-    REDIS_CACHE[("Redis\nimage cache")]
-    CLIENTS["SignalR clients\n(MAUI app, browser, etc.)"]
-    SIGNALIZR["Signalizr gateway\n(durable REST + gRPC)"]
-
-    %% SignalR path
-    FRONIUS_SINK -->|SendFroniusEvent| HAUSHUB
-    KNX_SINK -->|SendKnxTelegram| HAUSHUB
-    DOORBIRD_SINK -->|SendDoorBirdEvent| HAUSHUB
-    BUDERUS_SINK -->|SendBuderusEvent| HAUSHUB
-    HAUSHUB -->|ReceiveFroniusEvent etc.| CLIENTS
-    HAUSHUB --> HUB_CONSOLE
-    HAUSHUB --> HUB_METRICS
-
-    %% Comms stream path (text events)
-    FRONIUS_COMMS -->|CommsEvent| COMMS_STREAM
-    KNX_COMMS -->|CommsEvent| COMMS_STREAM
-
-    %% Media stream path (binary media)
-    DOORBIRD_MEDIA -->|cache bytes| REDIS_CACHE
-    DOORBIRD_MEDIA -->|MediaEvent| MEDIA_STREAM
-    MEDIA_STREAM --> MEDIA_BG
-    MEDIA_BG -->|fetch bytes| REDIS_CACHE
-    MEDIA_BG --> SECURITY_AGENT
-    SECURITY_AGENT -->|analysis CommsEvent| COMMS_STREAM
-
-    %% CommsAgent gateway
-    COMMS_STREAM --> COMMS_BG
-    COMMS_BG -->|audio attachment| STT
-    STT -->|transcript| COMMS_BG
-    COMMS_BG --> COMMS_AGENT
-    COMMS_AGENT -->|send, react, poll| SIGNALIZR
-    SIGNALIZR -->|durable subscription| COMMS_BG
-```
-
-## Dependency Graph
-
-> Direct `ProjectReference` links only. External NuGet packages from the [CasCap.Common](https://github.com/f2calv/CasCap.Common) and [CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure) repos are omitted for clarity (consumed as `ProjectReference` in Debug, `PackageReference` in Release).
-
-```mermaid
-graph TD
-    %% ── Applications ────────────────────────────────────────────────────────
-    subgraph apps ["🖥️ Applications"]
-        SERVER["CasCap.App.Server<br/><sub>ASP.NET Core · K8s</sub>"]
-        CONSOLE["CasCap.App.Console<br/><sub>Spectre.Console · Agent Runtime client</sub>"]
-    end
-
-    %% ── Shared App Bootstrap ────────────────────────────────────────────────
-    subgraph shared ["📦 Shared App Bootstrap"]
-        APP["CasCap.App"]
-        EXT2["CasCap.Common.Configuration"]
-    end
-
-    %% ── Core Orchestration ──────────────────────────────────────────────────
-    subgraph core ["⚙️ Core"]
-        HAUS["CasCap.Backend"]
-    end
-
-    %% ── Feature Libraries ───────────────────────────────────────────────────
-    subgraph features ["🔌 Feature Libraries"]
-        subgraph buderus ["Buderus (KM200)"]
-            BUD["Api.Buderus"]
-            BUD_SINKS["Api.Buderus.Sinks"]
-        end
-        subgraph doorbird ["DoorBird"]
-            DB["Api.DoorBird"]
-            DB_SINKS["Api.DoorBird.Sinks"]
-        end
-        subgraph fronius ["Fronius (Solar)"]
-            FRO["Api.Fronius"]
-            FRO_SINKS["Api.Fronius.Sinks"]
-        end
-        subgraph knx ["KNX (Bus)"]
-            KNX["Api.Knx"]
-            KNX_SINKS["Api.Knx.Sinks"]
-        end
-        subgraph miele ["Miele"]
-            MIE["Api.Miele"]
-            MIE_SINKS["Api.Miele.Sinks"]
-        end
-        subgraph sicce ["Sicce"]
-            SIC["Api.Sicce"]
-            SIC_SINKS["Api.Sicce.Sinks"]
-        end
-        subgraph wiz ["Wiz (Lighting)"]
-            WIZ["Api.Wiz"]
-            WIZ_SINKS["Api.Wiz.Sinks"]
-        end
-        subgraph shelly ["Shelly (Smart Plugs)"]
-            SHEL["Api.Shelly"]
-            SHEL_SINKS["Api.Shelly.Sinks"]
-        end
-        subgraph ubiquiti ["Ubiquiti"]
-            UBI["Api.Ubiquiti"]
-            UBI_SINKS["Api.Ubiquiti.Sinks"]
-        end
-        subgraph edgehw ["Edge Hardware"]
-            EDGE["Api.EdgeHardware"]
-            EDGE_SINKS["Api.EdgeHardware.Sinks"]
-        end
-            SIGNALIZR_CLIENT["Signalizr.Client"]
-        DDNS["Api.DDns"]
-    end
-
-    %% ── Agent Runtime ───────────────────────────────────────────────────────
-    subgraph ai ["🤖 Agent Runtime"]
-        AGENT_RUNTIME["Remote Agent Runtime<br/><sub>Definitions · execution · sessions</sub>"]
-    end
-
-    %% ── Foundation ──────────────────────────────────────────────────────────
-    subgraph foundation ["🧱 Foundation"]
-        ABS["CasCap.Common.Abstractions"]
-    end
-
-    %% ── Test Projects ───────────────────────────────────────────────────────
-    subgraph tests ["🧪 Tests"]
-        T_APP["App.Tests"]
-        T_BUD["Api.Buderus.Tests"]
-        T_DB["Api.DoorBird.Tests"]
-        T_FRO["Api.Fronius.Tests"]
-        T_KNX["Api.Knx.Tests"]
-        T_MIE["Api.Miele.Tests"]
-    end
-
-    %% ── Application edges ───────────────────────────────────────────────────
-    SERVER --> APP
-    CONSOLE --> APP
-    CONSOLE --> AGENT_RUNTIME
-    APP --> HAUS
-    APP --> EXT2
-
-    %% ── Core edges ──────────────────────────────────────────────────────────
-    HAUS --> SIGNALIZR_CLIENT
-    HAUS --> AGENT_RUNTIME
-    HAUS --> BUD_SINKS
-    HAUS --> DB_SINKS
-    HAUS --> FRO_SINKS
-    HAUS --> KNX_SINKS
-    HAUS --> MIE_SINKS
-    HAUS --> SIC_SINKS
-    HAUS --> WIZ_SINKS
-    HAUS --> SHEL_SINKS
-    HAUS --> UBI_SINKS
-    HAUS --> EDGE_SINKS
-    HAUS --> DDNS
-
-    %% ── Feature ↔ Core edges ────────────────────────────────────────────────
-    BUD_SINKS --> BUD
-
-    DB_SINKS --> DB
-
-    FRO_SINKS --> FRO
-
-    KNX_SINKS --> KNX
-
-    MIE_SINKS --> MIE
-
-    SIC_SINKS --> SIC
-
-    WIZ_SINKS --> WIZ
-
-    SHEL_SINKS --> SHEL
-
-    UBI_SINKS --> UBI
-
-    EDGE_SINKS --> EDGE
-
-
-    %% ── Foundation edges ────────────────────────────────────────────────────
-    HAUS --> ABS
-
-    %% ── Test edges ──────────────────────────────────────────────────────────
-    T_APP --> SERVER & HAUS & KNX & EXT2
-    T_BUD --> BUD & EXT2
-    T_DB --> DB & EXT2
-    T_FRO --> FRO & EXT2
-    T_KNX --> KNX & KNX_SINKS & EXT2
-    T_MIE --> MIE & EXT2
-
-    %% ── Styles ──────────────────────────────────────────────────────────────
-    classDef appNode fill:#1565C0,stroke:#0D47A1,color:#fff
-    classDef coreNode fill:#6A1B9A,stroke:#4A148C,color:#fff
-    classDef featureNode fill:#2E7D32,stroke:#1B5E20,color:#fff
-    classDef mcpNode fill:#00695C,stroke:#004D40,color:#fff
-    classDef sinkNode fill:#E65100,stroke:#BF360C,color:#fff
-    classDef foundationNode fill:#455A64,stroke:#263238,color:#fff
-    classDef testNode fill:#78909C,stroke:#546E7A,color:#fff
-
-    class SERVER,CONSOLE appNode
-    class APP,EXT2,HAUS coreNode
-    class BUD,DB,FRO,KNX,MIE,SIC,WIZ,SHEL,UBI,EDGE,DDNS featureNode
-    class AGENT_RUNTIME mcpNode
-    class BUD_SINKS,DB_SINKS,FRO_SINKS,KNX_SINKS,MIE_SINKS,SIC_SINKS,WIZ_SINKS,SHEL_SINKS,UBI_SINKS,EDGE_SINKS sinkNode
-    class ABS foundationNode
-    class T_APP,T_BUD,T_DB,T_FRO,T_KNX,T_MIE testNode
-```
-
-## NuGet Packages
-
-Standalone device API libraries published from this repository. *Some libraries are not yet published — badges will appear once the first version is pushed to NuGet.*
-
-| Library | Package |
-| --- | --- |
-| CasCap.Api.Buderus | [![Nuget][cascap.api.buderus-badge]][cascap.api.buderus-url] |
-| CasCap.Api.Buderus.Sinks | [![Nuget][cascap.api.buderus.sinks-badge]][cascap.api.buderus.sinks-url] |
-| CasCap.Api.DoorBird | [![Nuget][cascap.api.doorbird-badge]][cascap.api.doorbird-url] |
-| CasCap.Api.DoorBird.Sinks | [![Nuget][cascap.api.doorbird.sinks-badge]][cascap.api.doorbird.sinks-url] |
-| CasCap.Api.Fronius | [![Nuget][cascap.api.fronius-badge]][cascap.api.fronius-url] |
-| CasCap.Api.Fronius.Sinks | [![Nuget][cascap.api.fronius.sinks-badge]][cascap.api.fronius.sinks-url] |
-| CasCap.Api.Knx | [![Nuget][cascap.api.knx-badge]][cascap.api.knx-url] |
-| CasCap.Api.Knx.Sinks | [![Nuget][cascap.api.knx.sinks-badge]][cascap.api.knx.sinks-url] |
-| CasCap.Api.Voice | [![Nuget][cascap.api.voice-badge]][cascap.api.voice-url] |
-
-## Prerequisites
-
-- **.NET SDK**: 10.0.x stable (see `global.json` — `allowPrerelease: false`)
-- **Docker**: Required for local infrastructure (Redis, Azurite, OpenTelemetry Collector)
-- **Azure subscription** *(optional)*: For cloud sinks (Table Storage, Blob Storage) and Key Vault secrets management. Not required for local development — Azurite emulates Azure Storage locally
-
-## Docker Compose
-
-A single `docker-compose.yml` with [profiles](https://docs.docker.com/compose/how-tos/profiles/) for different use cases.
-
-### Default — Local Development
-
-Starts infrastructure services only. The application runs from Visual Studio or `dotnet run`, with `appsettings.Development.json` pointing to these containers.
+For a host application with configuration and logging, install a device client:
 
 ```bash
-# 1. Start infrastructure dependencies
-docker compose up
-
-# 2. Restore and build
-dotnet restore
-dotnet build --no-restore
+dotnet add package CasCap.Api.Fronius
 ```
 
-| Service | Port | Purpose |
-| --- | --- | --- |
-| Redis | 6379 | Cache, pub/sub, event sinks |
-| P3x Redis UI | 7843 | Browser-based Redis inspection |
-| OTEL Collector | 4317 / 4318 | OpenTelemetry gRPC and HTTP endpoints |
-| Azurite | 10000–10002 | Azure Storage emulator (Blob, Queue, Table) |
+Register the client and query its Solar API without starting continuous monitoring:
 
-### `demo` Profile — Visitor Demo
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-Device/API demo for new visitors — see [Quick Start](#quick-start) above to get running in minutes.
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddFronius(builder.Configuration, lite: true);
+using var host = builder.Build();
+var reading = await host.Services.GetRequiredService<FroniusClientService>()
+    .GetPowerFlowRealtimeData();
+```
 
-Builds the application from source and launches **EdgeHardware** + **Ubiquiti** + **Comms** features.
-No external hardware or Azure subscription is required. Comms execution requires separately running
-Agent Runtime and Signalizr services on the host or at the configured override addresses.
+Supply `CasCap:FroniusConfig` using the [Fronius configuration examples](src/CasCap.Api.Fronius/README.md#configuration-examples),
+replacing synthetic values with the inverter's LAN endpoint. Other libraries expose their own
+registration methods and contracts; full background monitoring needs the feature-worker runner,
+not just a call to `AddHostedService`.
+
+## Configuration
+
+`CasCap:FeatureConfig:EnabledFeatures` selects a comma-separated set of features:
+`Buderus,Comms,DDns,DoorBird,EdgeHardware,Fronius,Knx,Miele,Shelly,Sicce,SignalRHub,Ubiquiti,Wiz`.
+Select only integrations you have configured; enabled device features may read or control real hardware.
+
+The hosts load base and environment appsettings, local overrides, user secrets, environment variables
+and optional Azure Key Vault through the shared bootstrap. See
+[configuration initialization](src/CasCap.App/README.md) for the provider contract.
+Use gitignored local configuration or user secrets for credentials. Environment keys use double
+underscores, for example `CasCap__FeatureConfig__EnabledFeatures=Ubiquiti`.
+
+### Configuration Examples
+
+This fragment selects webhook processing and disables Key Vault; merge it with the tracked
+application configuration and [Ubiquiti settings](src/CasCap.Api.Ubiquiti/README.md#configuration-examples):
+
+```json
+{
+  "AppConfig": { "KeyVaultName": "skip" },
+  "CasCap": {
+    "FeatureConfig": { "EnabledFeatures": "Ubiquiti" }
+  }
+}
+```
+
+Redis is a server prerequisite even for a single-process profile. Azure storage sinks and Key Vault
+are optional capabilities; corresponding options may still require syntactically valid endpoints.
+The local demo uses Azurite rather than an Azure subscription.
+
+## Service Architecture
+
+Feature services collect device readings or receive webhooks and dispatch events to selected sinks.
+SignalR broadcasts events; Redis streams connect domain events and media to communications.
+SmartHaus exposes its own MCP tools but does not construct or select language-model agents.
+
+```mermaid
+flowchart LR
+    classDef owned fill:#e0f2fe,stroke:#0369a1,color:#082f49
+    classDef external fill:#dcfce7,stroke:#15803d,color:#052e16
+    classDef state fill:#fef3c7,stroke:#b45309,color:#451a03
+    DEVICES["Devices and cloud APIs"]:::external
+    FEATURES["SmartHaus feature services"]:::owned
+    SINKS["Event sinks"]:::owned
+    REDIS[("Redis state, streams<br/>and media cache")]:::state
+    STORAGE[("Optional Azure Storage")]:::external
+    HUB["SignalR hub"]:::owned
+    COMMS["Communications and media"]:::owned
+    MCP["Domain MCP tools"]:::owned
+    RUNTIME["External Agent Runtime"]:::external
+    SIGNAL["External Signal gateway"]:::external
+    DEVICES --> FEATURES --> SINKS
+    SINKS --> REDIS & STORAGE & HUB
+    REDIS --> COMMS
+    COMMS --> RUNTIME
+    RUNTIME --> MCP --> FEATURES
+    SIGNAL <-->|"messages and attachments"| COMMS
+```
+
+The [backend README](src/CasCap.Backend/README.md) documents Signal groups, speech-to-text providers,
+media limits and tool registration. [Agent instruction examples](docs/agent-examples/README.md)
+illustrate behavior only; active definitions, sessions, inference providers and credentials belong
+to the external runtime.
+
+## Development
+
+Use a stable .NET 10 SDK. For the current source tree, the Debug solution uses sibling source
+dependencies:
 
 ```bash
-docker compose --profile demo up --build
+dotnet build SmartHaus.Debug.slnx --configuration Debug
 ```
 
-Additional services started by the `demo` profile:
-
-| Service | Port | Purpose |
-| --- | --- | --- |
-| SmartHaus | 8080 | Application with Swagger UI at `/swagger` |
-
-The Agent Runtime is intentionally not bundled here: it owns definitions, credentials, sessions and
-provider selection. Its repository supplies mutually exclusive local-provider Compose profiles.
-Signalizr similarly owns its signal-cli integration and durable messaging infrastructure.
-
-#### Signal Messaging Setup
-
-1. **Install Signal Messenger** on your phone:
-   [Android (Google Play)](https://play.google.com/store/apps/details?id=org.thoughtcrime.securesms) |
-   [iOS (App Store)](https://apps.apple.com/app/signal-private-messenger/id874139669)
-
-2. **Link signal-cli to your phone** — open the QR code link endpoint in your browser:
-
-   <http://localhost:8081/v1/qrcodelink?device_name=signal-api>
-
-   Scan the QR code from Signal on your phone: **Settings → Linked Devices → Link New Device**.
-
-3. **Create the Signal groups** Signalizr resolves by exact display name: `My Test Group Name` for the chat
-   and `My Test Monitor Group Name` for operator diagnostics. Configure the same names in the gateway's
-   `CasCap:GroupConfig:GroupNames` array and the application's `GroupName` / `MonitorGroupName`
-   settings, preserving spaces and case. Keep the monitor group to yourself — it repeats
-   prompts and transcripts. SmartHaus ignores messages the gateway account itself sends, so chat
-   from a phone other than the one linked above.
-
-4. **Send a test event** — this triggers the Comms pipeline which forwards the event via Signal:
-
-   ```bash
-   curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
-   ```
-
-    Or use [`requests/ubiquiti-demo.http`](requests/ubiquiti-demo.http) with the VS Code REST Client
-    extension.
-
-## Project Configuration
-
-### Solution Files
-
-| File | Purpose |
-| --- | --- |
-| `SmartHaus.Debug.slnx` | Development — includes cross-repo references to [CasCap.Common](https://github.com/f2calv/CasCap.Common) and [CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure) projects |
-| `SmartHaus.Release.slnx` | Release builds — SmartHaus projects only, consumes dependencies as NuGet packages |
-
-**Dependency:** Debug builds require [CasCap.Common](https://github.com/f2calv/CasCap.Common) and [CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure) cloned at the same directory level.
-
-### Key Files
-
-| File | Purpose |
-| --- | --- |
-| `Directory.Build.props` | C# 14.0, `ImplicitUsings`, `Nullable: enable`, `TreatWarningsAsErrors: true`, `IsPackable: false` by default |
-| `Directory.Packages.props` | Central package version management (`ManagePackageVersionsCentrally: true`) |
-| `.editorconfig` | Code style rules (4-space indent, LF line endings, full formatting rules) |
-| `global.json` | SDK constraint — stable releases only |
-| `docker-compose.yml` | Infrastructure services + `demo` profile for visitor demo |
-| `requests/` | REST Client request collections and secret-safe local configuration template |
-| `GitVersion.yml` | Semantic versioning configuration (ContinuousDeployment mode) |
-
-### Suppressed Warnings
-
-Configured in `Directory.Build.props`: `IDE1006`, `IDE0042`, `CS1574`, `NETSDK1233`, `NU1901`, `NU1902`, `NU1903`
-
-## CI/CD Pipeline
-
-### GitHub Actions (`.github/workflows/ci.yml`)
-
-**Triggers**: Pushes to `main`, pull requests targeting `main`, and manual dispatch.
-
-**Jobs**:
-
-1. **lint** — Runs the repository pre-commit hooks
-2. **versioning** — Calculates the semantic version without publishing on pull requests
-3. **build** — Builds `SmartHaus.Release.slnx` and runs its credential-free tests, excluding `Category=Integration`
-4. **release** — Creates the GitHub release from the validated version on `main`
-
-Live device, speech-provider, and AI-agent tests carry `Category=Integration` and are not pull-request gates.
-
-Additional workflows:
-
-- `deploy-all.yml` — Builds and publishes the application image, NuGet packages,
-  and Helm umbrella chart
-
-## Making Changes
-
-### Adding Code
-
-1. Place code in the correct project by functionality
-2. Follow `.editorconfig` style rules
-3. Add XML documentation to all public API surface
-4. Add tests in the corresponding `.Tests` project
-5. Validate: `dotnet build SmartHaus.Debug.slnx --no-restore` → 0 errors
-
-### Adding Dependencies
-
-1. Add version to `Directory.Packages.props`
-2. Reference in `.csproj` **without** a version attribute:
-
-   ```xml
-   <PackageReference Include="PackageName" />
-   ```
-
-3. Run `dotnet restore`
-
-### Creating New Projects
-
-- Library projects inherit `Directory.Build.props` automatically
-- Set `<IsPackable>true</IsPackable>` explicitly only for NuGet packages
-- Test projects must **not** be packable (default)
-
-## Validation Checklist
-
-- [ ] `dotnet restore` succeeds
-- [ ] `dotnet build SmartHaus.Debug.slnx --no-restore` completes with 0 errors
-- [ ] Credential-free solution tests pass with `Category=Integration` excluded
-- [ ] Docker dependencies running (`docker compose up`)
-- [ ] Public API has XML documentation
-- [ ] Properties separated by blank lines
-- [ ] `ServiceProvider` instances are disposed in tests
+These include the public
+[CasCap.Common](https://github.com/f2calv/CasCap.Common) and
+[CasCap.Api.Azure](https://github.com/f2calv/CasCap.Api.Azure) libraries,
+[Signalizr communications](https://github.com/f2calv/signalizr) and
+[Agent Runtime](https://github.com/f2calv/agentizr) projects, plus their transitive source references,
+checked out alongside this repository.
+`docker compose up` starts only local infrastructure; the `demo` profile also builds the server.
+See the project test READMEs before choosing tests: some access live devices, cloud services or
+change device state, and must not be treated as credential-free checks.
 
 ## License
 
-This project is released under the [MIT License](LICENSE).
+[MIT License](LICENSE).

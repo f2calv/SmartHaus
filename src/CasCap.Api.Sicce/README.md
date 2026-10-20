@@ -4,9 +4,33 @@ A .NET library that integrates with the [Sicce](https://www.sicce.com) smart wat
 
 ## Purpose
 
+This source-only library targets .NET 10 and is not published as a NuGet package.
+
+## Usage
+
+Enable `Sicce` in SmartHaus's `CasCap:FeatureConfig:EnabledFeatures`, or query from a custom host:
+
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddSicce(builder.Configuration, lite: true);
+using var host = builder.Build();
+var device = await host.Services.GetRequiredService<SicceClientService>().GetDeviceInfo();
+```
+
+Load the configuration below with your own device token and vendor key. `lite: true` omits the
+monitor; full registration requires the host's feature runner and readiness checks.
+`SetPowerSwitch` and `UpdateStatus` change the pump's operation.
+
+## Monitoring
+
 The library is built around two core services:
 
-**`SicceBgService`** – Background service that polls `GetDeviceInfo` at a configurable interval and dispatches `SicceEvent` instances to all registered `IEventSink<SicceEvent>` implementations. Waits for the health check readiness probe before starting the polling loop.
+**`SicceBgService`** – Background service that polls `GetDeviceInfo` at a configurable interval and dispatches `SicceEvent` instances to all registered [`IEventSink<SicceEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementations. Waits for the health check readiness probe before starting the polling loop.
 
 **`SicceQueryService`** – Provides query access to Sicce data, delegating to the primary event sink for snapshot and line item retrieval. Also exposes the full `SicceClientService` API surface for direct device queries.
 
@@ -23,7 +47,7 @@ A client service (`SicceClientService`) provides the full programmatic API surfa
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
 | `SicceSinkConsoleService` | `"Console"` | Logs events at debug level |
-| `SicceSinkMemoryService` | `"Memory"` | Stores the latest event in memory, implements `ISicceQuery` |
+| `SicceSinkMemoryService` | `"Memory"` | Stores the latest event in memory, implements [`ISicceQuery`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Sicce/Abstractions/ISicceQuery.cs) |
 | `SicceSinkMetricsService` | `"Metrics"` | Publishes OpenTelemetry gauge metrics per `SicceFunction` |
 
 ## Configuration

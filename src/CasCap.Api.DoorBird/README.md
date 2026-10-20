@@ -6,15 +6,37 @@ The integration is validated against a DoorBird D2100E and uses only the model-i
 
 ## Installation
 
+Targets .NET 8 and .NET 10.
+
 ```bash
 dotnet add package CasCap.Api.DoorBird
 ```
 
-## Purpose
+## Usage
 
-The library is built around one background service that forms the core pipeline:
+With the configuration below loaded in a .NET host:
 
-**`DoorBirdMonitorBgService`** – Acquires a distributed lock, waits for the device health check to pass, then polls the DoorBird LAN API every 60 seconds. Each door event (doorbell press, motion detection, RFID scan) is captured as a `DoorBirdEvent` containing the event type, timestamp, and optionally an associated JPEG image snapshot. The event is then dispatched in parallel to every registered `IEventSink<DoorBirdEvent>` implementation.
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddDoorBird(builder.Configuration, lite: true);
+using var host = builder.Build();
+var imageBytes = await host.Services.GetRequiredService<DoorBirdClientService>().GetImage();
+```
+
+This reads one JPEG using device credentials; relay calls change physical access. `lite: true`
+omits background services and health checks. Full hosting also needs MVC controller mapping and
+the feature-worker runner, as supplied by SmartHaus.
+
+## Events and Audio
+
+The integration is webhook-driven, not polled. `DoorBirdBgService` idles to satisfy the feature
+runner contract. Device callbacks reach `DoorBirdController`, which delegates event handling to
+`DoorBirdQueryService` and its configured sinks.
 
 A REST API (`DoorBirdController`) exposes real-time photo, MJPEG video stream, relay trigger, and light-on endpoints, as well as event callbacks for push notifications from the device.
 
@@ -33,7 +55,7 @@ normalize, and transcribe it. Capture duration, byte count, and timeout are boun
 | **Metrics** | Emits event counts via OpenTelemetry metrics |
 
 Optional Redis, Azure Tables, and Azure Blob Storage implementations are provided by
-[`CasCap.Api.DoorBird.Sinks`](../CasCap.Api.DoorBird.Sinks).
+[`CasCap.Api.DoorBird.Sinks`](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.DoorBird.Sinks).
 
 ### Receive-only audio
 
@@ -50,10 +72,8 @@ Optional Redis, Azure Tables, and Azure Blob Storage implementations are provide
 flowchart TD
     DEVICE["DoorBird Device\n(LAN REST API)"]
 
-    subgraph Monitor["DoorBirdMonitorBgService (every 60 s)"]
-        LOCK["Acquire distributed lock\n(RedLock)"]
-        HEALTH["Await connection\nhealth check"]
-        POLL["Poll device API"]
+    subgraph Callbacks["DoorBirdController / DoorBirdQueryService"]
+        POLL["Receive device callback"]
         BUILD["Build DoorBirdEvent\n(EventId, EventType, Timestamp, JPEG bytes)"]
         DISPATCH["Fan-out to all sinks\nTask.WhenAll"]
     end
@@ -65,8 +85,9 @@ flowchart TD
     CLIENT["DoorBirdClientService\n(getSession, getImage, lightOn, triggerRelay, …)"]
 
     DEVICE -->|HTTP REST| CLIENT
-    CLIENT --> POLL
-    LOCK --> HEALTH --> POLL --> BUILD --> DISPATCH
+    DEVICE -->|"HTTP callback"| POLL
+    POLL -->|"optional image capture"| CLIENT
+    POLL --> BUILD --> DISPATCH
     DISPATCH --> SINK_CONSOLE
     DISPATCH --> SINK_MEMORY
     DISPATCH --> SINK_METRICS
@@ -80,11 +101,14 @@ flowchart TD
 {
   "CasCap": {
     "DoorBirdConfig": {
-      "BaseAddress": "http://192.168.1.248",
+      "BaseAddress": "http://device.example.com",
       "Username": "<device-username>",
       "Password": "<device-password>",
       "DoorControllerID": "<controller-id>",
       "DoorControllerRelayID": "<relay-id>",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
+      "AzureBlobStorageConnectionString": "https://example.blob.core.windows.net",
+      "AzureBlobStorageContainerName": "doorbird-images",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true }
@@ -101,17 +125,19 @@ flowchart TD
 {
   "CasCap": {
     "DoorBirdConfig": {
-      "IsEnabled": true,
-      "BaseAddress": "http://192.168.1.248",
+      "BaseAddress": "http://device.example.com",
       "Username": "<device-username>",
       "Password": "<device-password>",
       "DoorControllerID": "<controller-id>",
       "DoorControllerRelayID": "<relay-id>",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
+      "AzureBlobStorageConnectionString": "https://example.blob.core.windows.net",
+      "AzureBlobStorageContainerName": "doorbird-images",
       "HealthCheckUri": "bha-api/info.cgi",
       "HealthCheck": "Readiness",
-      "PollingIntervalMs": 60000,
-      "ConnectionPollingDelayMs": 1000,
-      "ConnectionLogEscalationInterval": 10,
+      "AudioCaptureMaxDurationSeconds": 30,
+      "AudioCaptureMaxBytes": 524288,
+      "AudioCaptureTimeoutMs": 45000,
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
@@ -124,6 +150,9 @@ flowchart TD
 }
 ```
 
+Storage fields are required by the options model even with only local sinks. Replace synthetic
+endpoints only when configuring your own storage.
+
 ## License
 
-This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](https://github.com/f2calv/SmartHaus/blob/main/LICENSE).

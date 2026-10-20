@@ -14,7 +14,8 @@ release version, the same version as the `ghcr.io/f2calv/smarthaus` image. The v
 ```mermaid
 graph LR
   SmartHaus([smarthaus])
-  Workload[workload 1.1.0]
+  Workload[workload 1.5.0]
+  Dashboards[smarthaus-dashboards 0.1.0]
 
   subgraph Aliases[Workload aliases]
     Buderus[buderus]
@@ -33,6 +34,7 @@ graph LR
   end
 
   SmartHaus --> Buderus & DoorBird & Fronius & Knx
+  SmartHaus --> Dashboards
   SmartHaus --> EdgeCpu & EdgeGpu & Ffmpeg
   SmartHaus --> SignalRHub & Comms & Wiz & Shelly & Ubiquiti & Sicce
   Buderus & DoorBird & Fronius & Knx --> Workload
@@ -40,7 +42,8 @@ graph LR
   SignalRHub & Comms & Wiz & Shelly & Ubiquiti & Sicce --> Workload
 ```
 
-Every alias resolves to `workload` 1.1.0 from `oci://ghcr.io/f2calv/charts`.
+Every workload alias resolves to `workload` 1.5.0 from `oci://ghcr.io/f2calv/charts`.
+The separate `dashboards` dependency is the local `smarthaus-dashboards` 0.1.0 chart.
 
 ## Install
 
@@ -58,10 +61,11 @@ helm install smarthaus oci://ghcr.io/f2calv/charts/smarthaus --version <version>
   --set-string comms.envVars.CasCap__FeatureConfig__EnabledFeatures=Comms
 ```
 
-Upgrade to the latest release published in GHCR:
+Upgrade to a specific release published in GHCR, keeping the chart and image version aligned:
 
 ```bash
 helm upgrade --install smarthaus oci://ghcr.io/f2calv/charts/smarthaus \
+  --version <version> \
   --namespace my-namespace --create-namespace \
   --set comms.replicaCount=1 \
   --set-string comms.image.repository=ghcr.io/f2calv/smarthaus \
@@ -180,6 +184,7 @@ Set a single environment variable through the Helm CLI:
 
 ```bash
 helm upgrade --install smarthaus oci://ghcr.io/f2calv/charts/smarthaus \
+  --version <version> \
   --namespace my-namespace --create-namespace \
   --set-string 'doorbird.envVars.Serilog__MinimumLevel__Default=Debug'
 ```

@@ -40,17 +40,24 @@ Tests/
 No tests are permanently skipped. Integration tests require the prerequisites below and should be
 selected explicitly only in an environment with a configured device.
 
+The source declares 20 methods and 20 cases. Missing credentials do not automatically skip the
+live class; relay, light and notification cases can change device state.
+
 ## Prerequisites
 
 - A DoorBird device accessible on the local network from the test host.
 - `appsettings.json` with `AppConfig`, `ConnectionStrings`, and `CasCap:DoorBirdConfig` sections.
-- `appsettings.Development.json` (optional) with the device's local IP address, username, and password.
+- Device endpoint, username and password supplied through private local configuration, user secrets
+  or environment variables, not tracked appsettings. `TestBase` also supports optional Key Vault.
 
 ## Running the tests
 
 ```bash
-dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj
+dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj -- --filter-trait "Category=Audio"
 ```
+
+Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. This selects only
+offline audio cases. Omit the filter only with explicit approval for live-device access.
 
 ## Dependencies
 

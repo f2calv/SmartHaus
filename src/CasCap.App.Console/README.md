@@ -3,6 +3,21 @@
 A Spectre.Console-based interactive client for exercising tenant-scoped agents hosted by the remote
 Agent Runtime.
 
+## Quick Start
+
+Use a stable .NET 10 SDK and the Debug source dependencies described in the
+[root development guide](../../README.md#development). A reachable Agent Runtime with active
+agent definitions is required; this program does not start an inference service.
+
+From the repository root:
+
+```bash
+dotnet run --project src/CasCap.App.Console --configuration Debug
+```
+
+Configure the runtime endpoint and optional authentication before starting. The
+[shared bootstrap](../CasCap.App/README.md) supplies provider order and Key Vault handling.
+
 ## Purpose
 
 `CasCap.App.Console` is a developer tool for exercising the same immutable agent definitions used by
@@ -51,6 +66,9 @@ The built-in defaults select the SmartHaus communications agent with a persisten
   "CasCap": {
     "AgentRuntimeConsoleConfig": {
       "AgentNames": ["CommsAgent"]
+    },
+    "AgentRuntimeClientOptions": {
+      "BaseAddress": "http://localhost:5090"
     }
   }
 }
@@ -70,12 +88,8 @@ A local override can expose several tenant agents and request operator diagnosti
 }
 ```
 
-### Required Data Files
-
-| File | Description |
-| --- | --- |
-| `appsettings.json` | Application configuration |
-| `appsettings.Development.json` | Development overrides |
+Diagnostics can expose prompts, transcripts and other users' content to the operator-controlled
+destination. Keep them disabled outside a deliberate debugging session.
 
 ## Dependencies
 

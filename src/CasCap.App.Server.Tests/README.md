@@ -23,6 +23,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
+| Total | 18 | 24 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
@@ -44,6 +45,10 @@ Key Vault disabled before startup.
 | `FeatureServiceRegistrationTests` | Requires KNX bus and Azure Storage infrastructure | 1 |
 
 ## Running The Tests
+
+Use a .NET 10 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
+The inventory is derived from source, not an observed test run. `Integration` here includes
+in-process host tests and must not be assumed to mean live-device access.
 
 ```bash
 dotnet test --project src/CasCap.App.Server.Tests/CasCap.App.Server.Tests.csproj

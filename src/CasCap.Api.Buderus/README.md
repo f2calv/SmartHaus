@@ -1,18 +1,45 @@
 # CasCap.Api.Buderus
 
-A .NET library that integrates with a [Buderus](https://www.buderus.com) KM200 heat-pump controller via its encrypted HTTPS local API, polls temperature datapoints every 60 seconds, and dispatches each reading to configurable sinks.
+A .NET client library for the [Buderus](https://www.buderus.com) KM200 heat-pump controller's encrypted local HTTP API. Use it to read or write datapoints, or monitor configured datapoints through pluggable sinks.
 
 ## Installation
+
+Targets .NET 8 and .NET 10.
 
 ```bash
 dotnet add package CasCap.Api.Buderus
 ```
 
-## Purpose
+## Usage
+
+Load the configuration below in a .NET host, then register and resolve the client:
+
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddBuderus(builder.Configuration, lite: true);
+using var host = builder.Build();
+var client = host.Services.GetRequiredService<BuderusKm200ClientService>();
+var datapoint = await client.GetDataPoint("/dhwCircuits/dhw1/actualTemp");
+```
+
+`lite: true` omits monitoring and health checks for direct client calls. Full registration exposes
+[`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) workers; a host must start them through `AddFeatureFlagService`, as SmartHaus does.
+Reading requires the device's gateway and private passwords. Writing changes live heating settings.
+
+## Monitoring
 
 The library is built around one background service that forms the core pipeline:
 
-**`BuderusKm200MonitorBgService`** – Waits for the device health check to pass, then fetches the full datapoint tree recursively from the device (caching the result locally for subsequent startups). The list is filtered to only the datapoints that carry a temperature reading in °C (excluding `/application`, `/gateway`, and most of `/system` except the outside-temperature path `/system/.../t1`). For each qualifying datapoint the service calls `GetDataPoint` (with a 500 ms pause between calls), wraps the response in a `BuderusEvent`, and dispatches it in parallel to every registered `IEventSink<BuderusEvent>` implementation.
+**`BuderusKm200MonitorBgService`** waits for the device health check, then reads the keys in
+`DatapointMappings` every `PollingIntervalMs` (60 seconds by default). It pauses for
+`DatapointDelayMs` (500 ms) between reads and fans each `BuderusEvent` out to the registered sinks.
+An empty mapping disables polling. Recursive discovery is available separately through
+`BuderusKm200ClientService.GetAllDataPoints`; monitoring does not discover or filter datapoints.
 
 A REST API (`BuderusController`) exposes endpoints for listing all current datapoint values, querying events by datapoint ID, and retrieving the latest snapshot.
 
@@ -25,18 +52,17 @@ A REST API (`BuderusController`) exposes endpoints for listing all current datap
 | **Metrics** | Emits temperature gauges via OpenTelemetry metrics |
 
 Optional Redis and Azure Tables implementations are provided by
-[`CasCap.Api.Buderus.Sinks`](../CasCap.Api.Buderus.Sinks).
+[`CasCap.Api.Buderus.Sinks`](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.Buderus.Sinks).
 
 ## Event Flow
 
 ```mermaid
 flowchart TD
-    KM200["Buderus KM200\n(HTTPS, encrypted LAN API)"]
+    KM200["Buderus KM200<br/>(encrypted LAN API)"]
 
     subgraph Monitor["BuderusKm200MonitorBgService (every 60 s)"]
         HEALTH["Await connection\nhealth check"]
-        LOAD["Load datapoint list\n(fetch from device & cache)"]
-        FILTER["Filter to temperature\ndatapoints in °C"]
+        LOAD["Load configured<br/>DatapointMappings"]
         LOOP["For each datapoint\n(500 ms between calls)"]
         BUILD["Build BuderusEvent\n(Id, Value, Type, UtcDt)"]
         DISPATCH["Fan-out to all sinks\nTask.WhenAll"]
@@ -50,7 +76,7 @@ flowchart TD
 
     KM200 -->|encrypted HTTPS| CLIENT
     CLIENT --> LOAD
-    HEALTH --> LOAD --> FILTER --> LOOP
+    HEALTH --> LOAD --> LOOP
     LOOP -->|GetDataPoint| CLIENT
     LOOP --> BUILD --> DISPATCH
     DISPATCH --> SINK_CONSOLE
@@ -66,9 +92,13 @@ flowchart TD
 {
   "CasCap": {
     "BuderusConfig": {
-      "BaseAddress": "http://192.168.1.248",
+      "BaseAddress": "http://device.example.com",
       "GatewayPassword": "<gateway-password>",
       "PrivatePassword": "<private-password>",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
+      "DatapointMappings": {
+        "/dhwCircuits/dhw1/actualTemp": { "ColumnName": "Dhw1ActualTemp" }
+      },
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
@@ -86,12 +116,13 @@ flowchart TD
 {
   "CasCap": {
     "BuderusConfig": {
-      "BaseAddress": "http://192.168.1.248",
+      "BaseAddress": "http://device.example.com",
       "Port": 80,
       "HealthCheckUri": "system",
       "HealthCheck": "Readiness",
       "GatewayPassword": "<gateway-password>",
       "PrivatePassword": "<private-password>",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
       "PollingIntervalMs": 60000,
       "DatapointDelayMs": 500,
       "ConnectionPollingDelayMs": 1000,
@@ -122,6 +153,9 @@ flowchart TD
 }
 ```
 
+The storage endpoint is required by the options model even when no Azure sink is enabled; the
+synthetic endpoint above does not grant access to storage.
+
 ## License
 
-This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](https://github.com/f2calv/SmartHaus/blob/main/LICENSE).

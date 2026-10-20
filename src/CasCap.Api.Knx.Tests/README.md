@@ -1,31 +1,65 @@
 # CasCap.Api.Knx.Tests
 
-Integration tests for the KNX building automation library ([CasCap.Api.Knx](../CasCap.Api.Knx)) and its sinks ([CasCap.Api.Knx.Sinks](../CasCap.Api.Knx.Sinks)).
+Offline broker/shutter tests and configuration/storage integration tests for
+[CasCap.Api.Knx](../CasCap.Api.Knx/README.md) and its
+[storage sinks](../CasCap.Api.Knx.Sinks/README.md).
 
 ## Purpose
 
 These tests verify KNX group address parsing, ETS metadata loading, and CEMI frame decoding. They run against a real KNX configuration file (`knxgroupaddresses.xml`) and optionally a live Azure Table Storage instance.
 
-### Test classes
+## Tests
 
-| Class | Description |
-| --- | --- |
-| `GroupAddressTests` | Unit and integration tests for group address parsing, ETS naming-convention validation, Unix timestamp conversions, and group-address lookup |
-| `CemiDecodingTests` | Integration tests that retrieve raw CEMI frames from Azure Table Storage via `KnxSinkAzureTablesCemiService` and verify the full deserialization and `GroupValue` decoding pipeline |
-| `ChannelKnxTelegramBrokerTests` | Unit tests for `ChannelKnxTelegramBroker<T>` verifying publish/subscribe round-tripping and item ordering |
+Source-declared counts include skipped cases and expand inline theories; no execution is implied.
+
+| Class | Methods | Expanded cases | Categories |
+| --- | ---: | ---: | --- |
+| `GroupAddressTests` | 6 | 6 | `Integration` |
+| `CemiDecodingTests` | 1 | 1 | `Integration` |
+| `ChannelKnxTelegramBrokerTests` | 4 | 4 | None |
+| `KnxShutterMovementTests` | 6 | 12 | None |
+| Total | 17 | 23 | |
+
+`Integration` is the only declared trait category. Broker and shutter tests have no category trait.
+
+## Skipped Tests
+
+| Test | Reason | Cases |
+| --- | --- | ---: |
+| `GroupAddressTests.ParseGroupAddressInt` | unfinished | 1 |
+
+Other integration cases do not automatically skip when configuration or storage is missing.
+
+## Test Layout
+
+```text
+CasCap.Api.Knx.Tests/
+├── ChannelKnxTelegramBrokerTests.cs
+├── CemiDecodingTests.cs
+├── GroupAddressTests.cs
+├── KnxShutterMovementTests.cs
+└── TestBase.cs
+```
+
+Tests currently live at the project root rather than under `Tests/`.
 
 ## Prerequisites
 
-- `appsettings.json` with `AppConfig`, `ConnectionStrings`, and `KnxConfig` sections.
-- `appsettings.Development.json` (optional) with secrets and environment-specific overrides.
+- Standard configuration with `AppConfig`, connection settings and `CasCap:KnxConfig`.
+- Private overrides supplied through local configuration, user secrets or environment variables.
 - `knxgroupaddresses.xml` accessible via the `GroupAddressXmlFilePath` configured in `appsettings.Development.json`.
-- Azure Table Storage connection string populated in `ConnectionStrings.AzureStorageBlob` for `CemiDecodingTests` (requires access to production data).
+- Azure Table Storage and access to an appropriate captured-frame dataset for `CemiDecodingTests`.
+- `TestBase` loads standard configuration and optional Key Vault through `AzureAuthConfig`.
 
 ## Running the tests
 
 ```bash
-dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj
+# Offline broker and shutter cases
+dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -- --filter-not-trait "Category=Integration"
 ```
+
+Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. Remove the filter
+only with approval and the required ETS/storage setup.
 
 ## Dependencies
 

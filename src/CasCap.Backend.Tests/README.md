@@ -21,7 +21,10 @@ Host endpoint and application-bootstrap coverage lives in
 | `KnxDoorLockSummaryTests` | 4 | 7 | Knx | Verifies door lock summaries |
 | `CameraClipQueueTests` | 7 | 7 | CameraClips | Verifies privacy filtering, mappings, cooldown, and bounded admission |
 | `MediaBgServiceTests` | 1 | 3 | Media | Verifies stateless Agent Runtime requests for image, audio, and document events |
-| `LiteSinkRegistrationTests` | 1 | 9 | Sinks | Verifies lite (Comms) registration queries the live Redis sink, never the Azure Tables snapshot |
+| `LiteSinkRegistrationTests` | 1 | 9 | Sinks | Asserts Redis sink selection and Azure Tables exclusion for nine lite registrations |
+| `HausMcpToolSetTests` | 7 | 19 | Mcp | Feature-dependent MCP tool selection |
+| `ShutterTargetValidationTests` | 3 | 3 | Knx | Shutter target bounds |
+| Total | 28 | 62 | | Source-declared cases, including theories |
 
 ## Trait Categories
 
@@ -32,10 +35,18 @@ Host endpoint and application-bootstrap coverage lives in
 | `CameraClips` | Camera event-to-clip admission and privacy policy |
 | `Media` | Media-event translation into remote Agent Runtime requests |
 | `Sinks` | Event-sink selection for lite registration |
+| `Mcp` | Feature-dependent MCP tool registration |
 
 ## Skipped Tests
 
 There are no skipped tests.
+
+### Source limitation
+
+The KNX entry in `LiteSinkRegistrationTests` expects Redis inclusion and Azure Tables exclusion.
+`AddKnxWithExtraSinks` currently filters Redis instead, unlike the other integrations. The inventory
+records the declared assertion, not a passing result; this source/test mismatch is not fixed by a
+documentation update.
 
 ## Agent Evaluation
 
@@ -43,6 +54,9 @@ Agent definitions are evaluated in agentizr against scenarios supplied with the 
 activation. This project keeps no evaluation scenarios or fixtures.
 
 ## Running The Tests
+
+Use a .NET 10 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
+The inventory above was derived from source; it does not report execution results.
 
 ```bash
 # Credential-free domain tests

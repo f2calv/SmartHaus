@@ -2,8 +2,24 @@
 
 Shared bootstrap library that provides configuration initialization for all application hosts (`CasCap.App.Server` and `CasCap.App.Console`). This project is a library — not an executable — that centralizes the configuration and DI wiring common to every entry point.
 
-The sibling `CasCap.App.Host.props` file centralizes the appsettings content links, shared hosting
-dependency, and reference to this project for both executable hosts.
+This source-only library targets .NET 10 and is not a NuGet package.
+
+## Usage
+
+The server and console invoke the same bootstrap before composing their own services:
+
+```csharp
+using CasCap.Extensions;
+using Microsoft.Extensions.Hosting;
+using System.Reflection;
+
+var builder = Host.CreateApplicationBuilder(args);
+var (appConfig, apiAuthConfig, enabledFeatures, metadata) =
+    builder.InitializeConfiguration(Assembly.GetExecutingAssembly());
+```
+
+The entry assembly determines the user-secrets store and application metadata. Supply the tracked
+base settings and private overrides through configuration, not embedded credentials.
 
 ## Purpose
 
@@ -27,17 +43,44 @@ The single `HostApplicationBuilderExtensions.InitializeConfiguration` extension 
 
 All option sections use `AddOptionsWithValidateOnStart` with `ValidateDataAnnotations` for fail-fast validation.
 
-### Azure Certificate Authentication
+### Configuration precedence
 
-Local Key Vault access installs the client certificate with its private key into the current user's
-Personal certificate store. Set `AppConfig:AzureEntraCertThumbprint` in this repository's
-user-secrets store; never commit a workstation thumbprint or certificate path. Each consuming
-repository has its own `UserSecretsId`, so a certificate rotation must update every consumer's store.
+Later providers override earlier values:
 
-The credential factory accepts exactly one of certificate-store thumbprint, combined PEM path, or
-PFX path. Kubernetes supplies its deployment-specific path through environment configuration; do
-not copy that path into a local configuration provider that is loaded alongside the thumbprint.
-Rotate the certificate consistently for every consumer before removing the previous credential.
+1. Required `appsettings.json` and optional `appsettings.{Environment}.json`.
+2. Optional `appsettings.Local.json` and `appsettings.Local.{Environment}.json`.
+3. Optional `appsettings.Tests.Local.json` (used by test projects).
+4. User secrets from the entry assembly.
+5. Environment variables.
+6. Azure Key Vault, when enabled.
+
+The standard chain is appended to the host configuration. Do not assume command-line arguments
+override providers added afterward.
+
+## Configuration Examples
+
+Merge this local fragment with the base application configuration:
+
+```json
+{
+  "AppConfig": { "KeyVaultName": "skip" },
+  "CasCap": {
+    "FeatureConfig": { "EnabledFeatures": "Ubiquiti" }
+  }
+}
+```
+
+For multiple features, use a comma-separated string such as `Fronius,Ubiquiti`. Each selected
+integration still needs its own complete options. Configuration fragments are not standalone
+application settings.
+
+### Azure authentication
+
+Key Vault access needs Azure credentials with read access. Supply certificate configuration and
+real identifiers only through private providers. The shared
+[Azure authentication library](https://github.com/f2calv/CasCap.Api.Azure/tree/main/src/CasCap.Api.Azure.Auth)
+documents the supported credential forms. `KeyVaultName = "skip"` disables this bootstrap's vault
+provider; it does not disable credentials used by other integrations.
 
 ## Configuration Hierarchy
 
@@ -50,7 +93,7 @@ flowchart TD
     subgraph Sources["Configuration Sources"]
         APPSETTINGS["appsettings.json<br/>appsettings.{Environment}.json"]
         ENV["Environment Variables"]
-        SECRETS["User Secrets<br/>(Development only)"]
+        SECRETS["Local overrides<br/>and user secrets"]
         KV["Azure Key Vault"]
     end
 
@@ -75,6 +118,9 @@ flowchart TD
     KV --> FEATURES
     KV --> AUTH
     KV --> HUB
+    AZURE --> FEATURES
+    AZURE --> AUTH
+    AZURE --> HUB
 
     APP --> VALIDATION["ValidateDataAnnotations<br/>(fail-fast on startup)"]
     AZURE --> VALIDATION

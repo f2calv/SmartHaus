@@ -1,66 +1,70 @@
 # CasCap.Api.Miele
 
-A .NET library that integrates with the [Miele](https://www.miele.com) 3rd Party Cloud API v1 via OAuth 2.0, consumes a server-sent event stream for real-time appliance state changes, and exposes REST endpoints for querying and controlling individual devices.
+A .NET client for the Miele 3rd Party Cloud API, with appliance queries, control commands and a
+server-sent event (SSE) reader. This source-only library targets .NET 10 and is not packaged for NuGet.
 
-## Purpose
+## Usage
 
-The library is built around one background service that forms the core pipeline:
+In SmartHaus, enable `Miele` in `CasCap:FeatureConfig:EnabledFeatures` and supply the configuration
+below. Custom hosts can register the library and query devices:
 
-**`MieleEventStreamBgService`** – Waits for the health check to pass, then opens a long-polling HTTPS server-sent event stream at the configured `EventStreamUrl` (defaults to `https://api.mcs3.miele.com/v1/devices/all/events`). Each JSON event line received on the stream is logged. A Polly retry policy (up to 3 retries with a 2-second pause between failures) ensures the stream is re-established automatically after transient errors.
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 
-A REST API (`MieleController`) delegates to `MieleClientService` to list all appliances, retrieve individual device details (identity, state, available actions, programs), and issue control commands (invoke an action, start a program).
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddMiele(builder.Configuration);
+using var host = builder.Build();
+var devices = await host.Services.GetRequiredService<MieleClientService>().GetDevices();
+```
 
-### Authentication
-
-All requests to the Miele cloud are authenticated with an OAuth 2.0 Bearer token obtained and refreshed automatically by the HTTP client configuration.
+The client also exposes `GetDevice`, `GetIdent`, `GetState`, `GetActions` and `GetPrograms`.
+`PutAction` and `PutProgram` change appliance state. Requests use the bearer token in `OAuthToken`;
+the library does not acquire or refresh tokens. Obtain and rotate them outside the application.
 
 ## Event Flow
 
+Starting `MieleEventStreamBgService` requires the host's [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) runner and health-check
+execution, as provided by SmartHaus. Each nonblank stream line becomes a `MieleEvent` with
+`DeviceId = "unknown"`, `EventType = StatusUpdate` and the raw line. It is not decoded into an
+appliance-specific event. Completion or an HTTP failure is followed by the configured reconnect delay.
+
 ```mermaid
-flowchart TD
-    CLOUD["Miele Cloud API\n(api.mcs3.miele.com)"]
-
-    subgraph Stream["MieleEventStreamBgService"]
-        HEALTH["Await connection\nhealth check"]
-        OPEN["Open SSE stream\n(/v1/devices/all/events)"]
-        READ["Read JSON event lines\nasync stream"]
-        LOG["Log received event"]
-        RETRY["Polly retry policy\n(3 retries, 2 s back-off)"]
-    end
-
-    subgraph Client["MieleClientService (OAuth 2.0 Bearer)"]
-        GET_DEVICES["GetDevices(language)"]
-        GET_DEVICE["GetDevice(deviceId)"]
-        GET_STATE["GetState(deviceId)"]
-        GET_ACTIONS["GetActions(deviceId)"]
-        PUT_ACTION["PutAction(deviceId, action)"]
-        GET_PROGRAMS["GetPrograms(deviceId)"]
-        PUT_PROGRAM["PutProgram(deviceId, program)"]
-    end
-
-    REST["REST API\n(MieleController)"]
-
-    CLOUD -->|HTTPS SSE| OPEN
-    CLOUD -->|HTTPS REST| Client
-    HEALTH --> OPEN --> READ --> LOG
-    READ -->|on error| RETRY --> OPEN
-    REST --> Client
+flowchart LR
+    CLOUD["Miele Cloud API"]
+    CLIENT["MieleClientService"]
+    STREAM["MieleEventStreamBgService"]
+    EVENT["MieleEvent<br/>raw stream line"]
+    SINKS["Configured event sinks"]
+    CLOUD -->|"HTTPS REST"| CLIENT
+    CLOUD -->|"HTTPS SSE"| STREAM
+    STREAM --> EVENT --> SINKS
+    STREAM -->|"wait, reconnect"| CLOUD
 ```
+
+Console and Memory sink types exist, but `AddMiele` does not scan the core assembly for them.
+Selecting those names in configuration alone does not register a sink. Use
+[CasCap.Api.Miele.Sinks](../CasCap.Api.Miele.Sinks/README.md) to register Redis or Azure Tables,
+or register a core sink explicitly in a custom host.
 
 ## Configuration
 
-Registered via `IServiceCollection.AddMiele()`. Configuration section: `CasCap:MieleConfig`.
+Configuration section: `CasCap:MieleConfig`.
 
-| Setting | Type | Default | Required | Description |
-| --- | --- | --- | --- | --- |
-| `OAuthToken` | `string` | — | ✓ | OAuth 2.0 bearer token for the Miele cloud API |
-| `HealthCheckUri` | `string` | `"https://api.mcs3.miele.com/v1/"` | ✓ | URI used to verify API connectivity |
-| `HealthCheckExpectedHttpStatusCodes` | `IReadOnlyList<int>` | `[404]` | — | HTTP status codes treated as healthy |
-| `HealthCheck` | `KubernetesProbeTypes` | `Readiness` | ✓ | Kubernetes probe type for the health check tag |
-| `ConnectionPollingDelayMs` | `int` | `1000` | — | Milliseconds between connection readiness probes |
-| `ConnectionLogEscalationInterval` | `int` | `10` | — | Interval at which connection wait logging escalates from Trace to Warning |
-| `EventStreamUrl` | `string` | `"https://api.mcs3.miele.com/v1/devices/all/events"` | ✓ | Full URL of the Miele SSE stream endpoint |
-| `EventStreamReconnectDelayMs` | `int` | `60000` | — | Milliseconds to wait before reconnecting to the SSE stream after it completes |
+| Setting | Default | Purpose |
+| --- | --- | --- |
+| `OAuthToken` | Required | Existing Miele OAuth bearer token |
+| `HealthCheckUri` | `https://api.mcs3.miele.com/v1/` | REST base address and readiness probe |
+| `HealthCheckExpectedHttpStatusCodes` | `[404]` | Status codes accepted by the connectivity probe |
+| `HealthCheck` | `Readiness` | Probe tag |
+| `ConnectionPollingDelayMs` | `1000` | Delay while waiting for readiness |
+| `ConnectionLogEscalationInterval` | `10` | Readiness logging escalation interval |
+| `EventStreamUrl` | `https://api.mcs3.miele.com/v1/devices/all/events` | SSE endpoint |
+| `EventStreamReconnectDelayMs` | `60000` | Delay after stream completion or HTTP failure |
+| `Sinks` | Required | Enabled sink definitions |
+| `RedisSeriesExpiryDays` | `7` | Redis series retention |
 
 ## Configuration Examples
 
@@ -70,31 +74,40 @@ Registered via `IServiceCollection.AddMiele()`. Configuration section: `CasCap:M
 {
   "CasCap": {
     "MieleConfig": {
-      "OAuthToken": "<your-oauth-token>"
+      "OAuthToken": "<oauth-token>",
+      "Sinks": { "AvailableSinks": { "Console": { "Enabled": true } } }
     }
   }
 }
 ```
 
-### Fully configured
+### Stream and storage settings
 
 ```json
 {
   "CasCap": {
     "MieleConfig": {
-      "OAuthToken": "<your-oauth-token>",
+      "OAuthToken": "<oauth-token>",
       "HealthCheckUri": "https://api.mcs3.miele.com/v1/",
       "HealthCheckExpectedHttpStatusCodes": [404],
       "HealthCheck": "Readiness",
-      "ConnectionPollingDelayMs": 1000,
-      "ConnectionLogEscalationInterval": 10,
       "EventStreamUrl": "https://api.mcs3.miele.com/v1/devices/all/events",
-      "EventStreamReconnectDelayMs": 60000
+      "EventStreamReconnectDelayMs": 60000,
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
+      "Sinks": {
+        "AvailableSinks": {
+          "Console": { "Enabled": true },
+          "Redis": { "Enabled": true }
+        }
+      }
     }
   }
 }
 ```
 
+Redis requires the extra-sinks package's registration and a configured cache connection; the
+synthetic storage endpoint alone does not configure Azure authentication.
+
 ## License
 
-This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+[MIT License](../../LICENSE).

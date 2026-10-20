@@ -1,29 +1,45 @@
 # CasCap.Api.Knx.Sinks
 
-Pluggable event sink implementations for the KNX building automation integration library ([CasCap.Api.Knx](../CasCap.Api.Knx)). Sinks persist `KnxEvent` instances to external storage backends and are loaded based on the feature's `SinkConfig`.
+Storage sinks for [CasCap.Api.Knx](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.Knx).
+They persist decoded `KnxEvent` data and raw CEMI frames according to the feature's `SinkConfig`.
 
 ## Installation
+
+Targets .NET 8 and .NET 10; includes the core KNX library.
 
 ```bash
 dotnet add package CasCap.Api.Knx.Sinks
 ```
 
-## Purpose
+## Usage
 
-This project provides additional `IEventSink<KnxEvent>` implementations beyond the Console and
+```csharp
+using CasCap.Extensions;
+
+builder.Services.AddKnxWithExtraSinks(builder.Configuration);
+```
+
+`builder` is your .NET host builder. Merge this fragment with the complete
+[KNX configuration](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.Knx#configuration-examples).
+The host supplies Redis/RedLock, Azure credentials where selected, and the feature-worker runner.
+`lite: true` omits bus workers and excludes the Redis event sink from this assembly scan.
+The core registration can still use `KnxRedisStateService` when Redis is configured; Azure Tables
+sinks are not filtered out by this extension. This differs from other integrations' lite policy.
+
+## Sinks
+
+This project provides additional [`IEventSink<KnxEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementations beyond the Console and
 Metrics sinks that ship with `CasCap.Api.Knx`. The sink assembly is scanned by
 `AddKnxWithExtraSinks()` at startup, and only sinks whose `SinkTypeAttribute` name is
 `Enabled = true` in `KnxConfig.Sinks` are registered.
 
-### Sinks
-
 | Sink class | `SinkType` | Description |
 | --- | --- | --- |
-| `KnxSinkRedisService` | `"Redis"` | Stores the latest decoded group-address value in a Redis hash and maintains per-group-address sorted sets of historical telegrams for time-range queries. Also implements `IKnxQuery`. |
+| `KnxSinkRedisService` | `"Redis"` | Writes decoded values through [`IKnxState`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Knx/Abstractions/IKnxState.cs) and optional daily/per-address sorted-set series. `GetEvents` returns current state, not historical series. |
 | `KnxSinkAzureTablesService` | `"AzureTables"` | Writes individual `KnxEvent` rows to a line-items Azure Table and maintains a rolling snapshot table where each group address is a column. |
 | `KnxSinkAzureTablesCemiService` | `"AzureTablesCemi"` | Batches raw CEMI L-Data frames to a separate Azure Table for low-level protocol analysis and replay. |
 
-## Configuration
+## Configuration Examples
 
 Sinks are enabled in `KnxConfig.Sinks.AvailableSinks`. Example `appsettings.json` fragment:
 
@@ -36,7 +52,7 @@ Sinks are enabled in `KnxConfig.Sinks.AvailableSinks`. Example `appsettings.json
           "Redis": {
             "Enabled": true,
             "Settings": {
-              "SnapshotValues": "knx:snapshot"
+              "SeriesValues": "knx:series"
             }
           },
           "AzureTables": { "Enabled": true },
@@ -61,4 +77,4 @@ Sinks are enabled in `KnxConfig.Sinks.AvailableSinks`. Example `appsettings.json
 
 ## License
 
-This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](https://github.com/f2calv/SmartHaus/blob/main/LICENSE).
