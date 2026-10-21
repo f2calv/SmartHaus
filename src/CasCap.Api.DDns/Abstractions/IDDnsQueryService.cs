@@ -8,5 +8,5 @@ public interface IDDnsQueryService
     /// <summary>
     /// Retrieves the current external IP address.
     /// </summary>
-    Task<IPAddress?> GetCurrentIp(CancellationToken cancellationToken = default);
+    public Task<IPAddress?> GetCurrentIp(CancellationToken cancellationToken = default);
 }

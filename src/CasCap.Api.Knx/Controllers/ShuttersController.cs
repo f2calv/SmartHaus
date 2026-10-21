@@ -30,11 +30,11 @@ public sealed class ShuttersController(IKnxQueryService knxQuerySvc) : Controlle
 
     /// <inheritdoc cref="KnxQueryService.CloseAllShutters"/>
     [HttpPost("state/all-close")]
-    public async Task<Accepted<string[]>> CloseAllShutters(CancellationToken cancellationToken = default)
+    public async Task<Accepted<KnxShutterTarget[]>> CloseAllShutters(CancellationToken cancellationToken = default)
         => TypedResults.Accepted((string?)null, await knxQuerySvc.CloseAllShutters(cancellationToken));
 
     /// <inheritdoc cref="KnxQueryService.OpenAllShutters"/>
     [HttpPost("state/all-open")]
-    public async Task<Accepted<string[]>> OpenAllShutters(CancellationToken cancellationToken = default)
+    public async Task<Accepted<KnxShutterTarget[]>> OpenAllShutters(CancellationToken cancellationToken = default)
         => TypedResults.Accepted((string?)null, await knxQuerySvc.OpenAllShutters(cancellationToken));
 }

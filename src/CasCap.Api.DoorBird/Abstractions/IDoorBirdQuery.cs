@@ -8,5 +8,5 @@ public interface IDoorBirdQuery
     /// <summary>
     /// Retrieves a snapshot of recent DoorBird device activity.
     /// </summary>
-    Task<DoorBirdSnapshot> GetSnapshot();
+    public Task<DoorBirdSnapshot> GetSnapshot();
 }

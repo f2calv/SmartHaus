@@ -14,12 +14,12 @@ public interface IKnxTelegramBroker<T>
     /// </summary>
     /// <param name="item">The telegram to publish.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    ValueTask PublishAsync(T item, CancellationToken cancellationToken = default);
+    public ValueTask PublishAsync(T item, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Subscribes to the broker and yields telegrams as they arrive.
     /// </summary>
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async enumerable of telegrams.</returns>
-    IAsyncEnumerable<T> SubscribeAsync(CancellationToken cancellationToken = default);
+    public IAsyncEnumerable<T> SubscribeAsync(CancellationToken cancellationToken = default);
 }

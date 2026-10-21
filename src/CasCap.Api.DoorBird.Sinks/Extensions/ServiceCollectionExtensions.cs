@@ -46,7 +46,7 @@ public static class DoorBirdSinksServiceCollectionExtensions
             services.AddHostedService<BlobProcessorBgService>();
         }
 
-        services.AddEventSinks<DoorBirdEvent>(lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
+        services.AddEventSinks<DoorBirdEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,
             [typeof(DoorBirdSinksServiceCollectionExtensions).Assembly, .. additionalSinkAssemblies]);
     }
 }

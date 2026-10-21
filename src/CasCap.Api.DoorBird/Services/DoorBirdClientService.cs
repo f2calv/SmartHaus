@@ -1,6 +1,6 @@
+using CasCap.Common.Services;
 using System.Buffers.Binary;
 using System.Net;
-using CasCap.Common.Services;
 
 namespace CasCap.Services;
 

@@ -1,14 +1,34 @@
 # CasCap.App.Server
 
-The main ASP.NET Core executable that composes and hosts the entire home automation system. It wires together all feature libraries (`CasCap.Api.*`) based on the comma-separated `EnabledFeatures` configuration string, exposes a versioned REST API, a SignalR hub, Swagger/OpenAPI documentation, MCP tools, and an AI agent.
+The .NET 10 ASP.NET Core host for SmartHaus device integrations, versioned REST endpoints, SignalR
+and stateless MCP tools. Communications call an external Agent Runtime; the server does not host
+language-model agents.
+
+## Quick Start
+
+The [root demo](../../README.md#quick-start) describes the Compose entry point and its external
+communications prerequisites. For a source checkout with the
+[Debug dependencies](../../README.md#development) and local Redis/storage services configured:
+
+```bash
+dotnet run --project src/CasCap.App.Server --configuration Debug
+```
+
+Use the tracked development configuration as a reference, keep real values in ignored local
+configuration, and select only features you intend to activate. Discover the bound HTTP address
+from the startup output; `/swagger` provides API documentation.
 
 ## Purpose
 
 `CasCap.App.Server` is the single deployable process that conditionally activates features at startup based on the `FeatureConfig.EnabledFeatures` comma-separated string. This enables the same binary to be deployed as different service profiles (e.g. KNX-only pod, full all-in-one instance).
 
+`Program.cs` is a thin entry point. Application composition is split across `AppHost.cs`,
+`AppHost.Features.cs`, `AppHost.WebApi.cs`, and `AppHost.Endpoints.cs`; configuration, logging,
+caching, and telemetry ordering remains visible in the main `AppHost.RunAsync` lifecycle.
+
 ### Feature Flag Registration
 
-Each feature name activates a distinct set of services at DI registration time. At runtime, the non-generic `FeatureFlagBgService` matches each `IBgFeature.FeatureName` string against the enabled features set:
+Each feature name activates a distinct set of services at DI registration time. At runtime, the non-generic `FeatureFlagBgService` matches each [`IBgFeature.FeatureName`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) string against the enabled features set:
 
 | Flag | Services registered | MCP tools |
 | --- | --- | --- |
@@ -16,13 +36,19 @@ Each feature name activates a distinct set of services at DI registration time. 
 | `DoorBird` | Controller, sinks, callback endpoints | `FrontDoorMcpQueryService` |
 | `Fronius` | `FroniusMonitorBgService`, controller, sinks | `InverterMcpQueryService` |
 | `Knx` | `KnxMonitorBgService`, controller, sinks | `BusSystemMcpQueryService` |
-| `EdgeHardware` | `EdgeHardwareMonitorBgService`, CPU/GPU sinks, GPIO sensors | `EdgeHardwareMcpQueryService` (when GPU detected) |
+| `EdgeHardware` | `EdgeHardwareMonitorBgService`, CPU/GPU sinks, GPIO sensors | `EdgeHardwareMcpQueryService` |
 | `Sicce` | `SicceBgService` | — |
 | `DDns` | `DDnsBgService` | — |
+| `Miele` | SSE reader, controller, sinks | `AppliancesMcpQueryService` |
+| `Shelly` | Cloud polling, controller, sinks | `SmartPlugMcpQueryService`, shared lighting tools |
+| `Ubiquiti` | Webhook controller, sinks, optional camera clips | `IpCameraMcpQueryService` |
+| `Wiz` | UDP discovery and state-change events | Shared lighting tools |
 | `SignalRHub` | `HausHub` SignalR hub, hub sinks, Redis backplane | — |
 | `Comms` | `CommunicationsBgService`, Signalizr client, comms stream sink; features also register in **lite mode** (sinks only, no polling) when this flag is set | — |
 
-Features not present in `EnabledFeatures` are entirely absent — no controllers, background services, or health checks are registered for disabled features.
+`Comms` also registers selected integrations in lite mode so its tools can query shared state;
+disabled features are therefore not necessarily absent from DI. The MCP registry selects explicit
+tool/prompt types by enabled feature rather than exposing the whole assembly.
 
 ### Always-On Services
 
@@ -30,8 +56,8 @@ The following services are registered regardless of feature flags:
 
 | Service | Description |
 | --- | --- |
-| `GitMetadataBgService` | Periodically logs git build metadata from environment variables (registered via `AddFeatureFlagService`) |
-| `SystemController` | `GET /api/system` — returns `AppConfig` |
+| `ApplicationMetadataBgService` | Logs assembly-backed application metadata at startup and periodically (registered via `AddFeatureFlagService`) |
+| `SystemController` | `GET /api/system` — returns assembly-backed `ApplicationMetadata` |
 
 ### Authentication
 
@@ -79,18 +105,22 @@ Each feature library registers its own device connectivity health check when the
 - **Swagger UI** at `/{AppConfig.SwaggerUriRoutePrefix}` (default `/swagger`). Requires Basic auth in production.
 - **MCP server** at `{AppConfig.McpUrl}` (default `/mcp`). Each enabled feature registers its `[McpServerTool]`-decorated query service methods.
 
-### AI Agents
+### Agent Runtime
 
-Named `AgentConfig` entries in `AIConfig.Agents` are each registered as a keyed singleton `AIAgent`. Each agent references a `ProviderConfig` and can gather tools from in-process MCP query services (via `ToolServices`) or from remote MCP server endpoints (via `ToolEndpoints`).
+The server does not construct local agents or bind `AIConfig`. Signal and media turns execute through
+tenant-scoped definitions in the remote Agent Runtime.
 
 ## Configuration
 
-Configuration is bootstrapped via `InitializeConfiguration` (from `CasCap.App`). The full configuration hierarchy is:
+Configuration is bootstrapped via `InitializeConfiguration` (from `CasCap.App`). The provider order is documented in [CasCap.App](../CasCap.App/README.md#configuration-precedence).
+Local overrides and user secrets are included before environment variables, with optional Key Vault
+last. The following abbreviated order shows the main providers:
 
 1. `appsettings.json`
 2. `appsettings.{Environment}.json`
-3. Environment variables
-4. Azure Key Vault (when `AppConfig.KeyVaultName` is configured)
+3. Ignored local overrides and user secrets
+4. Environment variables
+5. Azure Key Vault (when enabled)
 
 Key configuration sections:
 
@@ -98,7 +128,6 @@ Key configuration sections:
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics) |
 | `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub |
-| `AIConfig` | `AIConfig` | AI agent configuration (providers, agents) |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic auth credentials |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | Hub path and sink configuration |
 | `CasCap:BuderusConfig` | `BuderusConfig` | Buderus KM200 device settings |
@@ -107,10 +136,41 @@ Key configuration sections:
 | `CasCap:KnxConfig` | `KnxConfig` | KNX bus settings |
 | `CasCap:SicceConfig` | `SicceConfig` | Sicce pump settings |
 | `CasCap:SignalizrClientConfig` | `SignalizrClientConfig` | Signalizr gateway addresses and durable subscriber name |
-| `CasCap:CommsConfig` | `CommsConfig` | Shared Signalizr communications pipeline settings; see [CasCap.Comms](../CasCap.Comms/README.md) |
-| `CasCap:SecurityAgentConfig` | `SecurityAgentConfig` | Security/vision agent settings |
-| `CasCap:HeatingAgentConfig` | `HeatingAgentConfig` | Heating agent settings (DHW1 alert hysteresis, cooldown) |
+| `CasCap:CommsConfig` | `CommsConfig` | Shared Signalizr communications pipeline settings; see [CasCap.Comms](https://github.com/f2calv/signalizr/tree/main/src/CasCap.Comms) |
+| `CasCap:MediaConfig` | `MediaConfig` | Media routing, Redis image cache, and stream processing settings |
+| `CasCap:BuderusCommsConfig` | `BuderusCommsConfig` | Buderus DHW alert hysteresis and cooldown settings |
 | `CasCap:DDnsConfig` | `DDnsConfig` | Dynamic DNS settings |
+
+## Configuration Examples
+
+Merge this feature-selection fragment into the tracked base configuration; it is not a complete
+configuration file:
+
+```json
+{
+  "AppConfig": { "KeyVaultName": "skip" },
+  "CasCap": {
+    "FeatureConfig": { "EnabledFeatures": "Ubiquiti" }
+  }
+}
+```
+
+For a multi-feature instance, select only configured integrations:
+
+```json
+{
+  "AppConfig": { "KeyVaultName": "skip" },
+  "CasCap": {
+    "FeatureConfig": { "EnabledFeatures": "Fronius,Ubiquiti,SignalRHub" },
+    "SignalRHubConfig": { "SignalRHub": "http://localhost:8080" }
+  }
+}
+```
+
+Supply the corresponding [Fronius](../CasCap.Api.Fronius/README.md#configuration-examples) and
+[Ubiquiti](../CasCap.Api.Ubiquiti/README.md#configuration-examples) options, Redis and API
+authentication settings through the base/private configuration providers. Device features can
+perform real reads and writes; feature selection is not a simulation mode.
 
 ## Dependencies
 
@@ -131,9 +191,8 @@ Key configuration sections:
 | Project | Purpose |
 | --- | --- |
 | `CasCap.App` | Shared configuration bootstrap (`InitializeConfiguration`) |
-| `CasCap.Common.Logging.Serilog` | Serilog structured logging pipeline |
-| `CasCap.Common.OpenTelemetry` | Reusable OpenTelemetry metrics, traces, and log exporters |
+| `CasCap.Common.Hosting.AspNetCore` | Serilog hosting and OpenTelemetry metrics, traces, and log exporters |
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

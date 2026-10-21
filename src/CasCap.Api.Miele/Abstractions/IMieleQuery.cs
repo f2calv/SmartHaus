@@ -4,5 +4,5 @@ namespace CasCap.Abstractions;
 public interface IMieleQuery
 {
     /// <summary>Retrieves the latest snapshot per appliance.</summary>
-    Task<List<MieleSnapshot>> GetSnapshots();
+    public Task<List<MieleSnapshot>> GetSnapshots();
 }

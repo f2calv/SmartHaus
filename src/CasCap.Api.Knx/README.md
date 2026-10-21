@@ -4,17 +4,40 @@ A .NET library that connects to a [KNX](https://www.knx.org) bus via KNXnet/IP t
 
 ## Installation
 
+Targets .NET 8 and .NET 10. A reachable KNXnet/IP interface and an ETS group-address XML export
+matching the naming contract below are required for live bus access.
+
 ```bash
 dotnet add package CasCap.Api.Knx
 ```
 
-## Purpose
+## Usage
+
+Register the library in a .NET host that supplies logging, configuration, Redis/RedLock and the
+shared feature runner:
+
+```csharp
+using CasCap.Extensions;
+
+builder.Services.AddKnx(builder.Configuration);
+```
+
+`builder` is your host builder. This registers [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) workers rather than starting them.
+The SmartHaus host supplies their lifecycle through `AddFeatureFlagService`; enable `Knx` in
+`CasCap:FeatureConfig:EnabledFeatures` there. Use the configuration examples below and your own
+ETS export. Outbound telegrams can change lights, heating, shutters and physical access.
+
+`AddKnxWithExtraSinks` from the
+[storage package](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.Knx.Sinks)
+adds persistent state/history. `lite: true` omits bus workers and can read shared Redis state or
+publish commands to an existing bus-owning process; it does not create a bus connection.
+
+## Bus Processing
 
 The library is built around three background services that together form a pipeline:
 
-1. **`KnxMonitorBgService`** – Loads the ETS group-address metadata, waits for it to become healthy, logs the active `ServiceFamily` and `ShardingMode`, then enters a Redlock-based leadership election (in Unified sharding mode). The elected leader discovers KNX IP devices on the local network and connects to the bus using the configured service family. In **Tunneling** mode it establishes one `KnxBus` connection per configured area/line combination; in **Routing** mode it joins the multicast group advertised by the KNX IP router (and `ShardingMode` is forced to `Unified`). Incoming telegrams pass through service-family-specific deduplication filters before being decoded and published via the `IKnxTelegramBroker<KnxEvent>`.
-
-2. **`KnxProcessorBgService`** – Reads from that broker and fans each `KnxEvent` out to every registered `IEventSink<KnxEvent>` implementation in parallel, waiting for all sinks to complete before processing the next event.
+1. **`KnxMonitorBgService`** – Loads the ETS group-address metadata, waits for it to become healthy, logs the active `ServiceFamily` and `ShardingMode`, then enters a Redlock-based leadership election (in Unified sharding mode). The elected leader discovers KNX IP devices on the local network and connects to the bus using the configured service family. In **Tunneling** mode it establishes one `KnxBus` connection per configured area/line combination; in **Routing** mode it joins the multicast group advertised by the KNX IP router (and `ShardingMode` is forced to `Unified`). Incoming telegrams pass through service-family-specific deduplication filters before being decoded and published via the [`IKnxTelegramBroker<KnxEvent>`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Knx/Abstractions/IKnxTelegramBroker%7BT%7D.cs).
+2. **`KnxProcessorBgService`** – Reads from that broker and fans each `KnxEvent` out to every registered [`IEventSink<KnxEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementation in parallel, waiting for all sinks to complete before processing the next event.
 
 3. **`KnxSenderBgService`** – Dequeues outbound write requests from a separate outgoing broker and sends them to the bus, enabling bidirectional control.
 
@@ -94,7 +117,8 @@ Boolean false means locked and Boolean true means unlocked.
 
 ## Configuration
 
-All site-specific values are configured in `appsettings.json` under `CasCap:KnxConfig`. The C# defaults are intentionally left empty/placeholder so that the library works out-of-the-box for any KNX installation — simply fill in your own values.
+Configure site-specific values under `CasCap:KnxConfig`. The defaults are not a complete KNX
+installation: supply an ETS export, interface settings and any enabled automation settings.
 
 ### Site-Specific Settings
 
@@ -111,19 +135,21 @@ All site-specific values are configured in `appsettings.json` under `CasCap:KnxC
 The `Translations` section in `KnxConfig` maps English enum values to localised equivalents. At agent startup the `TranslationExtensions.BuildTranslationGlossary()` method generates a Markdown glossary table that can be injected into the LLM system prompt, allowing end users to query in German (or any configured language) while MCP tools use English internally.
 
 ```json
-"Translations": {
+{
+  "Translations": {
   "de": {
-    "Floors": { "DG": "Dachgeschoss", "OG": "Obergeschoss", ... },
-    "Rooms": { "Kitchen": "Küche", "Office": "Büro", ... },
-    "Orientations": { "North": "Nord", "East": "Ost", ... },
-    "Categories": { "LI": "Beleuchtung", "HZ": "Heizung", ... }
+    "Floors": { "DG": "Dachgeschoss", "OG": "Obergeschoss" },
+    "Rooms": { "Kitchen": "Küche", "Office": "Büro" },
+    "Orientations": { "North": "Nord", "East": "Ost" },
+    "Categories": { "LI": "Beleuchtung", "HZ": "Heizung" }
   },
   "es": {
     "Floors": { "DG": "Ático", "OG": "Planta alta", "EG": "Planta baja", "KG": "Sótano" },
-    "Rooms": { "Kitchen": "Cocina", "Office": "Oficina", "LivingRoom": "Salón", ... },
+    "Rooms": { "Kitchen": "Cocina", "Office": "Oficina", "LivingRoom": "Salón" },
     "Orientations": { "North": "Norte", "East": "Este", "South": "Sur", "West": "Oeste" },
     "Categories": { "LI": "Iluminación", "HZ": "Calefacción", "BL": "Persianas", "SD": "Enchufe" }
   }
+}
 }
 ```
 
@@ -135,7 +161,7 @@ The `Translations` section in `KnxConfig` maps English enum values to localised 
 | **Metrics** | Emits OpenTelemetry metrics |
 
 Optional Redis and Azure Tables implementations are provided by
-[`CasCap.Api.Knx.Sinks`](../CasCap.Api.Knx.Sinks).
+[`CasCap.Api.Knx.Sinks`](https://github.com/f2calv/SmartHaus/tree/main/src/CasCap.Api.Knx.Sinks).
 
 ### Deployment Matrix
 
@@ -226,12 +252,9 @@ flowchart TD
 
     SINK_CONSOLE["Console Sink\n(Serilog)"]
     SINK_REDIS["Redis Sink\n(latest state)"]
-    SINK_CHANNEL["Channel Sink\n(in-process)"]
     SINK_AZTABLES["Azure Tables Sink\n(history + snapshot)"]
     SINK_CEMI["Azure CEMI Tables Sink\n(raw frames, batched)"]
-    SINK_STATECHANGE["State Change Sink\n(SMS alerts)"]
     SINK_OTEL["OpenTelemetry Sink\n(metrics)"]
-    SINK_GRPC["gRPC Sink\n(streaming)"]
 
     CHANNEL_OUT["IKnxTelegramBroker&lt;KnxOutgoingTelegram&gt;\n(Channel or Redis)"]
 
@@ -252,12 +275,9 @@ flowchart TD
     CHANNEL_IN --> READ --> DISPATCH
     DISPATCH --> SINK_CONSOLE
     DISPATCH --> SINK_REDIS
-    DISPATCH --> SINK_CHANNEL
     DISPATCH --> SINK_AZTABLES
     DISPATCH --> SINK_CEMI
-    DISPATCH --> SINK_STATECHANGE
     DISPATCH --> SINK_OTEL
-    DISPATCH --> SINK_GRPC
     CHANNEL_OUT --> SEND --> BUS
 ```
 
@@ -306,6 +326,9 @@ flowchart TD
       "DayNightGroupAddressName": "SYS-[Night_Day]",
       "DayNightSunriseHourOverrideWeekday": 6,
       "DayNightSunriseHourOverrideWeekend": 7,
+      "FrontDoorContactGroupName": "EG-BI-Entrance(FrontDoor)-East-STATE",
+      "FrontDoorLightGroupName": "EG-LI-Entrance(FrontDoor)-Outdoor-DL",
+      "OfficeLightGroupName": "DG-LI-Office-DL-South",
       "BusSenderLoggingEnabled": true,
       "StateChangePollingDelayMs": 100,
       "StateChangeMaxPollIterations": 20,
@@ -317,6 +340,7 @@ flowchart TD
       "ConnectionHealthPollingDelayMs": 1000,
       "ReconnectBackoffMs": 1000,
       "ReconnectMaxBackoffMs": 60000,
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
       "TelegramBrokerMode": "Redis",
       "TelegramConsumerGroupStartId": "0",
       "Sinks": {
@@ -340,4 +364,4 @@ flowchart TD
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](https://github.com/f2calv/SmartHaus/blob/main/LICENSE).

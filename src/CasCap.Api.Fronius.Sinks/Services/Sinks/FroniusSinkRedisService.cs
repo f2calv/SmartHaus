@@ -1,5 +1,5 @@
-using System.Runtime.CompilerServices;
 using StackExchange.Redis;
+using System.Runtime.CompilerServices;
 
 namespace CasCap.Services;
 
@@ -61,7 +61,7 @@ public sealed partial class FroniusSinkRedisService(
 
         return new InverterSnapshot
         {
-            StateOfCharge = TryGetDouble(dict, nameof(FroniusEvent.SOC)),
+            StateOfChargePercent = Math.Round(TryGetDouble(dict, nameof(FroniusEvent.SOC)) * 100, 1),
             BatteryPower = TryGetDouble(dict, nameof(FroniusEvent.P_Akku)),
             GridPower = TryGetDouble(dict, nameof(FroniusEvent.P_Grid)),
             LoadPower = TryGetDouble(dict, nameof(FroniusEvent.P_Load)),

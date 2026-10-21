@@ -2,6 +2,17 @@
 
 Dynamic DNS library that monitors the public IP address and automatically updates Azure DNS A records when it changes.
 
+## Usage
+
+This source-only .NET 10 library is included by the SmartHaus host; it is not published as a NuGet
+package. Enable `DDns` in `CasCap:FeatureConfig:EnabledFeatures` and supply the configuration below.
+It needs Azure DNS write permission, Azure authentication and the host's Redis/RedLock services.
+It modifies DNS records, so configure an appropriate test zone before enabling it.
+
+Custom hosts register it with `services.AddDDns(configuration)` from
+`Microsoft.Extensions.DependencyInjection`, and start its [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) worker through the shared
+feature runner.
+
 ## Services
 
 | Service | Description |
@@ -30,12 +41,11 @@ Dynamic DNS library that monitors the public IP address and automatically update
 
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
-| `IsEnabled` | `bool` | `false` | Whether the Dynamic DNS service is enabled |
 | `BaseAddress` | `string` | `"https://api.ipify.org/"` | Base address of the IP discovery service |
 | `DnsResourceGroupName` | `string` | — | Azure DNS resource group name |
 | `DnsZoneName` | `string` | — | Azure DNS zone name |
 | `DnsMetaDataKey` | `string` | — | DNS metadata key for tracking updates |
-| `RefreshDelayMs` | `int` | `10000` | Delay in milliseconds between DNS refresh cycles |
+| `RefreshDelayMs` | `int` | `30000` | Delay in milliseconds between DNS refresh cycles |
 
 ## Configuration Examples
 
@@ -59,12 +69,11 @@ Dynamic DNS library that monitors the public IP address and automatically update
 {
   "CasCap": {
     "DDnsConfig": {
-      "IsEnabled": true,
       "BaseAddress": "https://api.ipify.org/",
       "DnsZoneName": "example.net",
       "DnsResourceGroupName": "some-rg",
       "DnsMetaDataKey": "dyndns",
-      "RefreshDelayMs": 10000
+      "RefreshDelayMs": 30000
     }
   }
 }
@@ -83,7 +92,7 @@ Dynamic DNS library that monitors the public IP address and automatically update
 
 | Project | Purpose |
 | --- | --- |
-| `CasCap.Api.Azure.Auth` | Azure authentication and token credential helpers (`IAzureAuthConfig`, `TokenCredentialExtensions`) |
+| `CasCap.Api.Azure.Auth` | Azure authentication and token credential helpers ([`IAzureAuthConfig`](https://github.com/f2calv/CasCap.Api.Azure/blob/main/src/CasCap.Api.Azure.Auth/Abstractions/IAzureAuthConfig.cs), `TokenCredentialExtensions`) |
 | `CasCap.Common.Caching` | Distributed locking (RedLock) |
 | `CasCap.Common.Configuration` | Configuration binding and validation |
 | `CasCap.Common.Extensions` | Shared extension helpers |
@@ -94,4 +103,4 @@ Dynamic DNS library that monitors the public IP address and automatically update
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

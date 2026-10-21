@@ -66,8 +66,5 @@ Use the shared Helm guidance for chart authoring, packaging, chart-testing fixtu
 and dashboard JSON handling. Keep these SmartHaus-specific rules:
 
 - `charts/smarthaus` receives the application release version during packaging.
-- `charts/smarthaus-dashboards` owns its committed chart version. Its dashboard workflow publishes
-  and rolls out that version, while `deploy.ps1 -OnlyCharts` publishes a disposable development
-  version without rolling application pods.
 - Preserve the Fronius dashboard's pinned ConfigMap name and data key. New dashboards follow the
   file-basename convention.

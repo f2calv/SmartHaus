@@ -4,7 +4,49 @@ Pluggable event sink implementations for the Wiz smart lighting integration libr
 
 ## Purpose
 
-This project provides additional `IEventSink<T>` implementations that persist Wiz bulb events to external storage backends (Redis, Azure Table Storage, etc.). Sinks are discovered at runtime via `SinkTypeAttribute` and loaded based on the feature's `SinkConfig`.
+This source-only .NET 10 library provides `WizSinkRedisService` and `WizSinkAzureTablesService`.
+Redis stores per-device snapshots and daily series; Azure Tables persists event rows and snapshots.
+
+## Usage
+
+```csharp
+using CasCap.Extensions;
+
+builder.Services.AddWizWithExtraSinks(builder.Configuration);
+```
+
+`builder` is your application host builder. Merge the fragment below with the
+[WiZ configuration](../CasCap.Api.Wiz/README.md#configuration-examples) and supply Redis caching or
+Azure credentials/storage services. `lite: true` excludes Azure Tables from the sink scan but
+does not suppress core discovery-worker registration.
+
+These sinks consume `WizEvent` from the discovery worker when a bulb is first seen or its pilot
+state changes. Discovery ignores MAC/RSSI-only changes when deciding whether to emit an event.
+
+## Configuration Examples
+
+```json
+{
+  "CasCap": {
+    "WizConfig": {
+      "Sinks": {
+        "AvailableSinks": {
+          "Redis": {
+            "Enabled": true,
+            "Settings": {
+              "SnapshotValues": "wiz:snapshot:values",
+              "SeriesValues": "wiz:series"
+            }
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+To add Azure persistence, enable `AzureTables`, set `WizConfig.AzureTableStorageConnectionString`
+and configure authentication.
 
 ## Dependencies
 
@@ -19,4 +61,4 @@ This project provides additional `IEventSink<T>` implementations that persist Wi
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

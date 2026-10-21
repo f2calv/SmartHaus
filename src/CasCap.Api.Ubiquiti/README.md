@@ -4,9 +4,29 @@ A .NET library that integrates with [Ubiquiti UniFi Protect](https://ui.com/came
 
 ## Purpose
 
+This source-only .NET 10 library is not published as a NuGet package.
+
+## Usage
+
+Enable `Ubiquiti` in SmartHaus's `CasCap:FeatureConfig:EnabledFeatures` and supply the configuration
+below. Custom ASP.NET Core hosts use `services.AddUbiquiti(configuration)` from `CasCap.Extensions`
+and map the library's controllers alongside the host's API versioning.
+
+For a running local demo, submit a synthetic event:
+
+```bash
+curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=ExampleCamera&score=0.95"
+```
+
+The callback returns `ok` and writes to the configured sinks. Motion, smart-detection and ring
+callbacks accept GET or POST and allow anonymous requests; restrict their network exposure.
+Smart-detection types are `person`, `vehicle`, `animal` and `package`.
+
+## Webhooks
+
 The library is built around webhook endpoints that form the core pipeline:
 
-**`UbiquitiController`** – Exposes a `GET /` snapshot query endpoint and REST API webhook endpoints (`/event/motion`, `/event/smart?type=person|vehicle|animal|package`, `/event/ring`) that the UniFi Protect controller or third-party automation tools call when events occur. Each webhook creates a `UbiquitiEvent` containing the event type, camera identifier, camera name, timestamp, and optional smart detection confidence score, then dispatches it in parallel to every registered `IEventSink<UbiquitiEvent>`.
+**`UbiquitiController`** – Exposes a `GET /` snapshot query endpoint and REST API webhook endpoints (`/event/motion`, `/event/smart?type=person|vehicle|animal|package`, `/event/ring`) that the UniFi Protect controller or third-party automation tools call when events occur. Each webhook creates a `UbiquitiEvent` containing the event type, camera identifier, camera name, timestamp, and optional smart detection confidence score, then dispatches it in parallel to every registered [`IEventSink<UbiquitiEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs).
 
 ### Sinks
 
@@ -66,10 +86,10 @@ flowchart TD
 {
   "CasCap": {
     "UbiquitiConfig": {
-      "BaseAddress": "https://192.168.1.100",
+      "BaseAddress": "https://controller.example.com",
       "Username": "<controller-username>",
       "Password": "<controller-password>",
-      "AzureTableStorageConnectionString": "https://<account>.table.core.windows.net",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
       "Sinks": {
         "AvailableSinks": {
           "Console": { "Enabled": true },
@@ -87,8 +107,8 @@ flowchart TD
 {
   "CasCap": {
     "UbiquitiConfig": {
-      "IsEnabled": true,
-      "BaseAddress": "https://192.168.1.100",
+      "BaseAddress": "https://controller.example.com",
+      "AzureTableStorageConnectionString": "https://example.table.core.windows.net",
       "Username": "<controller-username>",
       "Password": "<controller-password>",
       "Sinks": {
@@ -124,4 +144,4 @@ flowchart TD
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

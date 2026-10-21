@@ -1,59 +1,9 @@
 # SmartHaus Grafana dashboards
 
-Publishes the SmartHaus Grafana dashboards as sidecar-discoverable ConfigMaps. The chart is
-independent of the [`smarthaus`](../smarthaus/README.md) application chart, which does not own any
-Grafana resources, and is versioned by its own `Chart.yaml`. It is published to
-`oci://ghcr.io/f2calv/charts/smarthaus-dashboards`.
-
-## Install
-
-### Helm
-
-Install the dashboards into the namespace your Grafana sidecar watches:
-
-```bash
-helm install smarthaus-dashboards oci://ghcr.io/f2calv/charts/smarthaus-dashboards --version 0.1.1 \
-  --namespace my-namespace --create-namespace \
-  --set-string datasources.prometheus=prometheus
-```
-
-Upgrade to the latest stable chart published in GHCR:
-
-```bash
-helm upgrade --install smarthaus-dashboards oci://ghcr.io/f2calv/charts/smarthaus-dashboards \
-  --namespace my-namespace --create-namespace \
-  --set-string datasources.prometheus=prometheus
-```
-
-### Argo CD Application
-
-[Argo CD](https://argo-cd.readthedocs.io/) can consume the same OCI package directly:
-
-```yaml
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: smarthaus-dashboards
-  namespace: argocd
-spec:
-  project: default
-  destination:
-    namespace: my-namespace
-    server: https://kubernetes.default.svc
-  source:
-    repoURL: ghcr.io/f2calv
-    chart: charts/smarthaus-dashboards
-    targetRevision: 0.1.1
-    helm:
-      valuesObject:
-        dashboardFolder: SmartHaus
-        datasources:
-          prometheus: prometheus
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-```
+Publishes the SmartHaus Grafana dashboards as sidecar-discoverable ConfigMaps. The
+[`smarthaus`](../smarthaus/README.md) application chart bundles it as a `file://` subchart enabled by
+`dashboards.enabled`; its version stays fixed at `0.1.0`. Set the values below under the application
+chart's `dashboards` key.
 
 ## Configuration
 
@@ -67,9 +17,9 @@ Each file under `dashboards/` becomes a ConfigMap named `grafana-dashboard-<file
 `grafana_dashboard: "1"` label, and the datasource UID is substituted into the JSON. Grafana must
 run the dashboard sidecar with `folderAnnotation: grafana_folder` for the folder to apply.
 
-The Fronius dashboard keeps its established identity: its ConfigMap is named
-`grafana-dashboard-fronius-solar-cm` with the data key `grafana-dashboard-fronius-solar.json`, so
-upgrading from an earlier install replaces it in place rather than creating a duplicate.
+The Fronius dashboard uses ConfigMap `grafana-dashboard-fronius-solar-cm` with data key
+`grafana-dashboard-fronius-solar.json`. Keep one chart release responsible for each dashboard UID
+to avoid duplicates in Grafana.
 
 ### Default Values
 

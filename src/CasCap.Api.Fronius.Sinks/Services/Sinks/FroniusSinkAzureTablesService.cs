@@ -66,7 +66,7 @@ public sealed partial class FroniusSinkAzureTablesService : IEventSink<FroniusEv
         var entity = await GetSnapshotEntity();
         return new InverterSnapshot
         {
-            StateOfCharge = entity.SOC,
+            StateOfChargePercent = Math.Round(entity.SOC * 100, 1),
             BatteryPower = entity.P_Akku,
             GridPower = entity.P_Grid,
             LoadPower = entity.P_Load,

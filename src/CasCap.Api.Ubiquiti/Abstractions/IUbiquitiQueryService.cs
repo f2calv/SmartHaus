@@ -8,7 +8,7 @@ public interface IUbiquitiQueryService
     /// <summary>
     /// Retrieves a snapshot of recent camera activity including last event timestamps per <see cref="UbiquitiEventType"/>.
     /// </summary>
-    Task<UbiquitiSnapshot> GetSnapshot();
+    public Task<UbiquitiSnapshot> GetSnapshot();
 
     /// <summary>
     /// Sends a camera alert event (motion, smart detection, ring) to all configured event sinks.
@@ -19,7 +19,7 @@ public interface IUbiquitiQueryService
     /// <param name="score">Optional smart detection confidence score (0.0–1.0).</param>
     /// <param name="webhook">Optional UniFi Protect payload containing trigger metadata and a thumbnail.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task SendAlert(
+    public Task SendAlert(
         UbiquitiEventType type,
         string? cameraId = null,
         string? cameraName = null,

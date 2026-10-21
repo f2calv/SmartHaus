@@ -1,6 +1,25 @@
 # CasCap.Api.EdgeHardware
 
-Shared edge hardware monitoring library — consolidates GPU telemetry, CPU monitoring and Raspberry Pi GPIO sensor integration into a single project for Linux-based edge inference hosts.
+Source-only .NET 10 hardware monitoring library for edge applications. It collects NVIDIA GPU and
+CPU temperature readings and provides Raspberry Pi GPIO/peripheral services.
+
+## Usage
+
+Enable `EdgeHardware` in SmartHaus's `CasCap:FeatureConfig:EnabledFeatures` and load the configuration
+below. The server registers the feature runner, CPU provider, sinks and Pi services.
+
+For a custom host, registration detects the GPU and returns whether one was found:
+
+```csharp
+using CasCap.Extensions;
+
+var gpuDetected = builder.Services.AddEdgeHardware(builder.Configuration, cpuEnabled: true);
+```
+
+Here `builder` is your .NET host builder. Run the registered [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) worker through the shared
+feature runner, and supply the shared [`IKubeAppConfig`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/_IKubeAppConfig.cs)/time services. Use
+`AddEdgeHardwareWithExtraSinks` from the [storage extension](../CasCap.Api.EdgeHardware.Sinks/README.md)
+when Redis or Azure Tables are needed. This is not a published NuGet package.
 
 ## Purpose
 
@@ -8,20 +27,21 @@ Shared edge hardware monitoring library — consolidates GPU telemetry, CPU moni
 
 - Periodically invokes `nvidia-smi` to read GPU power draw (W), temperature (°C), compute utilization (%), memory utilization (%) and memory usage (MiB).
 - Reads CPU temperature via `Iot.Device.CpuTemperature` (Linux thermal zone) when available.
-- Emits `EdgeHardwareEvent` instances to all registered `IEventSink<EdgeHardwareEvent>` implementations.
+- Emits `EdgeHardwareEvent` instances to all registered [`IEventSink<EdgeHardwareEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementations.
 - Publishes OpenTelemetry observable gauges via `EdgeHardwareSinkMetricsService`.
-- Exposes latest `GpuSnapshot` in-memory via `IGpuMetricsProvider` for per-query energy estimation.
-- Gated behind the `EdgeHardware` feature flag. GPU is auto-detected via ILGPU at startup; CPU monitoring is always enabled.
+- Exposes snapshots through [`IEdgeHardwareQueryService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.EdgeHardware/Abstractions/IEdgeHardwareQueryService.cs).
+- GPU detection uses ILGPU at registration; polling attempts `nvidia-smi` and tolerates unavailable GPU data.
+- CPU readings require registration with `cpuEnabled: true` (the default is `false`).
 
 ### Event Sinks
 
 | Sink | Description |
 | --- | --- |
 | `EdgeHardwareSinkConsoleService` | Logs each reading at debug level |
-| `EdgeHardwareSinkMemoryService` | In-memory latest-value store, also implements `IGpuMetricsProvider` |
+| `EdgeHardwareSinkMemoryService` | In-memory latest snapshot, implements [`IEdgeHardwareQuery`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.EdgeHardware/Abstractions/IEdgeHardwareQuery.cs) |
 | `EdgeHardwareSinkMetricsService` | Publishes OTEL gauges (`gpu.power`, `gpu.temperature`, `gpu.utilization`, `gpu.memory.used`, `hw.temperature`) |
 
-### GPIO Sensors (`PiGpioMonitorBgService`)
+### GPIO Sensors (`GpioMonitorBgService`)
 
 - Manages GPIO-attached sensor devices on Raspberry Pi hardware.
 - **`GpioBmp280SensorService`** – Reads temperature and barometric pressure from a BMP280 sensor over I²C.
@@ -52,18 +72,18 @@ flowchart TD
 
     subgraph EdgeMonitor["EdgeHardwareMonitorBgService (every 2 s)"]
         POLL_GPU["Poll GPU metrics<br/>(power, temp, util, mem)"]
-        POLL_CPU["Poll CPU temp<br/>(every 60 s)"]
+        POLL_CPU["Poll CPU temp<br/>(same configured interval)"]
         BUILD["Build EdgeHardwareEvent"]
         DISPATCH["Fan-out to all sinks<br/>Task.WhenAll"]
     end
 
-    subgraph PiMonitor["PiGpioMonitorBgService (every 60 s)"]
+    subgraph PiMonitor["GpioMonitorBgService"]
         READ_SENSORS["Read GPIO sensors"]
         CAPTURE["Capture camera images"]
     end
 
     SINK_CONSOLE["Console Sink<br/>(logger)"]
-    SINK_MEMORY["Memory Sink<br/>(latest value, IGpuMetricsProvider)"]
+    SINK_MEMORY["Memory Sink<br/>(latest snapshot)"]
     SINK_METRICS["Metrics Sink<br/>(OTEL gauges)"]
 
     GPU --> POLL_GPU
@@ -79,19 +99,21 @@ flowchart TD
     READ_SENSORS --> SINK_CONSOLE
 ```
 
-## Registration
+## Platform Support
+
+NVIDIA readings need a working driver and `nvidia-smi` accessible to the process. CPU temperature
+uses IoT thermal bindings on Linux; the Windows provider is compiled only for a Windows-targeted
+build. The default project target is `net10.0`, so do not assume Windows hardware sensor support
+from that artifact. Raspberry Pi GPIO, I²C, 1-Wire and MMAL camera services require compatible
+hardware, native libraries and device permissions; they are not portable desktop implementations.
+The GPIO worker also has a fixed node-name gate in source, so feature configuration alone does
+not enable its sensor loop on an arbitrary Raspberry Pi.
+
+### Pi registration
 
 ```csharp
-// Unified edge hardware monitoring — GPU + CPU telemetry via sinks
-if (enabledFeatures.Contains("EdgeHardware"))
-{
-    var gpuEnabled = DetectNvidiaGpu(); // ILGPU auto-detection
-    builder.Services.AddEdgeHardware(builder.Configuration, gpuEnabled, cpuEnabled: true);
-}
-
 // GPIO sensors & Pi peripherals
-if (enabledFeatures.Contains("EdgeHardware"))
-    builder.Services.AddEdgeHardwarePi(builder.Configuration);
+builder.Services.AddEdgeHardwarePi(builder.Configuration);
 ```
 
 ## Configuration
@@ -101,7 +123,6 @@ Edge hardware monitoring reads from the `CasCap:EdgeHardwareConfig` configuratio
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `PollIntervalMs` | `int` | `2000` | Milliseconds between nvidia-smi GPU metric reads |
-| `CpuPollIntervalMs` | `int` | `60000` | Milliseconds between CPU temperature reads |
 | `EnergyPerKiloTokenWh` | `double` | `0.003` | Fallback Wh per 1 000 tokens when live GPU data unavailable |
 | `KettleBoilWh` | `double` | `100` | Reference energy for a kettle boil |
 | `PhoneChargeWh` | `double` | `15` | Reference energy for a phone charge |
@@ -113,7 +134,6 @@ Raspberry Pi reads from `CasCap:EdgeHardwareConfig`:
 | Setting | Type | Default | Description |
 | --- | --- | --- | --- |
 | `LocalPath` | `string` | *(required)* | Filesystem path for camera captures |
-| `PollingIntervalMs` | `int` | `60000` | Milliseconds between CPU temperature readings |
 | `Sensors.HcSr501.OutPin` | `int` | `0` | GPIO pin for HC-SR501 motion sensor |
 
 ## Configuration Examples
@@ -143,8 +163,7 @@ Raspberry Pi reads from `CasCap:EdgeHardwareConfig`:
   "CasCap": {
     "EdgeHardwareConfig": {
       "PollIntervalMs": 2000,
-      "CpuPollIntervalMs": 60000,
-      "LocalPath": "//mnt/pi",
+      "LocalPath": "./captures",
       "EnergyPerKiloTokenWh": 0.003,
       "KettleBoilWh": 100,
       "PhoneChargeWh": 15,
@@ -163,7 +182,8 @@ Raspberry Pi reads from `CasCap:EdgeHardwareConfig`:
           "Redis": {
             "Enabled": true,
             "Settings": {
-              "SnapshotValues": "gpu_power_w,gpu_temp_c,gpu_util_pct,gpu_mem_used_mib,cpu_temp_c"
+              "SnapshotValues": "edgehardware:snapshot:values",
+              "SeriesValues": "edgehardware:series"
             }
           }
         }
@@ -202,4 +222,4 @@ Raspberry Pi reads from `CasCap:EdgeHardwareConfig`:
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

@@ -134,7 +134,7 @@ This is the heart of brownfield adoption: teach Spec Kit the rules, then capture
 The brownfield insight: write **one baseline spec describing the system as it exists today**, so subsequent features are expressed as deltas. Two viable granularities — start narrow.
 
 - [ ] **`SK-11` (High)** — Choose the **first slice to reverse-engineer**. Recommended: a single, well-bounded feature module rather than the whole app. Good candidates (each is already a self-contained, README-documented module):
-  - [`Comms`](../../src/CasCap.SmartHaus/README.md) — the Signal messaging + agent pipeline (rich behaviour, already has design docs [001](001-signalcli-audit-remediation.md)/[002](002-signalcli-receive-heartbeat.md)).
+  - [`Comms`](../../src/CasCap.Backend/README.md) — the Signal messaging + agent pipeline (rich behaviour, already has design docs [001](001-signalcli-audit-remediation.md)/[002](002-signalcli-receive-heartbeat.md)).
   - [`EdgeHardware`](../../src/CasCap.Api.EdgeHardware/README.md) — CPU/GPU telemetry (small, self-contained, demo-enabled).
 
 - [ ] **`SK-12` (High)** — Run `/speckit.specify` to capture the chosen module's **current** behaviour (the *what* and *why*), feeding the agent the module README and source. Example:
@@ -162,7 +162,7 @@ Demonstrate the full SDD loop on genuine, small enhancements so the team builds 
 
   Gate `/speckit.implement` behind the repo's **"never run tests automatically"** rule — review generated tasks before any test execution.
 
-- [ ] **`SK-16` (Low)** — **Example B (new greenfield-within-brownfield module).** Spec a brand-new small feature module from scratch (e.g. a new device integration stub) to show Spec Kit's 0-to-1 flow inside the existing solution, respecting the established module layout (`CasCap.Api.<Name>` + `.Sinks` + `.Tests`, feature flag in [`FeatureNames`](../../src/CasCap.SmartHaus/Models/FeatureNames.cs)).
+- [ ] **`SK-16` (Low)** — **Example B (new greenfield-within-brownfield module).** Spec a brand-new small feature module from scratch (e.g. a new device integration stub) to show Spec Kit's 0-to-1 flow inside the existing solution, respecting the established module layout (`CasCap.Api.<Name>` + `.Sinks` + `.Tests`, feature flag in [`FeatureNames`](../../src/CasCap.Backend/Models/FeatureNames.cs)).
 
 - [ ] **`SK-17` (Low)** — Capture lessons in a short retrospective appended here (what the agent got right/wrong, which constitution rules needed tightening), and fold any reusable rule back into `.specify/memory/constitution.md` and the relevant `.github/instructions/` file.
 

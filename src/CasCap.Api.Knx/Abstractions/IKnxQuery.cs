@@ -11,10 +11,10 @@ public interface IKnxQuery
     /// <param name="id">Optional group address identifier to filter events.</param>
     /// <param name="limit">Maximum number of events to return.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default);
+    public IAsyncEnumerable<KnxEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default);
 
     /// <summary>Removes orphaned snapshot entries not present in <paramref name="validNames"/>.</summary>
     /// <param name="validNames">Set of valid group address names to retain.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    Task HousekeepingAsync(HashSet<string> validNames, CancellationToken cancellationToken = default);
+    public Task HousekeepingAsync(HashSet<string> validNames, CancellationToken cancellationToken = default);
 }

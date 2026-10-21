@@ -8,5 +8,5 @@ public interface IUbiquitiQuery
     /// <summary>
     /// Retrieves a snapshot of recent Ubiquiti camera activity.
     /// </summary>
-    Task<UbiquitiSnapshot> GetSnapshot();
+    public Task<UbiquitiSnapshot> GetSnapshot();
 }

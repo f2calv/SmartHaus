@@ -22,7 +22,7 @@ public sealed partial class BlobProcessorBgService(ILogger<BlobProcessorBgServic
         await foreach (var blob in BlobStatics.UploadQueue.Reader.ReadAllAsync(cancellationToken))
         {
             LogProcessingBlob(logger, nameof(BlobProcessorBgService), blob.BlobName);
-            await doorBirdAzBlobStorageSvc.UploadBlob(blob.BlobName, blob.bytes, cancellationToken);
+            await doorBirdAzBlobStorageSvc.UploadBlob(blob.BlobName, blob.Bytes, cancellationToken);
         }
     }
 

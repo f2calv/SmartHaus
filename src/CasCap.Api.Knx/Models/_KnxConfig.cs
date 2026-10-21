@@ -57,6 +57,16 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     [Required]
     public required string GroupAddressXmlFilePath { get; init; }
 
+    /// <summary>
+    /// Group names, without the function suffix (e.g. <c>OG-BL-Bedroom</c>), hidden from grouped queries
+    /// such as the shutter, light and contact tools.
+    /// </summary>
+    /// <remarks>
+    /// Use for collective addresses that drive several devices and never report feedback. Telegram
+    /// decoding and state storage are unaffected.
+    /// </remarks>
+    public string[] GroupAddressIgnore { get; init; } = [];
+
     #region DayNight
     /// <summary>Whether the day/night detection feature is enabled.</summary>
     /// <remarks>Defaults to <see langword="true"/>.</remarks>
@@ -89,6 +99,18 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     /// Must be configured in <c>appsettings.json</c>.
     /// </remarks>
     public string[] DayNightAdditionalGroupAddresses { get; init; } = [];
+
+    /// <summary>Group address name of the front door contact sensor used by the front door state tool.</summary>
+    [Required]
+    public required string FrontDoorContactGroupName { get; init; } = "EG-BI-Entrance(FrontDoor)-East-STATE";
+
+    /// <summary>Group address name of the exterior front door light used by the door light tools.</summary>
+    [Required]
+    public required string FrontDoorLightGroupName { get; init; } = "EG-LI-Entrance(FrontDoor)-Outdoor-DL";
+
+    /// <summary>Group address name of the office lights used by the office light tools.</summary>
+    [Required]
+    public required string OfficeLightGroupName { get; init; } = "DG-LI-Office-DL-South";
 
     /// <summary>Delay in milliseconds between day/night state pushes to the KNX bus.</summary>
     /// <remarks>Used by <see cref="CasCap.Services.KnxAutomationBgService"/>. Defaults to <c>300000</c> ms (5 minutes). The first push occurs immediately on startup.</remarks>
@@ -128,6 +150,16 @@ public sealed record KnxConfig : IAppConfig, IAzTableStorageConfig, IMetricsConf
     /// <remarks>Defaults to <c>20</c>.</remarks>
     [Required, Range(1, int.MaxValue)]
     public required int StateChangeMaxPollIterations { get; init; } = 20;
+
+    /// <summary>Accepted deviation in percentage points when judging whether a shutter or its slats reached a target.</summary>
+    /// <remarks>Actuators commonly report 98 or 99 for a fully closed shutter. Defaults to <c>5</c>.</remarks>
+    [Required, Range(0, 50)]
+    public required double ShutterPositionTolerancePct { get; init; } = 5;
+
+    /// <summary>Time to wait for commanded shutters to reach their targets before reporting the rest as unconfirmed.</summary>
+    /// <remarks>A shutter can take about a minute to travel and slats move after it stops. Defaults to <c>180000</c> ms.</remarks>
+    [Required, Range(1_000, int.MaxValue)]
+    public required int ShutterMovementTimeoutMs { get; init; } = 180_000;
 
     /// <summary>Delay in milliseconds between each poll of the <see cref="CasCap.Abstractions.IStateChangeQueue"/> when empty.</summary>
     /// <remarks>Used by <see cref="CasCap.Services.KnxAutomationBgService"/>. Defaults to <c>50</c> ms.</remarks>

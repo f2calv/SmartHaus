@@ -1,5 +1,5 @@
-using System.Runtime.CompilerServices;
 using StackExchange.Redis;
+using System.Runtime.CompilerServices;
 
 namespace CasCap.Services;
 

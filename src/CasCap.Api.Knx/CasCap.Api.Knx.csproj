@@ -16,7 +16,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CasCap.App.Tests" />
+    <InternalsVisibleTo Include="CasCap.Backend.Tests" />
     <InternalsVisibleTo Include="CasCap.Api.Knx.Tests" />
     <InternalsVisibleTo Include="CasCap.Api.Knx.Sinks" />
   </ItemGroup>

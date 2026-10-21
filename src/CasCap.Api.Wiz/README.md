@@ -4,9 +4,39 @@ A .NET library that integrates with [WiZ](https://www.wizconnected.com) smart bu
 
 ## Purpose
 
+This source-only library targets .NET 10 and is not published as a NuGet package. Discovery and
+commands need UDP access to the bulbs' LAN; routed or container networks may need an explicit
+`BindAddress` and subnet broadcast address.
+
+## Usage
+
+```csharp
+using CasCap.Extensions;
+using CasCap.Services;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var builder = Host.CreateApplicationBuilder(args);
+builder.Services.AddWiz(builder.Configuration);
+using var host = builder.Build();
+var bulbs = await host.Services.GetRequiredService<WizClientService>().DiscoverBulbsAsync();
+```
+
+Load the configuration below before registration. In SmartHaus enable `Wiz` in
+`CasCap:FeatureConfig:EnabledFeatures`; its feature runner performs periodic discovery.
+`SetPilotAsync` changes a bulb's state.
+
+## Discovery
+
 The library is built around one background service and a client/query service pair:
 
-**`WizDiscoveryBgService`** – Periodically broadcasts a UDP registration message to discover Wiz bulbs on the local network. The discovery interval is controlled by `DiscoveryPollingDelayMs`.
+**`WizDiscoveryBgService`** broadcasts a UDP registration message at `DiscoveryPollingDelayMs`
+intervals, tracks pilot state and emits `WizEvent` to registered sinks on first sight or a state
+change. MAC/RSSI-only changes do not trigger an event.
+
+`AddWiz` does not scan the core assembly for Console/Memory event sinks. Their configuration names
+alone do not activate them; register a sink explicitly in a custom host, or use
+[AddWizWithExtraSinks](../CasCap.Api.Wiz.Sinks/README.md) for Redis/Azure Tables.
 
 **`WizClientService`** provides the low-level UDP communication with bulbs:
 
@@ -17,7 +47,7 @@ The library is built around one background service and a client/query service pa
 | `GetSystemConfigAsync(bulbIp)` | Retrieves firmware version, MAC address and module info |
 | `SetPilotAsync(bulbIp, request)` | Sets the bulb state — on/off, brightness, colour, temperature or scene |
 
-**`WizQueryService`** is a facade implementing `IWizQueryService` that delegates to the client service with logging.
+**`WizQueryService`** is a facade implementing [`IWizQueryService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Wiz/Abstractions/IWizQueryService.cs) that delegates to the client service with logging.
 
 ## Configuration
 
@@ -26,10 +56,12 @@ Registered via `IServiceCollection.AddWiz()`. Configuration section: `CasCap:Wiz
 | Setting | Type | Default | Required | Description |
 | --- | --- | --- | --- | --- |
 | `BulbPort` | `int` | `38899` | ✓ | UDP port for sending commands to bulbs |
-| `ListenPort` | `int` | `38900` | ✓ | UDP port for receiving bulb responses |
 | `DiscoveryTimeoutMs` | `int` | `3000` | ✓ | Timeout for discovery broadcasts |
 | `CommandTimeoutMs` | `int` | `2000` | ✓ | Timeout for individual bulb commands |
-| `DiscoveryPollingDelayMs` | `int` | `60000` | ✓ | Delay between background discovery cycles |
+| `DiscoveryPollingDelayMs` | `int` | `10000` | ✓ | Delay between background discovery cycles |
+| `BindAddress` | `string?` | `null` | — | Optional local interface address for discovery and commands |
+| `Devices` | `WizDevice[]` | `[]` | — | Known bulbs with friendly names |
+| `Sinks` | `SinkConfig` | — | ✓ | Sink selection, also used by the optional storage extension |
 | `BroadcastAddress` | `string` | `"255.255.255.255"` | ✓ | Broadcast address for bulb discovery |
 | `HealthCheckUri` | `string` | `"255.255.255.255"` | ✓ | Required by `IHealthCheckConfig`; not used by `WizConnectionHealthCheck` (which checks discovered bulb count) |
 | `HealthCheck` | `KubernetesProbeTypes` | `Readiness` | ✓ | Kubernetes probe type for the health check tag |
@@ -41,7 +73,9 @@ Registered via `IServiceCollection.AddWiz()`. Configuration section: `CasCap:Wiz
 ```json
 {
   "CasCap": {
-    "WizConfig": {}
+    "WizConfig": {
+      "Sinks": { "AvailableSinks": { "Console": { "Enabled": true } } }
+    }
   }
 }
 ```
@@ -53,13 +87,13 @@ Registered via `IServiceCollection.AddWiz()`. Configuration section: `CasCap:Wiz
   "CasCap": {
     "WizConfig": {
       "BulbPort": 38899,
-      "ListenPort": 38900,
       "DiscoveryTimeoutMs": 3000,
       "CommandTimeoutMs": 2000,
-      "DiscoveryPollingDelayMs": 60000,
-      "BroadcastAddress": "192.168.1.255",
-      "HealthCheckUri": "192.168.1.255",
-      "HealthCheck": "Readiness"
+      "DiscoveryPollingDelayMs": 10000,
+      "BroadcastAddress": "255.255.255.255",
+      "HealthCheckUri": "255.255.255.255",
+      "HealthCheck": "Readiness",
+      "Sinks": { "AvailableSinks": { "Console": { "Enabled": true }, "Memory": { "Enabled": true } } }
     }
   }
 }
@@ -75,9 +109,11 @@ Registered via `IServiceCollection.AddWiz()`. Configuration section: `CasCap:Wiz
 flowchart TD
     NETWORK["Local Network\n(UDP broadcast)"]
 
-    subgraph BgService["WizDiscoveryBgService (every 60 s)"]
+    subgraph BgService["WizDiscoveryBgService (every 10 s by default)"]
         DISCOVER["DiscoverBulbsAsync()"]
         LOG["Log discovered bulbs"]
+        COMPARE["Compare pilot state"]
+        EMIT["Emit changed WizEvent to sinks"]
     end
 
     subgraph Client["WizClientService"]
@@ -90,6 +126,7 @@ flowchart TD
     NETWORK -->|UDP JSON| Client
     DISCOVER --> DISC
     DISC --> LOG
+    LOG --> COMPARE --> EMIT
 ```
 
 ## Dependencies
@@ -111,4 +148,4 @@ flowchart TD
 
 ## License
 
-This project is released under [The Unlicense](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.

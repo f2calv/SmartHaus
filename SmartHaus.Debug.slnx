@@ -26,24 +26,28 @@
     <Project Path="../CasCap.Api.Voice/src/CasCap.Api.Voice.Testing/CasCap.Api.Voice.Testing.csproj" />
   </Folder>
   <Folder Name="/signalizr/">
+    <Project Path="../signalizr/src/CasCap.Comms.AI/CasCap.Comms.AI.csproj" />
+    <Project Path="../signalizr/src/CasCap.Comms.Tests/CasCap.Comms.Tests.csproj" />
+    <Project Path="../signalizr/src/CasCap.Comms/CasCap.Comms.csproj" />
     <Project Path="../signalizr/src/CasCap.Signalizr.Client/CasCap.Signalizr.Client.csproj" />
     <Project Path="../signalizr/src/CasCap.Signalizr.Client.Testing/CasCap.Signalizr.Client.Testing.csproj" />
   </Folder>
+  <Folder Name="/agentizr/">
+    <Project Path="../agentizr/src/CasCap.AgentRuntime.Client/CasCap.AgentRuntime.Client.csproj" />
+    <Project Path="../agentizr/src/CasCap.AgentRuntime.Contracts/CasCap.AgentRuntime.Contracts.csproj" />
+  </Folder>
   <Folder Name="/CasCap.Common/">
     <Project Path="../CasCap.Common/src/CasCap.Common.Abstractions/CasCap.Common.Abstractions.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.AI/CasCap.Common.AI.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.AI.Evaluation/CasCap.Common.AI.Evaluation.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Caching.Tests/CasCap.Common.Caching.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Caching/CasCap.Common.Caching.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Configuration/CasCap.Common.Configuration.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Diagnostics.HealthChecks/CasCap.Common.Extensions.Diagnostics.HealthChecks.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions.Tests/CasCap.Common.Extensions.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Extensions/CasCap.Common.Extensions.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.Logging.Serilog/CasCap.Common.Logging.Serilog.csproj" />
+    <Project Path="../CasCap.Common/src/CasCap.Common.Hosting.AspNetCore/CasCap.Common.Hosting.AspNetCore.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Logging/CasCap.Common.Logging.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Net.Tests/CasCap.Common.Net.Tests.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Net/CasCap.Common.Net.csproj" />
-    <Project Path="../CasCap.Common/src/CasCap.Common.OpenTelemetry/CasCap.Common.OpenTelemetry.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Json/CasCap.Common.Serialization.Json.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.MessagePack/CasCap.Common.Serialization.MessagePack.csproj" />
     <Project Path="../CasCap.Common/src/CasCap.Common.Serialization.Tests/CasCap.Common.Serialization.Tests.csproj" />
@@ -78,16 +82,12 @@
     <Project Path="src/CasCap.Api.Wiz.Sinks/CasCap.Api.Wiz.Sinks.csproj" />
     <Project Path="src/CasCap.Api.Wiz/CasCap.Api.Wiz.csproj" />
   </Folder>
-  <Folder Name="/SmartHaus/comms/">
-    <Project Path="src/CasCap.Comms.AI/CasCap.Comms.AI.csproj" />
-    <Project Path="src/CasCap.Comms.Tests/CasCap.Comms.Tests.csproj" />
-    <Project Path="src/CasCap.Comms/CasCap.Comms.csproj" />
-  </Folder>
   <Folder Name="/SmartHaus/">
     <Project Path="src/CasCap.App.Console/CasCap.App.Console.csproj" />
     <Project Path="src/CasCap.App.Server/CasCap.App.Server.csproj" />
-    <Project Path="src/CasCap.App.Tests/CasCap.App.Tests.csproj" />
+    <Project Path="src/CasCap.App.Server.Tests/CasCap.App.Server.Tests.csproj" />
     <Project Path="src/CasCap.App/CasCap.App.csproj" />
-    <Project Path="src/CasCap.SmartHaus/CasCap.SmartHaus.csproj" />
+    <Project Path="src/CasCap.Backend.Tests/CasCap.Backend.Tests.csproj" />
+    <Project Path="src/CasCap.Backend/CasCap.Backend.csproj" />
   </Folder>
 </Solution>

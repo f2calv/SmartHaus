@@ -101,6 +101,23 @@ data:
         $Parsed.ConnectionString | Should -BeExactly 'Host=example.com;Password=synthetic'
     }
 
+    It 'embeds a CRLF source as an LF literal block' {
+        [IO.File]::WriteAllText($script:SourcePath, "{`r`n  `"AppConfig`": {`r`n    `"Endpoint`": `"https://example.com`"`r`n  }`r`n}`r`n")
+
+        Sync-AppSettingsToConfigMap `
+            -SourcePath $script:SourcePath `
+            -SourceRoot $script:SourceRoot `
+            -TargetPath $script:TargetPath `
+            -RepositoryRoot $script:RepositoryRoot `
+            -ConfigMapName haus-appsettings `
+            -ConfigMapKey appsettings.Local.json `
+            -Confirm:$false
+
+        $Target = [IO.File]::ReadAllText($script:TargetPath)
+        $Target | Should -Match 'appsettings\.Local\.json: \|'
+        $Target | Should -Not -Match '\\r'
+    }
+
     It 'refuses to overwrite an existing target change' {
         Add-Content -LiteralPath $script:TargetPath -Value '# existing change'
 

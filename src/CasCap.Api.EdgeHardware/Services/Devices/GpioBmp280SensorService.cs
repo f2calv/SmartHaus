@@ -22,7 +22,7 @@ public sealed class GpioBmp280SensorService(ILogger<GpioBmp280SensorService> log
     }
 
     // bus id on the MCU
-    const int BusId = 1;
+    private const int BusId = 1;
 
     //from https://learn.microsoft.com/en-us/dotnet/iot/tutorials/temp-sensor
     /// <summary>Reads temperature and pressure data from the BMP280 sensor.</summary>

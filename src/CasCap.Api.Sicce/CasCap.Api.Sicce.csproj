@@ -11,7 +11,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <InternalsVisibleTo Include="CasCap.App.Tests" />
+    <InternalsVisibleTo Include="CasCap.Backend.Tests" />
     <InternalsVisibleTo Include="CasCap.Api.Sicce.Sinks" />
   </ItemGroup>
 

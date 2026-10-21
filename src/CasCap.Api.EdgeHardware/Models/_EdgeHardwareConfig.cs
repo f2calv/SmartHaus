@@ -74,11 +74,15 @@ public sealed record EdgeHardwareConfig : IAppConfig, IAzTableStorageConfig, IMe
 
     /// <inheritdoc cref="EnergyReportingMode" path="/summary"/>
     /// <remarks>
-    /// Defaults to <see cref="EnergyReportingMode.Minimal"/> to keep the debug message short; the
-    /// kettle, phone-charge and LED-bulb equivalences only appear under
+    /// Defaults to <see cref="EnergyReportingMode.Off"/>; the monitor-group timeline reports energy
+    /// regardless. The kettle, phone-charge and LED-bulb equivalences only appear under
     /// <see cref="EnergyReportingMode.Verbose"/>.
     /// </remarks>
-    public EnergyReportingMode EnergyReporting { get; init; } = EnergyReportingMode.Minimal;
+    public EnergyReportingMode EnergyReporting { get; init; } = EnergyReportingMode.Off;
+
+    /// <summary>Whether the reply footer names the current power source, such as solar or battery.</summary>
+    /// <remarks>Defaults to <see langword="false"/>.</remarks>
+    public bool SolarContextEnabled { get; init; }
 
     // ── Metrics ─────────────────────────────────────────────────────
 
