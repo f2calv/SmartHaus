@@ -44,6 +44,8 @@
     <ProjectReference Include="..\..\..\CasCap.Common\src\CasCap.Common.Services\CasCap.Common.Services.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(Configuration)'=='Release'">
+    <PackageReference Include="CasCap.AgentRuntime.Contracts" />
+    <PackageReference Include="CasCap.Comms.AI" />
     <PackageReference Include="CasCap.Common.Extensions" />
     <PackageReference Include="CasCap.Common.Logging" />
     <PackageReference Include="CasCap.Common.Net" />
