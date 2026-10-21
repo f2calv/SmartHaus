@@ -32,7 +32,7 @@ ARG WHISPER_CPP_COMMIT=64d57d3df5c8dacee098577257edcaa154bf5ef3
 # Ubuntu 24.04 matches the upstream Vulkan image, so the Vulkan and SPIR-V toolchain
 # versions are the ones whisper.cpp is actually tested against.
 # ------------------------------------------------------------------------------
-FROM ubuntu:24.04 AS build
+FROM ubuntu:26.04 AS build
 
 WORKDIR /src
 
