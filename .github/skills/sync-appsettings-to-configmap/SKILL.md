@@ -1,6 +1,6 @@
 ---
 name: sync-appsettings-to-configmap
-description: 'Synchronize an appsettings JSON file into an existing ConfigMap in a caller-configured private GitOps repository. Use after local deployment configuration changes, before an application rollout, or when checking configuration drift. - Brought to you by f2calv/SmartHaus'
+description: 'Synchronize an appsettings JSON file into an existing ConfigMap in a caller-configured private GitOps repository. Use after local deployment configuration changes, before an application rollout, or when checking configuration drift.'
 argument-hint: '[mode={check|sync}]'
 user-invocable: true
 ---
@@ -135,5 +135,3 @@ Run the synthetic Pester regression suite after changing the script:
 | Target is already modified | Review the existing GitOps change before synchronizing again |
 | Semantic verification fails | Restore the target from Git and inspect the `yq` version and source syntax |
 | Argo CD does not reconcile | Commit and push through the normal GitOps workflow, then inspect the Application |
-
-> Brought to you by f2calv/SmartHaus
