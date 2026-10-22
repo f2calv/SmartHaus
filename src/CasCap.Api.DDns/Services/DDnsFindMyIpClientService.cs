@@ -33,7 +33,7 @@ public sealed class DDnsFindMyIpClientService : HttpClientBase
                     _logger.LogWarning("{ClassName} unable to determine current IP address", nameof(DDnsFindMyIpClientService));
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogWarning(ex, "{ClassName} something is broken..", nameof(DDnsFindMyIpClientService));
         }

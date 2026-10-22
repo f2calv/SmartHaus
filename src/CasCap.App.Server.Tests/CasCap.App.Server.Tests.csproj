@@ -15,6 +15,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CasCap.App.Server\CasCap.App.Server.csproj" />
+    <ProjectReference Include="..\CasCap.Api.DDns\CasCap.Api.DDns.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
