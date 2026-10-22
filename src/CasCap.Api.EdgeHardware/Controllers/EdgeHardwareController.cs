@@ -7,7 +7,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class EdgeHardwareController(IEdgeHardwareQueryService edgeHardwareQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="EdgeHardwareQueryService.GetLatestSnapshots"/>
@@ -17,7 +16,7 @@ public sealed class EdgeHardwareController(IEdgeHardwareQueryService edgeHardwar
 
     /// <inheritdoc cref="EdgeHardwareQueryService.GetEvents"/>
     [HttpGet("events")]
-    public Ok<IAsyncEnumerable<EdgeHardwareEvent>> GetEvents(int limit = 100)
-        => TypedResults.Ok(edgeHardwareQuerySvc.GetEvents(limit));
+    public Ok<IAsyncEnumerable<EdgeHardwareEvent>> GetEvents(CancellationToken cancellationToken, int limit = 100)
+        => TypedResults.Ok(edgeHardwareQuerySvc.GetEvents(limit, cancellationToken));
 
 }

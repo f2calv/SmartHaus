@@ -7,7 +7,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class SicceController(ISicceQueryService sicceQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="SicceQueryService.GetSnapshot"/>
@@ -17,8 +16,8 @@ public sealed class SicceController(ISicceQueryService sicceQuerySvc) : Controll
 
     /// <inheritdoc cref="SicceQueryService.GetReadings"/>
     [HttpGet("readings")]
-    public Ok<IAsyncEnumerable<SicceEvent>> GetReadings(int limit = 100)
-        => TypedResults.Ok(sicceQuerySvc.GetReadings(limit));
+    public Ok<IAsyncEnumerable<SicceEvent>> GetReadings(CancellationToken cancellationToken, int limit = 100)
+        => TypedResults.Ok(sicceQuerySvc.GetReadings(limit, cancellationToken));
 
     /// <inheritdoc cref="SicceQueryService.GetDeviceInfo"/>
     [HttpGet("device")]

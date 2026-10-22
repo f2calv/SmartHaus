@@ -75,6 +75,9 @@ input accepts string enum names. Invalid request bodies return HTTP 400 with
 `application/problem+json` and a `ValidationProblemDetails` body containing an `errors` dictionary.
 Consumers should read enum names rather than numeric values and use `errors` for field failures.
 MVC input binding and typed-result output share this contract through their respective JSON options.
+Shelly relay and Wiz power commands require an explicit `on=true` or `on=false` query value;
+missing or invalid values return validation Problem Details without invoking the device service.
+Device-history actions forward request cancellation to their query services.
 
 | Source | Endpoints |
 | --- | --- |

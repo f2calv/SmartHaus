@@ -7,7 +7,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class BuderusController(IBuderusQueryService buderusQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="BuderusQueryService.GetSnapshot"/>
@@ -17,13 +16,13 @@ public sealed class BuderusController(IBuderusQueryService buderusQuerySvc) : Co
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("values")]
-    public Ok<IAsyncEnumerable<BuderusEvent>> Get()
-        => TypedResults.Ok(buderusQuerySvc.GetEvents());
+    public Ok<IAsyncEnumerable<BuderusEvent>> Get(CancellationToken cancellationToken)
+        => TypedResults.Ok(buderusQuerySvc.GetEvents(cancellationToken: cancellationToken));
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("{id}")]
-    public Ok<IAsyncEnumerable<BuderusEvent>> GetById(string id)
-        => TypedResults.Ok(buderusQuerySvc.GetEvents(id));
+    public Ok<IAsyncEnumerable<BuderusEvent>> GetById(string id, CancellationToken cancellationToken)
+        => TypedResults.Ok(buderusQuerySvc.GetEvents(id, cancellationToken: cancellationToken));
 
     /// <inheritdoc cref="BuderusQueryService.SetDataPoint"/>
     [HttpPut("{*id}")]

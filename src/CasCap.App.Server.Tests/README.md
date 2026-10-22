@@ -19,12 +19,13 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | --- | --- | --- | --- | --- |
 | `FeatureServiceRegistrationTests` | 4 | 4 | Integration | `IBgFeature` registrations and enabled-feature filtering |
 | `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
+| `DeviceApiContractTests` | 4 | 15 | Integration | Request cancellation on six device-history routes, required power values, and generated Swagger metadata |
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 22 | 32 | | Source-declared, including skipped cases |
+| Total | 26 | 47 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
@@ -68,10 +69,12 @@ CasCap.App.Server.Tests/
 │   ├── ApiContractProbeController.cs
 │   ├── ApiContractWebApplicationFactory.cs
 │   ├── CasCapAppWebApplicationFactory.cs
+│   ├── DeviceApiWebApplicationFactory.cs
 │   ├── StrictAuthCasCapAppWebApplicationFactory.cs
 │   └── WebApiTestBase.cs
 ├── Tests/
 │   ├── Integration/
+│   │   ├── DeviceApiContractTests.cs
 │   │   ├── HostStartupConfigurationTests.cs
 │   │   └── WebApiContractTests.cs
 │   └── Unit/
