@@ -26,7 +26,15 @@ Smart-detection types are `person`, `vehicle`, `animal` and `package`.
 
 The library is built around webhook endpoints that form the core pipeline:
 
-**`UbiquitiController`** – Exposes a `GET /` snapshot query endpoint and REST API webhook endpoints (`/event/motion`, `/event/smart?type=person|vehicle|animal|package`, `/event/ring`) that the UniFi Protect controller or third-party automation tools call when events occur. Each webhook creates a `UbiquitiEvent` containing the event type, camera identifier, camera name, timestamp, and optional smart detection confidence score, then dispatches it in parallel to every registered [`IEventSink<UbiquitiEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs).
+**`UbiquitiController`** – Exposes a `GET /` snapshot query endpoint and REST API webhook endpoints (`/event/motion`, `/event/smart?type=person|vehicle|animal|package`, `/event/ring`) that the UniFi Protect controller or third-party automation tools call when events occur.
+The controller delegates to
+[`IUbiquitiQueryService`](./Abstractions/IUbiquitiQueryService.cs), which validates the detection
+type, decodes the optional thumbnail and constructs each `UbiquitiEvent` before dispatching to
+every registered [`IEventSink<UbiquitiEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs).
+The service returns `UbiquitiWebhookResult`; invalid detection types or malformed thumbnail/timestamp
+values become HTTP 400 string responses. Automatic binding errors use validation Problem Details.
+Sink failures are not reclassified as caller errors, and cancellation propagates through all
+webhooks, including doorbell rings. All payload parsing finishes before any sink receives an event.
 
 ### Sinks
 
@@ -58,8 +66,10 @@ flowchart TD
         RING["/event/ring"]
     end
 
-    BUILD["Build UbiquitiEvent\n(EventId, EventType, CameraId, CameraName, Timestamp, Score)"]
-    DISPATCH["Fan-out to all sinks\nTask.WhenAll"]
+    subgraph QueryService["UbiquitiQueryService"]
+        BUILD["Validate payload and build UbiquitiEvent\n(EventId, EventType, CameraId, CameraName, Timestamp, Score)"]
+        DISPATCH["Fan-out to all sinks\nTask.WhenAll"]
+    end
 
     SINK_CONSOLE["Console Sink\n(logger)"]
     SINK_MEMORY["Memory Sink\n(in-memory snapshot)"]

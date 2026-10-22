@@ -26,8 +26,10 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
+| `UbiquitiApiContractTests` | 4 | 11 | Integration | GET/POST webhooks, optional bodies, validation, request cancellation, and generated Swagger |
+| `UbiquitiQueryServiceTests` | 7 | 21 | Webhook Parsing | Detection types, thumbnails/timestamps, camera selection, sink failures, and cancellation using in-memory sinks |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 36 | 90 | | Source-declared, including skipped cases |
+| Total | 47 | 122 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
@@ -37,6 +39,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `Device Commands` | Uses synthetic configuration and fake HTTP; never contacts live devices |
 | `Integration` | Boots the in-process ASP.NET Core host and exercises its services or endpoints |
 | `Leadership` | Credential-free DDNS ownership wiring and cancellation |
+| `Webhook Parsing` | Deterministic payload parsing and in-memory dispatch, without camera or storage calls |
 
 `InitializeConfiguration` owns the standard provider chain and unconditionally adds the required
 `appsettings.json`, user secrets, and environment variables. It therefore cannot be exercised with
@@ -80,11 +83,13 @@ CasCap.App.Server.Tests/
 │   ├── Integration/
 │   │   ├── DeviceApiContractTests.cs
 │   │   ├── HostStartupConfigurationTests.cs
+│   │   ├── UbiquitiApiContractTests.cs
 │   │   └── WebApiContractTests.cs
 │   └── Unit/
 │       ├── BuderusQueryServiceTests.cs
 │       ├── DDnsLeadershipTests.cs
-│       └── FeatureConfigTests.cs
+│       ├── FeatureConfigTests.cs
+│       └── UbiquitiQueryServiceTests.cs
 ├── GlobalUsings.cs
 └── xunit.runner.json
 ```

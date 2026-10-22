@@ -18,6 +18,8 @@ public sealed class DeviceApiWebApplicationFactory : CasCapAppWebApplicationFact
 
     public List<(string Id, string Value, CancellationToken Token)> DataPointCommands { get; } = [];
 
+    public List<(UbiquitiEvent Event, CancellationToken Token)> CameraEvents { get; } = [];
+
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -30,14 +32,28 @@ public sealed class DeviceApiWebApplicationFactory : CasCapAppWebApplicationFact
                 .AddApplicationPart(typeof(EdgeHardwareController).Assembly)
                 .AddApplicationPart(typeof(SicceController).Assembly)
                 .AddApplicationPart(typeof(ShellyController).Assembly)
-                .AddApplicationPart(typeof(WizController).Assembly);
+                .AddApplicationPart(typeof(WizController).Assembly)
+                .AddApplicationPart(typeof(UbiquitiController).Assembly);
             services.AddSingleton<IBuderusQueryService>(new BuderusQueries(this));
             services.AddSingleton<IFroniusQueryService>(new FroniusQueries(this));
             services.AddSingleton<IEdgeHardwareQueryService>(new EdgeQueries(this));
             services.AddSingleton<ISicceQueryService>(new SicceQueries(this));
             services.AddSingleton<IShellyQueryService>(new ShellyQueries(this));
             services.AddSingleton<IWizQueryService>(new WizQueries(this));
+            services.AddSingleton<IUbiquitiQueryService>(provider => new UbiquitiQueryService(
+                provider.GetRequiredService<ILogger<UbiquitiQueryService>>(), TimeProvider.System, [new CameraSink(this)]));
         });
+    }
+
+    private sealed class CameraSink(DeviceApiWebApplicationFactory factory) : IEventSink<UbiquitiEvent>
+    {
+        public string SinkType => "Recording";
+
+        public Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
+        {
+            factory.CameraEvents.Add((@event, cancellationToken));
+            return Task.CompletedTask;
+        }
     }
 
     private IAsyncEnumerable<T> RecordHistory<T>(CancellationToken cancellationToken)
