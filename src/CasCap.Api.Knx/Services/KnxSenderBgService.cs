@@ -6,34 +6,25 @@ namespace CasCap.Services;
 /// This service handles sending outbound telegrams to the KNX bus, these outbound telegrams are
 /// dequeued from the <see cref="IKnxTelegramBroker{T}"/> for <see cref="KnxOutgoingTelegram"/>.
 /// </summary>
-public sealed partial class KnxSenderBgService(ILogger<KnxSenderBgService> logger, IOptions<KnxConfig> config, IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker) : IBgFeature
+public sealed partial class KnxSenderBgService(
+    ILogger<KnxSenderBgService> logger,
+    IOptions<KnxConfig> config,
+    TimeProvider timeProvider,
+    KnxConnectionHealthCheck knxConnectionHealthCheck,
+    IKnxTelegramBroker<KnxOutgoingTelegram> outgoingBroker)
 {
-    /// <inheritdoc/>
-    public string FeatureName => "Knx";
-
-    /// <inheritdoc/>
+    /// <summary>Consumes and sends outbound telegrams only for the current bus ownership run.</summary>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        logger.LogInformation("{ClassName} starting", nameof(KnxSenderBgService));
-        try
-        {
-            await RunServiceAsync(cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
-        logger.LogInformation("{ClassName} exiting", nameof(KnxSenderBgService));
-    }
-
-    private Task RunServiceAsync(CancellationToken cancellationToken) => RunSender(cancellationToken);
-
-    private async Task RunSender(CancellationToken cancellationToken)
-    {
+        await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
         await foreach (var msg in outgoingBroker.SubscribeAsync(cancellationToken))
         {
-            if (cancellationToken.IsCancellationRequested) break;
+            await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
 
             var busAddresses = new List<string>(KnxStatics.BusConnections.Count);
             foreach (var busConnection in KnxStatics.BusConnections)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var bus = busConnection.Value;
                 if (bus is null || bus.ConnectionState != BusConnectionState.Connected)
                 {
@@ -57,6 +48,14 @@ public sealed partial class KnxSenderBgService(ILogger<KnxSenderBgService> logge
             if (busAddresses.Count > 0)
                 LogTelegramSent(logger, nameof(KnxSenderBgService), busAddresses.Count, msg.Kga.Name);
         }
+    }
+
+    private async Task WaitForConnectionAsync(CancellationToken cancellationToken)
+    {
+        while (!knxConnectionHealthCheck.ConnectionActive
+            && !KnxStatics.BusConnections.Values.Any(bus => bus?.ConnectionState == BusConnectionState.Connected))
+            await Task.Delay(TimeSpan.FromMilliseconds(config.Value.ConnectionPollingDelayMs), timeProvider, cancellationToken).ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
     }
 
     [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} unable to send to {GroupAddress} as bus connection {Bus} broken!")]

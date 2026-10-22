@@ -106,8 +106,9 @@ public static class ServiceCollectionExtensions
 
             services.AddSingleton<KnxConnectionNotifier>();
             services.AddSingleton<IKnxConnectionNotifier>(sp => sp.GetRequiredService<KnxConnectionNotifier>());
+            services.AddSingleton<Func<IKnxMonitor>>(sp => () => ActivatorUtilities.CreateInstance<KnxMonitorService>(sp));
+            services.AddSingleton<KnxSenderBgService>();
             services.AddSingleton<IBgFeature, KnxMonitorBgService>();
-            services.AddSingleton<IBgFeature, KnxSenderBgService>();
             services.AddSingleton<IBgFeature, KnxProcessorBgService>();
             services.AddSingleton<IBgFeature, KnxAutomationBgService>();
         }

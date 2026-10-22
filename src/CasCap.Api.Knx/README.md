@@ -34,12 +34,12 @@ publish commands to an existing bus-owning process; it does not create a bus con
 
 ## Bus Processing
 
-The library is built around three background services that together form a pipeline:
+The library's monitor, processor and sender form a pipeline:
 
-1. **`KnxMonitorBgService`** – Loads the ETS group-address metadata, waits for it to become healthy, logs the active `ServiceFamily` and `ShardingMode`, then enters a Redlock-based leadership election (in Unified sharding mode). The elected leader discovers KNX IP devices on the local network and connects to the bus using the configured service family. In **Tunneling** mode it establishes one `KnxBus` connection per configured area/line combination; in **Routing** mode it joins the multicast group advertised by the KNX IP router (and `ShardingMode` is forced to `Unified`). Incoming telegrams pass through service-family-specific deduplication filters before being decoded and published via the [`IKnxTelegramBroker<KnxEvent>`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Knx/Abstractions/IKnxTelegramBroker%7BT%7D.cs).
+1. **`KnxMonitorBgService`** – Loads ETS metadata on every replica and uses the shared leadership runner in Unified mode. Each ownership callback creates a disposable `KnxMonitorService` through [`IKnxMonitor`](./Abstractions/IKnxMonitor.cs). In **Tunneling** mode it establishes one `KnxBus` connection per configured area/line combination; in **Routing** mode it joins the multicast group advertised by the KNX IP router (and `ShardingMode` is forced to `Unified`). Incoming telegrams pass through service-family-specific deduplication filters before being decoded and published via the [`IKnxTelegramBroker<KnxEvent>`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Knx/Abstractions/IKnxTelegramBroker%7BT%7D.cs).
 2. **`KnxProcessorBgService`** – Reads from that broker and fans each `KnxEvent` out to every registered [`IEventSink<KnxEvent>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementation in parallel, waiting for all sinks to complete before processing the next event.
 
-3. **`KnxSenderBgService`** – Dequeues outbound write requests from a separate outgoing broker and sends them to the bus, enabling bidirectional control.
+3. **`KnxSenderBgService`** – Runs inside the monitor's ownership callback, not as an independently launched feature. It waits for connectivity before consuming outbound requests and passes the ownership-linked cancellation token to bus writes. Standbys do not consume outgoing commands.
 
 Supporting services include `KnxAutomationBgService` (queue processing and day/night signalling). A REST API (`KnxController`) and a gRPC endpoint (`RpcTelegramService`) allow external callers to read state and send commands.
 
@@ -185,16 +185,32 @@ The `ShardingMode` property on `KnxConfig` controls how `KnxMonitorBgService` po
 
 | Mode | Kubernetes Resource | Description |
 | --- | --- | --- |
-| **Unified** (default) | `Deployment` (1+ replicas) | A single active pod processes telegrams from **all** configured lines. Additional replicas remain on standby via a Redlock-based leadership election and take over immediately if the active pod crashes. This is the only mode that works during local development. **Forced** when `ServiceFamily` is `Routing`. |
+| **Unified** (default) | `Deployment` (1+ replicas) | A single active pod processes telegrams from **all** configured lines. Additional replicas remain on standby via Redlock election. Takeover depends on lease expiry, contention timing and connection startup, not immediate failover. **Forced** when `ServiceFamily` is `Routing`. |
 | **Partitioned** | `StatefulSet` | Each pod connects to exactly **one** KNX line, determined by mapping the pod ordinal to an entry in `TunnelingAreaLineFilter` (e.g. `haus-knx-0` → `1.1`, `haus-knx-1` → `1.2`). The replica count must equal the number of configured lines. Only valid when `ServiceFamily` is `Tunneling`. ⚠️ *Not yet implemented — selecting this mode throws `NotSupportedException`.* |
 
 #### Unified Mode Startup Sequence
 
 1. **Group address lookup** — all replicas load the ETS XML metadata concurrently (stateless, no lock required).
 2. **Configuration logged** — after the lookup completes, `ServiceFamily` and `ShardingMode` are emitted at `Information` level so the active configuration is visible in every pod's log stream. If `ServiceFamily` is `Routing` and `ShardingMode` was set to `Partitioned`, it is overridden to `Unified` with a warning.
-3. **Leadership election** — each replica attempts to acquire a Redlock on the resource `knx:monitor`. Timing is governed by the shared `RedlockConfig` (`RedlockExpiryMs`, `RedlockWaitMs`, `RedlockRetryMs`).
-4. **Leader runs** — the elected leader discovers KNX IP devices, connects to the bus, and enters the monitoring loop. Standby replicas are warm (lookup already cached) and retry the lock until they acquire it.
-5. **Leader crashes** — the Redlock expires (worst-case `RedlockExpiryMs`, default 15 s), and a standby replica acquires the lock and connects.
+3. **Leadership election** — the shared runner acquires the unchanged resource `knx:monitor`, using the existing caching factory/database/key format and `CachingConfig.Redlock` configuration. The built-in `LeaderElection` profile defaults to 30 s expiry, 60 s acquisition wait and 5 s retry; application overrides still apply. Root cache-miss timings are unchanged.
+4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication and outbound delivery are supervised together. A fatal worker fault cancels and joins siblings before disposal. Initial connection failures and subsequent drops are retried for both tunneling and routing.
+5. **Ownership ends** — the runner observes lease loss at `Redlock.LeadershipCheckIntervalMs` (default 1000 ms) and cancels the ownership token. Health is withdrawn, callbacks stop accepting telegrams, and all publication/write work is awaited before handlers are detached and buses asynchronously disposed. Cleanup is also applied to partial startup failures. Only then may this replica start a fresh ownership run. Host shutdown owns the forced-termination budget; cleanup has no independent timeout.
+
+This checkout uses the provisional .NET 8+ runner from sibling Debug project references. Release
+packages do not yet contain that API; validate with `SmartHaus.Debug.slnx` until the shared package
+release is available.
+
+Lease cancellation cannot retract a telegram already accepted by Redis or a device. Callback
+buffers are in-memory and are not replayed across ownership runs. Outgoing acknowledgement and
+retry behavior remains broker-specific; this lifecycle does not provide exactly-once delivery or
+downstream fencing. Offline tests cover supervision and cleanup, not live lease renewal, partitions
+or physical bus behavior.
+
+The sender can use surviving connections while another line reconnects; the overall connection
+health check still requires every configured connection. Redis operations already dispatched are
+awaited even when cancellation arrives. Stream acknowledgement follows processing, but pending
+entries are not automatically reclaimed after ownership changes; reliable replay/idempotency is a
+separate delivery concern.
 
 #### Standby Health Check
 
@@ -206,7 +222,9 @@ The `KnxConnectionHealthCheck` tracks an `IsLeader` flag alongside the existing 
 | `true` | `true` | **Healthy** — bus connection online |
 | `true` | `false` | **Unhealthy** — leader has lost bus connectivity |
 
-When the leader's lock is released (e.g. `RunServiceAsync` returns or the pod is shutting down), both `IsLeader` and `ConnectionActive` are reset to `false`, returning the replica to standby-healthy status.
+Cancellation immediately resets `IsLeader` and `ConnectionActive`, returning the replica to
+standby-healthy status while cleanup finishes. Fatal run failures and disposal also clear them.
+An empty connection map is not considered connected.
 
 ### Telegram Filtering
 
@@ -233,7 +251,7 @@ flowchart TD
     subgraph Monitor["KnxMonitorBgService"]
         LOOKUP["Load group address XML"]
         LOG_CONFIG["Log ServiceFamily &\nShardingMode"]
-        REDLOCK{"Acquire Redlock\n(Unified mode)"}
+        REDLOCK{"Shared leadership runner\n(Unified mode)"}
         DISCOVER["Discover KNX IP devices"]
         CONNECT["Connect per Area/Line\nor join multicast"]
         RECEIVE["Bus_GroupMessageReceived"]
@@ -241,6 +259,7 @@ flowchart TD
         FILTER_LINE{"Line affinity\nfilter"}
         FILTER_RIVAL{"Rival address\nfilter"}
         DECODE["Decode value & build KnxEvent"]
+        PUBLISH["Ownership-local buffer\nawaited publisher"]
     end
 
     CHANNEL_IN["IKnxTelegramBroker&lt;KnxEvent&gt;\n(Channel or Redis)"]
@@ -271,7 +290,7 @@ flowchart TD
     FILTER_LINE -.->|cross-line| DROP1(("drop"))
     FILTER_RIVAL -->|our address| DECODE
     FILTER_RIVAL -.->|rival address| DROP2(("drop"))
-    DECODE --> CHANNEL_IN
+    DECODE --> PUBLISH --> CHANNEL_IN
     CHANNEL_IN --> READ --> DISPATCH
     DISPATCH --> SINK_CONSOLE
     DISPATCH --> SINK_REDIS
@@ -279,6 +298,7 @@ flowchart TD
     DISPATCH --> SINK_CEMI
     DISPATCH --> SINK_OTEL
     CHANNEL_OUT --> SEND --> BUS
+    CONNECT -.->|same ownership token| SEND
 ```
 
 ## Configuration Examples

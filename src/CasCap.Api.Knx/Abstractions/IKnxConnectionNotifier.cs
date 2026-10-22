@@ -4,7 +4,7 @@ namespace CasCap.Abstractions;
 /// Provides a stream of KNX bus connection state changes for downstream consumers.
 /// </summary>
 /// <remarks>
-/// <see cref="KnxMonitorBgService"/> publishes state changes to this notifier
+/// <see cref="KnxMonitorService"/> publishes state changes to this notifier
 /// when a bus connection drops or is re-established.
 /// </remarks>
 public interface IKnxConnectionNotifier
