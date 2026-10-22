@@ -28,6 +28,7 @@ public sealed class WizController(IWizQueryService wizQuerySvc) : ControllerBase
 
     /// <inheritdoc cref="WizQueryService.SetPilot"/>
     [HttpPut("bulbs/{bulbIdentifier}/pilot")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<Ok<bool>> SetPilot(string bulbIdentifier, [FromBody] WizSetPilotRequest request, CancellationToken cancellationToken)
         => TypedResults.Ok(await wizQuerySvc.SetPilot(bulbIdentifier, request, cancellationToken));
 

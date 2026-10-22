@@ -14,11 +14,11 @@ public sealed partial class HeatPumpMcpQueryService(IBuderusQueryService buderus
     /// <inheritdoc cref="IBuderusQueryService.SetDataPoint"/>
     [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = true, OpenWorld = false)]
     [Description("Writes a value to a writeable heat pump datapoint.")]
-    public Task<bool> SetHeatPumpDataPoint(
+    public async Task<bool> SetHeatPumpDataPoint(
         [Description("Datapoint path, e.g. /dhwCircuits/dhw1/setTemperature.")]
         string datapointId,
         [Description("Numeric string (e.g. 55.0) or enum option (e.g. Always_On).")]
         string value,
         CancellationToken cancellationToken = default)
-        => buderusQuerySvc.SetDataPoint(datapointId, value, cancellationToken);
+        => (await buderusQuerySvc.SetDataPoint(datapointId, value, cancellationToken)).Succeeded;
 }

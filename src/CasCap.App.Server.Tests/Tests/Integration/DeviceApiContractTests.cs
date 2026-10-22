@@ -86,4 +86,80 @@ public sealed class DeviceApiContractTests(DeviceApiWebApplicationFactory factor
             .GetProperty("responses").GetProperty("200").GetProperty("content")
             .TryGetProperty("application/json", out _));
     }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DataPointWrite_MapsServiceOutcome(bool rejected)
+    {
+        factory.DataPointResult = new BuderusDataPointWriteResult { Error = rejected ? "Synthetic device rejection." : null };
+        using var client = factory.CreateClient();
+        using var content = new StringContent("{\"value\":\"50\"}", System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PutAsync("/api/v1/Buderus/example/value", content, TestContext.Current.CancellationToken);
+
+        Assert.Equal(rejected ? HttpStatusCode.BadRequest : HttpStatusCode.OK, response.StatusCode);
+        var command = factory.DataPointCommands[^1];
+        Assert.Equal("example/value", command.Id);
+        Assert.Equal("50", command.Value);
+        Assert.True(command.Token.CanBeCanceled);
+        if (rejected)
+            Assert.Equal(factory.DataPointResult.Error,
+                JsonSerializer.Deserialize<string>(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken)));
+    }
+
+    [Theory]
+    [InlineData("{\"dimming\":9}")]
+    [InlineData("{\"dimming\":101}")]
+    [InlineData("{\"r\":-1}")]
+    [InlineData("{\"r\":256}")]
+    [InlineData("{\"g\":-1}")]
+    [InlineData("{\"g\":256}")]
+    [InlineData("{\"b\":-1}")]
+    [InlineData("{\"b\":256}")]
+    [InlineData("{\"c\":-1}")]
+    [InlineData("{\"c\":256}")]
+    [InlineData("{\"w\":-1}")]
+    [InlineData("{\"w\":256}")]
+    [InlineData("{\"speed\":19}")]
+    [InlineData("{\"speed\":201}")]
+    public async Task InvalidPilotRanges_DoNotInvokeDevice(string json)
+    {
+        using var client = factory.CreateClient();
+        var before = factory.PilotCommands.Count;
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PutAsync("/api/v1/Wiz/bulbs/example/pilot", content, TestContext.Current.CancellationToken);
+        using var body = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+
+        Assert.Equal(HttpStatusCode.BadRequest, response.StatusCode);
+        Assert.Equal("application/problem+json", response.Content.Headers.ContentType?.MediaType);
+        Assert.NotEmpty(body.RootElement.GetProperty("errors").EnumerateObject());
+        Assert.Equal(before, factory.PilotCommands.Count);
+    }
+
+    [Theory]
+    [InlineData("{}")]
+    [InlineData("{\"dimming\":10}")]
+    [InlineData("{\"dimming\":100}")]
+    [InlineData("{\"r\":0}")]
+    [InlineData("{\"r\":255}")]
+    [InlineData("{\"g\":0}")]
+    [InlineData("{\"g\":255}")]
+    [InlineData("{\"b\":0}")]
+    [InlineData("{\"b\":255}")]
+    [InlineData("{\"c\":0}")]
+    [InlineData("{\"c\":255}")]
+    [InlineData("{\"w\":0}")]
+    [InlineData("{\"w\":255}")]
+    [InlineData("{\"speed\":20}")]
+    [InlineData("{\"speed\":200}")]
+    public async Task PilotRanges_AcceptBoundariesAndOmittedOptionalValues(string json)
+    {
+        using var client = factory.CreateClient();
+        var before = factory.PilotCommands.Count;
+        using var content = new StringContent(json, System.Text.Encoding.UTF8, "application/json");
+        using var response = await client.PutAsync("/api/v1/Wiz/bulbs/example/pilot", content, TestContext.Current.CancellationToken);
+        response.EnsureSuccessStatusCode();
+
+        Assert.Equal(before + 1, factory.PilotCommands.Count);
+    }
 }

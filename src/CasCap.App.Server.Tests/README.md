@@ -17,22 +17,24 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 
 | Class | Methods | Cases | Category | Description |
 | --- | --- | --- | --- | --- |
+| `BuderusQueryServiceTests` | 5 | 9 | Device Commands | Path validation/normalization, preflight/discovery cancellation, and MCP boolean rejection using fake HTTP |
 | `FeatureServiceRegistrationTests` | 4 | 4 | Integration | `IBgFeature` registrations and enabled-feature filtering |
 | `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
 | `DDnsLeadershipTests` | 2 | 3 | Leadership | Existing resource delegation and cancellation through IP discovery, without Azure/Redis calls |
-| `DeviceApiContractTests` | 4 | 15 | Integration | Request cancellation on six device-history routes, required power values, and generated Swagger metadata |
+| `DeviceApiContractTests` | 7 | 46 | Integration | History cancellation, explicit power values, typed write outcomes, pilot range boundaries/validation, and Swagger metadata |
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 28 | 50 | | Source-declared, including skipped cases |
+| Total | 36 | 90 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
 | Category | Meaning |
 | --- | --- |
 | `Configuration` | Exercises deterministic configuration parsing without starting the host |
+| `Device Commands` | Uses synthetic configuration and fake HTTP; never contacts live devices |
 | `Integration` | Boots the in-process ASP.NET Core host and exercises its services or endpoints |
 | `Leadership` | Credential-free DDNS ownership wiring and cancellation |
 
@@ -80,6 +82,7 @@ CasCap.App.Server.Tests/
 │   │   ├── HostStartupConfigurationTests.cs
 │   │   └── WebApiContractTests.cs
 │   └── Unit/
+│       ├── BuderusQueryServiceTests.cs
 │       ├── DDnsLeadershipTests.cs
 │       └── FeatureConfigTests.cs
 ├── GlobalUsings.cs

@@ -12,6 +12,12 @@ public sealed class DeviceApiWebApplicationFactory : CasCapAppWebApplicationFact
 
     public List<bool> PowerCommands { get; } = [];
 
+    public List<WizSetPilotRequest> PilotCommands { get; } = [];
+
+    public BuderusDataPointWriteResult DataPointResult { get; set; } = new();
+
+    public List<(string Id, string Value, CancellationToken Token)> DataPointCommands { get; } = [];
+
     /// <inheritdoc/>
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -51,8 +57,11 @@ public sealed class DeviceApiWebApplicationFactory : CasCapAppWebApplicationFact
         public IAsyncEnumerable<BuderusEvent> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default)
             => factory.RecordHistory<BuderusEvent>(cancellationToken);
         public Task<BuderusSnapshot> GetSnapshot() => throw new NotSupportedException();
-        public Task<bool> SetDataPoint(string datapointId, string value, CancellationToken cancellationToken = default)
-            => throw new NotSupportedException();
+        public Task<BuderusDataPointWriteResult> SetDataPoint(string datapointId, string value, CancellationToken cancellationToken = default)
+        {
+            factory.DataPointCommands.Add((datapointId, value, cancellationToken));
+            return Task.FromResult(factory.DataPointResult);
+        }
     }
 
     private sealed class FroniusQueries(DeviceApiWebApplicationFactory factory) : IFroniusQueryService
@@ -107,6 +116,10 @@ public sealed class DeviceApiWebApplicationFactory : CasCapAppWebApplicationFact
         public Task<IReadOnlyDictionary<string, WizBulb>> DiscoverBulbs(CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<WizPilotState?> GetPilot(string bulbIdentifier, CancellationToken cancellationToken = default) => throw new NotSupportedException();
         public Task<WizSystemConfig?> GetSystemConfig(string bulbIdentifier, CancellationToken cancellationToken = default) => throw new NotSupportedException();
-        public Task<bool> SetPilot(string bulbIdentifier, WizSetPilotRequest request, CancellationToken cancellationToken = default) => throw new NotSupportedException();
+        public Task<bool> SetPilot(string bulbIdentifier, WizSetPilotRequest request, CancellationToken cancellationToken = default)
+        {
+            factory.PilotCommands.Add(request);
+            return Task.FromResult(true);
+        }
     }
 }

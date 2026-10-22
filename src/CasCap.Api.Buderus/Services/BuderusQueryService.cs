@@ -47,13 +47,21 @@ public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, Bud
     /// (e.g. <c>"Always_On"</c>).
     /// </param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns><see langword="true"/> if the device accepted the write; <see langword="false"/> otherwise.</returns>
-    public async Task<bool> SetDataPoint(
+    /// <returns>The accepted write or a validation/device rejection message.</returns>
+    public async Task<BuderusDataPointWriteResult> SetDataPoint(
         string datapointId,
         string value,
         CancellationToken cancellationToken = default)
     {
-        logger.LogInformation("{ClassName} writing {DatapointId}={Value}", nameof(BuderusQueryService), datapointId, value);
-        return await km200ClientSvc.SetDataPoint(datapointId, value, cancellationToken).ConfigureAwait(false);
+        if (string.IsNullOrWhiteSpace(datapointId))
+            return new BuderusDataPointWriteResult { Error = "Datapoint id must not be empty." };
+        var normalizedId = datapointId.StartsWith('/') ? datapointId : $"/{datapointId}";
+        logger.LogInformation("{ClassName} writing requested datapoint", nameof(BuderusQueryService));
+        return await km200ClientSvc.SetDataPoint(normalizedId, value, cancellationToken).ConfigureAwait(false)
+            ? new BuderusDataPointWriteResult()
+            : new BuderusDataPointWriteResult
+            {
+                Error = $"Failed to write datapoint '{normalizedId}'. The datapoint may not exist or may not be writeable.",
+            };
     }
 }

@@ -43,6 +43,13 @@ An empty mapping disables polling. Recursive discovery is available separately t
 
 A REST API (`BuderusController`) exposes endpoints for listing all current datapoint values, querying events by datapoint ID, and retrieving the latest snapshot.
 
+Datapoint writes through
+[`IBuderusQueryService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Buderus/Abstractions/IBuderusQueryService.cs)
+return a `BuderusDataPointWriteResult` with `Succeeded` and an optional rejection `Error`.
+The query service validates and normalizes the path; the controller maps the result to HTTP.
+The MCP write tool continues to return a boolean. Reads, write preflight reads and recursive
+discovery accept cancellation; cancellation propagates instead of returning partial discovery results.
+
 ### Sinks
 
 | Sink | Description |
