@@ -1,5 +1,18 @@
 namespace CasCap.Models;
 
+/// <summary>The provider's outcome for an appliance command.</summary>
+public enum MieleCommandResult
+{
+    /// <summary>The provider accepted the command.</summary>
+    Accepted,
+
+    /// <summary>The provider rejected the command for this appliance or its current state.</summary>
+    Rejected,
+
+    /// <summary>The appliance was not found.</summary>
+    NotFound,
+}
+
 /// <summary>Types of Miele appliance events.</summary>
 public enum MieleEventType
 {

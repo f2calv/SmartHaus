@@ -11,16 +11,18 @@ public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQu
     [Description("Lists all household appliances with full identification and current state.")]
     public Task<Dictionary<string, MieleDevice>?> GetAllAppliances(
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetDevices(language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetDevices(language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.GetShortDevices"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Compact summary of all household appliances — serial number, type and status only.")]
     public Task<MieleShortDevice[]?> GetAllAppliancesSummary(
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetShortDevices(language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetShortDevices(language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.GetDevice"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -29,8 +31,9 @@ public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQu
         [Description("Device serial number.")]
         string deviceId,
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetDevice(deviceId, language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetDevice(deviceId, language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.GetIdent"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -39,8 +42,9 @@ public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQu
         [Description("Device serial number.")]
         string deviceId,
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetIdent(deviceId, language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetIdent(deviceId, language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.GetState"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -49,26 +53,29 @@ public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQu
         [Description("Device serial number.")]
         string deviceId,
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetState(deviceId, language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetState(deviceId, language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.GetActions"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
     [Description("Currently available actions for one appliance (e.g. start, stop, powerOn, powerOff).")]
     public Task<MieleActions?> GetApplianceActions(
         [Description("Device serial number.")]
-        string deviceId)
-        => mieleQuerySvc.GetActions(deviceId);
+        string deviceId,
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetActions(deviceId, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.PutAction"/>
     [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false)]
     [Description("Executes an action on one appliance — powerOn, powerOff, start or stop.")]
-    public Task<bool> ExecuteApplianceAction(
+    public async Task<bool> ExecuteApplianceAction(
         [Description("Device serial number.")]
         string deviceId,
-        [Description("Action payload object.")]
-        object action)
-        => mieleQuerySvc.PutAction(deviceId, action);
+        [Description("Typed appliance action; supply at least one supported field. runOnTime is not supported.")]
+        MieleActionRequest action,
+        CancellationToken cancellationToken = default)
+        => await mieleQuerySvc.PutAction(deviceId, action, cancellationToken).ConfigureAwait(false) == MieleCommandResult.Accepted;
 
     /// <inheritdoc cref="IMieleQueryService.GetPrograms"/>
     [McpServerTool(ReadOnly = true, Destructive = false, Idempotent = true, OpenWorld = false)]
@@ -77,16 +84,18 @@ public sealed partial class AppliancesMcpQueryService(IMieleQueryService mieleQu
         [Description("Device serial number.")]
         string deviceId,
         [Description("Language code, e.g. en, de.")]
-        string language = "en")
-        => mieleQuerySvc.GetPrograms(deviceId, language);
+        string language = "en",
+        CancellationToken cancellationToken = default)
+        => mieleQuerySvc.GetPrograms(deviceId, language, cancellationToken);
 
     /// <inheritdoc cref="IMieleQueryService.PutProgram"/>
     [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false)]
     [Description("Selects and starts a program on one appliance. Requires MobileStart or MobileControl mode.")]
-    public Task<bool> StartApplianceProgram(
+    public async Task<bool> StartApplianceProgram(
         [Description("Device serial number.")]
         string deviceId,
-        [Description("Program selection payload.")]
-        object programRequest)
-        => mieleQuerySvc.PutProgram(deviceId, programRequest);
+        [Description("Program selection with required programId, optional duration [hours, minutes] and optional temperature.")]
+        MieleProgramRequest programRequest,
+        CancellationToken cancellationToken = default)
+        => await mieleQuerySvc.PutProgram(deviceId, programRequest, cancellationToken).ConfigureAwait(false) == MieleCommandResult.Accepted;
 }

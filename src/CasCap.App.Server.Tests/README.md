@@ -25,11 +25,13 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
+| `MieleApiContractTests` | 11 | 59 | Integration | Typed bodies, HTTP outcomes, validation, cancellation, no command replay, sanitized failures, disposal, and generated Swagger using fake HTTP |
+| `MieleMcpContractTests` | 3 | 24 | Integration | SDK-generated input schemas, nine facade cancellation paths, and boolean command outcomes using the fake provider |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
 | `UbiquitiApiContractTests` | 4 | 11 | Integration | GET/POST webhooks, optional bodies, validation, request cancellation, and generated Swagger |
 | `UbiquitiQueryServiceTests` | 7 | 21 | Webhook Parsing | Detection types, thumbnails/timestamps, camera selection, sink failures, and cancellation using in-memory sinks |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 47 | 122 | | Source-declared, including skipped cases |
+| Total | 61 | 205 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
@@ -59,6 +61,10 @@ Use a .NET 10 SDK with xUnit v3 and Microsoft.Testing.Platform from the reposito
 The inventory is derived from source, not an observed test run. `Integration` here includes
 in-process host tests and must not be assumed to mean live-device access.
 
+The Miele fixture replaces the named client's primary handler while retaining its configured
+resilience pipeline. No appliance is contacted. MCP coverage here verifies SDK-generated schemas
+and facade calls, not a complete MCP initialization/discovery/invocation protocol exchange.
+
 ```bash
 dotnet test --project src/CasCap.App.Server.Tests/CasCap.App.Server.Tests.csproj
 ```
@@ -77,12 +83,16 @@ CasCap.App.Server.Tests/
 │   ├── ApiContractWebApplicationFactory.cs
 │   ├── CasCapAppWebApplicationFactory.cs
 │   ├── DeviceApiWebApplicationFactory.cs
+│   ├── MieleApiWebApplicationFactory.cs
+│   ├── MieleHttpHandler.cs
 │   ├── StrictAuthCasCapAppWebApplicationFactory.cs
 │   └── WebApiTestBase.cs
 ├── Tests/
 │   ├── Integration/
 │   │   ├── DeviceApiContractTests.cs
 │   │   ├── HostStartupConfigurationTests.cs
+│   │   ├── MieleApiContractTests.cs
+│   │   ├── MieleMcpContractTests.cs
 │   │   ├── UbiquitiApiContractTests.cs
 │   │   └── WebApiContractTests.cs
 │   └── Unit/

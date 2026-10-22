@@ -21,8 +21,55 @@ var devices = await host.Services.GetRequiredService<MieleClientService>().GetDe
 ```
 
 The client also exposes `GetDevice`, `GetIdent`, `GetState`, `GetActions` and `GetPrograms`.
-`PutAction` and `PutProgram` change appliance state. Requests use the bearer token in `OAuthToken`;
+`PutAction` and `PutProgram` change appliance state using
+[`MieleActionRequest`](Models/Dtos/MieleActionRequest.cs) and
+[`MieleProgramRequest`](Models/Dtos/MieleProgramRequest.cs). Requests use the bearer token in `OAuthToken`;
 the library does not acquire or refresh tokens. Obtain and rotate them outside the application.
+
+## Commands and Failures
+
+All nine operations on [`IMieleQueryService`](Abstractions/IMieleQueryService.cs) accept cancellation,
+forwarded through the HTTP controller and appliance MCP facade to the provider. Read methods return
+`null` only for provider HTTP 404; empty or malformed successful responses and other unsuccessful
+statuses throw [`MieleApiException`](Exceptions/MieleApiException.cs).
+
+Commands return `MieleCommandResult.Accepted`, `Rejected` or `NotFound`. Provider HTTP 400, 405,
+409 and 422 mean rejection; HTTP 404 means absence. Authentication, rate-limit, transport, timeout
+and other provider failures throw the domain exception. Caller cancellation propagates unchanged.
+The named REST client's automatic retries are disabled for both reads and writes: an appliance PUT
+may start a program, so replaying an outcome-uncertain command is unsafe.
+
+The application HTTP contract is:
+
+| Outcome | HTTP response |
+| --- | --- |
+| Successful read | 200 with the typed device/action/program payload |
+| Accepted command | 200 with `true` |
+| Missing resource | 404 |
+| Invalid request body | 400 Validation Problem Details, without a provider call |
+| Provider rejects a command | 400 with a sanitized rejection string |
+| Provider failure | 502 Problem Details, without provider content or identifiers |
+
+Command bodies reject unknown fields and are validated before dispatch, including direct client
+and MCP calls. Optional fields are omitted rather than sent as JSON null. An action requires at
+least one supported field; program selection requires an explicit `programId`. Temperature and
+program identifiers remain appliance-specific rather than imposing guessed bounds.
+
+```json
+{"processAction":1}
+```
+
+```json
+{"programId":24,"duration":[1,15],"temperature":220}
+```
+
+These are illustrative commands, not instructions to run them against an appliance. Obtain
+currently supported actions and programs before selecting values.
+
+The request contracts were checked against the official
+[Miele API specification, version 1.1.0](https://developer.miele.com/docs/third-party-api/swagger.json).
+`runOnTime` is deliberately unsupported: the schema describes an integer array while its request
+example uses a scalar. Both forms are rejected until the provider contract is clarified.
 
 ## Event Flow
 

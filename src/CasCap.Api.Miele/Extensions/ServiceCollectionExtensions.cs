@@ -1,3 +1,5 @@
+using CasCap.Common.Models;
+
 namespace CasCap.Extensions;
 
 /// <summary>Extension methods for configuring Miele services.</summary>
@@ -23,10 +25,12 @@ public static class ServiceCollectionExtensions
             client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", opts.OAuthToken);
         })
         .SetHandlerLifetime(Timeout.InfiniteTimeSpan)
-        .AddStandardResilience(nameof(MieleConnectionHealthCheck))
+        .AddStandardResilience(nameof(MieleConnectionHealthCheck), HttpRetrySafety.Never)
         ;
 
         services.AddSingleton<MieleClientService>();
+        services.AddProblemDetails();
+        services.AddExceptionHandler<MieleApiExceptionHandler>();
         services.AddSingleton<IBgFeature, MieleEventStreamBgService>();
 
         services.AddSingleton<MieleConnectionHealthCheck>();

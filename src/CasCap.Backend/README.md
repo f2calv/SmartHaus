@@ -153,6 +153,12 @@ the whole backend assembly, maintain an agent session or execute a model while s
 This table is the available SmartHaus MCP catalogue. Which tools an agent can call is selected by
 its active definition in agentizr; SmartHaus deliberately carries no agent-to-tool assignment map.
 
+The nine appliance tools forward cancellation to the provider. The two command tools retain their
+boolean outputs and use typed action/program arguments: accepted commands return `true`, explicit
+rejection or absence returns `false`, and upstream failures propagate as errors. See the
+[Miele command contract](../CasCap.Api.Miele/README.md#commands-and-failures) for validation,
+supported fields and no-replay behavior.
+
 ## Communications Flow
 
 `CommunicationsBgService` is the only SmartHaus service that exchanges messages with Signalizr.

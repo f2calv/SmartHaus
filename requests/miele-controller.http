@@ -1,5 +1,7 @@
 ### Miele Controller (internal Web API)
 ### Base URL is the Haus application server
+# Commands use typed bodies; unknown fields (including runOnTime) return 400.
+# Missing resources return 404; provider failures return sanitized 502 Problem Details.
 
 @baseUrl = {{$dotenv HAUS_BASE_URL}}
 @deviceId = {{$dotenv MIELE_DEVICE_ID}}
@@ -53,5 +55,7 @@ Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "programId": 1
+  "programId": 24,
+  "duration": [1, 15],
+  "temperature": 220
 }
