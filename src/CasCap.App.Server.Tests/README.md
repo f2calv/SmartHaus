@@ -23,7 +23,8 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `SystemControllerTests` | 4 | 4 | Integration | `GET /api/system` and Basic authentication behavior |
-| Total | 18 | 24 | | Source-declared, including skipped cases |
+| `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
+| Total | 22 | 32 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
@@ -64,12 +65,15 @@ CasCap.App.Server.Tests/
 │   ├── McpAuthenticationTests.cs
 │   └── SystemControllerTests.cs
 ├── Infrastructure/
+│   ├── ApiContractProbeController.cs
+│   ├── ApiContractWebApplicationFactory.cs
 │   ├── CasCapAppWebApplicationFactory.cs
 │   ├── StrictAuthCasCapAppWebApplicationFactory.cs
 │   └── WebApiTestBase.cs
 ├── Tests/
 │   ├── Integration/
-│   │   └── HostStartupConfigurationTests.cs
+│   │   ├── HostStartupConfigurationTests.cs
+│   │   └── WebApiContractTests.cs
 │   └── Unit/
 │       └── FeatureConfigTests.cs
 ├── GlobalUsings.cs
@@ -98,3 +102,4 @@ Test collections run serially through `xunit.runner.json`.
 ## License
 
 This project is released under the [MIT License](../../LICENSE). See the [LICENSE](../../LICENSE) file for details.
+

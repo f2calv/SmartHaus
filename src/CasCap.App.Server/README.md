@@ -70,6 +70,12 @@ The following services are registered regardless of feature flags:
 
 All controllers are added dynamically based on `EnabledFeatures`. API versioning defaults to v1.
 
+JSON endpoints use typed HTTP results. Enum values are written as strings, and controller JSON
+input accepts string enum names. Invalid request bodies return HTTP 400 with
+`application/problem+json` and a `ValidationProblemDetails` body containing an `errors` dictionary.
+Consumers should read enum names rather than numeric values and use `errors` for field failures.
+MVC input binding and typed-result output share this contract through their respective JSON options.
+
 | Source | Endpoints |
 | --- | --- |
 | `SystemController` (always) | `GET /api/system` |
