@@ -6,4 +6,4 @@ $scripts = @(
 )
 $implementation = $scripts | Where-Object { Test-Path -LiteralPath $_ -PathType Leaf } | Select-Object -First 1
 if (-not $implementation) { throw "Invoke-Build.ps1 was not found. Checked: $($scripts -join ', ')" }
-& $implementation -RepositoryRoot $PSScriptRoot -BuildMode Application @args
+& $implementation -RepositoryRoot $PSScriptRoot @args
