@@ -16,7 +16,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_DhwSetTemperature_ReturnsValue()
     {
-        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/setTemperature");
+        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/setTemperature", TestContext.Current.CancellationToken);
 
         Assert.NotNull(dp);
         Assert.Equal("/dhwCircuits/dhw1/setTemperature", dp.Id);
@@ -29,7 +29,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_DhwActualTemp_ReturnsValue()
     {
-        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/actualTemp");
+        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/actualTemp", TestContext.Current.CancellationToken);
 
         Assert.NotNull(dp);
         Assert.Equal(MyDatapointType.floatValue, dp.Type);
@@ -40,7 +40,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_HeatingCircuit1NormalTemp_ReturnsValue()
     {
-        var dp = await svc.GetDataPoint("/heatingCircuits/hc1/temperatureLevels/normal");
+        var dp = await svc.GetDataPoint("/heatingCircuits/hc1/temperatureLevels/normal", TestContext.Current.CancellationToken);
 
         Assert.NotNull(dp);
         Assert.Equal(MyDatapointType.floatValue, dp.Type);
@@ -52,7 +52,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_HeatingCircuit2NormalTemp_ReturnsValue()
     {
-        var dp = await svc.GetDataPoint("/heatingCircuits/hc2/temperatureLevels/normal");
+        var dp = await svc.GetDataPoint("/heatingCircuits/hc2/temperatureLevels/normal", TestContext.Current.CancellationToken);
 
         Assert.NotNull(dp);
         Assert.Equal(MyDatapointType.floatValue, dp.Type);
@@ -64,7 +64,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_OperationMode_ReturnsStringValue()
     {
-        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/operationMode");
+        var dp = await svc.GetDataPoint("/dhwCircuits/dhw1/operationMode", TestContext.Current.CancellationToken);
 
         Assert.NotNull(dp);
         Assert.Equal(MyDatapointType.stringValue, dp.Type);
@@ -76,7 +76,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     [Fact]
     public async Task GetDataPoint_NonExistentPath_ReturnsNull()
     {
-        var dp = await svc.GetDataPoint("/dhwCircuits/dhw99/setTemperature");
+        var dp = await svc.GetDataPoint("/dhwCircuits/dhw99/setTemperature", TestContext.Current.CancellationToken);
 
         Assert.Null(dp);
         _output.WriteLine("Non-existent datapoint correctly returned null");
@@ -109,7 +109,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         const string datapointId = "/dhwCircuits/dhw1/setTemperature";
 
         // Read current value
-        var original = await svc.GetDataPoint(datapointId);
+        var original = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(original);
         _output.WriteLine($"Original {datapointId} = {original.Value} {original.UnitOfMeasure}");
 
@@ -118,7 +118,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
         // Confirm the value is unchanged
-        var after = await svc.GetDataPoint(datapointId);
+        var after = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(after);
         Assert.Equal(original.Value?.ToString(), after.Value?.ToString());
 
@@ -130,7 +130,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     {
         const string datapointId = "/heatingCircuits/hc2/temperatureLevels/normal";
 
-        var original = await svc.GetDataPoint(datapointId);
+        var original = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(original);
         Assert.Equal(1, original.Writeable);
         _output.WriteLine($"Original {datapointId} = {original.Value} {original.UnitOfMeasure}");
@@ -138,7 +138,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         var success = await svc.SetDataPoint(datapointId, original.Value!, TestContext.Current.CancellationToken);
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
-        var after = await svc.GetDataPoint(datapointId);
+        var after = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(after);
         Assert.Equal(original.Value?.ToString(), after.Value?.ToString());
 
@@ -150,7 +150,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
     {
         const string datapointId = "/dhwCircuits/dhw1/operationMode";
 
-        var original = await svc.GetDataPoint(datapointId);
+        var original = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(original);
         Assert.Equal(MyDatapointType.stringValue, original.Type);
         Assert.Equal(1, original.Writeable);
@@ -160,7 +160,7 @@ public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase
         var success = await svc.SetDataPoint(datapointId, original.Value!, TestContext.Current.CancellationToken);
         Assert.True(success, $"SetDataPoint returned false for '{datapointId}'");
 
-        var after = await svc.GetDataPoint(datapointId);
+        var after = await svc.GetDataPoint(datapointId, TestContext.Current.CancellationToken);
         Assert.NotNull(after);
         Assert.Equal(original.Value?.ToString(), after.Value?.ToString());
 
