@@ -35,7 +35,7 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Execute device action (e.g. start)
-# @note
+# @note Sends a start command to the selected physical appliance.
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -49,7 +49,7 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Start a program
-# @note
+# @note Starts an appliance program with the supplied duration and temperature; confirm appliance support first.
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json

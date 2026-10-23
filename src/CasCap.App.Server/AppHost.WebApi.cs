@@ -53,6 +53,8 @@ public static partial class AppHost
 
         if (enabledFeatures.Contains(FeatureNames.Buderus))
             mvcBuilder.AddApplicationPart(typeof(BuderusController).Assembly);
+        if (enabledFeatures.Contains(FeatureNames.DDns))
+            mvcBuilder.AddApplicationPart(typeof(DDnsController).Assembly);
         if (enabledFeatures.Contains(FeatureNames.DoorBird))
             mvcBuilder.AddApplicationPart(typeof(DoorBirdController).Assembly);
         if (enabledFeatures.Contains(FeatureNames.Fronius))

@@ -22,5 +22,19 @@ request files.
 | `knx-controller.http` | KNX bus, HVAC, lighting, outlet, and shutter endpoints |
 | `ubiquiti-demo.http` | Local Docker Compose demo webhook requests |
 
-Some requests change device or application state. Review the method, URL, and payload before sending
-them.
+## Execution Safety
+
+Review each request's `# @note`, URL, credentials and payload before sending it. A `GET` is not
+necessarily read-only: DoorBird device commands can unlock doors or reboot hardware, while
+DoorBird and Ubiquiti event callbacks publish events. Depending on enabled sinks, callbacks can
+capture media, invoke analysis and send notifications. Demo events also enter the configured
+pipeline; synthetic identifiers do not make them a dry run.
+
+KNX names are synthetic examples using the current category and room names. Choose existing
+group/address names from the read endpoints before sending a command. Examples with `dryRun=true`
+resolve proposed changes without queuing or sending KNX commands; the other command examples can
+operate physical devices. Body fields and validation apply to dry runs too.
+
+Controller endpoints are available only when their feature is enabled. In particular, enabling
+`DDns` exposes its read-only IP query but also enables the DNS update worker; do not enable it merely
+to try the request without first configuring the feature's write permissions and target zone.

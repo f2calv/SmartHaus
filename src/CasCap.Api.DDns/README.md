@@ -28,7 +28,10 @@ must wait for the coordinated package release rather than substituting an invent
 
 ## Controller
 
-`DDnsController` exposes read-only query endpoints for the Dynamic DNS service via the Haus internal Web API:
+[`DDnsController`](Controllers/DDnsController.cs) exposes read-only query endpoints for the Dynamic DNS
+service via the Haus internal Web API. The SmartHaus host discovers this controller only when `DDns`
+is enabled. Enabling the feature also registers its DNS update worker; the HTTP query itself does not
+update DNS records.
 
 | Method | Route | Description |
 | --- | --- | --- |

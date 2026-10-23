@@ -9,7 +9,7 @@ GET {{baseUrl}}/api/v1/wiz/bulbs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Trigger bulb discovery
-# @note
+# @note Broadcasts discovery on the local network and updates the application's discovered-bulb state.
 POST {{baseUrl}}/api/v1/wiz/bulbs/discover
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
@@ -18,7 +18,7 @@ GET {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/pilot
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set pilot state for a bulb
-# @note
+# @note Changes the selected physical bulb's scene, brightness and playback speed.
 PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/pilot
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -30,11 +30,11 @@ Content-Type: application/json
 }
 
 ### Turn bulb on
-# @note
+# @note Turns the selected physical bulb on.
 PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/power?on=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Turn bulb off
-# @note
+# @note Turns the selected physical bulb off.
 PUT {{baseUrl}}/api/v1/wiz/bulbs/{{bulbIdentifier}}/power?on=false
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}

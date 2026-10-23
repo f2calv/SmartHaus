@@ -36,7 +36,7 @@ namespace CasCap.Tests.Infrastructure;
 /// where those dependencies are absent.
 /// </para>
 /// </remarks>
-public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoint>
+public class CasCapAppWebApplicationFactory(string enabledFeatures = FeatureNames.Test) : WebApplicationFactory<AppEntryPoint>
 {
     /// <summary>The installation name injected into the test configuration.</summary>
     internal const string TestHausName = "TestHaus";
@@ -57,7 +57,7 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoin
     /// </summary>
     public const string EnabledFeaturesConfigKey = "CasCap:FeatureConfig:EnabledFeatures";
 
-    private static readonly IReadOnlyDictionary<string, string?> _startupEnvironment =
+    private readonly IReadOnlyDictionary<string, string?> _startupEnvironment =
         new Dictionary<string, string?>
         {
             ["AppConfig__KeyVaultName"] = "skip",
@@ -65,7 +65,7 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoin
             ["CasCap__ApiAuthConfig__Username"] = TestUsername,
             ["CasCap__CachingConfig__DistributedLockingEnabled"] = bool.TrueString,
             ["CasCap__CachingConfig__RemoteCacheConnectionString"] = "localhost:6379,abortConnect=false",
-            ["CasCap__FeatureConfig__EnabledFeatures"] = FeatureNames.Test,
+            ["CasCap__FeatureConfig__EnabledFeatures"] = enabledFeatures,
         };
 
     /// <inheritdoc/>
@@ -115,7 +115,7 @@ public class CasCapAppWebApplicationFactory : WebApplicationFactory<AppEntryPoin
                 // (Knx, Buderus, DoorBird …) are activated, keeping startup fast and
                 // independent of external hardware.
                 [EnabledFeaturesConfigKey]
-                    = FeatureNames.Test,
+                    = enabledFeatures,
 
                 // ── ApiAuthConfig ──────────────────────────────────────────────────────
                 [$"{ApiAuthConfig.ConfigurationSectionName}:Username"] = TestUsername,

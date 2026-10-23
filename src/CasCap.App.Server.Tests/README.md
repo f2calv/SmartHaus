@@ -23,7 +23,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `DDnsLeadershipTests` | 2 | 3 | Leadership | Existing resource delegation and cancellation through IP discovery, without Azure/Redis calls |
 | `DeviceApiContractTests` | 7 | 46 | Integration | History cancellation, explicit power values, typed write outcomes, pilot range boundaries/validation, and Swagger metadata |
 | `HealthTests` | 4 | 7 | Integration | Health, liveness, readiness, and startup endpoints |
-| `HostStartupConfigurationTests` | 1 | 1 | Integration | Options binding, Key Vault disablement, feature selection, and safe core DI services |
+| `HostStartupConfigurationTests` | 2 | 3 | Integration | Options binding, Key Vault disablement, feature-gated DDns controller discovery, and safe core DI services |
 | `McpAuthenticationTests` | 2 | 2 | Integration | Anonymous rejection and Basic-authenticated MCP endpoint access |
 | `MieleApiContractTests` | 11 | 59 | Integration | Typed bodies, HTTP outcomes, validation, cancellation, no command replay, sanitized failures, disposal, and generated Swagger using fake HTTP |
 | `MieleMcpContractTests` | 3 | 24 | Integration | SDK-generated input schemas, nine facade cancellation paths, and boolean command outcomes using the fake provider |
@@ -31,7 +31,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `UbiquitiApiContractTests` | 4 | 11 | Integration | GET/POST webhooks, optional bodies, validation, request cancellation, and generated Swagger |
 | `UbiquitiQueryServiceTests` | 7 | 21 | Webhook Parsing | Detection types, thumbnails/timestamps, camera selection, sink failures, and cancellation using in-memory sinks |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 61 | 205 | | Source-declared, including skipped cases |
+| Total | 62 | 207 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 
