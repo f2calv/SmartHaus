@@ -46,7 +46,9 @@ state changes. Discovery ignores MAC/RSSI-only changes when deciding whether to 
 ```
 
 To add Azure persistence, enable `AzureTables`, set `WizConfig.AzureTableStorageConnectionString`
-and configure authentication.
+and configure authentication. Before discovery begins, the sink asynchronously creates its line-item
+and snapshot tables if missing. The configured identity must have permission to create and write
+those tables; initialization failures propagate instead of allowing discovery to run without persistence.
 
 ## Dependencies
 
