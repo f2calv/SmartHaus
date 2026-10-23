@@ -53,13 +53,16 @@ Only the acquired owner runs the update service. Observed loss cancels HTTP disc
 enumeration and writes through the ownership token, and the shared runner awaits completion before
 releasing or reacquiring. Every new run clears its subscription/IP shortcut state to revalidate DNS.
 The feature host also awaits worker cleanup during shutdown.
+An IP-discovery HTTP timeout with an uncancelled ownership token returns no address and is retried
+on the next refresh; requested ownership/host cancellation still propagates instead of being
+treated as a recoverable timeout.
 
 This is coordination, not downstream fencing: a lease check cannot make an Azure DNS write atomic
 with ownership. Polling and cancellation have a detection/response delay. Align host shutdown and
 container termination budgets; the runner does not abandon cleanup after a timeout.
 
 `AddDDns(..., lite: true)` registers read-only query/client services without the update worker or a
-leadership dependency. Focused credential-free tests cover delegation and HTTP cancellation; they do
+leadership dependency. Focused credential-free tests cover delegation, HTTP cancellation and timeout recovery; they do
 not execute Azure DNS writes or prove Redis renewal under partitions.
 
 ## Configuration

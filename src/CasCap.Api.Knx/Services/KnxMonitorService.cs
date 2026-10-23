@@ -13,10 +13,11 @@ public sealed partial class KnxMonitorService(
     IOptions<KnxConfig> config,
     TimeProvider timeProvider,
     KnxGroupAddressLookupService knxGroupAddressLookupSvc,
-    KnxConnectionHealthCheck knxConnectionHealthCheck,
+    KnxWorkerLifetime workerLifetime,
     IKnxTelegramBroker<KnxEvent> incomingBroker,
     KnxConnectionNotifier connectionNotifier) : IKnxMonitor
 {
+    private KnxConnectionHealthCheck ConnectionHealth => workerLifetime.Health;
     private readonly object _callbackGate = new();
     private readonly ConcurrentDictionary<KnxBus, byte> _ownedBuses = new();
     // TODO: Bound callback ingress once measured bursts and an explicit overflow/recovery policy
@@ -54,7 +55,7 @@ public sealed partial class KnxMonitorService(
     public async Task ConnectAsync(CancellationToken cancellationToken)
     {
         _ownershipToken = cancellationToken;
-        knxConnectionHealthCheck.IsLeader = true;
+        ConnectionHealth.IsLeader = true;
         _ownershipRegistration = cancellationToken.Register(WithdrawOwnership);
         cancellationToken.ThrowIfCancellationRequested();
         switch (config.Value.ServiceFamily)
@@ -80,14 +81,7 @@ public sealed partial class KnxMonitorService(
             [MonitorHealthAsync, ProcessReconnectionRequestsAsync, PublishTelegramsAsync];
         try
         {
-            await Parallel.ForEachAsync(workers,
-                new ParallelOptions { MaxDegreeOfParallelism = workers.Length, CancellationToken = cancellationToken },
-                async (worker, token) =>
-                {
-                    await worker(token).ConfigureAwait(false);
-                    token.ThrowIfCancellationRequested();
-                    throw new InvalidOperationException("A KNX connection worker stopped unexpectedly.");
-                }).ConfigureAwait(false);
+            await workerLifetime.RunAsync(workers, cancellationToken).ConfigureAwait(false);
         }
         finally
         {
@@ -100,8 +94,8 @@ public sealed partial class KnxMonitorService(
         lock (_callbackGate)
         {
             _stopping = true;
-            knxConnectionHealthCheck.ConnectionActive = false;
-            knxConnectionHealthCheck.IsLeader = false;
+            ConnectionHealth.ConnectionActive = false;
+            ConnectionHealth.IsLeader = false;
         }
     }
 
@@ -213,7 +207,7 @@ public sealed partial class KnxMonitorService(
             var allConnected = !KnxStatics.BusConnections.IsEmpty && KnxStatics.BusConnections.Values
                 .All(bus => bus?.ConnectionState == BusConnectionState.Connected);
             lock (_callbackGate)
-                knxConnectionHealthCheck.ConnectionActive = !_stopping && allConnected;
+                ConnectionHealth.ConnectionActive = !_stopping && allConnected;
             await Task.Delay(TimeSpan.FromMilliseconds(config.Value.ConnectionHealthPollingDelayMs), timeProvider, cancellationToken).ConfigureAwait(false);
         }
     }
@@ -557,7 +551,7 @@ public sealed partial class KnxMonitorService(
             .FirstOrDefault(kvp => ReferenceEquals(kvp.Value, bus)).Key;
         if (areaLine is not null)
         {
-            knxConnectionHealthCheck.ConnectionActive = false;
+            ConnectionHealth.ConnectionActive = false;
             LogConnectionDropped(logger, nameof(KnxMonitorService), areaLine);
             connectionNotifier.Notify(new KnxConnectionStateChange
             {

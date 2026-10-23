@@ -1,4 +1,6 @@
 using CasCap.Exceptions;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
 using System.Net;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -175,6 +177,16 @@ public sealed partial class MieleClientService : HttpClientBase
         catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             throw Failure("The Miele API request timed out.");
+        }
+        catch (TimeoutRejectedException)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw Failure("The Miele API request timed out.");
+        }
+        catch (BrokenCircuitException)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            throw Failure("The Miele API is temporarily unavailable.");
         }
     }
 

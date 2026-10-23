@@ -2,6 +2,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Net.Http;
+using System.Net;
 
 namespace CasCap.Tests.Unit;
 
@@ -48,6 +49,20 @@ public sealed class DDnsLeadershipTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             running.WaitAsync(_timeout, TestContext.Current.CancellationToken));
         Assert.True(handler.Token.IsCancellationRequested);
+    }
+
+    [Fact]
+    public async Task DiscoveryTimeout_AllowsNextRefresh()
+    {
+        // Regression: HttpClient timeout is recoverable when the ownership token is not cancelled.
+        using var handler = new TimeoutThenSuccessHandler();
+        using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com/") };
+        var finder = CreateFinder(client);
+
+        Assert.Null(await finder.GetIp(TestContext.Current.CancellationToken));
+        Assert.Equal(IPAddress.Parse("192.0.2.1"), await finder.GetIp(TestContext.Current.CancellationToken));
+        Assert.Equal(2, handler.Calls);
+        Assert.False(TestContext.Current.CancellationToken.IsCancellationRequested);
     }
 
     private static DDnsUpdateService CreateWorker(HttpClient client)
@@ -99,6 +114,22 @@ public sealed class DDnsLeadershipTests
     private sealed class TestClientFactory(HttpClient client) : IHttpClientFactory
     {
         public HttpClient CreateClient(string name) => client;
+    }
+
+    private sealed class TimeoutThenSuccessHandler : HttpMessageHandler
+    {
+        public int Calls { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        {
+            Calls++;
+            return Calls == 1
+                ? Task.FromException<HttpResponseMessage>(new TaskCanceledException("Synthetic HTTP timeout.", new TimeoutException()))
+                : Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new StringContent("""{"ip":"192.0.2.1"}""", System.Text.Encoding.UTF8, "application/json")
+                });
+        }
     }
 
     private sealed class TestEnvironment : IHostEnvironment

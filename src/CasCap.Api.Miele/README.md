@@ -36,6 +36,9 @@ statuses throw [`MieleApiException`](Exceptions/MieleApiException.cs).
 Commands return `MieleCommandResult.Accepted`, `Rejected` or `NotFound`. Provider HTTP 400, 405,
 409 and 422 mean rejection; HTTP 404 means absence. Authentication, rate-limit, transport, timeout
 and other provider failures throw the domain exception. Caller cancellation propagates unchanged.
+The standard resilience pipeline's `TimeoutRejectedException` and `BrokenCircuitException`
+(including explicitly isolated circuits) also become sanitized domain failures rather than
+escaping as HTTP 500 errors.
 The named REST client's automatic retries are disabled for both reads and writes: an appliance PUT
 may start a program, so replaying an outcome-uncertain command is unsafe.
 

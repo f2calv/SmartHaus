@@ -8,6 +8,7 @@ using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using System.Runtime.CompilerServices;
+using System.Threading.Channels;
 
 namespace CasCap.Tests;
 
@@ -111,7 +112,9 @@ public sealed class KnxLeadershipTests
         await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
             first.WaitAsync(_timeout, TestContext.Current.CancellationToken));
         Assert.True(firstSession.Disposed);
+        Assert.False(fixture.Lifetime.Stopping.Task.IsCompleted);
 
+        fixture.Health.ConnectionActive = true;
         using var secondOwnership = new CancellationTokenSource();
         var second = runner.Work(secondOwnership.Token);
         Assert.Equal(2, sessions.Count);
@@ -201,6 +204,158 @@ public sealed class KnxLeadershipTests
         Assert.False(fixture.Outgoing.Started.Task.IsCompleted);
     }
 
+    [Fact]
+    public async Task Automation_ForwardsStandbyHttpCommandsAndJoinsPublication()
+    {
+        // Regression: a healthy standby must forward its process-local HTTP queue without a bus.
+        using var fixture = new Fixture();
+        using var host = new CancellationTokenSource();
+        var query = fixture.CreateQuery();
+        var response = await query.SetLightState(new KnxLightStateChangeRequest
+        {
+            GroupName = "EG-LI-Kitchen",
+            IsOn = true
+        }, cancellationToken: host.Token);
+        Assert.Equal(StateChangeOutcome.Queued, Assert.Single(response.Results).Outcome);
+        Assert.Equal(1, fixture.Queue.Count);
+        fixture.Outgoing.BlockPublication = true;
+        var running = fixture.CreateAutomation(query).ExecuteAsync(host.Token);
+        var published = await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+
+        Assert.Equal("EG-LI-Kitchen-SW", published.Kga.Name);
+        Assert.False(fixture.Health.ConnectionActive);
+        Assert.Empty(KnxStatics.BusConnections);
+        await host.CancelAsync();
+        await fixture.Outgoing.PublicationCleaning.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        Assert.False(running.IsCompleted);
+        fixture.Outgoing.AllowPublicationCleanup.SetResult();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            running.WaitAsync(_timeout, TestContext.Current.CancellationToken));
+        Assert.Equal(0, fixture.Queue.Count);
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Automation_ScheduleHandoverAwaitsOwnedPublication(bool bedroomOverride)
+    {
+        // Regression: an old owner's autonomous schedule must stop before another run starts.
+        using var fixture = new Fixture(dayNight: true, bedroomOverride: bedroomOverride);
+        await fixture.Lookup.WaitUntilReadyAsync(TestContext.Current.CancellationToken);
+        fixture.Health.ConnectionActive = true;
+        fixture.Outgoing.AllowCleanup.SetResult();
+        fixture.Outgoing.BlockPublication = true;
+        var clock = new KnxTestClock();
+        var automation = fixture.CreateAutomation(timeProvider: clock);
+        using var firstOwnership = new CancellationTokenSource();
+        var first = automation.RunOwnedAsync(fixture.WorkerLifetime, firstOwnership.Token);
+        var firstWrite = await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+            .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        Assert.Equal("SYS-[Night_Day]", firstWrite.Kga.Name);
+        await firstOwnership.CancelAsync();
+        await fixture.Outgoing.PublicationCleaning.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        Assert.False(first.IsCompleted);
+        Assert.Equal(0, fixture.Queue.Count);
+        fixture.Outgoing.AllowPublicationCleanup.SetResult();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            first.WaitAsync(_timeout, TestContext.Current.CancellationToken));
+        Assert.False(fixture.Outgoing.Published.Reader.TryRead(out _));
+        Assert.False(fixture.Lifetime.Stopping.Task.IsCompleted);
+
+        fixture.Outgoing.BlockPublication = false;
+        using var nextOwnership = new CancellationTokenSource();
+        var next = automation.RunOwnedAsync(fixture.WorkerLifetime, nextOwnership.Token);
+        var expected = bedroomOverride ? 2 : 1;
+        for (var i = 0; i < expected; i++)
+        {
+            var nextWrite = await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+                .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+            Assert.Equal(i == 0 ? "SYS-[Night_Day]" : "SYS-[Night_Day]-Bedroom", nextWrite.Kga.Name);
+        }
+        var cadence = TimeSpan.FromMilliseconds(fixture.Config.Value.DayNightPollingDelayMs);
+        await clock.WaitForDelayAsync(cadence);
+        clock.Advance(cadence - TimeSpan.FromMilliseconds(1));
+        Assert.False(fixture.Outgoing.Published.Reader.TryRead(out _));
+        clock.Advance(TimeSpan.FromMilliseconds(1));
+        for (var i = 0; i < expected; i++)
+            await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+                .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        await clock.WaitForDelayAsync(cadence);
+        fixture.Outgoing.Failure = new InvalidOperationException("Synthetic publication failure.");
+        clock.Advance(cadence);
+        for (var i = 0; i < expected; i++)
+            await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+                .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        await clock.WaitForDelayAsync(cadence);
+        Assert.False(next.IsCompleted);
+        Assert.False(fixture.Lifetime.Stopping.Task.IsCompleted);
+        fixture.Outgoing.Failure = null;
+        clock.Advance(cadence);
+        for (var i = 0; i < expected; i++)
+            await fixture.Outgoing.Published.Reader.ReadAsync(TestContext.Current.CancellationToken)
+                .AsTask().WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        await nextOwnership.CancelAsync();
+        await Assert.ThrowsAnyAsync<OperationCanceledException>(() =>
+            next.WaitAsync(_timeout, TestContext.Current.CancellationToken));
+        Assert.False(fixture.Outgoing.Published.Reader.TryRead(out _));
+        clock.Advance(cadence);
+        Assert.False(fixture.Outgoing.Published.Reader.TryRead(out _));
+        Assert.Equal(0, fixture.Queue.Count);
+    }
+
+    [Theory]
+    [InlineData("connect")]
+    [InlineData("outer")]
+    [InlineData("inner")]
+    public async Task Ownership_FaultStopsHostBeforeStalledCleanup(string failure)
+    {
+        // Regression: fatal child faults must begin host shutdown before joining stalled siblings.
+        using var fixture = new Fixture();
+        fixture.Health.ConnectionActive = true;
+        fixture.Health.IsLeader = true;
+        var fail = Gate();
+        var broker = new IncomingBroker { Fail = true, FailureGate = fail.Task };
+        var realMonitor = fixture.CreateMonitor(broker);
+        Func<CancellationToken, Task>? run = null;
+        if (failure == "inner")
+            run = async token =>
+            {
+                await fixture.Outgoing.Started.Task.WaitAsync(token);
+                await realMonitor.RunAsync(token);
+            };
+        var session = new TestMonitor
+        {
+            Failure = failure == "connect" ? "connect" : "run",
+            FailureGate = fail.Task,
+            Run = run
+        };
+        var runner = new CapturingRunner();
+        await fixture.CreateWorker(runner, () => session)
+            .ExecuteAsync(TestContext.Current.CancellationToken);
+        if (failure == "inner")
+            Assert.True(realMonitor.TryQueueTelegram(CreateTelegram()));
+
+        var running = runner.Work!(TestContext.Current.CancellationToken);
+        if (failure != "connect")
+            await fixture.Outgoing.Started.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        fail.SetResult();
+        await fixture.Lifetime.Stopping.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        Assert.False(running.IsCompleted);
+        Assert.False(fixture.Health.ConnectionActive);
+        Assert.False(fixture.Health.IsLeader);
+        if (failure == "connect")
+            await session.Disposing.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+        else
+            await fixture.Outgoing.Cleaning.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+
+        fixture.Outgoing.AllowCleanup.SetResult();
+        session.AllowDispose.SetResult();
+        await Assert.ThrowsAsync<InvalidOperationException>(() =>
+            running.WaitAsync(_timeout, TestContext.Current.CancellationToken));
+        await realMonitor.DisposeAsync();
+    }
+
     private static KnxEvent CreateTelegram()
         => new(DateTime.UnixEpoch, new KnxGroupEvent(),
             new KnxGroupAddressParsed(new KnxGroupAddressXml { Name = "EG-LI-Kitchen-SW", Address = "0/0/1", DPTs = "DPST-1-1" }),
@@ -210,20 +365,28 @@ public sealed class KnxLeadershipTests
 
     private sealed class Fixture : IDisposable
     {
-        private readonly string _path = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+        private readonly string _path = Path.Combine(Environment.CurrentDirectory, $"knx-test-{Guid.NewGuid():N}.xml");
 
         public KnxConnectionHealthCheck Health { get; } = new();
         public OutgoingBroker Outgoing { get; } = new();
+        public StateChangeQueue Queue { get; } = new();
+        public TestLifetime Lifetime { get; } = new();
+        public KnxWorkerLifetime WorkerLifetime { get; }
         public IOptions<KnxConfig> Config { get; }
         public KnxGroupAddressLookupService Lookup { get; }
 
-        public Fixture(ServiceFamily family = ServiceFamily.Tunneling, ShardingMode sharding = ShardingMode.Unified)
+        public Fixture(ServiceFamily family = ServiceFamily.Tunneling, ShardingMode sharding = ShardingMode.Unified,
+            bool dayNight = false, bool bedroomOverride = false)
         {
-            File.WriteAllText(_path, """
+            WorkerLifetime = new(Health, Lifetime);
+            File.WriteAllText(_path, $$"""
                 <GroupAddress-Export xmlns="http://knx.org/xml/ga-export/01">
                   <GroupRange Name="Example" RangeStart="0" RangeEnd="2047">
                     <GroupRange Name="Lighting" RangeStart="0" RangeEnd="255">
                       <GroupAddress Name="EG-LI-Kitchen-SW" Address="0/0/1" DPTs="DPST-1-1" />
+                      <GroupAddress Name="EG-LI-Kitchen-SW_FB" Address="0/0/2" DPTs="DPST-1-1" />
+                      <GroupAddress Name="SYS-[Night_Day]" Address="0/0/3" DPTs="DPST-1-24" />
+                      {{(bedroomOverride ? """<GroupAddress Name="SYS-[Night_Day]-Bedroom" Address="0/0/4" DPTs="DPST-1-24" />""" : "")}}
                     </GroupRange>
                   </GroupRange>
                 </GroupAddress-Export>
@@ -232,7 +395,10 @@ public sealed class KnxLeadershipTests
             {
                 [nameof(KnxConfig.ServiceFamily)] = family.ToString(),
                 [nameof(KnxConfig.ShardingMode)] = sharding.ToString(),
-                [nameof(KnxConfig.GroupAddressXmlFilePath)] = _path
+                [nameof(KnxConfig.GroupAddressXmlFilePath)] = _path,
+                [nameof(KnxConfig.DayNightEnabled)] = dayNight.ToString(),
+                [nameof(KnxConfig.DayNightTimeZoneLocation)] = TimeZoneInfo.GetSystemTimeZones()[0].DisplayName,
+                [nameof(KnxConfig.StateChangeMaxPollIterations)] = "1"
             }).Build();
             Config = Options.Create(configuration.Get<KnxConfig>()!);
             Lookup = new KnxGroupAddressLookupService(NullLogger<KnxGroupAddressLookupService>.Instance,
@@ -240,13 +406,21 @@ public sealed class KnxLeadershipTests
         }
 
         public KnxMonitorBgService CreateWorker(ILeadershipRunner runner, Func<IKnxMonitor> factory)
-            => new(NullLogger<KnxMonitorBgService>.Instance, Config, Lookup, runner, factory, CreateSender());
+            => new(NullLogger<KnxMonitorBgService>.Instance, Config, Lookup, runner, factory, CreateAutomation(), WorkerLifetime);
+
+        public KnxQueryService CreateQuery()
+            => new(NullLogger<KnxQueryService>.Instance, Config,
+                new KnxMemoryStateService(NullLogger<KnxMemoryStateService>.Instance), Lookup, Queue, Outgoing);
+
+        public KnxAutomationBgService CreateAutomation(IKnxQueryService? query = null, TimeProvider? timeProvider = null)
+            => new(NullLogger<KnxAutomationBgService>.Instance, Config, timeProvider ?? TimeProvider.System,
+                Lookup, CreateSender(), Queue, query ?? CreateQuery());
 
         public KnxSenderBgService CreateSender()
             => new(NullLogger<KnxSenderBgService>.Instance, Config, TimeProvider.System, Health, Outgoing);
 
         public KnxMonitorService CreateMonitor(IKnxTelegramBroker<KnxEvent> incoming)
-            => new(NullLogger<KnxMonitorService>.Instance, Config, TimeProvider.System, Lookup, Health, incoming, new KnxConnectionNotifier());
+            => new(NullLogger<KnxMonitorService>.Instance, Config, TimeProvider.System, Lookup, WorkerLifetime, incoming, new KnxConnectionNotifier());
 
         public void Dispose() => File.Delete(_path);
     }
@@ -269,6 +443,8 @@ public sealed class KnxLeadershipTests
     private sealed class TestMonitor : IKnxMonitor
     {
         public string? Failure { get; init; }
+        public Task FailureGate { get; init; } = Task.CompletedTask;
+        public Func<CancellationToken, Task>? Run { get; init; }
         public CancellationToken ConnectToken { get; private set; }
         public TaskCompletionSource Disposing { get; } = Gate();
         public TaskCompletionSource AllowDispose { get; } = Gate();
@@ -282,13 +458,21 @@ public sealed class KnxLeadershipTests
                 : Task.CompletedTask;
         }
 
-        public Task RunAsync(CancellationToken cancellationToken)
-            => Failure switch
+        public async Task RunAsync(CancellationToken cancellationToken)
+        {
+            if (Run is not null)
+            {
+                await Run(cancellationToken);
+                return;
+            }
+            await FailureGate.WaitAsync(cancellationToken);
+            await (Failure switch
             {
                 "run" => Task.FromException(new InvalidOperationException("Monitor failed.")),
                 "complete" => Task.CompletedTask,
                 _ => Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken)
-            };
+            });
+        }
 
         public async ValueTask DisposeAsync()
         {
@@ -304,9 +488,29 @@ public sealed class KnxLeadershipTests
         public TaskCompletionSource Cleaning { get; } = Gate();
         public TaskCompletionSource AllowCleanup { get; } = Gate();
         public CancellationToken Token { get; private set; }
+        public Channel<KnxOutgoingTelegram> Published { get; } = Channel.CreateUnbounded<KnxOutgoingTelegram>();
+        public bool BlockPublication { get; set; }
+        public Exception? Failure { get; set; }
+        public TaskCompletionSource PublicationCleaning { get; } = Gate();
+        public TaskCompletionSource AllowPublicationCleanup { get; } = Gate();
 
-        public ValueTask PublishAsync(KnxOutgoingTelegram item, CancellationToken cancellationToken = default)
-            => throw new NotSupportedException();
+        public async ValueTask PublishAsync(KnxOutgoingTelegram item, CancellationToken cancellationToken = default)
+        {
+            await Published.Writer.WriteAsync(item, cancellationToken);
+            if (Failure is not null)
+                throw Failure;
+            if (!BlockPublication)
+                return;
+            try
+            {
+                await Task.Delay(Timeout.InfiniteTimeSpan, cancellationToken);
+            }
+            finally
+            {
+                PublicationCleaning.TrySetResult();
+                await AllowPublicationCleanup.Task.WaitAsync(_timeout, TestContext.Current.CancellationToken);
+            }
+        }
 
         public async IAsyncEnumerable<KnxOutgoingTelegram> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
         {
@@ -328,6 +532,7 @@ public sealed class KnxLeadershipTests
     private sealed class IncomingBroker : IKnxTelegramBroker<KnxEvent>
     {
         public bool Fail { get; init; }
+        public Task FailureGate { get; init; } = Task.CompletedTask;
         public KnxEvent? Telegram { get; private set; }
         public CancellationToken Token { get; private set; }
         public TaskCompletionSource Started { get; } = Gate();
@@ -339,6 +544,7 @@ public sealed class KnxLeadershipTests
             Telegram = item;
             Token = cancellationToken;
             Started.SetResult();
+            await FailureGate.WaitAsync(cancellationToken);
             if (Fail)
                 throw new InvalidOperationException("Publication failed.");
             try
@@ -354,6 +560,15 @@ public sealed class KnxLeadershipTests
 
         public IAsyncEnumerable<KnxEvent> SubscribeAsync(CancellationToken cancellationToken = default)
             => throw new NotSupportedException();
+    }
+
+    private sealed class TestLifetime : IHostApplicationLifetime
+    {
+        public TaskCompletionSource Stopping { get; } = Gate();
+        public CancellationToken ApplicationStarted => CancellationToken.None;
+        public CancellationToken ApplicationStopping => CancellationToken.None;
+        public CancellationToken ApplicationStopped => CancellationToken.None;
+        public void StopApplication() => Stopping.TrySetResult();
     }
 
     private sealed class TestEnvironment : IHostEnvironment

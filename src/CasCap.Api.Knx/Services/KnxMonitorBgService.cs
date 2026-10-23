@@ -9,7 +9,8 @@ public sealed class KnxMonitorBgService(
     KnxGroupAddressLookupService knxGroupAddressLookupSvc,
     ILeadershipRunner leadershipRunner,
     Func<IKnxMonitor> monitorFactory,
-    KnxSenderBgService knxSenderBgSvc) : IBgFeature
+    KnxAutomationBgService knxAutomationBgSvc,
+    KnxWorkerLifetime workerLifetime) : IBgFeature
 {
     /// <inheritdoc/>
     public string FeatureName => "Knx";
@@ -38,16 +39,17 @@ public sealed class KnxMonitorBgService(
     private async Task RunOwnedAsync(CancellationToken cancellationToken)
     {
         await using var monitor = monitorFactory();
-        await monitor.ConnectAsync(cancellationToken).ConfigureAwait(false);
-
-        Func<CancellationToken, Task>[] workers = [monitor.RunAsync, knxSenderBgSvc.ExecuteAsync];
-        await Parallel.ForEachAsync(workers,
-            new ParallelOptions { MaxDegreeOfParallelism = workers.Length, CancellationToken = cancellationToken },
-            async (worker, token) =>
-            {
-                await worker(token).ConfigureAwait(false);
-                token.ThrowIfCancellationRequested();
-                throw new InvalidOperationException("A KNX ownership worker stopped unexpectedly.");
-            }).ConfigureAwait(false);
+        try
+        {
+            await monitor.ConnectAsync(cancellationToken).ConfigureAwait(false);
+            Func<CancellationToken, Task>[] workers =
+                [monitor.RunAsync, token => knxAutomationBgSvc.RunOwnedAsync(workerLifetime, token)];
+            await workerLifetime.RunAsync(workers, cancellationToken).ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
+        {
+            workerLifetime.StopApplication();
+            throw;
+        }
     }
 }

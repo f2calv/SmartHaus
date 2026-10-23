@@ -41,7 +41,15 @@ The library's monitor, processor and sender form a pipeline:
 
 3. **`KnxSenderBgService`** – Runs inside the monitor's ownership callback, not as an independently launched feature. It waits for connectivity before consuming outbound requests and passes the ownership-linked cancellation token to bus writes. Standbys do not consume outgoing commands.
 
-Supporting services include `KnxAutomationBgService` (queue processing and day/night signalling). A REST API (`KnxController`) and a gRPC endpoint (`RpcTelegramService`) allow external callers to read state and send commands.
+`KnxAutomationBgService` forwards its process-local command queue on every replica as soon as ETS
+metadata is ready, including healthy standbys without a local bus connection. Its optional day/night
+schedule instead runs inside the monitor's ownership callback, alongside the sender. The first
+day/night update follows connectivity and subsequent updates retain `DayNightPollingDelayMs`.
+Scheduled writes are awaited with the ownership token, including the optional bedroom override;
+they do not enter the host-lived local queue.
+
+A REST API (`KnxController`) and a gRPC endpoint (`RpcTelegramService`) allow external callers to read
+state and send commands.
 
 ## Group Address Naming Convention
 
@@ -193,7 +201,7 @@ The `ShardingMode` property on `KnxConfig` controls how `KnxMonitorBgService` po
 1. **Group address lookup** — all replicas load the ETS XML metadata concurrently (stateless, no lock required).
 2. **Configuration logged** — after the lookup completes, `ServiceFamily` and `ShardingMode` are emitted at `Information` level so the active configuration is visible in every pod's log stream. If `ServiceFamily` is `Routing` and `ShardingMode` was set to `Partitioned`, it is overridden to `Unified` with a warning.
 3. **Leadership election** — the shared runner acquires the unchanged resource `knx:monitor`, using the existing caching factory/database/key format and `CachingConfig.Redlock` configuration. The built-in `LeaderElection` profile defaults to 30 s expiry, 60 s acquisition wait and 5 s retry; application overrides still apply. Root cache-miss timings are unchanged.
-4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication and outbound delivery are supervised together. A fatal worker fault cancels and joins siblings before disposal. Initial connection failures and subsequent drops are retried for both tunneling and routing.
+4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication, outbound delivery and enabled day/night scheduling are supervised together. A fatal child failure withdraws readiness and requests host shutdown immediately, before cancelling/joining siblings and disposing connections. Ownership-only cancellation does not stop the host. Initial connection failures and subsequent drops are retried for both tunneling and routing.
 5. **Ownership ends** — the runner observes lease loss at `Redlock.LeadershipCheckIntervalMs` (default 1000 ms) and cancels the ownership token. Health is withdrawn, callbacks stop accepting telegrams, and all publication/write work is awaited before handlers are detached and buses asynchronously disposed. Cleanup is also applied to partial startup failures. Only then may this replica start a fresh ownership run. Host shutdown owns the forced-termination budget; cleanup has no independent timeout.
 
 This checkout uses the provisional .NET 8+ runner from sibling Debug project references. Release
@@ -205,6 +213,12 @@ buffers are in-memory and are not replayed across ownership runs. Outgoing ackno
 retry behavior remains broker-specific; this lifecycle does not provide exactly-once delivery or
 downstream fencing. Offline tests cover supervision and cleanup, not live lease renewal, partitions
 or physical bus behavior.
+
+Local command processing retains bounded concurrency and awaits in-flight work during shutdown.
+Dequeue remains destructive: cancellation or process failure after dequeue can lose that item;
+no automatic requeue or stronger delivery guarantee is added. Falcon disposal is awaited without an
+application timeout or cancellation token. Its internal bound has not been verified; immediate
+host-stop signalling starts the host's termination budget even if sibling or SDK cleanup stalls.
 
 The sender can use surviving connections while another line reconnects; the overall connection
 health check still requires every configured connection. Redis operations already dispatched are
