@@ -23,6 +23,11 @@ on:
         type: boolean
         description: Push NuGet packages?
         default: false
+      #Run from the default branch; only the packages from this existing release are published.
+      nuget-release:
+        type: string
+        description: NuGet-only recovery release e.g. 1.2.3
+        default: ''
 
 jobs:
   lint:
@@ -30,6 +35,7 @@ jobs:
     uses: f2calv/gha-workflows/.github/workflows/lint.yml@v1
 
   versioning:
+    if: inputs.nuget-release == ''
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     with:
       tag-prefix: ''
@@ -62,15 +68,54 @@ jobs:
       packages: write
       contents: read
     needs: [versioning, build]
-    if: inputs.push-nuget
+    if: ${{ !cancelled() && (inputs.nuget-release != '' || (inputs.push-nuget && needs.versioning.result == 'success' && needs.build.result == 'success')) }}
     steps:
+      - name: validate NuGet publication
+        id: publication
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          RELEASE_VERSION: ${{ inputs.nuget-release }}
+          CALCULATED_VERSION: ${{ needs.versioning.outputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF" != "refs/heads/$DEFAULT_BRANCH" ]]; then
+            echo "::error::Stable NuGet publication must run from the default branch. Use nuget-release to recover an existing release."
+            exit 1
+          fi
+          if [[ -n "$RELEASE_VERSION" ]]; then
+            if [[ ! "$RELEASE_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+              echo "::error::nuget-release must be a clean X.Y.Z release version."
+              exit 1
+            fi
+            gh api "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION" |
+              jq -e --arg version "$RELEASE_VERSION" '.tag_name == $version and .draft == false and .prerelease == false' > /dev/null
+          fi
+          echo "version=${RELEASE_VERSION:-$CALCULATED_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: ${{ inputs.nuget-release || github.sha }}
+
+      - name: git rev-parse HEAD
+        id: source
+        shell: bash
+        run: |
+          sha=$(git rev-parse HEAD)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+
       - uses: f2calv/gha-dotnet-nuget@v2
         with:
+          checkout: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           nuget-user: ${{ github.repository_owner }}
-          version: ${{ needs.versioning.outputs.version }}
+          version: ${{ steps.publication.outputs.version }}
           execute-tests: false
           solution-name: SmartHaus.Release.slnx
+          #The action otherwise records the workflow commit rather than the checked-out release.
+          dotnet-build-args: -p:SourceRevisionId=${{ steps.source.outputs.sha }}
 
   containerize:
     uses: f2calv/gha-workflows/.github/workflows/container-image-build.yml@v1
@@ -78,7 +123,7 @@ jobs:
       packages: write #for pushing container image
       contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
     needs: [versioning]
-    if: github.event_name != 'pull_request'
+    if: inputs.nuget-release == '' && github.event_name != 'pull_request'
     with:
       registry: ghcr.io/${{ github.repository_owner }}
       tag: ${{ needs.versioning.outputs.version }}
@@ -102,7 +147,7 @@ jobs:
       packages: write #for pushing helm artifact
       contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
     needs: [versioning, build, containerize]
-    if: github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
+    if: inputs.nuget-release == '' && github.event_name != 'pull_request' && github.actor != 'copilot[bot]'
     with:
       tag: ${{ needs.versioning.outputs.version }}
       image-registry: ghcr.io
@@ -117,7 +162,7 @@ jobs:
 
   release:
     needs: [versioning, build, containerize, pkg-chart-smarthaus]
-    if: github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
+    if: inputs.nuget-release == '' && github.ref == format('refs/heads/{0}', github.event.repository.default_branch)
     uses: f2calv/gha-workflows/.github/workflows/gha-release-versioning.yml@v1
     permissions:
       contents: write
