@@ -50,6 +50,13 @@ The query service validates and normalizes the path; the controller maps the res
 The MCP write tool continues to return a boolean. Reads, write preflight reads and recursive
 discovery accept cancellation; cancellation propagates instead of returning partial discovery results.
 
+### Migrating to 1.1
+
+`IBuderusQueryService.SetDataPoint` now returns `Task<BuderusDataPointWriteResult>` instead of
+`Task<bool>`. Rebuild callers and interface implementations, inspect the returned `Succeeded`
+property, and use `Error` for a rejected write. The lower-level client still returns a boolean.
+This is source and binary incompatible with the previous boolean-returning query-service contract.
+
 ### Sinks
 
 | Sink | Description |

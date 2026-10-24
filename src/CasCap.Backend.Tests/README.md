@@ -41,13 +41,6 @@ Host endpoint and application-bootstrap coverage lives in
 
 There are no skipped tests.
 
-### Source limitation
-
-The KNX entry in `LiteSinkRegistrationTests` expects Redis inclusion and Azure Tables exclusion.
-`AddKnxWithExtraSinks` currently filters Redis instead, unlike the other integrations. The inventory
-records the declared assertion, not a passing result; this source/test mismatch is not fixed by a
-documentation update.
-
 ## Agent Evaluation
 
 Agent definitions are evaluated in agentizr against scenarios supplied with the definition, before

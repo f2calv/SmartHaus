@@ -13,9 +13,8 @@ Custom hosts register it with `services.AddDDns(configuration)` from
 `Microsoft.Extensions.DependencyInjection`, and start its [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) worker through the shared
 feature runner.
 
-The current leadership API is provisional: build in Debug against the sibling shared-library
-checkout. Its new runner is not yet available in the published caching package, so Release builds
-must wait for the coordinated package release rather than substituting an invented package version.
+The leadership runner is available in `CasCap.Common.Caching` 4.17.0. Release builds resolve it
+from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 ## Services
 

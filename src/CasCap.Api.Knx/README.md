@@ -204,9 +204,8 @@ The `ShardingMode` property on `KnxConfig` controls how `KnxMonitorBgService` po
 4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication, outbound delivery and enabled day/night scheduling are supervised together. A fatal child failure withdraws readiness and requests host shutdown immediately, before cancelling/joining siblings and disposing connections. Ownership-only cancellation does not stop the host. Initial connection failures and subsequent drops are retried for both tunneling and routing.
 5. **Ownership ends** — the runner observes lease loss at `Redlock.LeadershipCheckIntervalMs` (default 1000 ms) and cancels the ownership token. Health is withdrawn, callbacks stop accepting telegrams, and all publication/write work is awaited before handlers are detached and buses asynchronously disposed. Cleanup is also applied to partial startup failures. Only then may this replica start a fresh ownership run. Host shutdown owns the forced-termination budget; cleanup has no independent timeout.
 
-This checkout uses the provisional .NET 8+ runner from sibling Debug project references. Release
-packages do not yet contain that API; validate with `SmartHaus.Debug.slnx` until the shared package
-release is available.
+The .NET 8+ leadership runner is published in `CasCap.Common.Caching` 4.17.0. Release builds
+resolve it from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 Lease cancellation cannot retract a telegram already accepted by Redis or a device. Callback
 buffers are in-memory and are not replayed across ownership runs. Outgoing acknowledgement and

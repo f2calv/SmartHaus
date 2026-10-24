@@ -15,11 +15,9 @@ The standalone device libraries can also be used without running SmartHaus.
 
 With Docker and Compose installed:
 
-Current source limitation: the backend's Agent Runtime contracts and communications integration
-have Debug project references without corresponding Release package references. A clean Release
-build, including the source-built demo below, may therefore fail before startup. The Debug
-source-dependency path in [Development](#development) is the available alternative; this README
-does not report an executed demo.
+The source-built demo uses the Release graph, resolving shared libraries, Agent Runtime contracts
+and communications packages from NuGet. Debug source builds instead use the adjacent checkouts
+listed in [Development](#development). This README does not report an executed demo.
 
 ```bash
 git clone https://github.com/f2calv/SmartHaus.git
@@ -70,6 +68,15 @@ its own device, cloud authentication and configuration requirements.
 | Application orchestration | [Backend, SignalR, communications, media and MCP](src/CasCap.Backend/README.md) | Redis streams and media cache | Source only |
 | Helm charts | [Application](charts/smarthaus/README.md), [Grafana dashboards](charts/smarthaus-dashboards/README.md) | Configurable workload aliases and dashboard provisioning | `oci://ghcr.io/f2calv/charts/smarthaus` |
 | Tests | [Buderus](src/CasCap.Api.Buderus.Tests/README.md), [DoorBird](src/CasCap.Api.DoorBird.Tests/README.md), [Fronius](src/CasCap.Api.Fronius.Tests/README.md), [KNX](src/CasCap.Api.Knx.Tests/README.md), [Miele](src/CasCap.Api.Miele.Tests/README.md), [host](src/CasCap.App.Server.Tests/README.md), [backend](src/CasCap.Backend.Tests/README.md) | Source-declared inventories and prerequisites | Not published |
+
+## Compatibility
+
+The 1.1 release intentionally includes incompatible contracts despite its minor version.
+Rebuild package consumers and migrate the
+[Buderus query-service write result](src/CasCap.Api.Buderus/README.md#migrating-to-11).
+HTTP callers must also check the current typed device responses, string-enum JSON and
+[validated Miele command bodies](src/CasCap.Api.Miele/README.md#commands-and-failures);
+unrecognized Miele fields are rejected rather than forwarded.
 
 ## Use a Standalone Library
 
