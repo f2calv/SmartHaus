@@ -11,7 +11,7 @@ namespace CasCap.HealthChecks;
 /// Reports <see cref="HealthStatus.Unhealthy"/> only when the replica is the active leader
 /// but has lost the bus connection.
 /// </para>
-/// <see cref="ConnectionActive"/> is only set to <see langword="true"/> by <see cref="Services.KnxMonitorBgService"/>
+/// <see cref="ConnectionActive"/> is only set to <see langword="true"/> by <see cref="Services.KnxMonitorService"/>
 /// after <see cref="KnxGroupAddressLookupHealthCheck.GroupAddressesLoaded"/> is already <see langword="true"/>,
 /// so services only need to gate on this single health check.
 /// </summary>

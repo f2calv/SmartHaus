@@ -20,7 +20,6 @@ global using Microsoft.Extensions.Diagnostics.HealthChecks;
 global using Microsoft.Extensions.Hosting;
 global using Microsoft.Extensions.Logging;
 global using Microsoft.Extensions.Options;
-global using RedLockNet;
 global using System.Collections.Concurrent;
 global using System.Collections.Frozen;
 global using System.ComponentModel;

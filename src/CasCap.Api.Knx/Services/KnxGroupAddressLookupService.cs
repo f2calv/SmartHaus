@@ -6,7 +6,7 @@ namespace CasCap.Services;
 /// Handles the exported KNX Group Address file from ETS software, the file contents
 /// are parsed, validated and converted into DTO.
 /// </summary>
-public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck)
+public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupService> logger, IOptions<KnxConfig> config, IHostEnvironment environment, KnxGroupAddressLookupHealthCheck knxGroupAddressLookupHealthCheck, TimeProvider timeProvider)
 {
 
     private Dictionary<string, KnxGroupAddressParsed> dLookupByAddress { get; set; } = [];
@@ -14,6 +14,22 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     private List<KnxGroupAddressXml> _xmlGroupAddresses = [];
 
     private static readonly SemaphoreSlim semaphoreSlim = new(1, 1);
+
+    /// <summary>Loads metadata and waits for its readiness before a replica contends for bus ownership.</summary>
+    public async Task WaitUntilReadyAsync(CancellationToken cancellationToken)
+    {
+        await GetLookup(cancellationToken).ConfigureAwait(false);
+        var attempt = 1;
+        while (!knxGroupAddressLookupHealthCheck.GroupAddressesLoaded)
+        {
+            logger.Log(attempt % config.Value.ConnectionLogEscalationInterval == 0 ? LogLevel.Warning : LogLevel.Trace,
+                "{ClassName} group address lookup not yet loaded, attempt {Attempt}, retry in {RetryMs}ms...",
+                nameof(KnxGroupAddressLookupService), attempt, config.Value.ConnectionPollingDelayMs);
+            await Task.Delay(TimeSpan.FromMilliseconds(config.Value.ConnectionPollingDelayMs), timeProvider, cancellationToken).ConfigureAwait(false);
+            attempt++;
+        }
+        cancellationToken.ThrowIfCancellationRequested();
+    }
 
     /// <summary>
     /// Populates and returns the dictionary of parsed group addresses keyed by address.
@@ -28,14 +44,21 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     private async ValueTask<Dictionary<string, KnxGroupAddressParsed>> PopulateAndReturnLookupAsync(CancellationToken cancellationToken)
     {
         await semaphoreSlim.WaitAsync(cancellationToken).ConfigureAwait(false);
-        if (dLookupByAddress.Count > 0) { semaphoreSlim.Release(); return dLookupByAddress; }
-        await PopulateLookup(cancellationToken).ConfigureAwait(false);
-        if (dLookupByAddress.Count > 0)
-            knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
-        else
-            logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
-        semaphoreSlim.Release();
-        return dLookupByAddress;
+        try
+        {
+            if (dLookupByAddress.Count > 0)
+                return dLookupByAddress;
+            await PopulateLookup(cancellationToken).ConfigureAwait(false);
+            if (dLookupByAddress.Count > 0)
+                knxGroupAddressLookupHealthCheck.GroupAddressesLoaded = true;
+            else
+                logger.LogCritical("{ClassName} group address lookup is empty", nameof(KnxGroupAddressLookupService));
+            return dLookupByAddress;
+        }
+        finally
+        {
+            semaphoreSlim.Release();
+        }
     }
 
     /// <summary>

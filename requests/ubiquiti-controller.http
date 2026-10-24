@@ -8,10 +8,13 @@ GET {{baseUrl}}/api/v1/ubiquiti
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Event callback - motion detected (no auth required)
+# @note Publishes a camera event; configured sinks may capture media, invoke analysis and send notifications.
 GET {{baseUrl}}/api/v1/ubiquiti/event/motion?camera_id=ABC123&camera_name=Front+Door
 
 ### Event callback - smart detection (no auth required)
+# @note Publishes a camera event; configured sinks may capture media, invoke analysis and send notifications.
 GET {{baseUrl}}/api/v1/ubiquiti/event/smart?type=person&camera_id=ABC123&camera_name=Front+Door&score=0.95
 
 ### Event callback - doorbell ring (no auth required)
+# @note Publishes a camera event; configured sinks may capture media, invoke analysis and send notifications.
 GET {{baseUrl}}/api/v1/ubiquiti/event/ring?camera_id=ABC123&camera_name=Front+Door

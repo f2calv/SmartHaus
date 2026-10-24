@@ -4,7 +4,7 @@ namespace CasCap.Services;
 /// Broadcasts KNX bus connection state changes via a <see cref="Channel{T}"/>.
 /// </summary>
 /// <remarks>
-/// Registered as a singleton. <see cref="KnxMonitorBgService"/> calls
+/// Registered as a singleton. <see cref="KnxMonitorService"/> calls
 /// <see cref="Notify"/> internally; external consumers read from
 /// <see cref="IKnxConnectionNotifier.Reader"/>.
 /// </remarks>

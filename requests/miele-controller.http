@@ -1,5 +1,7 @@
 ### Miele Controller (internal Web API)
 ### Base URL is the Haus application server
+# Commands use typed bodies; unknown fields (including runOnTime) return 400.
+# Missing resources return 404; provider failures return sanitized 502 Problem Details.
 
 @baseUrl = {{$dotenv HAUS_BASE_URL}}
 @deviceId = {{$dotenv MIELE_DEVICE_ID}}
@@ -33,7 +35,7 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Execute device action (e.g. start)
-# @note
+# @note Sends a start command to the selected physical appliance.
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/actions
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
@@ -47,11 +49,13 @@ GET {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Start a program
-# @note
+# @note Starts an appliance program with the supplied duration and temperature; confirm appliance support first.
 PUT {{baseUrl}}/api/v1/miele/devices/{{deviceId}}/programs
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "programId": 1
+  "programId": 24,
+  "duration": [1, 15],
+  "temperature": 220
 }

@@ -21,11 +21,11 @@ GET {{baseUrl}}/api/v1/shelly/status/{{deviceId}}
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Turn relay on
-# @note
+# @note Energizes the configured relay channel on the selected physical device.
 POST {{baseUrl}}/api/v1/shelly/relay/{{deviceId}}?on=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Turn relay off
-# @note
+# @note De-energizes the configured relay channel on the selected physical device.
 POST {{baseUrl}}/api/v1/shelly/relay/{{deviceId}}?on=false
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}

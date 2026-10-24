@@ -1,4 +1,7 @@
+using CasCap.Controllers;
 using CasCap.Tests.Infrastructure;
+using Microsoft.AspNetCore.Mvc.Controllers;
+using Microsoft.AspNetCore.Mvc.Infrastructure;
 
 namespace CasCap.Tests.Integration;
 
@@ -6,6 +9,20 @@ namespace CasCap.Tests.Integration;
 [Trait("Category", "Integration")]
 public class HostStartupConfigurationTests : WebApiTestBase
 {
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task DDnsControllerDiscovery(bool enabled)
+    {
+        // Regression: DDns services were registered but its controller assembly was not discovered.
+        await using var factory = new CasCapAppWebApplicationFactory(
+            enabled ? FeatureNames.DDns : FeatureNames.Test);
+        var actions = factory.Services.GetRequiredService<IActionDescriptorCollectionProvider>()
+            .ActionDescriptors.Items.OfType<ControllerActionDescriptor>();
+
+        Assert.Equal(enabled, actions.Any(action => action.ControllerTypeInfo.AsType() == typeof(DDnsController)));
+    }
+
     [Fact]
     public void Startup_BindsConfigurationAndResolvesCoreServices()
     {

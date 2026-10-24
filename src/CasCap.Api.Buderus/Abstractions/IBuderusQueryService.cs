@@ -26,6 +26,6 @@ public interface IBuderusQueryService
     /// <param name="datapointId">The full KM200 datapoint path, e.g. <c>/dhwCircuits/dhw1/setTemperature</c>.</param>
     /// <param name="value">The new value to write. For numeric datapoints supply a decimal string (e.g. <c>"55.0"</c>); for enumeration datapoints supply the option string (e.g. <c>"Always_On"</c>).</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    /// <returns><see langword="true"/> if the device accepted the write; <see langword="false"/> otherwise.</returns>
-    public Task<bool> SetDataPoint(string datapointId, string value, CancellationToken cancellationToken = default);
+    /// <returns>The accepted write or a validation/device rejection message.</returns>
+    public Task<BuderusDataPointWriteResult> SetDataPoint(string datapointId, string value, CancellationToken cancellationToken = default);
 }

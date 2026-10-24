@@ -72,8 +72,8 @@ public sealed class BuderusKm200ClientService : HttpClientBase
 
         async Task<Km200DatapointObject?> GetDP(string requestUriOrId)
         {
-            if (cancellationToken.IsCancellationRequested) return null;
-            var dp = await GetDataPoint(requestUriOrId).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
+            var dp = await GetDataPoint(requestUriOrId, cancellationToken).ConfigureAwait(false);
             if (dp is not null)
             {
                 datapoints.Add(dp);
@@ -87,11 +87,12 @@ public sealed class BuderusKm200ClientService : HttpClientBase
 
     /// <summary>Gets a specific datapoint from the KM200 device.</summary>
     /// <param name="requestUriOrId">Datapoint URI or ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>Datapoint object, or null if not found.</returns>
-    public async Task<Km200DatapointObject?> GetDataPoint(string requestUriOrId)
+    public async Task<Km200DatapointObject?> GetDataPoint(string requestUriOrId, CancellationToken cancellationToken = default)
     {
         var requestUri = BuildRequestUri(requestUriOrId);
-        var tpl = await GetAsync<string, string>(requestUri.ToString()).ConfigureAwait(false);
+        var tpl = await GetAsync<string, string>(requestUri.ToString(), cancellationToken: cancellationToken).ConfigureAwait(false);
         if (tpl.result is null || tpl.result.IndexOf("Sorry, the requested file does not exist on this server.") > -1)
             _logger.LogWarning("url '{RequestUri}' not found", requestUri);
         else
@@ -119,7 +120,7 @@ public sealed class BuderusKm200ClientService : HttpClientBase
     /// </returns>
     public async Task<bool> SetDataPoint(string datapointId, object value, CancellationToken cancellationToken = default)
     {
-        var dp = await GetDataPoint(datapointId).ConfigureAwait(false);
+        var dp = await GetDataPoint(datapointId, cancellationToken).ConfigureAwait(false);
         if (dp is null)
         {
             _logger.LogWarning("{ClassName} datapoint '{DatapointId}' not found, cannot write", nameof(BuderusKm200ClientService), datapointId);
@@ -141,7 +142,7 @@ public sealed class BuderusKm200ClientService : HttpClientBase
 
         _logger.LogInformation("{ClassName} writing to '{DatapointId}' value={Value}", nameof(BuderusKm200ClientService), datapointId, value);
 
-        var response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
+        using var response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
             _logger.LogWarning("{ClassName} failed to write to '{DatapointId}', StatusCode={StatusCode}",

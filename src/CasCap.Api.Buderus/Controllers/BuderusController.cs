@@ -7,7 +7,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class BuderusController(IBuderusQueryService buderusQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="BuderusQueryService.GetSnapshot"/>
@@ -17,23 +16,20 @@ public sealed class BuderusController(IBuderusQueryService buderusQuerySvc) : Co
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("values")]
-    public Ok<IAsyncEnumerable<BuderusEvent>> Get()
-        => TypedResults.Ok(buderusQuerySvc.GetEvents());
+    public Ok<IAsyncEnumerable<BuderusEvent>> Get(CancellationToken cancellationToken)
+        => TypedResults.Ok(buderusQuerySvc.GetEvents(cancellationToken: cancellationToken));
 
     /// <inheritdoc cref="BuderusQueryService.GetEvents"/>
     [HttpGet("{id}")]
-    public Ok<IAsyncEnumerable<BuderusEvent>> GetById(string id)
-        => TypedResults.Ok(buderusQuerySvc.GetEvents(id));
+    public Ok<IAsyncEnumerable<BuderusEvent>> GetById(string id, CancellationToken cancellationToken)
+        => TypedResults.Ok(buderusQuerySvc.GetEvents(id, cancellationToken: cancellationToken));
 
     /// <inheritdoc cref="BuderusQueryService.SetDataPoint"/>
     [HttpPut("{*id}")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<Results<Ok, BadRequest<string>>> SetDataPoint(string id, [FromBody] SetDataPointRequest request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(id))
-            return TypedResults.BadRequest("Datapoint id must not be empty.");
-        // Ensure the id starts with '/' so it matches the KM200 path convention
-        var datapointId = id.StartsWith('/') ? id : $"/{id}";
-        var success = await buderusQuerySvc.SetDataPoint(datapointId, request.Value, cancellationToken);
-        return success ? TypedResults.Ok() : TypedResults.BadRequest($"Failed to write datapoint '{datapointId}'. The datapoint may not exist or may not be writeable.");
+        var result = await buderusQuerySvc.SetDataPoint(id, request.Value, cancellationToken);
+        return result.Error is { } error ? TypedResults.BadRequest(error) : TypedResults.Ok();
     }
 }

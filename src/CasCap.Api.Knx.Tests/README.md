@@ -1,6 +1,6 @@
 # CasCap.Api.Knx.Tests
 
-Offline broker/shutter tests and configuration/storage integration tests for
+Offline leadership/broker/shutter tests and configuration/storage integration tests for
 [CasCap.Api.Knx](../CasCap.Api.Knx/README.md) and its
 [storage sinks](../CasCap.Api.Knx.Sinks/README.md).
 
@@ -18,9 +18,17 @@ Source-declared counts include skipped cases and expand inline theories; no exec
 | `CemiDecodingTests` | 1 | 1 | `Integration` |
 | `ChannelKnxTelegramBrokerTests` | 4 | 4 | None |
 | `KnxShutterMovementTests` | 6 | 12 | None |
-| Total | 17 | 23 | |
+| `KnxLeadershipTests` | 11 | 18 | `Leadership` |
+| Total | 28 | 41 | |
 
-`Integration` is the only declared trait category. Broker and shutter tests have no category trait.
+Declared trait categories are `Integration` and `Leadership`. Broker and shutter tests have no category trait.
+
+Leadership cases use synthetic ETS XML, fake runners/monitor sessions and in-memory brokers. They
+verify standby behavior, routing/sharding selection, fresh ownership sessions, cancellation,
+publication failure, late-telegram rejection, standby HTTP-command forwarding, awaited queue work,
+ownership-bound day/night handover/cadence, per-write recovery and host-stop signalling before gated cleanup. The
+scheduler clock is stepped without wall-clock waits. These cases do not contact Redis, discover
+interfaces, send physical telegrams, exercise Falcon disposal bounds or prove live failover.
 
 ## Skipped Tests
 
@@ -38,10 +46,14 @@ CasCap.Api.Knx.Tests/
 ├── CemiDecodingTests.cs
 ├── GroupAddressTests.cs
 ├── KnxShutterMovementTests.cs
-└── TestBase.cs
+├── TestBase.cs
+└── Tests/
+    └── Unit/
+        ├── KnxLeadershipTests.cs
+        └── KnxTestClock.cs
 ```
 
-Tests currently live at the project root rather than under `Tests/`.
+Older tests live at the project root; new leadership tests use `Tests/Unit/`.
 
 ## Prerequisites
 
@@ -55,7 +67,7 @@ Tests currently live at the project root rather than under `Tests/`.
 
 ```bash
 # Offline broker and shutter cases
-dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -- --filter-not-trait "Category=Integration"
+dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -c Debug --filter-not-trait "Category=Integration"
 ```
 
 Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. Remove the filter

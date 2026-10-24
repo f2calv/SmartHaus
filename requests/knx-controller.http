@@ -1,6 +1,7 @@
 ### KNX Controllers (internal Web API)
 ### Base URL is the Haus application server
 ### Covers: Bus, Hvac, Lights, PowerOutlets, Shutters
+# Group/address names below are synthetic. Select existing names from the read endpoints before sending commands.
 
 @baseUrl = {{$dotenv HAUS_BASE_URL}}
 
@@ -13,11 +14,11 @@ GET {{baseUrl}}/api/v1/bus/addresses
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get group addresses (filtered)
-GET {{baseUrl}}/api/v1/bus/addresses?groupAddressFilter=Lights
+GET {{baseUrl}}/api/v1/bus/addresses?groupAddressFilter=Active
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Filter group addresses by criteria
-GET {{baseUrl}}/api/v1/bus/addresses/filter?category=Lights&floor=EG
+GET {{baseUrl}}/api/v1/bus/addresses/filter?category=LI&floor=EG
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get group addresses grouped
@@ -41,22 +42,22 @@ GET {{baseUrl}}/api/v1/bus/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Validate a group address
-GET {{baseUrl}}/api/v1/bus/validate/address/1/1/1
+GET {{baseUrl}}/api/v1/bus/validate/address/EG-LI-LivingRoom-DL-SW
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Validate a group name
-GET {{baseUrl}}/api/v1/bus/validate/group/EG_Wohnzimmer_Licht
+GET {{baseUrl}}/api/v1/bus/validate/group/EG-LI-LivingRoom-DL
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Send command to KNX bus
-# @note
+# @note Sends a command to the KNX bus and can change a physical actuator.
 POST {{baseUrl}}/api/v1/bus/state/send
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Licht",
-  "value": true
+  "groupAddressName": "EG-LI-LivingRoom-DL-SW",
+  "actualValue": "True"
 }
 
 ###
@@ -68,33 +69,33 @@ GET {{baseUrl}}/api/v1/hvac
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### List HVAC zones by room
-GET {{baseUrl}}/api/v1/hvac?room=Wohnzimmer
+GET {{baseUrl}}/api/v1/hvac?room=LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get a specific HVAC zone
-GET {{baseUrl}}/api/v1/hvac/EG_Wohnzimmer_Heizung
+GET {{baseUrl}}/api/v1/hvac/EG-HZ-LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set HVAC state
-# @note
+# @note Queues or sends a KNX heating setpoint change for the selected zone.
 POST {{baseUrl}}/api/v1/hvac
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Heizung",
-  "desiredTemperature": 21.0
+  "groupName": "EG-HZ-LivingRoom",
+  "setpointAdjust": 21.0
 }
 
 ### Set HVAC state (dry run)
-# @note
+# @note Resolves the proposed heating change without queuing or sending KNX commands.
 POST {{baseUrl}}/api/v1/hvac?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Heizung",
-  "desiredTemperature": 21.0
+  "groupName": "EG-HZ-LivingRoom",
+  "setpointAdjust": 21.0
 }
 
 ###
@@ -106,37 +107,37 @@ GET {{baseUrl}}/api/v1/lights
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### List lights by room
-GET {{baseUrl}}/api/v1/lights?room=Wohnzimmer
+GET {{baseUrl}}/api/v1/lights?room=LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get a specific light
-GET {{baseUrl}}/api/v1/lights/EG_Wohnzimmer_Licht
+GET {{baseUrl}}/api/v1/lights/EG-LI-LivingRoom-DL
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set light state (on)
-# @note
+# @note Queues or sends a KNX command to turn the selected light on.
 POST {{baseUrl}}/api/v1/lights/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Licht",
-  "on": true
+  "groupName": "EG-LI-LivingRoom-DL",
+  "isOn": true
 }
 
 ### Set light state (dry run)
-# @note
+# @note Resolves the proposed lighting change without queuing or sending KNX commands.
 POST {{baseUrl}}/api/v1/lights/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Licht",
-  "on": true
+  "groupName": "EG-LI-LivingRoom-DL",
+  "isOn": true
 }
 
 ### Turn all lights off
-# @note
+# @note Turns off all eligible KNX lights, not just the example room.
 POST {{baseUrl}}/api/v1/lights/state/all-off
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
@@ -149,33 +150,33 @@ GET {{baseUrl}}/api/v1/poweroutlets
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### List power outlets by room
-GET {{baseUrl}}/api/v1/poweroutlets?room=Wohnzimmer
+GET {{baseUrl}}/api/v1/poweroutlets?room=LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get a specific power outlet
-GET {{baseUrl}}/api/v1/poweroutlets/EG_Wohnzimmer_Steckdose
+GET {{baseUrl}}/api/v1/poweroutlets/EG-SD-LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set power outlet state
-# @note
+# @note Queues or sends a KNX command to energize the selected power outlet.
 POST {{baseUrl}}/api/v1/poweroutlets/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Steckdose",
-  "on": true
+  "groupName": "EG-SD-LivingRoom",
+  "isOn": true
 }
 
 ### Set power outlet state (dry run)
-# @note
+# @note Resolves the proposed outlet change without queuing or sending KNX commands.
 POST {{baseUrl}}/api/v1/poweroutlets/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Steckdose",
-  "on": true
+  "groupName": "EG-SD-LivingRoom",
+  "isOn": true
 }
 
 ###
@@ -187,41 +188,41 @@ GET {{baseUrl}}/api/v1/shutters
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### List shutters by room
-GET {{baseUrl}}/api/v1/shutters?room=Wohnzimmer
+GET {{baseUrl}}/api/v1/shutters?room=LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Get a specific shutter
-GET {{baseUrl}}/api/v1/shutters/EG_Wohnzimmer_Jalousie
+GET {{baseUrl}}/api/v1/shutters/EG-BL-LivingRoom
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Set shutter state
-# @note
+# @note Queues or sends a KNX command that physically moves the selected shutter.
 POST {{baseUrl}}/api/v1/shutters/state
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Jalousie",
-  "position": 50
+  "groupName": "EG-BL-LivingRoom",
+  "vPosition": 50
 }
 
 ### Set shutter state (dry run)
-# @note
+# @note Resolves the proposed shutter change without queuing or sending KNX commands.
 POST {{baseUrl}}/api/v1/shutters/state?dryRun=true
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 Content-Type: application/json
 
 {
-  "groupName": "EG_Wohnzimmer_Jalousie",
-  "position": 50
+  "groupName": "EG-BL-LivingRoom",
+  "vPosition": 50
 }
 
 ### Close all shutters
-# @note
+# @note Physically closes all eligible KNX shutters, not just the example room.
 POST {{baseUrl}}/api/v1/shutters/state/all-close
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}
 
 ### Open all shutters
-# @note
+# @note Physically opens all eligible KNX shutters, not just the example room.
 POST {{baseUrl}}/api/v1/shutters/state/all-open
 Authorization: Basic {{$dotenv HAUS_API_AUTH}}

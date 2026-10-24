@@ -5,7 +5,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class DoorLocksController(IKnxQueryService knxQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="KnxQueryService.GetDoorLockSummary"/>

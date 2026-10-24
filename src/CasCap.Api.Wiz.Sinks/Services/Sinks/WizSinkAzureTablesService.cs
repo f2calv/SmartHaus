@@ -29,6 +29,12 @@ public sealed partial class WizSinkAzureTablesService : IEventSink<WizEvent>, IW
     }
 
     /// <inheritdoc/>
+    public Task InitializeAsync(CancellationToken cancellationToken) =>
+        Task.WhenAll(
+            _lineItemTableClient.CreateIfNotExistsAsync(cancellationToken),
+            _snapshotTableClient.CreateIfNotExistsAsync(cancellationToken));
+
+    /// <inheritdoc/>
     public async Task WriteEvent(WizEvent @event, CancellationToken cancellationToken = default)
     {
         LogWriteEvent(_logger, nameof(WizSinkAzureTablesService), @event.DeviceId);

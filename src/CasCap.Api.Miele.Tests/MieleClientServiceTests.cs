@@ -43,7 +43,7 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetDevices_ReturnsAllDevices()
     {
         var svc = CreateService();
-        var result = await svc.GetDevices();
+        var result = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotEmpty(result);
 
@@ -57,7 +57,7 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetShortDevices_ReturnsSummary()
     {
         var svc = CreateService();
-        var result = await svc.GetShortDevices();
+        var result = await svc.GetShortDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotEmpty(result);
 
@@ -71,12 +71,12 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetDevice_ReturnsSingleDevice()
     {
         var svc = CreateService();
-        var devices = await svc.GetDevices();
+        var devices = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(devices);
         Assert.NotEmpty(devices);
 
         var deviceId = devices.Keys.First();
-        var result = await svc.GetDevice(deviceId);
+        var result = await svc.GetDevice(deviceId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotNull(result.ident);
         Assert.NotNull(result.state);
@@ -88,11 +88,11 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetIdent_ReturnsDeviceIdentification()
     {
         var svc = CreateService();
-        var devices = await svc.GetDevices();
+        var devices = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(devices);
 
         var deviceId = devices.Keys.First();
-        var result = await svc.GetIdent(deviceId);
+        var result = await svc.GetIdent(deviceId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotNull(result.type);
 
@@ -103,11 +103,11 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetState_ReturnsDeviceState()
     {
         var svc = CreateService();
-        var devices = await svc.GetDevices();
+        var devices = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(devices);
 
         var deviceId = devices.Keys.First();
-        var result = await svc.GetState(deviceId);
+        var result = await svc.GetState(deviceId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
         Assert.NotNull(result.status);
 
@@ -122,11 +122,11 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetActions_ReturnsAvailableActions()
     {
         var svc = CreateService();
-        var devices = await svc.GetDevices();
+        var devices = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(devices);
 
         var deviceId = devices.Keys.First();
-        var result = await svc.GetActions(deviceId);
+        var result = await svc.GetActions(deviceId, TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         _output.WriteLine($"Device {deviceId}: PowerOn={result.powerOn}, PowerOff={result.powerOff}, ProcessActions={result.processAction?.Length ?? 0}");
@@ -140,11 +140,11 @@ public class MieleClientServiceTests(ITestOutputHelper output)
     public async Task GetPrograms_ReturnsAvailablePrograms()
     {
         var svc = CreateService();
-        var devices = await svc.GetDevices();
+        var devices = await svc.GetDevices(cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(devices);
 
         var deviceId = devices.Keys.First();
-        var result = await svc.GetPrograms(deviceId);
+        var result = await svc.GetPrograms(deviceId, cancellationToken: TestContext.Current.CancellationToken);
         Assert.NotNull(result);
 
         foreach (var program in result)

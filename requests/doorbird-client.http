@@ -18,14 +18,17 @@ GET {{baseUrl}}/bha-api/video.cgi
 Authorization: Basic {{auth}}
 
 ### Unlock door (relay 1)
+# @note Activates the device's default door relay and can unlock a physical door.
 GET {{baseUrl}}/bha-api/open-door.cgi
 Authorization: Basic {{auth}}
 
 ### Unlock door (specific relay)
+# @note Activates relay 2 and can unlock a physical door.
 GET {{baseUrl}}/bha-api/open-door.cgi?r=2
 Authorization: Basic {{auth}}
 
 ### Turn on IR light
+# @note Activates the physical device's infrared light.
 GET {{baseUrl}}/bha-api/light-on.cgi
 Authorization: Basic {{auth}}
 
@@ -38,5 +41,6 @@ GET {{baseUrl}}/bha-api/sip.cgi
 Authorization: Basic {{auth}}
 
 ### Restart device
+# @note Reboots the physical intercom and temporarily interrupts its services.
 GET {{baseUrl}}/bha-api/restart.cgi
 Authorization: Basic {{auth}}

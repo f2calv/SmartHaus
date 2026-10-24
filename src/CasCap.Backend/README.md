@@ -153,6 +153,12 @@ the whole backend assembly, maintain an agent session or execute a model while s
 This table is the available SmartHaus MCP catalogue. Which tools an agent can call is selected by
 its active definition in agentizr; SmartHaus deliberately carries no agent-to-tool assignment map.
 
+The nine appliance tools forward cancellation to the provider. The two command tools retain their
+boolean outputs and use typed action/program arguments: accepted commands return `true`, explicit
+rejection or absence returns `false`, and upstream failures propagate as errors. See the
+[Miele command contract](../CasCap.Api.Miele/README.md#commands-and-failures) for validation,
+supported fields and no-replay behavior.
+
 ## Communications Flow
 
 `CommunicationsBgService` is the only SmartHaus service that exchanges messages with Signalizr.
@@ -440,8 +446,8 @@ Real camera identifiers belong only in private configuration.
 | `CasCap.Api.Azure.CognitiveServices` | Azure AI Speech adapter |
 | `CasCap.Api.Azure.Storage` | Azure Blob Storage integration |
 
-Debug builds use adjacent project references for these repositories. Release builds use published
-packages where the project file defines a Release package reference.
+Debug builds use adjacent project references for these repositories. Release builds resolve the
+same dependencies from NuGet, including Agent Runtime contracts and communications packages.
 
 ### Feature Projects
 
@@ -468,10 +474,8 @@ Build from the repository's Debug solution so adjacent source dependencies are u
 dotnet build SmartHaus.Debug.slnx --configuration Debug
 ```
 
-The current backend project defines Agent Runtime contracts and `CasCap.Comms.AI` references only
-for Debug. Release lacks equivalent package references, so a clean Release/source-container build
-is not established by these instructions. No build or integration execution was performed for
-this documentation update.
+Use `SmartHaus.Release.slnx --configuration Release` to validate the published-package graph
+without adjacent source checkouts. The Dockerfile also builds this Release graph.
 
 The backend tests live in [CasCap.Backend.Tests](../CasCap.Backend.Tests/README.md). Generic Agent Runtime protocol, provider and
 agent-evaluation coverage belongs to agentizr; SmartHaus tests cover its domain tools,

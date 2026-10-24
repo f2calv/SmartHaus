@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 namespace CasCap.Controllers;
 
 /// <summary>
@@ -7,7 +9,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class ShellyController(IShellyQueryService shellyQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="ShellyQueryService.GetSnapshots"/>
@@ -17,8 +18,8 @@ public sealed class ShellyController(IShellyQueryService shellyQuerySvc) : Contr
 
     /// <inheritdoc cref="ShellyQueryService.GetReadings"/>
     [HttpGet("readings")]
-    public Ok<IAsyncEnumerable<ShellyEvent>> GetReadings(int limit = 100)
-        => TypedResults.Ok(shellyQuerySvc.GetReadings(limit));
+    public Ok<IAsyncEnumerable<ShellyEvent>> GetReadings(CancellationToken cancellationToken, int limit = 100)
+        => TypedResults.Ok(shellyQuerySvc.GetReadings(limit, cancellationToken));
 
     /// <inheritdoc cref="ShellyQueryService.GetDeviceStatus"/>
     [HttpGet("status/{deviceId}")]
@@ -31,6 +32,7 @@ public sealed class ShellyController(IShellyQueryService shellyQuerySvc) : Contr
     /// <param name="deviceId">The Shelly device ID to control.</param>
     /// <param name="on">When <see langword="true"/>, turns the relay on; when <see langword="false"/>, turns it off.</param>
     [HttpPost("relay/{deviceId}")]
-    public async Task<Ok<ShellyRelayControlResponse>> SetRelayState(string deviceId, [FromQuery] bool on)
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<Ok<ShellyRelayControlResponse>> SetRelayState(string deviceId, [FromQuery, BindRequired] bool on)
         => TypedResults.Ok(await shellyQuerySvc.SetRelayState(deviceId, on));
 }

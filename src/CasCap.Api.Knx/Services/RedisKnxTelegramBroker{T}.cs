@@ -9,7 +9,8 @@ namespace CasCap.Services;
 /// <see cref="CasCap.Common.Extensions.JsonExtensions.FromJson{T}(string)"/>
 /// extensions and published to a date-partitioned Redis stream. Each day gets its own
 /// stream key (<c>{baseKey}:{yyMMdd}</c>) with a configurable TTL so old streams are
-/// automatically evicted. Consumers read via a consumer group ensuring at-least-once delivery.
+/// automatically evicted. Consumers acknowledge messages after processing; pending-message
+/// recovery is not implemented, so this does not guarantee at-least-once delivery across failures.
 /// </summary>
 /// <typeparam name="T">The telegram type being transported.</typeparam>
 public sealed partial class RedisKnxTelegramBroker<T>(
@@ -34,19 +35,21 @@ public sealed partial class RedisKnxTelegramBroker<T>(
     /// <inheritdoc/>
     public async ValueTask PublishAsync(T item, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var streamKey = $"{baseStreamKey}:{timeProvider.GetUtcNow().UtcDateTime:yyMMdd}";
         var json = item.ToJson();
         await _db.StreamAddAsync(streamKey, [new NameValueEntry("data", json)]).ConfigureAwait(false);
-        await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays), flags: CommandFlags.FireAndForget).ConfigureAwait(false);
+        await _db.KeyExpireAsync(streamKey, TimeSpan.FromDays(streamExpiryDays)).ConfigureAwait(false);
         LogPublished(logger, typeof(T).Name, streamKey);
     }
 
     /// <inheritdoc/>
     public async IAsyncEnumerable<T> SubscribeAsync([EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         var currentDate = timeProvider.GetUtcNow().UtcDateTime.Date;
         var streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
-        await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
+        await EnsureConsumerGroupAsync(streamKey, cancellationToken).ConfigureAwait(false);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -60,29 +63,31 @@ public sealed partial class RedisKnxTelegramBroker<T>(
                     $"{baseStreamKey}:{nowDate:yyMMdd}");
                 currentDate = nowDate;
                 streamKey = $"{baseStreamKey}:{currentDate:yyMMdd}";
-                await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
+                await EnsureConsumerGroupAsync(streamKey, cancellationToken).ConfigureAwait(false);
             }
 
             StreamEntry[] entries;
             try
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 entries = await _db.StreamReadGroupAsync(streamKey, consumerGroup, _consumerName, readPosition, count: readCount).ConfigureAwait(false);
             }
             catch (RedisServerException ex) when (ex.Message.Contains("NOGROUP"))
             {
                 _groupCreatedKeys.Remove(streamKey);
-                await EnsureConsumerGroupAsync(streamKey).ConfigureAwait(false);
+                await EnsureConsumerGroupAsync(streamKey, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             if (entries.Length == 0)
             {
-                await Task.Delay(pollingDelayMs, cancellationToken).ConfigureAwait(false);
+                await Task.Delay(TimeSpan.FromMilliseconds(pollingDelayMs), timeProvider, cancellationToken).ConfigureAwait(false);
                 continue;
             }
 
             foreach (var entry in entries)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var dataField = entry.Values.FirstOrDefault(v => v.Name == "data");
                 if (dataField.Value.IsNullOrEmpty)
                     continue;
@@ -101,6 +106,8 @@ public sealed partial class RedisKnxTelegramBroker<T>(
 
                 if (item is not null)
                 {
+                    // TODO: Add pending-entry recovery together with command idempotency before
+                    // promising failover replay. Blindly reclaiming an accepted write can repeat it.
                     yield return item;
                     await _db.StreamAcknowledgeAsync(streamKey, consumerGroup, entry.Id).ConfigureAwait(false);
                 }
@@ -113,8 +120,9 @@ public sealed partial class RedisKnxTelegramBroker<T>(
     /// <summary>
     /// Ensures the consumer group exists on the given stream key, creating it if necessary.
     /// </summary>
-    private async Task EnsureConsumerGroupAsync(string streamKey)
+    private async Task EnsureConsumerGroupAsync(string streamKey, CancellationToken cancellationToken)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         if (!_groupCreatedKeys.Add(streamKey)) return;
         try
         {

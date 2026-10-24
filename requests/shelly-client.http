@@ -8,21 +8,21 @@
 @deviceId = {{$dotenv SHELLY_DEVICE_ID}}
 
 ### Get device status
-# @note
+# @note Read-only status query; sends the configured credentials to the Shelly endpoint.
 POST {{baseUrl}}/device/status
 Content-Type: application/x-www-form-urlencoded
 
 auth_key={{authKey}}&id={{deviceId}}
 
 ### Turn relay on
-# @note
+# @note Energizes relay channel 0 on the selected physical device.
 POST {{baseUrl}}/device/relay/control
 Content-Type: application/x-www-form-urlencoded
 
 auth_key={{authKey}}&id={{deviceId}}&channel=0&turn=on
 
 ### Turn relay off
-# @note
+# @note De-energizes relay channel 0 on the selected physical device.
 POST {{baseUrl}}/device/relay/control
 Content-Type: application/x-www-form-urlencoded
 

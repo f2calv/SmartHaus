@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 namespace CasCap.Controllers;
 
 /// <summary>
@@ -7,7 +9,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class WizController(IWizQueryService wizQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="WizQueryService.GetDiscoveredBulbs"/>
@@ -27,11 +28,13 @@ public sealed class WizController(IWizQueryService wizQuerySvc) : ControllerBase
 
     /// <inheritdoc cref="WizQueryService.SetPilot"/>
     [HttpPut("bulbs/{bulbIdentifier}/pilot")]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
     public async Task<Ok<bool>> SetPilot(string bulbIdentifier, [FromBody] WizSetPilotRequest request, CancellationToken cancellationToken)
         => TypedResults.Ok(await wizQuerySvc.SetPilot(bulbIdentifier, request, cancellationToken));
 
     /// <inheritdoc cref="WizQueryService.SetPowerState"/>
     [HttpPut("bulbs/{bulbIdentifier}/power")]
-    public async Task<Ok<bool>> SetPowerState(string bulbIdentifier, [FromQuery] bool on, CancellationToken cancellationToken)
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    public async Task<Ok<bool>> SetPowerState(string bulbIdentifier, [FromQuery, BindRequired] bool on, CancellationToken cancellationToken)
         => TypedResults.Ok(await wizQuerySvc.SetPowerState(bulbIdentifier, on, cancellationToken));
 }

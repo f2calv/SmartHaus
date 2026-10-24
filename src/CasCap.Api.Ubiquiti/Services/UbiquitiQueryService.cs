@@ -18,7 +18,7 @@ public sealed class UbiquitiQueryService(
     }
 
     /// <inheritdoc/>
-    public async Task SendAlert(
+    public async Task<UbiquitiWebhookResult> SendAlert(
         UbiquitiEventType type,
         string? cameraId = null,
         string? cameraName = null,
@@ -26,8 +26,20 @@ public sealed class UbiquitiQueryService(
         UbiquitiWebhookRequest? webhook = null,
         CancellationToken cancellationToken = default)
     {
-        var (thumbnail, thumbnailMimeType) = DecodeThumbnail(webhook?.Alarm?.Thumbnail);
-        var timestampUtc = GetTimestampUtc(webhook?.Timestamp);
+        cancellationToken.ThrowIfCancellationRequested();
+        byte[]? thumbnail;
+        string? thumbnailMimeType;
+        DateTime timestampUtc;
+        try
+        {
+            (thumbnail, thumbnailMimeType) = DecodeThumbnail(webhook?.Alarm?.Thumbnail);
+            timestampUtc = GetTimestampUtc(webhook?.Timestamp);
+        }
+        catch (FormatException)
+        {
+            logger.LogWarning("{ClassName} rejected an invalid UniFi Protect webhook payload", nameof(UbiquitiQueryService));
+            return new UbiquitiWebhookResult { Error = "Invalid UniFi Protect webhook payload." };
+        }
         var webhookCameraIds = webhook?.Alarm?.Triggers
             .Select(trigger => trigger.Device)
             .Where(id => id is not null)
@@ -37,17 +49,19 @@ public sealed class UbiquitiQueryService(
         if (cameraId is not null || webhookCameraIds.Length == 0)
         {
             await DispatchAsync(cameraId, cancellationToken).ConfigureAwait(false);
-            return;
+            return new UbiquitiWebhookResult();
         }
 
         foreach (var webhookCameraId in webhookCameraIds)
             await DispatchAsync(webhookCameraId, cancellationToken).ConfigureAwait(false);
+        return new UbiquitiWebhookResult();
 
         async Task DispatchAsync(string? sourceCameraId, CancellationToken token)
         {
+            token.ThrowIfCancellationRequested();
             var eventCameraId = MaskCameraId(sourceCameraId);
-            logger.LogInformation("{ClassName} sending alert for event type {EventType} from camera {CameraName}",
-                nameof(UbiquitiQueryService), type, cameraName ?? eventCameraId ?? "unknown");
+            logger.LogInformation("{ClassName} sending alert for event type {EventType}",
+                nameof(UbiquitiQueryService), type);
 
             var ubiquitiEvent = new UbiquitiEvent
             {
@@ -66,6 +80,34 @@ public sealed class UbiquitiQueryService(
                 sinkTasks.Add(eventSink.WriteEvent(ubiquitiEvent, token));
             await Task.WhenAll(sinkTasks).ConfigureAwait(false);
         }
+    }
+
+    /// <inheritdoc/>
+    public Task<UbiquitiWebhookResult> SendSmartDetectionAlert(
+        string type,
+        string? cameraId = null,
+        string? cameraName = null,
+        double? score = null,
+        UbiquitiWebhookRequest? webhook = null,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var eventType = type?.ToLowerInvariant() switch
+        {
+            "person" => UbiquitiEventType.SmartDetectPerson,
+            "vehicle" => UbiquitiEventType.SmartDetectVehicle,
+            "animal" => UbiquitiEventType.SmartDetectAnimal,
+            "package" => UbiquitiEventType.SmartDetectPackage,
+            _ => (UbiquitiEventType?)null,
+        };
+        if (eventType is { } detection)
+            return SendAlert(detection, cameraId, cameraName, score, webhook, cancellationToken);
+
+        logger.LogWarning("{ClassName} rejected an unknown smart detection type", nameof(UbiquitiQueryService));
+        return Task.FromResult(new UbiquitiWebhookResult
+        {
+            Error = $"Unknown smart detection type '{type}'. Expected: person, vehicle, animal, package.",
+        });
     }
 
     private static (byte[]? Bytes, string? MimeType) DecodeThumbnail(string? thumbnail)

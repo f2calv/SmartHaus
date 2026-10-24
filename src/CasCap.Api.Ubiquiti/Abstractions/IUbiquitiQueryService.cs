@@ -19,8 +19,25 @@ public interface IUbiquitiQueryService
     /// <param name="score">Optional smart detection confidence score (0.0–1.0).</param>
     /// <param name="webhook">Optional UniFi Protect payload containing trigger metadata and a thumbnail.</param>
     /// <param name="cancellationToken">Cancellation token.</param>
-    public Task SendAlert(
+    /// <returns>Acceptance or a payload validation error; sink failures propagate.</returns>
+    public Task<UbiquitiWebhookResult> SendAlert(
         UbiquitiEventType type,
+        string? cameraId = null,
+        string? cameraName = null,
+        double? score = null,
+        UbiquitiWebhookRequest? webhook = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>Sends a person, vehicle, animal or package smart-detection alert.</summary>
+    /// <param name="type">Case-insensitive smart detection type.</param>
+    /// <param name="cameraId">Optional source camera identifier.</param>
+    /// <param name="cameraName">Optional camera display name.</param>
+    /// <param name="score">Optional confidence score.</param>
+    /// <param name="webhook">Optional alarm metadata and thumbnail.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>Acceptance or a detection/payload validation error; sink failures propagate.</returns>
+    public Task<UbiquitiWebhookResult> SendSmartDetectionAlert(
+        string type,
         string? cameraId = null,
         string? cameraName = null,
         double? score = null,

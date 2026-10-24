@@ -37,6 +37,9 @@ public static class DDnsServiceCollectionExtensions
         services.AddSingleton<IDDnsQueryService>(sp => sp.GetRequiredService<DDnsQueryService>());
 
         if (!lite)
+        {
+            services.AddSingleton<DDnsUpdateService>();
             services.AddSingleton<IBgFeature, DDnsBgService>();
+        }
     }
 }

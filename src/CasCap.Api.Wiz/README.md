@@ -49,6 +49,11 @@ alone do not activate them; register a sink explicitly in a custom host, or use
 
 **`WizQueryService`** is a facade implementing [`IWizQueryService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.Wiz/Abstractions/IWizQueryService.cs) that delegates to the client service with logging.
 
+The pilot HTTP endpoint validates supplied brightness (`10`-`100`), colour/white channels
+(`0`-`255`) and scene speed (`20`-`200`) before invoking the device service. Invalid values return
+validation Problem Details. Every pilot field remains optional for partial updates; temperature
+and scene IDs are not constrained to guessed device-independent ranges.
+
 ## Configuration
 
 Registered via `IServiceCollection.AddWiz()`. Configuration section: `CasCap:WizConfig`.

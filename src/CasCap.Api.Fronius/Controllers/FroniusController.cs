@@ -7,7 +7,6 @@ namespace CasCap.Controllers;
 [ApiVersion(1.0)]
 [ApiController]
 [Route("api/v{version:apiVersion}/[controller]")]
-[Produces("application/json")]
 public sealed class FroniusController(IFroniusQueryService froniusQuerySvc) : ControllerBase
 {
     /// <inheritdoc cref="FroniusQueryService.GetInverterSnapshot"/>
@@ -17,8 +16,8 @@ public sealed class FroniusController(IFroniusQueryService froniusQuerySvc) : Co
 
     /// <inheritdoc cref="FroniusQueryService.GetInverterReadings"/>
     [HttpGet("readings")]
-    public Ok<IAsyncEnumerable<FroniusEvent>> GetInverterReadings(int limit = 100)
-        => TypedResults.Ok(froniusQuerySvc.GetInverterReadings(limit));
+    public Ok<IAsyncEnumerable<FroniusEvent>> GetInverterReadings(CancellationToken cancellationToken, int limit = 100)
+        => TypedResults.Ok(froniusQuerySvc.GetInverterReadings(limit, cancellationToken));
 
     /// <inheritdoc cref="FroniusQueryService.GetPowerFlowRealtimeData"/>
     [HttpGet("powerflow")]
