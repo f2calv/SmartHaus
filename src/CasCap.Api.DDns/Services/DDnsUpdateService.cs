@@ -42,7 +42,7 @@ public sealed class DDnsUpdateService(
 
     private async Task UpdateListDnsZoneResources(IPAddress newIp, CancellationToken cancellationToken)
     {
-        await SetSubscription();
+        await SetSubscriptionAsync(cancellationToken);
         if (subscription is null)
             return;
 
@@ -97,38 +97,38 @@ public sealed class DDnsUpdateService(
 
         //now we have completed all A records update the static
         oldIp = priorIp;
+    }
 
-        async Task SetSubscription()
+    private async Task SetSubscriptionAsync(CancellationToken cancellationToken)
+    {
+        logger.LogDebug("{ClassName} querying Azure for correct subscription...",
+            nameof(DDnsBgService));
+        var subscriptions = new ArmClient(azureAuthConfig.Value.TokenCredential).GetSubscriptions();
+        await foreach (var sub in subscriptions.GetAllAsync(cancellationToken: cancellationToken))
         {
-            logger.LogDebug("{ClassName} querying Azure for correct subscription...",
-                nameof(DDnsBgService));
-            var subscriptions = new ArmClient(azureAuthConfig.Value.TokenCredential).GetSubscriptions();
-            await foreach (var sub in subscriptions.GetAllAsync(cancellationToken: cancellationToken))
+            try
             {
-                try
+                var rg = await sub.GetResourceGroupAsync(dDnsConfig.Value.DnsResourceGroupName, cancellationToken);
+                if (rg.GetRawResponse().Status == 200)
                 {
-                    var rg = await sub.GetResourceGroupAsync(dDnsConfig.Value.DnsResourceGroupName, cancellationToken);
-                    if (rg.GetRawResponse().Status == 200)
-                    {
-                        subscription = sub;
-                        logger.LogInformation("{ClassName} selected Azure subscription {DisplayName} ({SubscriptionId})",
-                            nameof(DDnsBgService), sub.Data.DisplayName, sub.Data.SubscriptionId);
-                        break;
-                    }
-                }
-                catch (RequestFailedException ex) when (ex.Status is StatusCodes.Status403Forbidden
-                    or StatusCodes.Status404NotFound)
-                {
-                    logger.LogWarning("{ClassName} cannot access Resource Group {DnsResourceGroupName} in Azure subscription {SubscriptionId}, StatusCode={StatusCode}",
-                        nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName,
-                        sub.Data.SubscriptionId, ex.Status);
+                    subscription = sub;
+                    logger.LogInformation("{ClassName} selected Azure subscription {DisplayName} ({SubscriptionId})",
+                        nameof(DDnsBgService), sub.Data.DisplayName, sub.Data.SubscriptionId);
+                    break;
                 }
             }
-
-            if (subscription is null)
-                logger.LogError("{ClassName} unable to find subscription containing Resource Group {DnsResourceGroupName}",
-                    nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName);
+            catch (RequestFailedException ex) when (ex.Status is StatusCodes.Status403Forbidden
+                or StatusCodes.Status404NotFound)
+            {
+                logger.LogWarning("{ClassName} cannot access Resource Group {DnsResourceGroupName} in Azure subscription {SubscriptionId}, StatusCode={StatusCode}",
+                    nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName,
+                    sub.Data.SubscriptionId, ex.Status);
+            }
         }
+
+        if (subscription is null)
+            logger.LogError("{ClassName} unable to find subscription containing Resource Group {DnsResourceGroupName}",
+                nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName);
     }
 
     private async Task<DnsARecordCollection?> GetDnsARecordCollection(CancellationToken cancellationToken)

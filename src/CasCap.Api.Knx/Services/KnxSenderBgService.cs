@@ -20,34 +20,38 @@ public sealed partial class KnxSenderBgService(
         await foreach (var msg in outgoingBroker.SubscribeAsync(cancellationToken))
         {
             await WaitForConnectionAsync(cancellationToken).ConfigureAwait(false);
-
-            var busAddresses = new List<string>(KnxStatics.BusConnections.Count);
-            foreach (var busConnection in KnxStatics.BusConnections)
-            {
-                cancellationToken.ThrowIfCancellationRequested();
-                var bus = busConnection.Value;
-                if (bus is null || bus.ConnectionState != BusConnectionState.Connected)
-                {
-                    LogBusConnectionBroken(logger, nameof(KnxSenderBgService), msg.Kga.Name, busConnection.Key.ToString());
-                    continue;
-                }
-                if (config.Value.BusSenderLoggingEnabled
-                    && (string.IsNullOrEmpty(config.Value.BusLoggingGroupAddressFilter)
-                        || msg.Kga.Name.Contains(config.Value.BusLoggingGroupAddressFilter, StringComparison.OrdinalIgnoreCase)))
-                    busAddresses.Add(bus.InterfaceConfiguration.IndividualAddress);
-
-                var groupAddress = new GroupAddress(msg.Kga.GroupAddress);
-                var dptBase = msg.Kga.GetDptBase();
-                var groupValue = dptBase.SizeInBit < 8 && msg.GroupValueData.Length == 1
-                    ? new GroupValue(msg.GroupValueData[0], (int)dptBase.SizeInBit)
-                    : new GroupValue(msg.GroupValueData);
-                await bus.WriteGroupValueAsync(groupAddress, groupValue, cancellationToken: cancellationToken).ConfigureAwait(false);
-            }
-
-            // Only log if we sent to at least one bus, otherwise the error logs above should be sufficient
-            if (busAddresses.Count > 0)
-                LogTelegramSent(logger, nameof(KnxSenderBgService), busAddresses.Count, msg.Kga.Name);
+            await SendTelegramAsync(msg, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private async Task SendTelegramAsync(KnxOutgoingTelegram msg, CancellationToken cancellationToken)
+    {
+        var busAddresses = new List<string>(KnxStatics.BusConnections.Count);
+        foreach (var busConnection in KnxStatics.BusConnections)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
+            var bus = busConnection.Value;
+            if (bus is null || bus.ConnectionState != BusConnectionState.Connected)
+            {
+                LogBusConnectionBroken(logger, nameof(KnxSenderBgService), msg.Kga.Name, busConnection.Key.ToString());
+                continue;
+            }
+            if (config.Value.BusSenderLoggingEnabled
+                && (string.IsNullOrEmpty(config.Value.BusLoggingGroupAddressFilter)
+                    || msg.Kga.Name.Contains(config.Value.BusLoggingGroupAddressFilter, StringComparison.OrdinalIgnoreCase)))
+                busAddresses.Add(bus.InterfaceConfiguration.IndividualAddress);
+
+            var groupAddress = new GroupAddress(msg.Kga.GroupAddress);
+            var dptBase = msg.Kga.GetDptBase();
+            var groupValue = dptBase.SizeInBit < 8 && msg.GroupValueData.Length == 1
+                ? new GroupValue(msg.GroupValueData[0], (int)dptBase.SizeInBit)
+                : new GroupValue(msg.GroupValueData);
+            await bus.WriteGroupValueAsync(groupAddress, groupValue, cancellationToken: cancellationToken).ConfigureAwait(false);
+        }
+
+        // Only log if we sent to at least one bus, otherwise the error logs above should be sufficient
+        if (busAddresses.Count > 0)
+            LogTelegramSent(logger, nameof(KnxSenderBgService), busAddresses.Count, msg.Kga.Name);
     }
 
     private async Task WaitForConnectionAsync(CancellationToken cancellationToken)

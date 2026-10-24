@@ -32,21 +32,24 @@ public sealed class MieleApiContractTests(MieleApiWebApplicationFactory factory)
             Assert.Single(factory.Provider.Calls);
             Assert.True(factory.Provider.ResponseDisposed);
             if (status == HttpStatusCode.OK)
-            {
-                using var expected = JsonDocument.Parse(json);
-                using var actual = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
-                Assert.Equal(expected.RootElement.ValueKind, actual.RootElement.ValueKind);
-                if (expected.RootElement.ValueKind == JsonValueKind.Array)
-                    Assert.Empty(actual.RootElement.EnumerateArray());
-                else if (route == "devices")
-                    Assert.Empty(actual.RootElement.EnumerateObject());
-                else
-                    foreach (var property in expected.RootElement.EnumerateObject())
-                        Assert.True(JsonElement.DeepEquals(property.Value, actual.RootElement.GetProperty(property.Name)), property.Name);
-            }
+                await AssertSuccessfulJson(response, route, json);
             if (status == HttpStatusCode.ServiceUnavailable)
                 await AssertGatewayProblem(response);
         }
+    }
+
+    private static async Task AssertSuccessfulJson(HttpResponseMessage response, string route, string json)
+    {
+        using var expected = JsonDocument.Parse(json);
+        using var actual = JsonDocument.Parse(await response.Content.ReadAsStringAsync(TestContext.Current.CancellationToken));
+        Assert.Equal(expected.RootElement.ValueKind, actual.RootElement.ValueKind);
+        if (expected.RootElement.ValueKind == JsonValueKind.Array)
+            Assert.Empty(actual.RootElement.EnumerateArray());
+        else if (route == "devices")
+            Assert.Empty(actual.RootElement.EnumerateObject());
+        else
+            foreach (var property in expected.RootElement.EnumerateObject())
+                Assert.True(JsonElement.DeepEquals(property.Value, actual.RootElement.GetProperty(property.Name)), property.Name);
     }
 
     [Theory]

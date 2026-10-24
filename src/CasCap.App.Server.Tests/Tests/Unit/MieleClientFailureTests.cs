@@ -28,7 +28,7 @@ public sealed class MieleClientFailureTests
             _ => new IsolatedCircuitException("Synthetic private provider detail.")
         });
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com/") };
-        var sut = CreateClient(client);
+        var sut = CreateMieleClient(client);
 
         var exception = await Assert.ThrowsAsync<MieleApiException>(() => write
             ? sut.PutAction("example", new() { PowerOn = true }, TestContext.Current.CancellationToken)
@@ -48,7 +48,7 @@ public sealed class MieleClientFailureTests
         handler.Reset(block: true);
         using var client = new HttpClient(handler) { BaseAddress = new Uri("https://example.com/") };
         using var owner = new CancellationTokenSource();
-        var running = CreateClient(client).GetDevices(cancellationToken: owner.Token);
+        var running = CreateMieleClient(client).GetDevices(cancellationToken: owner.Token);
         await handler.Started.Task.WaitAsync(TimeSpan.FromSeconds(5), TestContext.Current.CancellationToken);
         await owner.CancelAsync();
 
@@ -57,7 +57,7 @@ public sealed class MieleClientFailureTests
         Assert.True(Assert.Single(handler.Calls).Token.IsCancellationRequested);
     }
 
-    private static MieleClientService CreateClient(HttpClient client)
+    private static MieleClientService CreateMieleClient(HttpClient client)
         => new(NullLogger<MieleClientService>.Instance, Options.Create(new MieleConfig
         {
             OAuthToken = "example",

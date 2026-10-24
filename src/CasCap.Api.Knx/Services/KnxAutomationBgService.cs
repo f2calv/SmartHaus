@@ -150,27 +150,7 @@ public sealed class KnxAutomationBgService(
             //send default day night
             await SendDayNightUpdateAsync(kga).ConfigureAwait(false);
 
-            //lets now override sunrise
-            {
-                var sunriseOverride = sunrise;
-                var overrideActive = false;
-                if (knxConfig.Value.DayNightSunriseHourOverrideWeekend > 0 && IsWeekend()
-                    && sunrise.Hour < knxConfig.Value.DayNightSunriseHourOverrideWeekend)
-                {
-                    sunriseOverride = new DateTime(sunrise.Year, sunrise.Month, sunrise.Day, knxConfig.Value.DayNightSunriseHourOverrideWeekend, 0, 0, DateTimeKind.Utc);
-                    overrideActive = true;
-                }
-                else if (knxConfig.Value.DayNightSunriseHourOverrideWeekday > 0 && IsWeekday()
-                    && sunrise.Hour < knxConfig.Value.DayNightSunriseHourOverrideWeekday)
-                {
-                    sunriseOverride = new DateTime(sunrise.Year, sunrise.Month, sunrise.Day, knxConfig.Value.DayNightSunriseHourOverrideWeekday, 0, 0, DateTimeKind.Utc);
-                    overrideActive = true;
-                }
-                if (overrideActive)
-                    logger.LogInformation("{ClassName} sunrise {Sunrise} is too early! Overridden with {SunriseOverride}",
-                        nameof(KnxAutomationBgService), sunrise, sunriseOverride);
-                sunrise = sunriseOverride;
-            }
+            sunrise = GetSunriseOverride(sunrise, localTime);
             //TESTING: unique DayNight GA per sleeping room which can be overridden and not wake up people too early
             //TODO: create a collection of destination group address here?
             var kgaOGEltern = knxGroupAddressLookupSvc.GetKGAByName("SYS-[Night_Day]-Bedroom");
@@ -209,9 +189,21 @@ public sealed class KnxAutomationBgService(
 
             bool IsDay() => localTime > sunrise && localTime < sunset;
 
-            bool IsWeekend() => new[] { DayOfWeek.Saturday, DayOfWeek.Sunday }.Contains(localTime.DayOfWeek);
-
-            bool IsWeekday() => !IsWeekend();
         }
+    }
+
+    private DateTime GetSunriseOverride(DateTime sunrise, DateTime localTime)
+    {
+        var isWeekend = localTime.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+        var overrideHour = isWeekend
+            ? knxConfig.Value.DayNightSunriseHourOverrideWeekend
+            : knxConfig.Value.DayNightSunriseHourOverrideWeekday;
+        if (overrideHour <= 0 || sunrise.Hour >= overrideHour)
+            return sunrise;
+
+        var sunriseOverride = new DateTime(sunrise.Year, sunrise.Month, sunrise.Day, overrideHour, 0, 0, DateTimeKind.Utc);
+        logger.LogInformation("{ClassName} sunrise {Sunrise} is too early! Overridden with {SunriseOverride}",
+            nameof(KnxAutomationBgService), sunrise, sunriseOverride);
+        return sunriseOverride;
     }
 }
