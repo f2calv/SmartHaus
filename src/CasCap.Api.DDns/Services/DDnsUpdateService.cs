@@ -55,20 +55,20 @@ public sealed class DDnsUpdateService(
         await foreach (var aRecord in aRecords.GetAllAsync(cancellationToken: cancellationToken))
         {
             cancellationToken.ThrowIfCancellationRequested();
-            var doUpdate = false;
             var data = aRecord.Data;
-            if (data.Metadata is not null
-                && data.Metadata.Any(p => p.Key.Equals(dDnsConfig.Value.DnsMetaDataKey, StringComparison.OrdinalIgnoreCase)))
+            if (data.Metadata is null
+                || !data.Metadata.Any(p => p.Key.Equals(dDnsConfig.Value.DnsMetaDataKey, StringComparison.OrdinalIgnoreCase)))
+                continue;
+
+            var doUpdate = false;
+            //iterate over the IPs within the A record - as you can have multiple!
+            foreach (var record in data.DnsARecords)
             {
-                //iterate over the IPs within the A record - as you can have multiple!
-                foreach (var record in data.DnsARecords)
+                priorIp = record.IPv4Address;
+                if (!priorIp.Equals(newIp))
                 {
-                    priorIp = record.IPv4Address;
-                    if (!priorIp.Equals(newIp))
-                    {
-                        record.IPv4Address = newIp;
-                        doUpdate = true;
-                    }
+                    record.IPv4Address = newIp;
+                    doUpdate = true;
                 }
             }
 
