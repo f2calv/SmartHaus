@@ -28,6 +28,7 @@
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
     <PackageReference Include="Tiveria.Home.Knx" />
     <PackageReference Include="SolarCalculator" />
+    <PackageReference Include="System.Security.Cryptography.Xml" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
