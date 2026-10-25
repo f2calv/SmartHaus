@@ -33,8 +33,10 @@ services. It is not a self-contained AI or messaging demo.
 
 - [Swagger UI](http://localhost:8080/swagger) lists available HTTP endpoints.
 - [System metadata](http://localhost:8080/api/system) identifies the running application.
-- [Redis UI](http://localhost:7843) lets you inspect local event state.
 - [REST Client requests](requests/README.md) include synthetic Ubiquiti webhook examples.
+
+The [Compose definition](docker-compose.yml) owns dependency endpoints and the optional
+hardware-specific speech profile; review its header before starting that profile.
 
 For example, with the demo running, submit one synthetic camera event:
 
@@ -188,6 +190,11 @@ checked out alongside this repository.
 `docker compose up` starts only local infrastructure; the `demo` profile also builds the server.
 See the project test READMEs before choosing tests: some access live devices, cloud services or
 change device state, and must not be treated as credential-free checks.
+
+Device integration fixtures select the shared `Test` configuration environment, including optional
+[appsettings.Test.json](appsettings.Test.json), local test overrides, User Secrets and environment
+variables. The tracked test defaults use local dependencies; they do not supply real device access.
+Put test-only private overrides in `appsettings.Local.Test.json`, not the Development tier.
 
 ## License
 

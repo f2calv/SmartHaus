@@ -59,7 +59,8 @@ Older tests live at the project root; new leadership tests use `Tests/Unit/`.
 
 - Standard configuration with `AppConfig`, connection settings and `CasCap:KnxConfig`.
 - Private overrides supplied through local configuration, user secrets or environment variables.
-- `knxgroupaddresses.xml` accessible via the `GroupAddressXmlFilePath` configured in `appsettings.Development.json`.
+- `knxgroupaddresses.xml` accessible via `GroupAddressXmlFilePath` in the `Test` configuration chain;
+  use optional `appsettings.Local.Test.json`, User Secrets or environment variables for private values.
 - Azure Table Storage and access to an appropriate captured-frame dataset for `CemiDecodingTests`.
 - `TestBase` loads standard configuration and optional Key Vault through `AzureAuthConfig`.
 

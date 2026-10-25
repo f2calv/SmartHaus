@@ -17,6 +17,11 @@
 #
 #   docker compose --profile demo up --build
 #
+# ── Optional speech server ────────────────────────────────────────────────────
+#   Requires a native ARM64 Docker host with NVIDIA/Vulkan support; not an x64 build.
+#   docker compose --profile speech up --build
+#   The one-shot initializer downloads the model before the server starts.
+#
 #   Then send test events using requests/ubiquiti-demo.http or curl:
 #     curl -X POST "http://localhost:8080/api/v1.0/ubiquiti/event/smart?type=person&camera_name=FrontDoor&score=0.95"
 #
@@ -32,6 +37,7 @@
 #   Signalizr REST   : http://localhost:8090         [run separately on host]
 #   Signalizr gRPC   : localhost:5001                [run separately on host]
 #   SmartHaus API    : http://localhost:8080/swagger   [demo profile]
+#   whisper.cpp      : http://localhost:8178/inference [speech profile]
 # =============================================================================
 
 # =============================================================================
@@ -40,10 +46,11 @@
 services:
   # ---------- Infrastructure (always started) ----------
   redis:
-    image: redis:8.10
+    image: redis:8
+    restart: unless-stopped
     command: [ "redis-server", "/usr/local/etc/redis/redis.conf" ]
     ports:
-      - 6379:6379
+      - 127.0.0.1:6379:6379
     volumes:
       - ./.docker/redis.conf:/usr/local/etc/redis/redis.conf:ro
     healthcheck:
@@ -52,31 +59,87 @@ services:
       timeout: 3s
       retries: 10
   p3x:
-    # Upstream recommends the latest tag; pinned anyway so a local run is reproducible.
+    # Upstream publishes no :2026 alias; retain this verified release tag.
     image: patrikx3/p3x-redis-ui:2026.10.100
+    restart: unless-stopped
     ports:
-      - 7843:7843
+      - 127.0.0.1:7843:7843
     volumes:
       - ./.docker/p3x.json:/settings/.p3xrs-conns.json:ro
     depends_on:
       redis:
         condition: service_healthy
   otelcol:
+    # Upstream publishes no :0 major alias; retain this verified release tag.
     image: otel/opentelemetry-collector:0.163.1
+    restart: unless-stopped
     ports:
-      - 4317:4317
-      - 4318:4318
+      - 127.0.0.1:4317:4317
+      - 127.0.0.1:4318:4318
     volumes:
       - ./.docker/otelcol.yaml:/etc/otelcol/config.yaml:ro
   azurite:
+    # Upstream publishes no :3 major alias; retain this verified release tag.
     image: mcr.microsoft.com/azure-storage/azurite:3.37.0
-    command: azurite --skipApiVersionCheck --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
+    restart: unless-stopped
+    command: azurite --skipApiVersionCheck --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
     ports:
-      - 10000:10000
-      - 10001:10001
-      - 10002:10002
+      - 127.0.0.1:10000:10000
+      - 127.0.0.1:10001:10001
+      - 127.0.0.1:10002:10002
     volumes:
       - azurite_data:/data
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - |
+          Promise.all([10000, 10001, 10002].map(port => new Promise((resolve, reject) => {
+            const socket = require('net').connect(port, '127.0.0.1', () => { socket.end(); resolve(); });
+            socket.on('error', reject);
+          }))).then(() => process.exit(0), () => process.exit(1));
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 5s
+  whisper-model:
+    image: alpine:3
+    profiles: [speech]
+    restart: "no"
+    volumes:
+      - whisper_models:/models
+    command:
+      - sh
+      - -ec
+      - |
+        if [ ! -s /models/ggml-large-v3-turbo.bin ]; then
+          wget -O /models/ggml-large-v3-turbo.bin.part https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-large-v3-turbo.bin
+          mv /models/ggml-large-v3-turbo.bin.part /models/ggml-large-v3-turbo.bin
+        fi
+        chown 65532:65532 /models /models/ggml-large-v3-turbo.bin
+  whisper-cpp:
+    profiles: [speech]
+    platform: linux/arm64
+    build:
+      context: .
+      dockerfile: Dockerfile.whisper-cpp
+    restart: unless-stopped
+    command: ["--model", "/models/ggml-large-v3-turbo.bin", "--host", "0.0.0.0", "--port", "8080", "--language", "en", "--flash-attn"]
+    ports:
+      - 127.0.0.1:8178:8080
+    volumes:
+      - whisper_models:/models:ro
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    depends_on:
+      whisper-model:
+        condition: service_completed_successfully
   # ---------- Demo profile: SmartHaus (EdgeHardware + Comms) ----------
   smarthaus:
     profiles: [ demo ]
@@ -85,11 +148,12 @@ services:
       args:
         CONFIGURATION: Release
     ports:
-      - 8080:8080
+      - 127.0.0.1:8080:8080
     extra_hosts:
       - host.docker.internal:host-gateway
     environment:
       ASPNETCORE_ENVIRONMENT: Development
+      AppConfig__OtlpExporterEndpoint: http://otelcol:4317
       # Feature selection
       CasCap__FeatureConfig__EnabledFeatures: EdgeHardware,Ubiquiti,Comms
       # Container hostname overrides (Development.json uses localhost, compose uses container names)
@@ -112,8 +176,8 @@ services:
     depends_on:
       redis:
         condition: service_healthy
-      otelcol:
-        condition: service_started
+      azurite:
+        condition: service_healthy
     healthcheck:
       test: [ "CMD", "curl", "-sf", "http://localhost:8080/healthz/live" ]
       interval: 10s
@@ -126,3 +190,4 @@ services:
 # =============================================================================
 volumes:
   azurite_data:
+  whisper_models:
