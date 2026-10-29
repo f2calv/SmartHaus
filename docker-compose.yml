@@ -62,7 +62,7 @@ services:
       redis:
         condition: service_healthy
   otelcol:
-    image: otel/opentelemetry-collector:0.163.1
+    image: otel/opentelemetry-collector:0.163.2-386
     ports:
       - 4317:4317
       - 4318:4318
