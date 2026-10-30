@@ -119,4 +119,15 @@ public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, I
     /// <remarks>Defaults to <c>"Europe/Berlin"</c>.</remarks>
     [Required, MinLength(1)]
     public string TimeZoneId { get; init; } = "Europe/Berlin";
+
+    /// <summary>
+    /// Graceful shutdown timeout in milliseconds the host waits for in-flight work to drain before
+    /// forcing termination.
+    /// </summary>
+    /// <remarks>
+    /// Defaults to <c>90000</c> milliseconds (90 seconds). Applied to
+    /// <see cref="HostOptions.ShutdownTimeout"/>.
+    /// </remarks>
+    [Range(1_000, 600_000)]
+    public int ShutdownTimeoutMs { get; init; } = 90_000;
 }

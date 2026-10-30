@@ -1,7 +1,5 @@
 using CasCap.Common.Authentication;
-using CasCap.Constants;
 using Microsoft.AspNetCore.Authentication;
-using ModelContextProtocol.AspNetCore;
 using Serilog;
 
 namespace CasCap;
@@ -52,14 +50,10 @@ public static partial class AppHost
                 string.Join("\n", endpointSources.SelectMany(source => source.Endpoints)));
         }
 
-        app.MapGroup(appConfig.McpUrl)
-            .RequireAuthorization()
-            .MapMcp();
+        MapMcp(app, appConfig);
         app.MapControllers();
         app.MapRazorPages();
-
-        if (enabledFeatures.Contains(FeatureNames.SignalRHub))
-            app.MapHub<HausHub>(signalRHubConfig!.HubPath).RequireAuthorization();
+        MapSignalR(app, enabledFeatures, signalRHubConfig);
 
         app.MapHealthChecks("/healthz", new HealthCheckOptions
         {

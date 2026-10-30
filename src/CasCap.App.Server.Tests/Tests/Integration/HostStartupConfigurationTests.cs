@@ -2,6 +2,7 @@ using CasCap.Controllers;
 using CasCap.Tests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
+using Microsoft.Extensions.Hosting;
 
 namespace CasCap.Tests.Integration;
 
@@ -37,6 +38,9 @@ public class HostStartupConfigurationTests : WebApiTestBase
         Assert.Equal(CasCapAppWebApplicationFactory.TestUsername, apiAuthConfig.Username);
         Assert.Equal(CasCapAppWebApplicationFactory.TestPassword, apiAuthConfig.Password);
         Assert.Single(featureFlagConfig.EnabledFeatures, FeatureNames.Test);
+        Assert.Equal(
+            TimeSpan.FromMilliseconds(appConfig.ShutdownTimeoutMs),
+            Services.GetRequiredService<IOptions<HostOptions>>().Value.ShutdownTimeout);
         Assert.Same(TimeProvider.System, Services.GetRequiredService<TimeProvider>());
         Assert.NotNull(Services.GetRequiredService<ILocalCache>());
         Assert.NotNull(Services.GetRequiredService<ApplicationMetadata>());

@@ -62,6 +62,10 @@ public static partial class AppHost
             // Web API registration
             AddWebApi(builder, enabledFeatures);
 
+            // Host behavior
+            builder.Services.Configure<HostOptions>(options =>
+                options.ShutdownTimeout = TimeSpan.FromMilliseconds(appConfig.ShutdownTimeoutMs));
+
             // Build
             var app = builder.Build();
 
