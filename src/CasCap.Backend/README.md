@@ -196,6 +196,8 @@ For configured Ubiquiti cameras and the optional DoorBird source, the media sink
 clip request. `CameraClipBgService` applies the per-camera cooldown, waits for post-roll, downloads
 the MediaMTX playback range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264
 video and the first AAC audio track when present.
+The worker is an `IBgFeature` registered only by the owning camera feature composition, so fatal
+queue-level failures participate in the common feature supervision and process outcome.
 
 The queue has one reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
 output, or oversized output falls back to the existing thumbnail path. Temporary files are always

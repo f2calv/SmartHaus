@@ -43,7 +43,7 @@ public static class DoorBirdSinksServiceCollectionExtensions
             else
                 services.AddSingleton<IDoorBirdAzBlobStorageService>(
                     new DoorBirdAzBlobStorageService(new Uri(config.AzureBlobStorageConnectionString), config.AzureBlobStorageContainerName, tokenCredential!));
-            services.AddHostedService<BlobProcessorBgService>();
+            services.AddSingleton<IBgFeature, BlobProcessorBgService>();
         }
 
         services.AddEventSinks<DoorBirdEvent>(lite ? config.Sinks.WithoutSinkType("AzureTables") : config.Sinks,

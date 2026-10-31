@@ -3,17 +3,18 @@ namespace CasCap.Services;
 /// <summary>Background service for processing DoorBird image blobs.</summary>
 /// <param name="logger">Logger instance.</param>
 /// <param name="doorBirdAzBlobStorageSvc">Azure Blob Storage service for DoorBird.</param>
-public sealed partial class BlobProcessorBgService(ILogger<BlobProcessorBgService> logger, IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : BackgroundService
+public sealed partial class BlobProcessorBgService(
+    ILogger<BlobProcessorBgService> logger,
+    IDoorBirdAzBlobStorageService doorBirdAzBlobStorageSvc) : IBgFeature
 {
     /// <inheritdoc/>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public string FeatureName => IBgFeature.AlwaysEnabled;
+
+    /// <inheritdoc/>
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         logger.LogInformation("{ClassName} starting", nameof(BlobProcessorBgService));
-        try
-        {
-            await RunServiceAsync(stoppingToken);
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
+        await RunServiceAsync(cancellationToken);
         logger.LogInformation("{ClassName} exiting", nameof(BlobProcessorBgService));
     }
 

@@ -37,7 +37,7 @@ Memory, and Metrics sinks that ship with `CasCap.Api.DoorBird`. The sink assembl
 | `DoorBirdSinkRedisService` | `"Redis"` | Maintains running event counts and last-seen timestamps per event type (doorbell, motion, RFID, relay) in a Redis hash. Also implements [`IDoorBirdQuery`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.DoorBird/Abstractions/IDoorBirdQuery.cs). |
 | `DoorBirdSinkAzureTablesService` | `"AzureTables"` | Writes individual `DoorBirdEvent` rows to a line-items Azure Table and upserts a single snapshot row with aggregate counts and timestamps. |
 | `DoorBirdSinkAzBlobService` | `"AzureBlob"` | Enqueues captured JPEG image bytes to `BlobStatics.UploadQueue` for asynchronous upload to Azure Blob Storage by `BlobProcessorBgService`. |
-| `BlobProcessorBgService` | — | Background service that reads from `BlobStatics.UploadQueue` and uploads each JPEG blob to Azure Blob Storage via [`IDoorBirdAzBlobStorageService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.DoorBird.Sinks/Abstractions/IDoorBirdAzBlobStorageService.cs). |
+| `BlobProcessorBgService` | — | Supervised `IBgFeature` that reads from `BlobStatics.UploadQueue` and uploads each JPEG blob to Azure Blob Storage via [`IDoorBirdAzBlobStorageService`](https://github.com/f2calv/SmartHaus/blob/main/src/CasCap.Api.DoorBird.Sinks/Abstractions/IDoorBirdAzBlobStorageService.cs). |
 
 ## Configuration Examples
 

@@ -22,18 +22,21 @@ public sealed class CameraClipBgService(
     CameraThumbnailPublisher mediaPublisher,
     IHttpClientFactory httpClientFactory,
     CommsMediaStore mediaStore,
-    IEventSink<CommsEvent> commsSink) : BackgroundService
+    IEventSink<CommsEvent> commsSink) : IBgFeature
 {
     private readonly HttpClient _playbackClient =
         httpClientFactory.CreateClient(nameof(CameraClipBgService));
 
     /// <inheritdoc/>
-    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    public string FeatureName => IBgFeature.AlwaysEnabled;
+
+    /// <inheritdoc/>
+    public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
         if (!config.Value.Enabled)
         {
             logger.LogInformation("{ClassName} is disabled", nameof(CameraClipBgService));
-            await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, stoppingToken);
+            await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, cancellationToken);
             return;
         }
 
@@ -42,13 +45,13 @@ public sealed class CameraClipBgService(
             nameof(CameraClipBgService),
             config.Value.Sources.Count + (config.Value.DoorBirdSource is null ? 0 : 1));
 
-        await foreach (var request in clipQueue.Reader.ReadAllAsync(stoppingToken))
+        await foreach (var request in clipQueue.Reader.ReadAllAsync(cancellationToken))
         {
             try
             {
-                await ProcessClip(request, stoppingToken);
+                await ProcessClip(request, cancellationToken);
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
             {
                 throw;
             }
@@ -60,7 +63,7 @@ public sealed class CameraClipBgService(
                     nameof(CameraClipBgService),
                     request.Source.DisplayName,
                     ex.GetType().Name);
-                await PublishFallback(request, stoppingToken);
+                await PublishFallback(request, cancellationToken);
             }
         }
     }
