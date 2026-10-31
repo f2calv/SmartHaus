@@ -66,7 +66,7 @@ its own device, cloud authentication and configuration requirements.
 | UniFi Protect webhooks | [Library](src/CasCap.Api.Ubiquiti/README.md) | [Redis, Azure Tables](src/CasCap.Api.Ubiquiti.Sinks/README.md) | Source only |
 | WiZ lighting | [Library](src/CasCap.Api.Wiz/README.md) | [Redis, Azure Tables](src/CasCap.Api.Wiz.Sinks/README.md) | Source only |
 | Azure Dynamic DNS | [Library](src/CasCap.Api.DDns/README.md) | Not an event-sink integration | Source only |
-| Application hosts | [HTTP server](src/CasCap.App.Server/README.md), [agent console](src/CasCap.App.Console/README.md) | [Shared bootstrap](src/CasCap.App/README.md) | [Container image](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus) |
+| Application hosts | [HTTP server](src/CasCap.App.Server/README.md), [agent console](src/CasCap.App.Console/README.md) | [Shared bootstrap](src/CasCap.App.Hosting/README.md) | [Container image](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus) |
 | Application orchestration | [Backend, SignalR, communications, media and MCP](src/CasCap.Backend/README.md) | Redis streams and media cache | Source only |
 | Helm charts | [Application](charts/smarthaus/README.md), [Grafana dashboards](charts/smarthaus-dashboards/README.md) | Configurable workload aliases and dashboard provisioning | `oci://ghcr.io/f2calv/charts/smarthaus` |
 | Tests | [Buderus](src/CasCap.Api.Buderus.Tests/README.md), [DoorBird](src/CasCap.Api.DoorBird.Tests/README.md), [Fronius](src/CasCap.Api.Fronius.Tests/README.md), [KNX](src/CasCap.Api.Knx.Tests/README.md), [Miele](src/CasCap.Api.Miele.Tests/README.md), [host](src/CasCap.App.Server.Tests/README.md), [backend](src/CasCap.Backend.Tests/README.md) | Source-declared inventories and prerequisites | Not published |
@@ -116,7 +116,7 @@ Select only integrations you have configured; enabled device features may read o
 
 The hosts load base and environment appsettings, local overrides, user secrets, environment variables
 and optional Azure Key Vault through the shared bootstrap. See
-[configuration initialization](src/CasCap.App/README.md) for the provider contract.
+[configuration initialization](src/CasCap.App.Hosting/README.md) for the provider contract.
 Use gitignored local configuration or user secrets for credentials. Environment keys use double
 underscores, for example `CasCap__FeatureConfig__EnabledFeatures=Ubiquiti`.
 

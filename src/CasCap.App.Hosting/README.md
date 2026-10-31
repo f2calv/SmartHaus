@@ -1,8 +1,11 @@
-# CasCap.App
+# CasCap.App.Hosting
 
 Shared bootstrap library that provides configuration initialization for all application hosts (`CasCap.App.Server` and `CasCap.App.Console`). This project is a library — not an executable — that centralizes the configuration and DI wiring common to every entry point.
 
 This source-only library targets .NET 10 and is not a NuGet package.
+
+Its assembly identity is `CasCap.App`; its existing namespaces and telemetry service names are
+independent of the project name.
 
 ## Usage
 

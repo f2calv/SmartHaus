@@ -19,7 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CasCap.Api.Knx\CasCap.Api.Knx.csproj" />
     <ProjectReference Include="..\CasCap.Api.Knx.Sinks\CasCap.Api.Knx.Sinks.csproj" />
-    <ProjectReference Include="..\CasCap.App\CasCap.App.csproj" />
+    <ProjectReference Include="..\CasCap.App.Hosting\CasCap.App.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
