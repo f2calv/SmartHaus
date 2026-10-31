@@ -38,8 +38,9 @@ public class HostStartupConfigurationTests : WebApiTestBase
         Assert.Equal(CasCapAppWebApplicationFactory.TestUsername, apiAuthConfig.Username);
         Assert.Equal(CasCapAppWebApplicationFactory.TestPassword, apiAuthConfig.Password);
         Assert.Single(featureFlagConfig.EnabledFeatures, FeatureNames.Test);
+        var hostLifecycleConfig = Services.GetRequiredService<IOptions<HostLifecycleConfig>>().Value;
         Assert.Equal(
-            TimeSpan.FromMilliseconds(appConfig.ShutdownTimeoutMs),
+            TimeSpan.FromMilliseconds(hostLifecycleConfig.ShutdownTimeoutMs),
             Services.GetRequiredService<IOptions<HostOptions>>().Value.ShutdownTimeout);
         Assert.Same(TimeProvider.System, Services.GetRequiredService<TimeProvider>());
         Assert.NotNull(Services.GetRequiredService<ILocalCache>());

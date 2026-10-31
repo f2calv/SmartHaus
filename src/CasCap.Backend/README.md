@@ -319,7 +319,7 @@ identifiers.
 | Section | Setting | Default | Description |
 | --- | --- | --- | --- |
 | `AppConfig` | `McpUrl` | `"/mcp"` | Stateless Streamable HTTP MCP route |
-| `AppConfig` | `ShutdownTimeoutMs` | `90000` | Graceful host shutdown timeout in milliseconds |
+| `CasCap:HostLifecycleConfig` | `ShutdownTimeoutMs` | `90000` | Graceful host shutdown timeout in milliseconds |
 | `CasCap:AgentRuntimeClientOptions` | `BaseAddress` | Required | Agent Runtime service base address |
 | `CasCap:AgentRuntimeClientOptions` | `TimeoutMinutes` | `10` | Timeout for model and tool runs |
 | `CasCap:AgentRuntimeAzureAuthConfig` | `Enabled` | `false` | Enables certificate-backed bearer authentication |

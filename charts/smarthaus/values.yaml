@@ -20,6 +20,7 @@ image: &image
 
 _shared: &shared
   image: *image
+  terminationGracePeriodSeconds: 120
   service:
     enabled: true
     name: http

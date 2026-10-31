@@ -137,6 +137,7 @@ Key configuration sections:
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics) |
 | `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub |
+| `CasCap:HostLifecycleConfig` | `HostLifecycleConfig` | Graceful shutdown timeout; base configuration uses 90 seconds |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic auth credentials |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | Hub path and sink configuration |
 | `CasCap:BuderusConfig` | `BuderusConfig` | Buderus KM200 device settings |

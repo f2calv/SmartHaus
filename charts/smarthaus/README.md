@@ -119,6 +119,7 @@ it, so an environment sets the image on each alias it enables, as above.
 | --- | --- | --- |
 | `<alias>.replicaCount` | `0` | Every alias renders nothing until an environment sets a replica count |
 | `<alias>.image` | `nginx:1.31.0` | Placeholder; set the SmartHaus image and tag on every enabled alias |
+| `<alias>.terminationGracePeriodSeconds` | `120` | Exceeds the 90-second application shutdown budget |
 | `<alias>.envVars.CasCap__FeatureConfig__EnabledFeatures` | unset | Selects the feature; see the table below |
 | `<alias>.service` | port 80 to 8080 | REST, health endpoints and metrics |
 | `<alias>.startupProbe`, `readinessProbe`, `livenessProbe` | `/healthz/startup`, `/healthz/ready`, `/healthz/live` | All on port 8080 |
