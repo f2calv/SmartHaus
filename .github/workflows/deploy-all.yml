@@ -52,27 +52,59 @@ jobs:
       tag-prefix: ''
       tag-and-release: false
 
+  #Resolves the Debug/Release choice and the extra-repos JSON once from the dependency ref inputs.
+  #Any ref switches the build to the Debug solution, which references sibling source projects.
+  settings:
+    runs-on: ubuntu-24.04
+    permissions: {}
+    outputs:
+      configuration: ${{ steps.settings.outputs.configuration }}
+      solution: ${{ steps.settings.outputs.solution }}
+      dockerfile: ${{ steps.settings.outputs.dockerfile }}
+      build-args: ${{ steps.settings.outputs.build-args }}
+      build-repos: ${{ steps.settings.outputs.build-repos }}
+      image-repos: ${{ steps.settings.outputs.image-repos }}
+    steps:
+      - name: resolve build settings
+        id: settings
+        env:
+          CASCAP_COMMON_REF: ${{ inputs.cascap-common-ref }}
+          CASCAP_API_AZURE_REF: ${{ inputs.cascap-api-azure-ref }}
+          CASCAP_API_VOICE_REF: ${{ inputs.cascap-api-voice-ref }}
+          SIGNALIZR_REF: ${{ inputs.signalizr-ref }}
+        run: |
+          set -euo pipefail
+          REPOS=$(jq -nc \
+            --arg common "$CASCAP_COMMON_REF" --arg azure "$CASCAP_API_AZURE_REF" --arg voice "$CASCAP_API_VOICE_REF" --arg signalizr "$SIGNALIZR_REF" \
+            '[{name: "CasCap.Common", ref: $common}, {name: "CasCap.Api.Azure", ref: $azure}, {name: "CasCap.Api.Voice", ref: $voice}, {name: "signalizr", ref: $signalizr}]
+             | map(select(.ref != "") | {repo: ("f2calv/" + .name), ref, name})')
+          if [[ "$(jq length <<< "$REPOS")" -gt 0 ]]; then
+            CONFIGURATION=Debug; SOLUTION=SmartHaus.Debug.slnx; DOCKERFILE=Dockerfile.Debug
+            BUILD_ARGS="--build-arg WORKLOAD=CasCap.App.Server --build-arg CONFIGURATION=Debug"
+          else
+            CONFIGURATION=Release; SOLUTION=SmartHaus.Release.slnx; DOCKERFILE=Dockerfile
+            BUILD_ARGS="--build-arg WORKLOAD=CasCap.App.Server"
+          fi
+          {
+            echo "configuration=$CONFIGURATION"
+            echo "solution=$SOLUTION"
+            echo "dockerfile=$DOCKERFILE"
+            echo "build-args=$BUILD_ARGS"
+            echo "build-repos=$(jq -c 'map({repo, ref, path: ("../" + .name)})' <<< "$REPOS")"
+            echo "image-repos=$(jq -c 'map({repo, ref, path: ("deps/" + .name)})' <<< "$REPOS")"
+          } | tee -a "$GITHUB_OUTPUT"
   build:
     uses: f2calv/gha-workflows/.github/workflows/app-build-dotnet.yml@v1
     permissions:
       contents: read
-    needs: versioning
+    needs: [settings, versioning]
     with:
       version: ${{ needs.versioning.outputs.version }}
-      configuration: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && 'Debug' || 'Release' }}
-      solution-name: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && 'SmartHaus.Debug.slnx' || 'SmartHaus.Release.slnx' }}
+      configuration: ${{ needs.settings.outputs.configuration }}
+      solution-name: ${{ needs.settings.outputs.solution }}
       #Match ci.yml: integration tests need the edge-sp certificate and devices, which the runner does not have.
       dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--ignore-exit-code", "8"]'
-      extra-repos: |
-        [
-          ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"../CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
-          ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
-          ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"../CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
-          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && inputs.cascap-api-voice-ref != '' && ',' || '' }}
-          ${{ inputs.cascap-api-voice-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Voice","ref":"{0}","path":"../CasCap.Api.Voice"}}', inputs.cascap-api-voice-ref) || '' }}
-          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '') && inputs.signalizr-ref != '' && ',' || '' }}
-          ${{ inputs.signalizr-ref != '' && format('{{"repo":"f2calv/signalizr","ref":"{0}","path":"../signalizr"}}', inputs.signalizr-ref) || '' }}
-        ]
+      extra-repos: ${{ needs.settings.outputs.build-repos }}
 
   nuget:
     runs-on: ubuntu-24.04
@@ -135,24 +167,15 @@ jobs:
     permissions:
       packages: write #for pushing container image
       contents: read #note: for private repos setting packages to write, will reset all other permissions to none (weird?)
-    needs: [versioning]
+    needs: [settings, versioning]
     if: inputs.nuget-release == '' && github.event_name != 'pull_request'
     with:
       registry: ghcr.io/${{ github.repository_owner }}
       tag: ${{ needs.versioning.outputs.version }}
-      dockerfile: ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && 'Dockerfile.Debug' || 'Dockerfile' }}
-      args: --build-arg WORKLOAD=CasCap.App.Server ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '' || inputs.signalizr-ref != '') && '--build-arg CONFIGURATION=Debug' || '' }}
+      dockerfile: ${{ needs.settings.outputs.dockerfile }}
+      args: ${{ needs.settings.outputs.build-args }}
       push-image: ${{ github.actor != 'copilot[bot]' }}
-      extra-repos: |
-        [
-          ${{ inputs.cascap-common-ref != '' && format('{{"repo":"f2calv/CasCap.Common","ref":"{0}","path":"deps/CasCap.Common"}}', inputs.cascap-common-ref) || '' }}
-          ${{ inputs.cascap-common-ref != '' && inputs.cascap-api-azure-ref != '' && ',' || '' }}
-          ${{ inputs.cascap-api-azure-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Azure","ref":"{0}","path":"deps/CasCap.Api.Azure"}}', inputs.cascap-api-azure-ref) || '' }}
-          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '') && inputs.cascap-api-voice-ref != '' && ',' || '' }}
-          ${{ inputs.cascap-api-voice-ref != '' && format('{{"repo":"f2calv/CasCap.Api.Voice","ref":"{0}","path":"deps/CasCap.Api.Voice"}}', inputs.cascap-api-voice-ref) || '' }}
-          ${{ (inputs.cascap-common-ref != '' || inputs.cascap-api-azure-ref != '' || inputs.cascap-api-voice-ref != '') && inputs.signalizr-ref != '' && ',' || '' }}
-          ${{ inputs.signalizr-ref != '' && format('{{"repo":"f2calv/signalizr","ref":"{0}","path":"deps/signalizr"}}', inputs.signalizr-ref) || '' }}
-        ]
+      extra-repos: ${{ needs.settings.outputs.image-repos }}
 
   pkg-chart-smarthaus:
     uses: f2calv/gha-workflows/.github/workflows/helm-chart-package.yml@v1
