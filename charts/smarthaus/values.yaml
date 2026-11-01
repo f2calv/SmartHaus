@@ -16,7 +16,7 @@ dashboards:
 image: &image
   repository: nginx
   pullPolicy: IfNotPresent
-  tag: "1.31.0"
+  tag: "1.31.7"
 
 _shared: &shared
   image: *image
