@@ -1,4 +1,4 @@
-﻿using CasCap.HealthChecks;
+using CasCap.HealthChecks;
 using Microsoft.Extensions.Hosting.Internal;
 
 namespace CasCap.Tests;
@@ -15,13 +15,7 @@ public abstract class TestBase : IAsyncDisposable
     {
         _output = output;
 
-        var configuration = _configuration;
-        configuration.AddStandardConfiguration("Test", typeof(TestBase).Assembly)
-            .AddKeyVaultConfigurationFrom(c =>
-            {
-                var authConfig = c.GetSection(AzureAuthConfig.ConfigurationSectionName).Get<AzureAuthConfig>();
-                return (authConfig?.KeyVaultUri, authConfig?.TokenCredential);
-            });
+        var configuration = _configuration.AddDeviceTestConfiguration(typeof(TestBase).Assembly);
 
         //initiate ServiceCollection w/logging
         var services = new ServiceCollection()
