@@ -22,8 +22,10 @@ public sealed partial class FrontDoorMcpQueryService(IDoorBirdQueryService doorB
     public Task<MyBlobInfo> GetHouseDoorPhotoInfo() => doorBirdQuerySvc.GetRealTimePhotoMetaDataOnly();
 
     /// <inheritdoc cref="IDoorBirdQueryService.UnlockFrontDoor()"/>
+    /// <remarks>Waits for a person in the household chat to approve; anything else returns a refusal.</remarks>
     [McpServerTool(ReadOnly = false, Destructive = true, Idempotent = false, OpenWorld = false)]
-    [Description("Unlocks the front door by triggering the electric door release.")]
+    [RequiresApproval]
+    [Description("Unlocks the front door by triggering the electric door release. Only call this when the user explicitly asks to open the front door; never as part of describing an image or event. A person in the household chat must approve each call before the door opens.")]
     public Task<bool> UnlockHouseDoor() => doorBirdQuerySvc.UnlockFrontDoor();
 
     /// <inheritdoc cref="IDoorBirdQueryService.LightOn"/>

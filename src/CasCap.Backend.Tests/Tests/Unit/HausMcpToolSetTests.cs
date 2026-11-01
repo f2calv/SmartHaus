@@ -1,3 +1,4 @@
+using CasCap.Attributes;
 using CasCap.Extensions;
 using ModelContextProtocol.Protocol;
 using ModelContextProtocol.Server;
@@ -100,6 +101,13 @@ public sealed class HausMcpToolSetTests
         Assert.False(annotations.ReadOnlyHint);
         Assert.True(annotations.DestructiveHint);
     }
+
+    // Edge models called unlock_house_door unprompted while describing camera images; see issue #75.
+    [Fact]
+    public void UnlockHouseDoor_RequiresApproval() =>
+        Assert.NotNull(typeof(FrontDoorMcpQueryService)
+            .GetMethod(nameof(FrontDoorMcpQueryService.UnlockHouseDoor))!
+            .GetCustomAttribute<RequiresApprovalAttribute>());
 
     private static IEnumerable<(string Name, ToolAnnotations? Annotations)> GetAnnotations() =>
         HausMcpServiceCollectionExtensions.AllToolSets

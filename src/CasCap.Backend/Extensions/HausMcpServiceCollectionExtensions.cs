@@ -49,6 +49,10 @@ public static class HausMcpServiceCollectionExtensions
     /// <summary>
     /// Registers the stateless MCP server, exposing only the tools and prompts of enabled features.
     /// </summary>
+    /// <remarks>
+    /// Tools marked <see cref="RequiresApprovalAttribute"/> wait for approval in the chat group. Only a
+    /// <c>Comms</c> host can ask for it; any other host refuses those tools rather than running them.
+    /// </remarks>
     /// <param name="services">The service collection.</param>
     /// <param name="enabledFeatures">The features enabled for this deployment.</param>
     public static void AddHausMcp(this IServiceCollection services, IReadOnlySet<string> enabledFeatures)
@@ -60,6 +64,7 @@ public static class HausMcpServiceCollectionExtensions
         services.AddMcpServer()
             .WithHttpTransport(options => options.SessionMode = HttpServerSessionMode.Stateless)
             .WithTools(toolSets.Select(set => set.ToolType))
-            .WithPrompts(toolSets.SelectMany(set => set.PromptTypes));
+            .WithPrompts(toolSets.SelectMany(set => set.PromptTypes))
+            .WithToolApproval();
     }
 }

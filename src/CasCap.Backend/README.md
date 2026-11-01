@@ -153,6 +153,14 @@ the whole backend assembly, maintain an agent session or execute a model while s
 This table is the available SmartHaus MCP catalogue. Which tools an agent can call is selected by
 its active definition in agentizr; SmartHaus deliberately carries no agent-to-tool assignment map.
 
+`unlock_house_door` carries `[RequiresApproval]`, and `AddHausMcp` adds the signalizr
+`WithToolApproval()` filter. Each call posts an Approve/Deny poll to the household chat that names
+the requesting agent, and the door opens only after an accepted Approve within
+`CasCap:ToolApprovalConfig:TimeoutMs` (30 seconds by default). Only the `Comms` host can ask for
+approval; every other host refuses the tool rather than running it. See the
+[CasCap.Comms.AI tool approval guide](https://github.com/f2calv/signalizr/blob/main/src/CasCap.Comms.AI/README.md#tool-approval)
+for configuration, including restricting approvers.
+
 The nine appliance tools forward cancellation to the provider. The two command tools retain their
 boolean outputs and use typed action/program arguments: accepted commands return `true`, explicit
 rejection or absence returns `false`, and upstream failures propagate as errors. See the
