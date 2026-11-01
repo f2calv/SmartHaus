@@ -77,7 +77,7 @@ public static partial class AppHost
             await app.RunAsync();
             return exitState.ExitCode;
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException and not HostAbortedException)
         {
             Log.Fatal(exception, "{AppName} terminated unexpectedly", AppDomain.CurrentDomain.FriendlyName);
             return 1;
