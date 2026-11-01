@@ -22,9 +22,9 @@ Host endpoint and application-bootstrap coverage lives in
 | `CameraClipQueueTests` | 7 | 7 | CameraClips | Verifies privacy filtering, mappings, cooldown, and bounded admission |
 | `MediaBgServiceTests` | 1 | 3 | Media | Verifies stateless Agent Runtime requests for image, audio, and document events |
 | `LiteSinkRegistrationTests` | 1 | 9 | Sinks | Asserts Redis sink selection and Azure Tables exclusion for nine lite registrations |
-| `HausMcpToolSetTests` | 7 | 19 | Mcp | Feature-dependent MCP tool selection |
+| `HausMcpToolSetTests` | 8 | 20 | Mcp | Feature-dependent MCP tool selection and the door-unlock approval gate |
 | `ShutterTargetValidationTests` | 3 | 3 | Knx | Shutter target bounds |
-| Total | 28 | 62 | | Source-declared cases, including theories |
+| Total | 29 | 63 | | Source-declared cases, including theories |
 
 ## Trait Categories
 

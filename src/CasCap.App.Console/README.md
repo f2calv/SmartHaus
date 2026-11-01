@@ -16,7 +16,7 @@ dotnet run --project src/CasCap.App.Console --configuration Debug
 ```
 
 Configure the runtime endpoint and optional authentication before starting. The
-[shared bootstrap](../CasCap.App/README.md) supplies provider order and Key Vault handling.
+[shared bootstrap](../CasCap.App.Hosting/README.md) supplies provider order and Key Vault handling.
 
 ## Purpose
 

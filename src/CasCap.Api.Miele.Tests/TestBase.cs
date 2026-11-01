@@ -19,6 +19,7 @@ public abstract class TestBase : IAsyncDisposable
     protected MieleConfig _config;
 
     private readonly ServiceProvider _serviceProvider;
+    private readonly ConfigurationManager _configuration = new();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="TestBase"/> class.
@@ -27,14 +28,7 @@ public abstract class TestBase : IAsyncDisposable
     {
         _output = output;
 
-        var configuration = new ConfigurationBuilder()
-            .AddStandardConfiguration(assembly: typeof(TestBase).Assembly)
-            .AddKeyVaultConfigurationFrom(c =>
-            {
-                var authConfig = c.GetSection(AzureAuthConfig.ConfigurationSectionName).Get<AzureAuthConfig>();
-                return (authConfig?.KeyVaultUri, authConfig?.TokenCredential);
-            })
-            .Build();
+        var configuration = _configuration.AddDeviceTestConfiguration(typeof(TestBase).Assembly);
 
         var services = new ServiceCollection()
             .AddSingleton<IConfiguration>(configuration)
@@ -64,6 +58,7 @@ public abstract class TestBase : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _serviceProvider.DisposeAsync();
+        _configuration.Dispose();
         GC.SuppressFinalize(this);
     }
 }

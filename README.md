@@ -33,8 +33,10 @@ services. It is not a self-contained AI or messaging demo.
 
 - [Swagger UI](http://localhost:8080/swagger) lists available HTTP endpoints.
 - [System metadata](http://localhost:8080/api/system) identifies the running application.
-- [Redis UI](http://localhost:7843) lets you inspect local event state.
 - [REST Client requests](requests/README.md) include synthetic Ubiquiti webhook examples.
+
+The [Compose definition](docker-compose.yml) owns dependency endpoints and the optional
+hardware-specific speech profile; review its header before starting that profile.
 
 For example, with the demo running, submit one synthetic camera event:
 
@@ -64,7 +66,7 @@ its own device, cloud authentication and configuration requirements.
 | UniFi Protect webhooks | [Library](src/CasCap.Api.Ubiquiti/README.md) | [Redis, Azure Tables](src/CasCap.Api.Ubiquiti.Sinks/README.md) | Source only |
 | WiZ lighting | [Library](src/CasCap.Api.Wiz/README.md) | [Redis, Azure Tables](src/CasCap.Api.Wiz.Sinks/README.md) | Source only |
 | Azure Dynamic DNS | [Library](src/CasCap.Api.DDns/README.md) | Not an event-sink integration | Source only |
-| Application hosts | [HTTP server](src/CasCap.App.Server/README.md), [agent console](src/CasCap.App.Console/README.md) | [Shared bootstrap](src/CasCap.App/README.md) | [Container image](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus) |
+| Application hosts | [HTTP server](src/CasCap.App.Server/README.md), [agent console](src/CasCap.App.Console/README.md) | [Shared bootstrap](src/CasCap.App.Hosting/README.md) | [Container image](https://github.com/f2calv/SmartHaus/pkgs/container/smarthaus) |
 | Application orchestration | [Backend, SignalR, communications, media and MCP](src/CasCap.Backend/README.md) | Redis streams and media cache | Source only |
 | Helm charts | [Application](charts/smarthaus/README.md), [Grafana dashboards](charts/smarthaus-dashboards/README.md) | Configurable workload aliases and dashboard provisioning | `oci://ghcr.io/f2calv/charts/smarthaus` |
 | Tests | [Buderus](src/CasCap.Api.Buderus.Tests/README.md), [DoorBird](src/CasCap.Api.DoorBird.Tests/README.md), [Fronius](src/CasCap.Api.Fronius.Tests/README.md), [KNX](src/CasCap.Api.Knx.Tests/README.md), [Miele](src/CasCap.Api.Miele.Tests/README.md), [host](src/CasCap.App.Server.Tests/README.md), [backend](src/CasCap.Backend.Tests/README.md) | Source-declared inventories and prerequisites | Not published |
@@ -114,7 +116,7 @@ Select only integrations you have configured; enabled device features may read o
 
 The hosts load base and environment appsettings, local overrides, user secrets, environment variables
 and optional Azure Key Vault through the shared bootstrap. See
-[configuration initialization](src/CasCap.App/README.md) for the provider contract.
+[configuration initialization](src/CasCap.App.Hosting/README.md) for the provider contract.
 Use gitignored local configuration or user secrets for credentials. Environment keys use double
 underscores, for example `CasCap__FeatureConfig__EnabledFeatures=Ubiquiti`.
 
@@ -136,7 +138,7 @@ Redis is a server prerequisite even for a single-process profile. Azure storage 
 are optional capabilities; corresponding options may still require syntactically valid endpoints.
 The local demo uses Azurite rather than an Azure subscription.
 
-## Service Architecture
+## Data Flow
 
 Feature services collect device readings or receive webhooks and dispatch events to selected sinks.
 SignalR broadcasts events; Redis streams connect domain events and media to communications.
@@ -188,6 +190,11 @@ checked out alongside this repository.
 `docker compose up` starts only local infrastructure; the `demo` profile also builds the server.
 See the project test READMEs before choosing tests: some access live devices, cloud services or
 change device state, and must not be treated as credential-free checks.
+
+Device integration fixtures select the shared `Test` configuration environment, including optional
+[appsettings.Test.json](appsettings.Test.json), local test overrides, User Secrets and environment
+variables. The tracked test defaults use local dependencies; they do not supply real device access.
+Put test-only private overrides in `appsettings.Local.Test.json`, not the Development tier.
 
 ## License
 

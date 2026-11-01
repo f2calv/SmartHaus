@@ -47,7 +47,7 @@ public static class HausServiceCollectionExtensions
         if (runWorker)
         {
             services.TryAddEnumerable(
-                ServiceDescriptor.Singleton<IHostedService, CameraClipBgService>());
+                ServiceDescriptor.Singleton<IBgFeature, CameraClipBgService>());
         }
     }
 

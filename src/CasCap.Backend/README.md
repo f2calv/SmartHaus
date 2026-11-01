@@ -46,7 +46,7 @@ Names such as `CommsAgent` and `SecurityAgent` are references to active remote d
 examples under [docs/agent-examples](../../docs/agent-examples/README.md) illustrate expected
 behaviour but are not runtime authority.
 
-## Service Architecture
+## Components
 
 ```mermaid
 flowchart LR
@@ -153,6 +153,14 @@ the whole backend assembly, maintain an agent session or execute a model while s
 This table is the available SmartHaus MCP catalogue. Which tools an agent can call is selected by
 its active definition in agentizr; SmartHaus deliberately carries no agent-to-tool assignment map.
 
+`unlock_house_door` carries `[RequiresApproval]`, and `AddHausMcp` adds the signalizr
+`WithToolApproval()` filter. Each call posts an Approve/Deny poll to the household chat that names
+the requesting agent, and the door opens only after an accepted Approve within
+`CasCap:ToolApprovalConfig:TimeoutMs` (30 seconds by default). Only the `Comms` host can ask for
+approval; every other host refuses the tool rather than running it. See the
+[CasCap.Comms.AI tool approval guide](https://github.com/f2calv/signalizr/blob/main/src/CasCap.Comms.AI/README.md#tool-approval)
+for configuration, including restricting approvers.
+
 The nine appliance tools forward cancellation to the provider. The two command tools retain their
 boolean outputs and use typed action/program arguments: accepted commands return `true`, explicit
 rejection or absence returns `false`, and upstream failures propagate as errors. See the
@@ -196,6 +204,8 @@ For configured Ubiquiti cameras and the optional DoorBird source, the media sink
 clip request. `CameraClipBgService` applies the per-camera cooldown, waits for post-roll, downloads
 the MediaMTX playback range, enforces the byte limit, and uses FFmpeg stream copy to retain H.264
 video and the first AAC audio track when present.
+The worker is an `IBgFeature` registered only by the owning camera feature composition, so fatal
+queue-level failures participate in the common feature supervision and process outcome.
 
 The queue has one reader and fixed capacity. Queue pressure, playback failure, timeout, invalid
 output, or oversized output falls back to the existing thumbnail path. Temporary files are always
@@ -319,6 +329,7 @@ identifiers.
 | Section | Setting | Default | Description |
 | --- | --- | --- | --- |
 | `AppConfig` | `McpUrl` | `"/mcp"` | Stateless Streamable HTTP MCP route |
+| `CasCap:HostLifecycleConfig` | `ShutdownTimeoutMs` | `90000` | Graceful host shutdown timeout in milliseconds |
 | `CasCap:AgentRuntimeClientOptions` | `BaseAddress` | Required | Agent Runtime service base address |
 | `CasCap:AgentRuntimeClientOptions` | `TimeoutMinutes` | `10` | Timeout for model and tool runs |
 | `CasCap:AgentRuntimeAzureAuthConfig` | `Enabled` | `false` | Enables certificate-backed bearer authentication |

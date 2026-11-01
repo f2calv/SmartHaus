@@ -57,8 +57,15 @@ SmartHaus follows the standard provider order and options-synchronisation rules 
   application-specific provider and remains the authority for deployment credentials.
 - When a bindable property changes, follow the central synchronisation rule across all four existing
   tiers; environment and local files restate only values that differ from earlier providers.
-- After changing `appsettings.Local.json` for production deployment, use this repository's
-  `sync-appsettings-to-configmap` skill to update the caller-configured private GitOps repository.
+- After changing `appsettings.Local.json` for production deployment, use the central
+  `sync-file-to-configmap` skill with `Format=Json`. Follow its non-secret review and approval
+  requirements; stop if the central skill is unavailable.
+- Preserve existing gitignored `deploy.local.psd1` settings. Map `ManifestRepo` to `TargetRoot`,
+  `AppSettingsConfigMapPath` to `TargetPath`, `AppSettingsConfigMapName` to `ConfigMapName`, and
+  `AppSettingsConfigMapKey` to `DataKey`. Pass the application checkout as `SourceRoot` and the
+  selected local JSON file as `SourcePath`; verify and supply `ConfigMapNamespace` explicitly.
+  Pass these mapped values in memory rather than giving the central script the incompatible
+  deployment-data schema. Never print the source or target payload.
 
 ## Helm Charts
 

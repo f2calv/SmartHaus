@@ -9,7 +9,7 @@ public static partial class AppHost
     /// <summary>Bootstraps and runs the server host.</summary>
     /// <param name="args">Command-line arguments forwarded from the entry point.</param>
     /// <param name="entryAssembly">Entry assembly used for configuration and user-secrets resolution.</param>
-    /// <returns>The process exit code.</returns>
+    /// <returns>The process exit code: zero after normal shutdown, or one after an unexpected fault.</returns>
     public static async Task<int> RunAsync(string[] args, Assembly entryAssembly)
     {
         SerilogExtensions.GetBootstrapLogger();
@@ -22,6 +22,7 @@ public static partial class AppHost
             // Configuration
             var (appConfig, apiAuthConfig, enabledFeatures, applicationMetadata) =
                 builder.InitializeConfiguration(entryAssembly);
+            builder.Services.AddApplicationHostLifecycle(builder.Configuration);
 
             // Logging
             var logger = SerilogWebApplicationBuilderExtensions.InitializeSerilog(builder);
@@ -64,6 +65,7 @@ public static partial class AppHost
 
             // Build
             var app = builder.Build();
+            var exitState = app.Services.GetApplicationExitState();
 
             if (logger.IsEnabled(LogLevel.Information))
                 logger.LogInformation("{ClassName} starting", nameof(AppHost));
@@ -73,11 +75,12 @@ public static partial class AppHost
 
             // Run
             await app.RunAsync();
+            return exitState.ExitCode;
         }
-        catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException)
+        catch (Exception exception) when (exception is not OperationCanceledException and not TaskCanceledException and not HostAbortedException)
         {
             Log.Fatal(exception, "{AppName} terminated unexpectedly", AppDomain.CurrentDomain.FriendlyName);
-            throw new InvalidOperationException("Application host terminated unexpectedly.", exception);
+            return 1;
         }
         finally
         {
@@ -85,6 +88,5 @@ public static partial class AppHost
             await Log.CloseAndFlushAsync();
         }
 
-        return 0;
     }
 }

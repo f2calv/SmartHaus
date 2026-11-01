@@ -10,14 +10,15 @@
 
   <ItemGroup>
     <Content Include="..\..\appsettings.json" Link="appsettings.json" CopyToOutputDirectory="Always" />
-    <Content Include="..\..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.json')" />
-    <Content Include="..\..\appsettings.Development.json" Link="appsettings.Development.json" CopyToOutputDirectory="Always" />
-    <Content Include="..\..\appsettings.Local.Development.json" Link="appsettings.Local.Development.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.Development.json')" />
+    <Content Include="..\..\appsettings.Local.json" Link="appsettings.Local.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.json')" CopyToPublishDirectory="Never" Pack="false" />
+    <Content Include="..\..\appsettings.Test.json" Link="appsettings.Test.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Test.json')" />
+    <Content Include="..\..\appsettings.Local.Test.json" Link="appsettings.Local.Test.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Local.Test.json')" CopyToPublishDirectory="Never" Pack="false" />
+    <Content Include="..\..\appsettings.Tests.Local.json" Link="appsettings.Tests.Local.json" CopyToOutputDirectory="Always" Condition="Exists('..\..\appsettings.Tests.Local.json')" CopyToPublishDirectory="Never" Pack="false" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\CasCap.Api.DoorBird\CasCap.Api.DoorBird.csproj" />
-    <ProjectReference Include="..\CasCap.App\CasCap.App.csproj" />
+    <ProjectReference Include="..\CasCap.App.Hosting\CasCap.App.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">
@@ -40,6 +41,10 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
     <PackageReference Include="xunit.v3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\Shared\TestConfiguration.cs" Link="TestConfiguration.cs" />
   </ItemGroup>
 
 </Project>

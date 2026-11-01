@@ -121,7 +121,7 @@ tenant-scoped definitions in the remote Agent Runtime.
 
 ## Configuration
 
-Configuration is bootstrapped via `InitializeConfiguration` (from `CasCap.App`). The provider order is documented in [CasCap.App](../CasCap.App/README.md#configuration-precedence).
+Configuration is bootstrapped via `InitializeConfiguration` (from `CasCap.App.Hosting`). The provider order is documented in [CasCap.App.Hosting](../CasCap.App.Hosting/README.md#configuration-precedence).
 Local overrides and user secrets are included before environment variables, with optional Key Vault
 last. The following abbreviated order shows the main providers:
 
@@ -137,6 +137,7 @@ Key configuration sections:
 | --- | --- | --- |
 | `AppConfig` | `AppConfig` | Master application settings (feature flags, Azure, metrics) |
 | `ConnectionStrings` | `ConnectionStrings` | Redis, Azure Storage, SignalR Hub |
+| `CasCap:HostLifecycleConfig` | `HostLifecycleConfig` | Graceful shutdown timeout; base configuration uses 90 seconds |
 | `CasCap:ApiAuthConfig` | `ApiAuthConfig` | Basic auth credentials |
 | `CasCap:SignalRHubConfig` | `SignalRHubConfig` | Hub path and sink configuration |
 | `CasCap:BuderusConfig` | `BuderusConfig` | Buderus KM200 device settings |

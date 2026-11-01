@@ -119,4 +119,5 @@ public sealed record AppConfig : IAppConfig, IAzureAuthConfig, IKubeAppConfig, I
     /// <remarks>Defaults to <c>"Europe/Berlin"</c>.</remarks>
     [Required, MinLength(1)]
     public string TimeZoneId { get; init; } = "Europe/Berlin";
+
 }

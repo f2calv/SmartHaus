@@ -1,4 +1,4 @@
-﻿using CasCap.HealthChecks;
+using CasCap.HealthChecks;
 using Microsoft.Extensions.Hosting.Internal;
 
 namespace CasCap.Tests;
@@ -9,19 +9,13 @@ public abstract class TestBase : IAsyncDisposable
     protected FroniusClientService svc;
 
     private readonly ServiceProvider _serviceProvider;
+    private readonly ConfigurationManager _configuration = new();
 
     protected TestBase(ITestOutputHelper output)
     {
         _output = output;
 
-        var configuration = new ConfigurationBuilder()
-            .AddStandardConfiguration(assembly: typeof(TestBase).Assembly)
-            .AddKeyVaultConfigurationFrom(c =>
-            {
-                var authConfig = c.GetSection(AzureAuthConfig.ConfigurationSectionName).Get<AzureAuthConfig>();
-                return (authConfig?.KeyVaultUri, authConfig?.TokenCredential);
-            })
-            .Build();
+        var configuration = _configuration.AddDeviceTestConfiguration(typeof(TestBase).Assembly);
 
         //initiate ServiceCollection w/logging
         var services = new ServiceCollection()
@@ -55,6 +49,7 @@ public abstract class TestBase : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _serviceProvider.DisposeAsync();
+        _configuration.Dispose();
         GC.SuppressFinalize(this);
     }
 }
