@@ -71,7 +71,7 @@ services:
         condition: service_healthy
   otelcol:
     # Upstream publishes no :0 major alias; retain this verified release tag.
-    image: otel/opentelemetry-collector:0.163.1
+    image: otel/opentelemetry-collector:0.164.0
     restart: unless-stopped
     ports:
       - 127.0.0.1:4317:4317
