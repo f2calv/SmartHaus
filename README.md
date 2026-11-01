@@ -138,7 +138,7 @@ Redis is a server prerequisite even for a single-process profile. Azure storage 
 are optional capabilities; corresponding options may still require syntactically valid endpoints.
 The local demo uses Azurite rather than an Azure subscription.
 
-## Service Architecture
+## Data Flow
 
 Feature services collect device readings or receive webhooks and dispatch events to selected sinks.
 SignalR broadcasts events; Redis streams connect domain events and media to communications.

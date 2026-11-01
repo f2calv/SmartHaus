@@ -46,7 +46,7 @@ Names such as `CommsAgent` and `SecurityAgent` are references to active remote d
 examples under [docs/agent-examples](../../docs/agent-examples/README.md) illustrate expected
 behaviour but are not runtime authority.
 
-## Service Architecture
+## Components
 
 ```mermaid
 flowchart LR
