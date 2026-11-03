@@ -37,8 +37,8 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
             JsonPayload = @event.ToJson(),
         };
 
-        logger.LogInformation("{ClassName} event detected {UbiquitiEvent}, writing to comms stream",
-            nameof(UbiquitiSinkCommsStreamService), @event);
+        logger.LogInformation("{ClassName} {UbiquitiEventType} detected on {CameraId}, writing to comms stream",
+            nameof(UbiquitiSinkCommsStreamService), @event.UbiquitiEventType, @event.CameraName ?? @event.CameraId);
         await commsSink.WriteEvent(commsEvent, cancellationToken);
     }
 }

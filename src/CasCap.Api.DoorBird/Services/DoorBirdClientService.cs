@@ -60,7 +60,8 @@ public sealed class DoorBirdClientService : HttpClientBase
         try
         {
             var tpl = await base.GetAsync<SessionResponse, object>(requestUri).ConfigureAwait(false);
-            _logger.LogInformation("{ClassName} session '{SessionId}' invalidated", nameof(DoorBirdClientService), sessionId);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("{ClassName} session invalidated", nameof(DoorBirdClientService));
             return tpl.result;
         }
         catch (Exception ex)
@@ -259,7 +260,8 @@ public sealed class DoorBirdClientService : HttpClientBase
         try
         {
             var tpl = await base.GetAsync<RestartResponse, object>(requestUri);
-            _logger.LogWarning("{ClassName} device restart requested", nameof(DoorBirdClientService));
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("{ClassName} device restart requested", nameof(DoorBirdClientService));
             return tpl.result;
         }
         catch (Exception ex)
@@ -396,8 +398,9 @@ public sealed class DoorBirdClientService : HttpClientBase
         try
         {
             _ = await base.GetAsync<string, object>(requestUri);
-            _logger.LogInformation("{ClassName} notification subscribed: event={EventType}, url={Url}",
-                nameof(DoorBirdClientService), eventType, subscriberUrl);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("{ClassName} notification subscribed for EventType={EventType}",
+                    nameof(DoorBirdClientService), eventType);
             return true;
         }
         catch (Exception ex)
@@ -424,8 +427,9 @@ public sealed class DoorBirdClientService : HttpClientBase
         try
         {
             _ = await base.GetAsync<string, object>(requestUri);
-            _logger.LogInformation("{ClassName} notification unsubscribed: event={EventType}, url={Url}",
-                nameof(DoorBirdClientService), eventType, subscriberUrl);
+            if (_logger.IsEnabled(LogLevel.Information))
+                _logger.LogInformation("{ClassName} notification unsubscribed for EventType={EventType}",
+                    nameof(DoorBirdClientService), eventType);
             return true;
         }
         catch (Exception ex)
