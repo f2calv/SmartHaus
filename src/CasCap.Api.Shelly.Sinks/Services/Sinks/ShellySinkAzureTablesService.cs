@@ -112,7 +112,7 @@ public sealed partial class ShellySinkAzureTablesService : IEventSink<ShellyEven
     public async Task<IEnumerable<ShellyReadingEntity>> GetReadings(int limit = 100)
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
+        _logger.LogDebug("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
             nameof(ShellySinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<ShellyReadingEntity>(
             p => p.PartitionKey == partitionKey

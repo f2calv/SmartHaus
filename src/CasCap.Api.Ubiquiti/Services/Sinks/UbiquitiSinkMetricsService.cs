@@ -66,7 +66,7 @@ public sealed class UbiquitiSinkMetricsService : IEventSink<UbiquitiEvent>
             unit: metricAttr.Unit,
             description: metricAttr.Description);
 
-        _logger.LogInformation("{ClassName} registered gauge {MetricName} for {EventType}",
+        _logger.LogDebug("{ClassName} registered gauge {MetricName} for {EventType}",
             nameof(UbiquitiSinkMetricsService), metricName, eventType);
     }
 

@@ -105,7 +105,7 @@ public sealed partial class SicceSinkAzureTablesService : IEventSink<SicceEvent>
     public async Task<IEnumerable<SicceReadingEntity>> GetReadings(int limit = 100)
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
+        _logger.LogDebug("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
             nameof(SicceSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<SicceReadingEntity>(
             p => p.PartitionKey == partitionKey

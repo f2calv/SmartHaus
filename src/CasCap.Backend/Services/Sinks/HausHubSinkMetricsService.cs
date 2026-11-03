@@ -49,7 +49,7 @@ public sealed class HausHubSinkMetricsService : IEventSink<HubEvent>
             unit: "{events}",
             description: "Number of events received by the HausHub SignalR hub, per event type.");
 
-        _logger.LogInformation("{ClassName} registered counter {MetricName}",
+        _logger.LogDebug("{ClassName} registered counter {MetricName}",
             nameof(HausHubSinkMetricsService), $"{metricNamePrefix}.{MetricName}");
     }
 

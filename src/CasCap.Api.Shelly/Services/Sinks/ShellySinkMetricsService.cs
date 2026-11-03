@@ -52,7 +52,7 @@ public sealed class ShellySinkMetricsService : IEventSink<ShellyEvent>
                 unit: metricAttr.Unit,
                 description: metricAttr.Description);
 
-            _logger.LogInformation("{ClassName} registered gauge {MetricName} for {Property}",
+            _logger.LogDebug("{ClassName} registered gauge {MetricName} for {Property}",
                 nameof(ShellySinkMetricsService), metricName, propName);
         }
 
