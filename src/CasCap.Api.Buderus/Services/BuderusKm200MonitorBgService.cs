@@ -19,7 +19,7 @@ public sealed class BuderusKm200MonitorBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<BuderusEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<BuderusEvent>)} is configured!");
         logger.LogInformation("{ClassName} starting", nameof(BuderusKm200MonitorBgService));
         try
         {

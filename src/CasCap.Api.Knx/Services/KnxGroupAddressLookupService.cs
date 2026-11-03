@@ -166,12 +166,12 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
                     duplicates = true;
                 }
                 if (!dLookupByAddress.TryAdd(kga.GroupAddress, kga))
-                    throw new GenericException($"duplicate group address detected '{kga.GroupAddress}'");
+                    throw new InvalidDataException($"duplicate group address detected '{kga.GroupAddress}'");
                 if (!dLookupByName.TryAdd(kga.Name, kga))
-                    throw new GenericException($"duplicate group address name detected '{kga.Name}'");
+                    throw new InvalidDataException($"duplicate group address name detected '{kga.Name}'");
             }
             if (duplicates)
-                throw new GenericException("duplicate group address names detected!");
+                throw new InvalidDataException("duplicate group address names detected!");
             logger.LogInformation("{ClassName} {Count} filtered group addresses loaded in {ElapsedMilliseconds}ms",
                 nameof(KnxGroupAddressLookupService), dLookupByAddress.Count, sw.ElapsedMilliseconds);
         }

@@ -23,7 +23,7 @@ public static class HostApplicationBuilderExtensions
 
         //bind AppConfig for the first time
         var appConfig = builder.Configuration.GetSection(AppConfig.ConfigurationSectionName).Get<AppConfig>()
-            ?? throw new GenericException($"{nameof(AppConfig)} cannot be null!");
+            ?? throw new ConfigurationException($"{nameof(AppConfig)} cannot be null!");
         if (appConfig.IsKeyVaultEnabled)
         {
             builder.Configuration.AddKeyVaultConfiguration(
@@ -39,7 +39,7 @@ public static class HostApplicationBuilderExtensions
 
         //bind AppConfig for the second time as now we have additional configuration/secrets loaded from Key Vault
         appConfig = builder.Configuration.GetSection(AppConfig.ConfigurationSectionName).Get<AppConfig>()
-            ?? throw new GenericException($"{nameof(AppConfig)} cannot be null!");
+            ?? throw new ConfigurationException($"{nameof(AppConfig)} cannot be null!");
         builder.Services.AddSingleton<IKubeAppConfig>(appConfig);
         builder.Services.AddSingleton<IAzureAuthConfig>(appConfig);
         var applicationMetadata = new ApplicationMetadata(assembly);

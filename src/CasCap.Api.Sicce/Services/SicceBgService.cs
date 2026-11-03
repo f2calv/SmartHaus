@@ -17,7 +17,7 @@ public sealed class SicceBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<SicceEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<SicceEvent>)} is configured!");
         logger.LogInformation("{ClassName} starting", nameof(SicceBgService));
         try
         {

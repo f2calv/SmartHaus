@@ -17,7 +17,7 @@ public sealed class ShellyMonitorBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<ShellyEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<ShellyEvent>)} is configured!");
         logger.LogInformation("{ClassName} starting, {DeviceCount} device(s) configured",
             nameof(ShellyMonitorBgService), shellyConfig.Value.Devices.Length);
         try

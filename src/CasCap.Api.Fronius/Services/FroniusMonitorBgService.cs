@@ -16,7 +16,7 @@ public sealed partial class FroniusMonitorBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<FroniusEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<FroniusEvent>)} is configured!");
         logger.LogInformation("{ClassName} starting", nameof(FroniusMonitorBgService));
         try
         {

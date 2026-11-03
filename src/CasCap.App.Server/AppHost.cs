@@ -29,7 +29,7 @@ public static partial class AppHost
 
             // Infrastructure
             var connectionMultiplexer = builder.Services.AddCasCapCaching(builder.Configuration)
-                ?? throw new GenericException($"Failed to create {nameof(IConnectionMultiplexer)}");
+                ?? throw new ConfigurationException($"Failed to create {nameof(IConnectionMultiplexer)}");
 
             // Observability
             builder.InitializeOpenTelemetry(
@@ -42,7 +42,7 @@ public static partial class AppHost
 
             // Feature validation and startup diagnostics
             if (enabledFeatures.Count == 0)
-                throw new GenericException(
+                throw new ConfigurationException(
                     $"{nameof(enabledFeatures)} is not set via Configuration (i.e. appsettings.json or ENV variable)");
             if (logger.IsEnabled(LogLevel.Information))
             {

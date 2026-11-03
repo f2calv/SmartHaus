@@ -19,7 +19,7 @@ public sealed partial class KnxProcessorBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<KnxEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<KnxEvent>)} is configured!");
 
         //wait for the KNX bus connection to be active (which implies group addresses are loaded)
         while (!knxConnectionHealthCheck.ConnectionActive && !cancellationToken.IsCancellationRequested)
