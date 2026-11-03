@@ -344,7 +344,7 @@ identifiers.
 | --- | --- | --- |
 | `CasCap:SignalRHubConfig:HubPath` | `"/hubs/haus"` | Authorized hub route |
 | `CasCap:SignalRHubConfig:Sinks:AvailableSinks` | Console and Metrics enabled | Hub-side event sinks |
-| `CasCap:SignalRHubConfig:ConsoleLogIntervalMs` | `30000` | Console count interval |
+| `CasCap:SignalRHubConfig:ConsoleLogIntervalMs` | `300000` | Console count summary interval |
 | `CasCap:SignalRHubConfig:MetricsBatchSize` | `10` | Events accumulated before metric flush |
 | `CasCap:SignalRHubConfig:MetricsFlushIntervalMs` | `60000` | Periodic metric flush interval |
 

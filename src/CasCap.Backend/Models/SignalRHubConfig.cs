@@ -40,11 +40,11 @@ public sealed record SignalRHubConfig : IAppConfig
     /// Logging interval in milliseconds for the console sink periodic event count output.
     /// </summary>
     /// <remarks>
-    /// Defaults to <c>30000</c> ms (30 seconds).
+    /// Defaults to <c>300000</c> ms (5 minutes), so an active hub writes one summary every few minutes rather than scaling with time.
     /// Used by <see cref="CasCap.Services.HausHubSinkConsoleService"/>.
     /// </remarks>
     [Range(1, int.MaxValue)]
-    public int ConsoleLogIntervalMs { get; init; } = 30_000;
+    public int ConsoleLogIntervalMs { get; init; } = 300_000;
 
     /// <summary>
     /// Number of events to accumulate in the metrics sink before flushing to the OpenTelemetry counter.
