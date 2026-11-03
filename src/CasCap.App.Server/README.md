@@ -110,6 +110,8 @@ Each feature library registers its own device connectivity health check when the
 ### Observability
 
 - **Serilog** structured logging with Grafana Loki sink, console, file, and OpenTelemetry sinks. Enriched with assembly name, span, process, thread, environment, and exception details.
+- **Request logging**: `UseCasCapRequestLogging` is the first middleware, so each request writes one summary with its route template, status and elapsed time; successful health probes and static files are suppressed. Code defaults hold the framework level overrides, so `appsettings.json` restates only deliberate deviations and `appsettings.Development.json` lowers the `CasCap` namespaces to `Debug`.
+- **Background workers** log start, stop, state transitions and recovery at `Information`. A failing device or dependency writes one `Warning` when it starts failing, repeats at `Debug`, and one `Information` with the failure count when it recovers.
 - **OpenTelemetry** metrics (OTLP + Prometheus), traces (OTLP), and logs (OTLP). Instruments ASP.NET Core, gRPC client, HTTP client, Redis, process, and runtime.
 - **Swagger UI** at `/{AppConfig.SwaggerUriRoutePrefix}` (default `/swagger`). Requires Basic auth in production.
 - **MCP server** at `{AppConfig.McpUrl}` (default `/mcp`). Each enabled feature registers its `[McpServerTool]`-decorated query service methods.
