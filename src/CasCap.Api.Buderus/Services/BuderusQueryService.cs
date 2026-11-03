@@ -56,7 +56,6 @@ public sealed class BuderusQueryService(ILogger<BuderusQueryService> logger, Bud
         if (string.IsNullOrWhiteSpace(datapointId))
             return new BuderusDataPointWriteResult { Error = "Datapoint id must not be empty." };
         var normalizedId = datapointId.StartsWith('/') ? datapointId : $"/{datapointId}";
-        logger.LogInformation("{ClassName} writing requested datapoint", nameof(BuderusQueryService));
         return await km200ClientSvc.SetDataPoint(normalizedId, value, cancellationToken).ConfigureAwait(false)
             ? new BuderusDataPointWriteResult()
             : new BuderusDataPointWriteResult

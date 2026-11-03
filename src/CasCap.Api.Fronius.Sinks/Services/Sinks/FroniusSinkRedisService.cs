@@ -26,7 +26,7 @@ public sealed partial class FroniusSinkRedisService(
         LogWriteEvent(logger, nameof(FroniusSinkRedisService));
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            LogSettingNotSet(logger, nameof(FroniusSinkRedisService), SinkSettingKeys.SnapshotValues);
+            ReportSettingNotSet(SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -104,6 +104,14 @@ public sealed partial class FroniusSinkRedisService(
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing Fronius event to Redis")]
     private static partial void LogWriteEvent(ILogger logger, string className);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _reportedMissingSettings = new();
+
+    private void ReportSettingNotSet(string settingName)
+    {
+        if (_reportedMissingSettings.TryAdd(settingName, 0))
+            LogSettingNotSet(logger, nameof(FroniusSinkRedisService), settingName);
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
     private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);

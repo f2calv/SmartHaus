@@ -29,7 +29,7 @@ public sealed partial class DoorBirdSinkRedisService(
         LogWriteEvent(logger, nameof(DoorBirdSinkRedisService), @event.DoorBirdEventType.ToString());
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SnapshotValues);
+            ReportSettingNotSet(SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -59,7 +59,7 @@ public sealed partial class DoorBirdSinkRedisService(
             await remoteCache.Db.KeyExpireAsync(lineItemKey, TimeSpan.FromDays(doorBirdConfig.Value.RedisSeriesExpiryDays), flags: CommandFlags.FireAndForget);
         }
         else
-            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), SinkSettingKeys.SeriesValues);
+            ReportSettingNotSet(SinkSettingKeys.SeriesValues);
     }
 
     /// <summary>
@@ -133,6 +133,14 @@ public sealed partial class DoorBirdSinkRedisService(
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing {EventType} event to Redis")]
     private static partial void LogWriteEvent(ILogger logger, string className, string eventType);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _reportedMissingSettings = new();
+
+    private void ReportSettingNotSet(string settingName)
+    {
+        if (_reportedMissingSettings.TryAdd(settingName, 0))
+            LogSettingNotSet(logger, nameof(DoorBirdSinkRedisService), settingName);
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
     private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);

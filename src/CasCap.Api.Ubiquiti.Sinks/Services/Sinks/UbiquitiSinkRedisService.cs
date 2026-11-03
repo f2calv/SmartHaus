@@ -28,7 +28,7 @@ public sealed partial class UbiquitiSinkRedisService(
         LogWriteEvent(logger, nameof(UbiquitiSinkRedisService), @event.CameraId ?? "unknown");
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(UbiquitiSinkRedisService), SinkSettingKeys.SnapshotValues);
+            ReportSettingNotSet(SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -60,7 +60,7 @@ public sealed partial class UbiquitiSinkRedisService(
             await remoteCache.Db.KeyExpireAsync(lineItemKey, TimeSpan.FromDays(ubiquitiConfig.Value.RedisSeriesExpiryDays), flags: CommandFlags.FireAndForget);
         }
         else
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(UbiquitiSinkRedisService), SinkSettingKeys.SeriesValues);
+            ReportSettingNotSet(SinkSettingKeys.SeriesValues);
     }
 
     /// <summary>
@@ -138,4 +138,15 @@ public sealed partial class UbiquitiSinkRedisService(
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for camera {CameraId}")]
     private static partial void LogWriteEvent(ILogger logger, string className, string cameraId);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _reportedMissingSettings = new();
+
+    private void ReportSettingNotSet(string settingName)
+    {
+        if (_reportedMissingSettings.TryAdd(settingName, 0))
+            LogSettingNotSet(logger, nameof(UbiquitiSinkRedisService), settingName);
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

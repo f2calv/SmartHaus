@@ -22,7 +22,7 @@ public sealed class GpioDs18B20SensorService(ILogger<GpioDs18B20SensorService> l
             foreach (var dev in OneWireThermometerDevice.EnumerateDevices())
             {
                 var temp = await dev.ReadTemperatureAsync();
-                logger.LogInformation("{ClassName} temperature reported by device {DeviceId}: {Temp:F2}",
+                logger.LogDebug("{ClassName} temperature reported by device {DeviceId}: {Temp:F2}",
                     nameof(GpioDs18B20SensorService), dev.DeviceId, temp.DegreesCelsius);
             }
         }
@@ -32,19 +32,19 @@ public sealed class GpioDs18B20SensorService(ILogger<GpioDs18B20SensorService> l
             foreach (var busId in OneWireBus.EnumerateBusIds())
             {
                 OneWireBus bus = new(busId);
-                logger.LogInformation("{ClassName} found bus '{BusId}', scanning for devices ...",
+                logger.LogDebug("{ClassName} found bus '{BusId}', scanning for devices ...",
                     nameof(GpioDs18B20SensorService), bus.BusId);
                 await bus.ScanForDeviceChangesAsync();
                 foreach (string devId in bus.EnumerateDeviceIds())
                 {
                     OneWireDevice dev = new(busId, devId);
-                    logger.LogInformation("{ClassName} found family '{Family}' device '{DeviceId}' on '{BusId}'",
+                    logger.LogDebug("{ClassName} found family '{Family}' device '{DeviceId}' on '{BusId}'",
                         nameof(GpioDs18B20SensorService), dev.Family, dev.DeviceId, bus.BusId);
                     if (OneWireThermometerDevice.IsCompatible(busId, devId))
                     {
                         OneWireThermometerDevice devTemp = new(busId, devId);
                         var temp = await devTemp.ReadTemperatureAsync();
-                        logger.LogInformation("{ClassName} temperature reported by device: {Temp:F2}",
+                        logger.LogDebug("{ClassName} temperature reported by device: {Temp:F2}",
                             nameof(GpioDs18B20SensorService), temp.DegreesCelsius);
                     }
                 }

@@ -27,7 +27,7 @@ public sealed partial class ShellySinkRedisService(
         LogWriteEvent(logger, nameof(ShellySinkRedisService), @event.DeviceId);
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            LogSettingNotSet(logger, nameof(ShellySinkRedisService), SinkSettingKeys.SnapshotValues);
+            ReportSettingNotSet(SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -117,6 +117,14 @@ public sealed partial class ShellySinkRedisService(
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing event for device {DeviceId} to Redis")]
     private static partial void LogWriteEvent(ILogger logger, string className, string deviceId);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _reportedMissingSettings = new();
+
+    private void ReportSettingNotSet(string settingName)
+    {
+        if (_reportedMissingSettings.TryAdd(settingName, 0))
+            LogSettingNotSet(logger, nameof(ShellySinkRedisService), settingName);
+    }
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
     private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);

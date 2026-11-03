@@ -25,6 +25,7 @@ public sealed class WizDiscoveryBgService(
         foreach (var eventSink in eventSinks)
             await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
 
+        var consecutiveFailures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -32,6 +33,13 @@ public sealed class WizDiscoveryBgService(
                 var bulbs = await wizClientSvc.DiscoverBulbsAsync(cancellationToken).ConfigureAwait(false);
                 logger.LogDebug("{ClassName} discovery cycle complete, {BulbCount} bulb(s) on network",
                     nameof(WizDiscoveryBgService), bulbs.Count);
+                if (consecutiveFailures > 0)
+                {
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("{ClassName} discovery recovered ConsecutiveFailures={ConsecutiveFailures}",
+                            nameof(WizDiscoveryBgService), consecutiveFailures);
+                    consecutiveFailures = 0;
+                }
 
                 foreach (var bulb in bulbs.Values)
                 {
@@ -77,7 +85,9 @@ public sealed class WizDiscoveryBgService(
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                logger.LogError(ex, "{ClassName} discovery cycle failed", nameof(WizDiscoveryBgService));
+                logger.Log(consecutiveFailures++ == 0 ? LogLevel.Warning : LogLevel.Debug, ex,
+                    "{ClassName} discovery cycle failed ConsecutiveFailures={ConsecutiveFailures}",
+                    nameof(WizDiscoveryBgService), consecutiveFailures);
             }
 
             await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken).ConfigureAwait(false);

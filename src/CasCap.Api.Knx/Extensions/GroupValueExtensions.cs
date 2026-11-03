@@ -9,6 +9,12 @@ namespace CasCap.Extensions;
 /// </summary>
 public static class GroupValueExtensions
 {
+    private static readonly ConcurrentDictionary<string, byte> s_reportedDecodingIssues = new();
+
+    /// <summary>Returns <paramref name="firstLevel"/> the first time a per-telegram issue is seen and Debug for repeats.</summary>
+    private static LogLevel FirstThenDebug(string key, LogLevel firstLevel)
+        => s_reportedDecodingIssues.TryAdd(key, 0) ? firstLevel : LogLevel.Debug;
+
     /// <summary>
     /// Convert the encoded <see cref="GroupValue"/> into a usable/friendly value
     /// using both the Falcon and Tiveria datapoint libraries.
@@ -35,7 +41,8 @@ public static class GroupValueExtensions
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{ClassName} raw value decoding failed for {GroupAddress}", nameof(GroupValueExtensions), kga.Name);
+            logger.Log(FirstThenDebug($"decode:{kga.Name}", LogLevel.Error), ex,
+                "{ClassName} raw value decoding failed for {GroupAddress}", nameof(GroupValueExtensions), kga.Name);
             return (null, null);
         }
         if (valueDecodedF is null)
@@ -80,7 +87,7 @@ public static class GroupValueExtensions
             }
             else
             {
-                logger.LogError("{ClassName} {DatapointTypesList} does not contain DPT id {DptId}",
+                logger.Log(FirstThenDebug($"dpt:{dptId}", LogLevel.Warning), "{ClassName} {DatapointTypesList} does not contain DPT id {DptId}",
                     nameof(GroupValueExtensions), nameof(DatapointTypesList), dptId);
                 return (valueDecodedF, null);
             }
@@ -96,7 +103,8 @@ public static class GroupValueExtensions
         }
         catch (Exception ex)
         {
-            logger.LogError(ex, "{ClassName} {GroupAddress}, DPTs={DPTs}", nameof(GroupValueExtensions), kga.GroupAddress, kga.DPTs);
+            logger.Log(FirstThenDebug($"tiveria:{kga.GroupAddress}", LogLevel.Warning), ex,
+                "{ClassName} {GroupAddress}, DPTs={DPTs}", nameof(GroupValueExtensions), kga.GroupAddress, kga.DPTs);
         }
         if (valueDecodedT is null)
             return (valueDecodedF, null);
@@ -130,7 +138,7 @@ public static class GroupValueExtensions
             }
             else
             {
-                logger.LogError("{ClassName} {GroupAddress}, '{DPTs}' decoded value '{ValueDecodedF}' does not match Tiveria library decoded value '{ValueDecodedT}' ('{ValueLabelDecodedT}')",
+                logger.Log(FirstThenDebug($"mismatch:{kga.GroupAddress}", LogLevel.Warning), "{ClassName} {GroupAddress}, '{DPTs}' decoded value '{ValueDecodedF}' does not match Tiveria library decoded value '{ValueDecodedT}' ('{ValueLabelDecodedT}')",
                     nameof(GroupValueExtensions), kga.GroupAddress, kga.DPTs, valueDecodedF, valueDecodedT, valueLabelDecodedT);
                 return (valueDecodedF, null);
             }

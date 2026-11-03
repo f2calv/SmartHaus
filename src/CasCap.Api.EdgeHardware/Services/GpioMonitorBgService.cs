@@ -26,7 +26,7 @@ public sealed class GpioMonitorBgService(ILogger<GpioMonitorBgService> logger,
         }
         else
         {
-            logger.LogWarning("{ClassName} this node {NodeName} has no GPIO, idling",
+            logger.LogDebug("{ClassName} this node {NodeName} has no GPIO, idling",
                 nameof(GpioMonitorBgService), kubeAppConfig.NodeName);
             try
             {

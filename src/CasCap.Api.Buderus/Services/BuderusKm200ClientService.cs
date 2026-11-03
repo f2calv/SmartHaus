@@ -94,12 +94,18 @@ public sealed class BuderusKm200ClientService : HttpClientBase
         var requestUri = BuildRequestUri(requestUriOrId);
         var tpl = await GetAsync<string, string>(requestUri.ToString(), cancellationToken: cancellationToken).ConfigureAwait(false);
         if (tpl.result is null || tpl.result.IndexOf("Sorry, the requested file does not exist on this server.") > -1)
-            _logger.LogWarning("url '{RequestUri}' not found", requestUri);
+        {
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("{ClassName} datapoint '{DatapointId}' not found", nameof(BuderusKm200ClientService), requestUriOrId);
+        }
         else
         {
             var json = _buderusKm200Reader.Decrypt(tpl.result);
             if (string.IsNullOrWhiteSpace(json))
-                _logger.LogWarning("no data returned for url '{RequestUri}'", requestUri);
+            {
+                if (_logger.IsEnabled(LogLevel.Debug))
+                    _logger.LogDebug("{ClassName} no data returned for datapoint '{DatapointId}'", nameof(BuderusKm200ClientService), requestUriOrId);
+            }
             else
                 return json.FromJson<Km200DatapointObject>()!;
         }
@@ -140,7 +146,8 @@ public sealed class BuderusKm200ClientService : HttpClientBase
         request.Content = new ByteArrayContent(encrypted);
         request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
-        _logger.LogInformation("{ClassName} writing to '{DatapointId}' value={Value}", nameof(BuderusKm200ClientService), datapointId, value);
+        if (_logger.IsEnabled(LogLevel.Debug))
+            _logger.LogDebug("{ClassName} writing to '{DatapointId}' value={Value}", nameof(BuderusKm200ClientService), datapointId, value);
 
         using var response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
@@ -150,7 +157,8 @@ public sealed class BuderusKm200ClientService : HttpClientBase
             return false;
         }
 
-        _logger.LogInformation("{ClassName} successfully wrote to '{DatapointId}'", nameof(BuderusKm200ClientService), datapointId);
+        if (_logger.IsEnabled(LogLevel.Information))
+            _logger.LogInformation("{ClassName} wrote {Value} to '{DatapointId}'", nameof(BuderusKm200ClientService), value, datapointId);
         return true;
     }
 

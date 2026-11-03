@@ -28,14 +28,15 @@ public sealed class DDnsFindMyIpClientService : HttpClientBase
             if (tpl.result is not null && tpl.result.Ip is not null)
             {
                 if (IPAddress.TryParse(tpl.result.Ip, out res))
-                    _logger.LogDebug("{ClassName} current IP address is {Ip}", nameof(DDnsFindMyIpClientService), res);
+                    _logger.LogDebug("{ClassName} current IP address resolved", nameof(DDnsFindMyIpClientService));
                 else
-                    _logger.LogWarning("{ClassName} unable to determine current IP address", nameof(DDnsFindMyIpClientService));
+                    _logger.LogDebug("{ClassName} unable to parse current IP address", nameof(DDnsFindMyIpClientService));
             }
         }
         catch (Exception ex) when (ex is not OperationCanceledException || !cancellationToken.IsCancellationRequested)
         {
-            _logger.LogWarning(ex, "{ClassName} something is broken..", nameof(DDnsFindMyIpClientService));
+            // The caller reports the failure transition; keep the exception detail at Debug.
+            _logger.LogDebug(ex, "{ClassName} IP address lookup failed", nameof(DDnsFindMyIpClientService));
         }
         return res;
     }

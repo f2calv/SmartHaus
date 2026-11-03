@@ -46,15 +46,13 @@ public sealed class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> log
 
     private async Task ReadFromSensor(CancellationToken cancellationToken)
     {
-        logger.LogInformation("{ClassName} PIN {PinNumber} on {NodeName} trying to open...",
+        logger.LogDebug("{ClassName} PIN {PinNumber} on {NodeName} trying to open...",
             nameof(GpioYfS201SensorService), PinNumber, kubeAppConfig.NodeName);
         _controller.OpenPin(PinNumber, PinMode.InputPullUp);//is this the right PinMode?
-        logger.LogInformation("{ClassName} PIN {PinNumber} on {NodeName} opened!",
-            nameof(GpioYfS201SensorService), PinNumber, kubeAppConfig.NodeName);
 
         var pinValue = _controller.Read(PinNumber);
-        logger.LogInformation("{ClassName} pin {PinNumber} initial status {Status} on {NodeName}",
-            nameof(GpioYfS201SensorService), PinNumber, pinValue == PinValue.High ? "Rising" : "Falling", kubeAppConfig.NodeName);
+        logger.LogInformation("{ClassName} pin {PinNumber} opened on {NodeName} with initial status {Status}",
+            nameof(GpioYfS201SensorService), PinNumber, kubeAppConfig.NodeName, pinValue == PinValue.High ? "Rising" : "Falling");
 
         _controller.RegisterCallbackForPinValueChangedEvent(
             PinNumber,
@@ -80,7 +78,7 @@ public sealed class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> log
             var VolumeFlowLitersPerMinute = VolumeFlowLitersPerSecond * 60;
             var VolumeFlowLitersPerHour = VolumeFlowLitersPerMinute * 60;
             totalLitres += VolumeFlowLitersPerSecond * samplingPeriodInSeconds;
-            logger.LogInformation("{ClassName} flow rate {PerSecond:0.0} litres/second / {PerMinute:0.0} litres/minute / {PerHour:0.0} litres/hour (pulseCount={PulseCount}, pulseCountTotal={PulseCountTotal:N2}, avgPulsesPerSecond={AvgPulsesPerSecond}, totalLitres={TotalLitres:0.0})",
+            logger.LogDebug("{ClassName} flow rate {PerSecond:0.0} litres/second / {PerMinute:0.0} litres/minute / {PerHour:0.0} litres/hour (pulseCount={PulseCount}, pulseCountTotal={PulseCountTotal:N2}, avgPulsesPerSecond={AvgPulsesPerSecond}, totalLitres={TotalLitres:0.0})",
                 nameof(GpioYfS201SensorService), VolumeFlowLitersPerSecond, VolumeFlowLitersPerMinute, VolumeFlowLitersPerHour, pulseCount, pulseCountTotal, avgPulsesPerSecond, totalLitres);
         }
     }

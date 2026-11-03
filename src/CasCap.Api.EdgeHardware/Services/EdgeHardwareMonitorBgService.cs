@@ -39,19 +39,11 @@ public sealed partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMon
         foreach (var sink in eventSinks)
             await sink.InitializeAsync(cancellationToken);
 
-        try
+        while (!cancellationToken.IsCancellationRequested)
         {
-            while (!cancellationToken.IsCancellationRequested)
-            {
-                var edgeEvent = CollectMetrics();
-                await DispatchToSinks(edgeEvent, cancellationToken);
-                await Task.Delay(edgeHardwareConfig.Value.PollIntervalMs, cancellationToken);
-            }
-        }
-        catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
-        {
-            logger.LogCritical(ex, "{ClassName} fatal error", nameof(EdgeHardwareMonitorBgService));
-            throw;
+            var edgeEvent = CollectMetrics();
+            await DispatchToSinks(edgeEvent, cancellationToken);
+            await Task.Delay(edgeHardwareConfig.Value.PollIntervalMs, cancellationToken);
         }
 
         logger.LogInformation("{ClassName} exiting", nameof(EdgeHardwareMonitorBgService));
@@ -98,8 +90,10 @@ public sealed partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMon
             {
                 if (!_nvidiaSmiFailureLogged)
                 {
-                    logger.LogWarning("{ClassName} nvidia-smi failed (exitCode={ExitCode}, stderr={StdErr})",
-                        nameof(EdgeHardwareMonitorBgService), exitCode, stderr);
+                    // Most nodes have no GPU, so unavailability is a state, not a fault.
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("{ClassName} GPU metrics unavailable, nvidia-smi ExitCode={ExitCode} StdErr={StdErr}",
+                            nameof(EdgeHardwareMonitorBgService), exitCode, stderr);
                     _nvidiaSmiFailureLogged = true;
                 }
                 else
@@ -110,9 +104,18 @@ public sealed partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMon
             var snapshot = EdgeHardwareSnapshot.ParseGpuCsv(csv, timeProvider.GetUtcNow());
             if (snapshot is null)
             {
-                logger.LogWarning("{ClassName} failed to parse nvidia-smi output {Output}",
+                logger.Log(_nvidiaSmiFailureLogged ? LogLevel.Debug : LogLevel.Warning,
+                    "{ClassName} failed to parse nvidia-smi output {Output}",
                     nameof(EdgeHardwareMonitorBgService), csv);
+                _nvidiaSmiFailureLogged = true;
                 return null;
+            }
+
+            if (_nvidiaSmiFailureLogged)
+            {
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("{ClassName} GPU metrics available", nameof(EdgeHardwareMonitorBgService));
+                _nvidiaSmiFailureLogged = false;
             }
 
             LogDatapointRecorded(logger, nameof(EdgeHardwareMonitorBgService));
@@ -121,7 +124,9 @@ public sealed partial class EdgeHardwareMonitorBgService(ILogger<EdgeHardwareMon
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to read GPU metrics", nameof(EdgeHardwareMonitorBgService));
+            logger.Log(_nvidiaSmiFailureLogged ? LogLevel.Debug : LogLevel.Warning, ex,
+                "{ClassName} failed to read GPU metrics", nameof(EdgeHardwareMonitorBgService));
+            _nvidiaSmiFailureLogged = true;
             return null;
         }
     }

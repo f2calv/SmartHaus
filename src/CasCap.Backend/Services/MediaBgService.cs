@@ -77,6 +77,7 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
             nameof(MediaBgService), mediaConfig.Value.StreamKey,
             mediaConfig.Value.ConsumerGroup, mediaConfig.Value.ConsumerName);
 
+        var readFailures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
@@ -87,6 +88,13 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                     mediaConfig.Value.ConsumerName,
                     mediaConfig.Value.StreamReadPosition,
                     count: mediaConfig.Value.StreamReadCount);
+                if (readFailures > 0)
+                {
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("{ClassName} stream read recovered ConsecutiveFailures={ConsecutiveFailures}",
+                            nameof(MediaBgService), readFailures);
+                    readFailures = 0;
+                }
 
                 if (entries.Length > 0)
                 {
@@ -110,7 +118,9 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
             }
             catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException)
             {
-                logger.LogError(ex, "{ClassName} error during stream read cycle", nameof(MediaBgService));
+                logger.Log(readFailures++ == 0 ? LogLevel.Error : LogLevel.Debug, ex,
+                    "{ClassName} error during stream read cycle ConsecutiveFailures={ConsecutiveFailures}",
+                    nameof(MediaBgService), readFailures);
                 await Task.Delay(TimeSpan.FromMilliseconds(mediaConfig.Value.PollingIntervalMs), cancellationToken);
             }
         }
@@ -118,7 +128,7 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
 
     private async Task ProcessMediaEventAsync(MediaEvent mediaEvent, CancellationToken cancellationToken)
     {
-        logger.LogInformation("{ClassName} processing {MediaType} event from {Source} ({EventType})",
+        logger.LogDebug("{ClassName} processing {MediaType} event from {Source} ({EventType})",
             nameof(MediaBgService), mediaEvent.MediaType, mediaEvent.Source, mediaEvent.EventType);
 
         if (!mediaConfig.Value.SourceAgentMap.TryGetValue(mediaEvent.Source, out var agentKey))
@@ -137,7 +147,7 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
             return;
         }
 
-        logger.LogInformation("{ClassName} running {AgentKey} on {Size} byte {MediaType} from {Source}",
+        logger.LogDebug("{ClassName} running {AgentKey} on {Size} byte {MediaType} from {Source}",
             nameof(MediaBgService), agentKey, mediaBytes.Length, mediaEvent.MediaType, mediaEvent.Source);
 
         try
@@ -155,8 +165,9 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                 return;
             }
 
-            logger.LogInformation("{ClassName} {AgentKey} completed in {Duration}",
-                nameof(MediaBgService), agentKey, TimeSpan.FromMilliseconds(result.ElapsedMilliseconds));
+            logger.LogInformation("{ClassName} {AgentKey} completed {MediaType} from {Source} ({EventType}) in {Duration}",
+                nameof(MediaBgService), agentKey, mediaEvent.MediaType, mediaEvent.Source, mediaEvent.EventType,
+                TimeSpan.FromMilliseconds(result.ElapsedMilliseconds));
 
             // Post findings back to the comms stream.
             if (!string.IsNullOrWhiteSpace(result.OutputText))
