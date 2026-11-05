@@ -103,8 +103,8 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
         if (dLookupByAddress.TryGetValue(GroupAddress, out var kga))
             return kga;
         if (_reportedMissingKeys.TryAdd(GroupAddress, 0))
-            logger.LogWarning("{ClassName} group address '{GroupAddress}' not found in lookup, export a fresh XML file!? (Called from '{Caller}')",
-                nameof(KnxGroupAddressLookupService), GroupAddress, caller);
+            logger.LogWarning("{ClassName} group address not found by address, export a fresh XML file",
+                nameof(KnxGroupAddressLookupService));
         return null;
     }
 
@@ -119,9 +119,8 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
         if (dLookupByName.TryGetValue(GroupAddressName, out var kga))
             return kga;
         if (_reportedMissingKeys.TryAdd(GroupAddressName, 0))
-            logger.LogWarning("{ClassName} group address '{GroupAddressName}' not found! Export a fresh XML file!? (Called from '{Caller}')",
-                nameof(KnxGroupAddressLookupService), GroupAddressName, caller);
-        //throw new GenericException($"group address name '{GroupAddressName}' not found in lookup!");
+            logger.LogWarning("{ClassName} group address not found by name, export a fresh XML file",
+                nameof(KnxGroupAddressLookupService));
         return null;
     }
 

@@ -230,9 +230,7 @@ public sealed partial class KnxMonitorService(
             {
                 attempt++;
                 await Task.Delay(TimeSpan.FromMilliseconds(backoffMs), timeProvider, cancellationToken).ConfigureAwait(false);
-                connected = config.Value.ServiceFamily == ServiceFamily.Routing
-                    ? await ReconnectRoutingAsync(areaLine, cancellationToken).ConfigureAwait(false)
-                    : await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
+                connected = await ReconnectAsync(areaLine, cancellationToken).ConfigureAwait(false);
                 if (!connected)
                 {
                     LogReconnectionFailed(logger, attempt == 1 ? LogLevel.Warning : LogLevel.Debug, nameof(KnxMonitorService), areaLine, attempt, backoffMs);
@@ -253,6 +251,11 @@ public sealed partial class KnxMonitorService(
             }
         }
     }
+
+    private Task<bool> ReconnectAsync(KnxAreaLine areaLine, CancellationToken cancellationToken) =>
+        config.Value.ServiceFamily == ServiceFamily.Routing
+            ? ReconnectRoutingAsync(areaLine, cancellationToken)
+            : ConnectLine(areaLine, cancellationToken);
 
     /// <summary>
     /// Attempts to connect to a single area/line using the stored discovery parameters.

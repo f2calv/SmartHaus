@@ -39,7 +39,7 @@ public sealed partial class FroniusMonitorBgService(
             {
                 if (attempt > 1)
                     LogConnectionRecovered(logger, nameof(FroniusMonitorBgService), attempt);
-                await RecordDataPoints().ConfigureAwait(false);
+                consecutiveFailures = await RecordDataPointsAsync(consecutiveFailures, cancellationToken).ConfigureAwait(false);
                 await Task.Delay(froniusConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
@@ -53,29 +53,31 @@ public sealed partial class FroniusMonitorBgService(
             }
         }
 
-        async Task RecordDataPoints()
-        {
-            var response = await froniusClientSvc.GetPowerFlowRealtimeData().ConfigureAwait(false);
-            if (response is not null)
-            {
-                var froniusEvent = new FroniusEvent(response);
-                LogDatapointRecorded(logger, nameof(FroniusMonitorBgService));
-                if (consecutiveFailures > 0)
-                {
-                    LogReadingsRecovered(logger, nameof(FroniusMonitorBgService), consecutiveFailures);
-                    consecutiveFailures = 0;
-                }
+    }
 
-                var tasks = new List<Task>(eventSinks.Count());
-                foreach (var eventSink in eventSinks)
-                    tasks.Add(eventSink.WriteEvent(froniusEvent, cancellationToken));
-                await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
+    private async Task<int> RecordDataPointsAsync(int consecutiveFailures, CancellationToken cancellationToken)
+    {
+        var response = await froniusClientSvc.GetPowerFlowRealtimeData().ConfigureAwait(false);
+        if (response is not null)
+        {
+            var froniusEvent = new FroniusEvent(response);
+            LogDatapointRecorded(logger, nameof(FroniusMonitorBgService));
+            if (consecutiveFailures > 0)
+            {
+                LogReadingsRecovered(logger, nameof(FroniusMonitorBgService), consecutiveFailures);
+                consecutiveFailures = 0;
             }
-            else if (consecutiveFailures++ == 0)
-                LogReadingsFailing(logger, nameof(FroniusMonitorBgService));
-            else
-                LogReadingsStillFailing(logger, nameof(FroniusMonitorBgService), consecutiveFailures);
+
+            var tasks = new List<Task>(eventSinks.Count());
+            foreach (var eventSink in eventSinks)
+                tasks.Add(eventSink.WriteEvent(froniusEvent, cancellationToken));
+            await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
         }
+        else if (consecutiveFailures++ == 0)
+            LogReadingsFailing(logger, nameof(FroniusMonitorBgService));
+        else
+            LogReadingsStillFailing(logger, nameof(FroniusMonitorBgService), consecutiveFailures);
+        return consecutiveFailures;
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} readiness probe healthy after {Attempt} attempt(s)")]

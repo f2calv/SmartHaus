@@ -42,6 +42,9 @@ belong to the multi-tenant Agent Runtime maintained by
 | `CasCap.Comms` | Shared communications stream and Signal gateway pipeline, including voice transcription and spoken replies |
 | `CasCap.Comms.AI` | Agent Runtime responder, session commands, delegation diagnostics, and poll-tool adaptation for the communications pipeline |
 
+The camera-to-communications sink logs event types and numeric diagnostics, not camera identifiers
+or names. Its domain events and notification messages retain the camera context for their recipients.
+
 Names such as `CommsAgent` and `SecurityAgent` are references to active remote definitions. Public
 examples under [docs/agent-examples](../../docs/agent-examples/README.md) illustrate expected
 behaviour but are not runtime authority.

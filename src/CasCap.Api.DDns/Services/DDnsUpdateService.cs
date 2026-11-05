@@ -110,9 +110,7 @@ public sealed partial class DDnsUpdateService(
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 _ = await aRecords.CreateOrUpdateAsync(WaitUntil.Completed, data.Name, data, cancellationToken: cancellationToken);
-                if (logger.IsEnabled(LogLevel.Information))
-                    logger.LogInformation("{ClassName} DNS A Record {ARecordName} updated to the current public IP address",
-                        nameof(DDnsBgService), data.Name);
+                LogDnsRecordUpdated();
                 updatedRecords.Add(data.Name);
             }
         }
@@ -133,6 +131,12 @@ public sealed partial class DDnsUpdateService(
         //now we have completed all A records update the static
         oldIp = priorIp;
         return true;
+    }
+
+    private void LogDnsRecordUpdated()
+    {
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} DNS A record updated to the current public IP address", nameof(DDnsBgService));
     }
 
     private async Task SetSubscriptionAsync(CancellationToken cancellationToken)

@@ -42,46 +42,7 @@ public sealed class WizDiscoveryBgService(
                 }
 
                 foreach (var bulb in bulbs.Values)
-                {
-                    var pilot = bulb.PilotState ?? new WizPilotState();
-                    var key = bulb.IpAddress;
-                    var isFirstSeen = !_previousStates.TryGetValue(key, out var previous);
-                    _previousStates[key] = pilot;
-
-                    // Compare ignoring Mac and Rssi which fluctuate between responses
-                    var changed = isFirstSeen
-                        || (pilot with { Mac = null, Rssi = null }) != (previous! with { Mac = null, Rssi = null });
-
-                    if (changed)
-                    {
-                        logger.LogInformation("{ClassName} bulb {DeviceName} ({IpAddress}) state changed, State={State}, Dimming={Dimming}, SceneId={SceneId}, Temp={Temp}, R={R}, G={G}, B={B}",
-                            nameof(WizDiscoveryBgService), bulb.DeviceName ?? bulb.IpAddress, bulb.IpAddress, pilot.State, pilot.Dimming, pilot.SceneId, pilot.Temp, pilot.R, pilot.G, pilot.B);
-
-                        var wizEvent = new WizEvent
-                        {
-                            DeviceId = bulb.Mac ?? bulb.IpAddress,
-                            IpAddress = bulb.IpAddress,
-                            Mac = bulb.Mac,
-                            DeviceName = bulb.DeviceName,
-                            State = pilot.State ?? false,
-                            Dimming = pilot.Dimming,
-                            SceneId = pilot.SceneId,
-                            Temp = pilot.Temp,
-                            R = pilot.R,
-                            G = pilot.G,
-                            B = pilot.B,
-                            C = pilot.C,
-                            W = pilot.W,
-                            Rssi = pilot.Rssi,
-                            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
-                        };
-
-                        var tasks = new List<Task>(eventSinks.Count());
-                        foreach (var eventSink in eventSinks)
-                            tasks.Add(eventSink.WriteEvent(wizEvent, cancellationToken));
-                        await Task.WhenAll(tasks).ConfigureAwait(false);
-                    }
-                }
+                    await ProcessBulbAsync(bulb, cancellationToken).ConfigureAwait(false);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -92,5 +53,47 @@ public sealed class WizDiscoveryBgService(
 
             await Task.Delay(wizConfig.Value.DiscoveryPollingDelayMs, cancellationToken).ConfigureAwait(false);
         }
+    }
+
+    private async Task ProcessBulbAsync(WizBulb bulb, CancellationToken cancellationToken)
+    {
+        var pilot = bulb.PilotState ?? new WizPilotState();
+        var key = bulb.IpAddress;
+        var isFirstSeen = !_previousStates.TryGetValue(key, out var previous);
+        _previousStates[key] = pilot;
+
+        // Compare ignoring Mac and Rssi which fluctuate between responses.
+        var changed = isFirstSeen
+            || (pilot with { Mac = null, Rssi = null }) != (previous! with { Mac = null, Rssi = null });
+        if (!changed)
+            return;
+
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} bulb state changed, State={State}, Dimming={Dimming}, SceneId={SceneId}, Temp={Temp}, R={R}, G={G}, B={B}",
+                nameof(WizDiscoveryBgService), pilot.State, pilot.Dimming, pilot.SceneId, pilot.Temp, pilot.R, pilot.G, pilot.B);
+
+        var wizEvent = new WizEvent
+        {
+            DeviceId = bulb.Mac ?? bulb.IpAddress,
+            IpAddress = bulb.IpAddress,
+            Mac = bulb.Mac,
+            DeviceName = bulb.DeviceName,
+            State = pilot.State ?? false,
+            Dimming = pilot.Dimming,
+            SceneId = pilot.SceneId,
+            Temp = pilot.Temp,
+            R = pilot.R,
+            G = pilot.G,
+            B = pilot.B,
+            C = pilot.C,
+            W = pilot.W,
+            Rssi = pilot.Rssi,
+            TimestampUtc = timeProvider.GetUtcNow().UtcDateTime,
+        };
+
+        var tasks = new List<Task>(eventSinks.Count());
+        foreach (var eventSink in eventSinks)
+            tasks.Add(eventSink.WriteEvent(wizEvent, cancellationToken));
+        await Task.WhenAll(tasks).ConfigureAwait(false);
     }
 }

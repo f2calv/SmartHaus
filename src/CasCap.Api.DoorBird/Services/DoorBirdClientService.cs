@@ -399,8 +399,7 @@ public sealed class DoorBirdClientService : HttpClientBase
         {
             _ = await base.GetAsync<string, object>(requestUri);
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("{ClassName} notification subscribed for EventType={EventType}",
-                    nameof(DoorBirdClientService), eventType);
+                _logger.LogInformation("{ClassName} notification subscribed", nameof(DoorBirdClientService));
             return true;
         }
         catch (Exception ex)
@@ -428,8 +427,7 @@ public sealed class DoorBirdClientService : HttpClientBase
         {
             _ = await base.GetAsync<string, object>(requestUri);
             if (_logger.IsEnabled(LogLevel.Information))
-                _logger.LogInformation("{ClassName} notification unsubscribed for EventType={EventType}",
-                    nameof(DoorBirdClientService), eventType);
+                _logger.LogInformation("{ClassName} notification unsubscribed", nameof(DoorBirdClientService));
             return true;
         }
         catch (Exception ex)

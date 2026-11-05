@@ -43,6 +43,9 @@ runner contract. Device callbacks reach `DoorBirdController`, which delegates ev
 
 A REST API (`DoorBirdController`) exposes real-time photo, MJPEG video stream, relay trigger, and light-on endpoints, as well as event callbacks for push notifications from the device.
 
+Notification subscription success logs omit caller-supplied URLs and event-type strings.
+The device still receives the original subscription parameters.
+
 `DoorBirdQueryService.CaptureAudio` provides bounded receive-only microphone capture through the
 official `bha-api/audio-receive.cgi` endpoint. DoorBird returns raw 8 kHz mono G.711 μ-law audio;
 the library frames it as `audio/wav` without transcoding so downstream callers can validate,

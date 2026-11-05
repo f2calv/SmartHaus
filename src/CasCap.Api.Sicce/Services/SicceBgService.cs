@@ -40,7 +40,7 @@ public sealed partial class SicceBgService(
             {
                 if (attempt > 1)
                     LogConnectionRecovered(logger, nameof(SicceBgService), attempt);
-                await RecordDataPoints().ConfigureAwait(false);
+                consecutiveFailures = await RecordDataPointsAsync(consecutiveFailures, cancellationToken).ConfigureAwait(false);
                 await Task.Delay(sicceConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
             }
@@ -54,28 +54,30 @@ public sealed partial class SicceBgService(
             }
         }
 
-        async Task RecordDataPoints()
-        {
-            var deviceInfo = await sicceClientSvc.GetDeviceInfo().ConfigureAwait(false);
-            if (deviceInfo is not null)
-            {
-                var sicceEvent = new SicceEvent(deviceInfo, timeProvider.GetUtcNow().UtcDateTime);
-                if (consecutiveFailures > 0)
-                {
-                    LogDeviceInfoRecovered(logger, nameof(SicceBgService), consecutiveFailures);
-                    consecutiveFailures = 0;
-                }
+    }
 
-                var tasks = new List<Task>(eventSinks.Count());
-                foreach (var eventSink in eventSinks)
-                    tasks.Add(eventSink.WriteEvent(sicceEvent, cancellationToken));
-                await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
+    private async Task<int> RecordDataPointsAsync(int consecutiveFailures, CancellationToken cancellationToken)
+    {
+        var deviceInfo = await sicceClientSvc.GetDeviceInfo().ConfigureAwait(false);
+        if (deviceInfo is not null)
+        {
+            var sicceEvent = new SicceEvent(deviceInfo, timeProvider.GetUtcNow().UtcDateTime);
+            if (consecutiveFailures > 0)
+            {
+                LogDeviceInfoRecovered(logger, nameof(SicceBgService), consecutiveFailures);
+                consecutiveFailures = 0;
             }
-            else if (consecutiveFailures++ == 0)
-                LogDeviceInfoFailing(logger, nameof(SicceBgService));
-            else
-                LogDeviceInfoStillFailing(logger, nameof(SicceBgService), consecutiveFailures);
+
+            var tasks = new List<Task>(eventSinks.Count());
+            foreach (var eventSink in eventSinks)
+                tasks.Add(eventSink.WriteEvent(sicceEvent, cancellationToken));
+            await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
         }
+        else if (consecutiveFailures++ == 0)
+            LogDeviceInfoFailing(logger, nameof(SicceBgService));
+        else
+            LogDeviceInfoStillFailing(logger, nameof(SicceBgService), consecutiveFailures);
+        return consecutiveFailures;
     }
 
     [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} readiness probe healthy after {Attempt} attempt(s)")]

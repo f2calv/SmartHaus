@@ -96,7 +96,7 @@ public sealed class BuderusKm200ClientService : HttpClientBase
         if (tpl.result is null || tpl.result.IndexOf("Sorry, the requested file does not exist on this server.") > -1)
         {
             if (_logger.IsEnabled(LogLevel.Debug))
-                _logger.LogDebug("{ClassName} datapoint '{DatapointId}' not found", nameof(BuderusKm200ClientService), requestUriOrId);
+                _logger.LogDebug("{ClassName} requested datapoint not found", nameof(BuderusKm200ClientService));
         }
         else
         {
@@ -104,7 +104,7 @@ public sealed class BuderusKm200ClientService : HttpClientBase
             if (string.IsNullOrWhiteSpace(json))
             {
                 if (_logger.IsEnabled(LogLevel.Debug))
-                    _logger.LogDebug("{ClassName} no data returned for datapoint '{DatapointId}'", nameof(BuderusKm200ClientService), requestUriOrId);
+                    _logger.LogDebug("{ClassName} no data returned for requested datapoint", nameof(BuderusKm200ClientService));
             }
             else
                 return json.FromJson<Km200DatapointObject>()!;
@@ -129,12 +129,12 @@ public sealed class BuderusKm200ClientService : HttpClientBase
         var dp = await GetDataPoint(datapointId, cancellationToken).ConfigureAwait(false);
         if (dp is null)
         {
-            _logger.LogWarning("{ClassName} datapoint '{DatapointId}' not found, cannot write", nameof(BuderusKm200ClientService), datapointId);
+            _logger.LogWarning("{ClassName} requested datapoint not found, cannot write", nameof(BuderusKm200ClientService));
             return false;
         }
         if (dp.Writeable != 1)
         {
-            _logger.LogWarning("{ClassName} datapoint '{DatapointId}' is not writeable", nameof(BuderusKm200ClientService), datapointId);
+            _logger.LogWarning("{ClassName} requested datapoint is not writeable", nameof(BuderusKm200ClientService));
             return false;
         }
 
@@ -147,18 +147,18 @@ public sealed class BuderusKm200ClientService : HttpClientBase
         request.Content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/json");
 
         if (_logger.IsEnabled(LogLevel.Debug))
-            _logger.LogDebug("{ClassName} writing to '{DatapointId}' value={Value}", nameof(BuderusKm200ClientService), datapointId, value);
+            _logger.LogDebug("{ClassName} writing requested datapoint", nameof(BuderusKm200ClientService));
 
         using var response = await Client.SendAsync(request, cancellationToken).ConfigureAwait(false);
         if (!response.IsSuccessStatusCode)
         {
-            _logger.LogWarning("{ClassName} failed to write to '{DatapointId}', StatusCode={StatusCode}",
-                nameof(BuderusKm200ClientService), datapointId, response.StatusCode);
+            _logger.LogWarning("{ClassName} failed to write requested datapoint, StatusCode={StatusCode}",
+                nameof(BuderusKm200ClientService), response.StatusCode);
             return false;
         }
 
         if (_logger.IsEnabled(LogLevel.Information))
-            _logger.LogInformation("{ClassName} wrote {Value} to '{DatapointId}'", nameof(BuderusKm200ClientService), value, datapointId);
+            _logger.LogInformation("{ClassName} wrote requested datapoint", nameof(BuderusKm200ClientService));
         return true;
     }
 

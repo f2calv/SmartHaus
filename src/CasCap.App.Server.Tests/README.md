@@ -17,7 +17,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 
 | Class | Methods | Cases | Category | Description |
 | --- | --- | --- | --- | --- |
-| `BuderusQueryServiceTests` | 5 | 9 | Device Commands | Path validation/normalization, preflight/discovery cancellation, and MCP boolean rejection using fake HTTP |
+| `BuderusQueryServiceTests` | 6 | 11 | Device Commands | Path validation/normalization, cancellation, MCP boolean rejection, and request-free logs using fake HTTP |
 | `FeatureServiceRegistrationTests` | 4 | 4 | Integration | Shared cache-expiry registration, domain-worker exclusion and enabled-feature filtering |
 | `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
 | `DDnsLeadershipTests` | 3 | 4 | Leadership | Existing resource delegation, cancellation and timeout recovery through IP discovery, without Azure/Redis calls |
@@ -32,7 +32,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | `UbiquitiApiContractTests` | 4 | 11 | Integration | GET/POST webhooks, optional bodies, validation, request cancellation, and generated Swagger |
 | `UbiquitiQueryServiceTests` | 7 | 21 | Webhook Parsing | Detection types, thumbnails/timestamps, camera selection, sink failures, and cancellation using in-memory sinks |
 | `WebApiContractTests` | 4 | 8 | Integration | String-enum JSON output/input, validation Problem Details, and generated Swagger schemas |
-| Total | 65 | 215 | | Source-declared, including skipped cases |
+| Total | 66 | 217 | | Source-declared, including skipped cases |
 
 ## Trait Categories
 

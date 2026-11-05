@@ -18,10 +18,9 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
     public async Task WriteEvent(UbiquitiEvent @event, CancellationToken cancellationToken = default)
     {
         logger.LogDebug(
-            "{ClassName} processing EventType={EventType}, Camera={Camera}, Score={Score}, ThumbnailBytes={ThumbnailBytes}",
+            "{ClassName} processing EventType={EventType}, Score={Score}, ThumbnailBytes={ThumbnailBytes}",
             nameof(UbiquitiSinkCommsStreamService),
             @event.UbiquitiEventType,
-            @event.CameraName ?? @event.CameraId,
             @event.Score,
             @event.Thumbnail?.Length ?? 0);
 
@@ -37,8 +36,8 @@ public sealed class UbiquitiSinkCommsStreamService(ILogger<UbiquitiSinkCommsStre
             JsonPayload = @event.ToJson(),
         };
 
-        logger.LogInformation("{ClassName} {UbiquitiEventType} detected on {CameraId}, writing to comms stream",
-            nameof(UbiquitiSinkCommsStreamService), @event.UbiquitiEventType, @event.CameraName ?? @event.CameraId);
+        logger.LogInformation("{ClassName} {UbiquitiEventType} detected, writing to comms stream",
+            nameof(UbiquitiSinkCommsStreamService), @event.UbiquitiEventType);
         await commsSink.WriteEvent(commsEvent, cancellationToken);
     }
 }

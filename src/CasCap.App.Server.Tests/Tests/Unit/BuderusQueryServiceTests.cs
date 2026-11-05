@@ -95,10 +95,33 @@ public sealed class BuderusQueryServiceTests
         Assert.Equal(alreadyCancelled ? 0 : 1, handler.Calls);
     }
 
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task MissingDatapointLogs_ExcludeRequestContent(bool write)
+    {
+        // Regression for the release's CodeQL log-forging findings.
+        const string marker = "private-example\r\nforged-entry";
+        using var handler = new RecordingHandler();
+        using var client = new HttpClient(handler);
+        var logger = new RecordingLogger();
+        var service = CreateDevice(client, logger);
+
+        if (write)
+            Assert.False(await service.SetDataPoint(marker, "50", TestContext.Current.CancellationToken));
+        else
+            Assert.Null(await service.GetDataPoint(marker, TestContext.Current.CancellationToken));
+
+        Assert.NotEmpty(logger.Messages);
+        Assert.All(logger.Messages, message =>
+            Assert.DoesNotContain("private-example", message, StringComparison.Ordinal));
+        Assert.Equal(1, handler.Calls);
+    }
+
     private static BuderusQueryService CreateService(HttpClient client)
         => new(NullLogger<BuderusQueryService>.Instance, CreateDevice(client), new UnusedQuery());
 
-    private static BuderusKm200ClientService CreateDevice(HttpClient client)
+    private static BuderusKm200ClientService CreateDevice(HttpClient client, ILogger<BuderusKm200ClientService>? logger = null)
     {
         var options = Options.Create(new BuderusConfig
         {
@@ -116,7 +139,17 @@ public sealed class BuderusQueryServiceTests
             MetricNamePrefix = "example",
             OtelServiceName = "example",
         });
-        return new BuderusKm200ClientService(NullLogger<BuderusKm200ClientService>.Instance, options, new TestClientFactory(client));
+        return new BuderusKm200ClientService(logger ?? NullLogger<BuderusKm200ClientService>.Instance, options, new TestClientFactory(client));
+    }
+
+    private sealed class RecordingLogger : ILogger<BuderusKm200ClientService>
+    {
+        public List<string> Messages { get; } = [];
+
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception? exception,
+            Func<TState, Exception?, string> formatter) => Messages.Add(formatter(state, exception));
     }
 
     private sealed class TestClientFactory(HttpClient client) : IHttpClientFactory

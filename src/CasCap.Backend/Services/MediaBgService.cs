@@ -88,13 +88,8 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                     mediaConfig.Value.ConsumerName,
                     mediaConfig.Value.StreamReadPosition,
                     count: mediaConfig.Value.StreamReadCount);
-                if (readFailures > 0)
-                {
-                    if (logger.IsEnabled(LogLevel.Information))
-                        logger.LogInformation("{ClassName} stream read recovered ConsecutiveFailures={ConsecutiveFailures}",
-                            nameof(MediaBgService), readFailures);
-                    readFailures = 0;
-                }
+                LogStreamReadRecovery(readFailures);
+                readFailures = 0;
 
                 if (entries.Length > 0)
                 {
@@ -124,6 +119,13 @@ public sealed class MediaBgService(ILogger<MediaBgService> logger,
                 await Task.Delay(TimeSpan.FromMilliseconds(mediaConfig.Value.PollingIntervalMs), cancellationToken);
             }
         }
+    }
+
+    private void LogStreamReadRecovery(int readFailures)
+    {
+        if (readFailures > 0 && logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} stream read recovered ConsecutiveFailures={ConsecutiveFailures}",
+                nameof(MediaBgService), readFailures);
     }
 
     private async Task ProcessMediaEventAsync(MediaEvent mediaEvent, CancellationToken cancellationToken)

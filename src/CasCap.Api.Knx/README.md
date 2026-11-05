@@ -17,6 +17,9 @@ In 2.0, duplicate ETS addresses or names throw `InvalidDataException`, and start
 without event sinks throws `ConfigurationException`, instead of `GenericException`. Update
 consumers that catch the old concrete type. The library uses Common 5.1.0 and retains both targets.
 
+Missing-lookup warnings are deduplicated by key without emitting unknown addresses, names or
+caller strings. Correct the ETS metadata and import a fresh export rather than patching it in code.
+
 ## Usage
 
 Register the library in a .NET host that supplies logging, configuration, Redis/RedLock and the
