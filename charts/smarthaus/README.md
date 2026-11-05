@@ -14,7 +14,7 @@ release version, the same version as the `ghcr.io/f2calv/smarthaus` image. The v
 ```mermaid
 graph LR
   SmartHaus([smarthaus])
-  Workload[workload 1.5.0]
+  Workload[workload 1.7.0]
   Dashboards[smarthaus-dashboards 0.1.0]
 
   subgraph Aliases[Workload aliases]
@@ -42,7 +42,7 @@ graph LR
   SignalRHub & Comms & Wiz & Shelly & Ubiquiti & Sicce --> Workload
 ```
 
-Every workload alias resolves to `workload` 1.5.0 from `oci://ghcr.io/f2calv/charts`.
+Every workload alias resolves to `workload` 1.7.0 from `oci://ghcr.io/f2calv/charts`.
 The separate `dashboards` dependency is the local `smarthaus-dashboards` 0.1.0 chart.
 
 ## Install
@@ -118,7 +118,7 @@ it, so an environment sets the image on each alias it enables, as above.
 | Value | Default | Notes |
 | --- | --- | --- |
 | `<alias>.replicaCount` | `0` | Every alias renders nothing until an environment sets a replica count |
-| `<alias>.image` | `nginx:1.31.0` | Placeholder; set the SmartHaus image and tag on every enabled alias |
+| `<alias>.image` | `nginx:1.31.8` | Placeholder; set the SmartHaus image and tag on every enabled alias |
 | `<alias>.terminationGracePeriodSeconds` | `120` | Exceeds the 90-second application shutdown budget |
 | `<alias>.envVars.CasCap__FeatureConfig__EnabledFeatures` | unset | Selects the feature; see the table below |
 | `<alias>.service` | port 80 to 8080 | REST, health endpoints and metrics |
@@ -197,7 +197,7 @@ helm upgrade --install smarthaus oci://ghcr.io/f2calv/charts/smarthaus \
 image: &image
   repository: nginx
   pullPolicy: IfNotPresent
-  tag: "1.31.0"
+  tag: "1.31.8"
 
 # Defaults merged into every feature alias.
 _shared: &shared

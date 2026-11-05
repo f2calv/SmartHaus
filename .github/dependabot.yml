@@ -40,9 +40,9 @@ updates:
       time: "04:00"
     ignore:
       # Dockerfile.whisper-cpp builds on the Ubuntu release of the upstream whisper.cpp Vulkan
-      # runtime image; a newer major links glibc and Vulkan libraries the runtime lacks.
+      # runtime image; changing the Ubuntu release can link libraries the runtime lacks.
       - dependency-name: ubuntu
-        update-types: ["version-update:semver-major"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: docker-compose
     directory: /

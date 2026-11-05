@@ -11,6 +11,12 @@ matching the naming contract below are required for live bus access.
 dotnet add package CasCap.Api.Knx
 ```
 
+## Compatibility
+
+In 2.0, duplicate ETS addresses or names throw `InvalidDataException`, and starting the processor
+without event sinks throws `ConfigurationException`, instead of `GenericException`. Update
+consumers that catch the old concrete type. The library uses Common 5.1.0 and retains both targets.
+
 ## Usage
 
 Register the library in a .NET host that supplies logging, configuration, Redis/RedLock and the
@@ -204,7 +210,7 @@ The `ShardingMode` property on `KnxConfig` controls how `KnxMonitorBgService` po
 4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication, outbound delivery and enabled day/night scheduling are supervised together. A fatal child failure withdraws readiness and requests host shutdown immediately, before cancelling/joining siblings and disposing connections. Ownership-only cancellation does not stop the host. Initial connection failures and subsequent drops are retried for both tunneling and routing.
 5. **Ownership ends** — the runner observes lease loss at `Redlock.LeadershipCheckIntervalMs` (default 1000 ms) and cancels the ownership token. Health is withdrawn, callbacks stop accepting telegrams, and all publication/write work is awaited before handlers are detached and buses asynchronously disposed. Cleanup is also applied to partial startup failures. Only then may this replica start a fresh ownership run. Host shutdown owns the forced-termination budget; cleanup has no independent timeout.
 
-The .NET 8+ leadership runner is published in `CasCap.Common.Caching` 4.17.0. Release builds
+The .NET 8+ leadership runner is consumed from `CasCap.Common.Caching` 5.1.0. Release builds
 resolve it from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 Lease cancellation cannot retract a telegram already accepted by Redis or a device. Callback

@@ -3,6 +3,33 @@
 SmartHaus publishes packages, a container image and a Helm chart through
 [deploy-all](../.github/workflows/deploy-all.yml). This workflow does not deploy workloads.
 
+## Deployment Flow
+
+Pull requests validate without publishing. Default-branch CI creates the release tag after its
+gates pass; the separate, explicitly dispatched publication workflow builds the image/chart and,
+when requested, the eight NuGet packages.
+
+```mermaid
+flowchart TD
+    classDef owned fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    classDef terminal fill:#dcfce7,stroke:#15803d,color:#14532d
+    source([PR or default-branch source]) --> lint["Repository lint"]:::owned
+    source --> helm["Helm validation"]:::owned
+    source --> version["Resolve version"]:::owned
+    version --> build["Release build and<br/>non-Integration tests"]:::owned
+    lint & helm & version & build --> tag([Release tag<br/>default branch only]):::terminal
+    dispatch([Explicit publication dispatch]) --> settings["Resolve source and build mode"]:::owned
+    dispatch --> publishversion["Resolve publication version"]:::owned
+    settings & publishversion --> publishbuild["Build selected configuration"]:::owned
+    settings & publishversion --> image["Build and publish image"]:::owned
+    publishversion & publishbuild --> packages["Eight NuGet packages<br/>push-nuget opt-in"]:::owned
+    publishversion & publishbuild & image --> chart["Package and publish chart"]:::owned
+    publishversion & publishbuild & image & chart --> publishrelease([Create release only if absent]):::terminal
+```
+
+The NuGet-only recovery path below skips versioning, the normal build, image/chart publication and
+release tagging; it independently rebuilds the exact existing release source.
+
 ## Full Publication
 
 Run the workflow from the default branch, with all sibling source-reference inputs empty, to

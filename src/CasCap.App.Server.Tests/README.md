@@ -18,7 +18,7 @@ Backend services, domain behavior, MCP contracts, and agent evaluation live in
 | Class | Methods | Cases | Category | Description |
 | --- | --- | --- | --- | --- |
 | `BuderusQueryServiceTests` | 5 | 9 | Device Commands | Path validation/normalization, preflight/discovery cancellation, and MCP boolean rejection using fake HTTP |
-| `FeatureServiceRegistrationTests` | 4 | 4 | Integration | `IBgFeature` registrations and enabled-feature filtering |
+| `FeatureServiceRegistrationTests` | 4 | 4 | Integration | Shared cache-expiry registration, domain-worker exclusion and enabled-feature filtering |
 | `FeatureConfigTests` | 3 | 6 | Configuration | Empty values, unknown-name rejection, and case-insensitive parsing |
 | `DDnsLeadershipTests` | 3 | 4 | Leadership | Existing resource delegation, cancellation and timeout recovery through IP discovery, without Azure/Redis calls |
 | `DeviceApiContractTests` | 7 | 46 | Integration | History cancellation, explicit power values, typed write outcomes, pilot range boundaries/validation, and Swagger metadata |

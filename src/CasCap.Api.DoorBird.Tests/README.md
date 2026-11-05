@@ -53,7 +53,7 @@ live class; relay, light and notification cases can change device state.
 ## Running the tests
 
 ```bash
-dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj -- --filter-trait "Category=Audio"
+dotnet test --project src/CasCap.Api.DoorBird.Tests/CasCap.Api.DoorBird.Tests.csproj --filter-trait "Category=Audio"
 ```
 
 Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. This selects only
