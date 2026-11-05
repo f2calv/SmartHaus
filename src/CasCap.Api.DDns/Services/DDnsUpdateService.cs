@@ -10,7 +10,7 @@ namespace CasCap.Services;
 /// <remarks>See <see href="https://github.com/Azure/azure-sdk-for-net/tree/main/sdk/dns/Azure.ResourceManager.Dns" />.</remarks>
 /// <remarks>See <see href="https://github.com/Azure/azure-sdk-for-net/blob/main/doc/dev/mgmt_quickstart.md" />.</remarks>
 /// </summary>
-public sealed class DDnsUpdateService(
+public sealed partial class DDnsUpdateService(
     ILogger<DDnsUpdateService> logger,
     IOptions<AzureAuthConfig> azureAuthConfig,
     IOptions<DDnsConfig> dDnsConfig,
@@ -26,29 +26,63 @@ public sealed class DDnsUpdateService(
     {
         subscription = null;
         oldIp = null;
+        _consecutiveFailures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             var currentIpAddress = await findMyIpClientSvc.GetIp(cancellationToken);
-            if (currentIpAddress is not null && (oldIp is null || oldIp.ToString() != currentIpAddress.ToString()))
+            if (currentIpAddress is null)
+                OnCycleFailed("public IP address lookup");
+            else if (oldIp is null || oldIp.ToString() != currentIpAddress.ToString())
             {
-                await UpdateListDnsZoneResources(currentIpAddress, cancellationToken);
+                if (await UpdateListDnsZoneResources(currentIpAddress, cancellationToken))
+                    OnCycleSucceeded();
+                else
+                    OnCycleFailed("DNS update", reported: true);
             }
+            else
+                OnCycleSucceeded();
             await Task.Delay(TimeSpan.FromMilliseconds(dDnsConfig.Value.RefreshDelayMs), timeProvider, cancellationToken);
         }
+    }
+
+    private int _consecutiveFailures;
+    private DateTimeOffset _failingSince;
+
+    /// <summary>Reports the first failure of a run of failed cycles at its own level and repeats at Debug.</summary>
+    private LogLevel FailureLevel(LogLevel firstFailureLevel) => _consecutiveFailures == 0 ? firstFailureLevel : LogLevel.Debug;
+
+    private void OnCycleFailed(string stage, bool reported = false)
+    {
+        if (_consecutiveFailures++ == 0)
+        {
+            _failingSince = timeProvider.GetUtcNow();
+            if (!reported)
+                LogCycleFailing(logger, nameof(DDnsUpdateService), stage);
+        }
+        else
+            LogCycleStillFailing(logger, nameof(DDnsUpdateService), stage, _consecutiveFailures);
+    }
+
+    private void OnCycleSucceeded()
+    {
+        if (_consecutiveFailures == 0)
+            return;
+        LogCycleRecovered(logger, nameof(DDnsUpdateService), _consecutiveFailures, timeProvider.GetUtcNow() - _failingSince);
+        _consecutiveFailures = 0;
     }
 
     private SubscriptionResource? subscription;
     private IPAddress? oldIp;
 
-    private async Task UpdateListDnsZoneResources(IPAddress newIp, CancellationToken cancellationToken)
+    private async Task<bool> UpdateListDnsZoneResources(IPAddress newIp, CancellationToken cancellationToken)
     {
         await SetSubscriptionAsync(cancellationToken);
         if (subscription is null)
-            return;
+            return false;
 
         var aRecords = await GetDnsARecordCollection(cancellationToken);
         if (aRecords is null)
-            return;
+            return false;
 
         IPAddress? priorIp = null;
         var updatedRecords = new List<string>();
@@ -76,8 +110,7 @@ public sealed class DDnsUpdateService(
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 _ = await aRecords.CreateOrUpdateAsync(WaitUntil.Completed, data.Name, data, cancellationToken: cancellationToken);
-                logger.LogInformation("{ClassName} DNS A Record {ARecordName} updated from {PriorIp} to {NewIp}",
-                    nameof(DDnsBgService), data.Name, priorIp, newIp);
+                LogDnsRecordUpdated();
                 updatedRecords.Add(data.Name);
             }
         }
@@ -97,6 +130,13 @@ public sealed class DDnsUpdateService(
 
         //now we have completed all A records update the static
         oldIp = priorIp;
+        return true;
+    }
+
+    private void LogDnsRecordUpdated()
+    {
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} DNS A record updated to the current public IP address", nameof(DDnsBgService));
     }
 
     private async Task SetSubscriptionAsync(CancellationToken cancellationToken)
@@ -112,22 +152,23 @@ public sealed class DDnsUpdateService(
                 if (rg.GetRawResponse().Status == 200)
                 {
                     subscription = sub;
-                    logger.LogInformation("{ClassName} selected Azure subscription {DisplayName} ({SubscriptionId})",
-                        nameof(DDnsBgService), sub.Data.DisplayName, sub.Data.SubscriptionId);
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("{ClassName} selected the Azure subscription containing Resource Group {DnsResourceGroupName}",
+                            nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName);
                     break;
                 }
             }
             catch (RequestFailedException ex) when (ex.Status is StatusCodes.Status403Forbidden
                 or StatusCodes.Status404NotFound)
             {
-                logger.LogWarning("{ClassName} cannot access Resource Group {DnsResourceGroupName} in Azure subscription {SubscriptionId}, StatusCode={StatusCode}",
-                    nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName,
-                    sub.Data.SubscriptionId, ex.Status);
+                if (logger.IsEnabled(LogLevel.Debug))
+                    logger.LogDebug("{ClassName} cannot access Resource Group {DnsResourceGroupName} in a candidate Azure subscription, StatusCode={StatusCode}",
+                        nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName, ex.Status);
             }
         }
 
         if (subscription is null)
-            logger.LogError("{ClassName} unable to find subscription containing Resource Group {DnsResourceGroupName}",
+            logger.Log(FailureLevel(LogLevel.Error), "{ClassName} unable to find subscription containing Resource Group {DnsResourceGroupName}",
                 nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName);
     }
 
@@ -143,7 +184,7 @@ public sealed class DDnsUpdateService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "{ClassName} Azure Resource Group {DnsResourceGroupName} not found",
+            logger.Log(FailureLevel(LogLevel.Error), ex, "{ClassName} Azure Resource Group {DnsResourceGroupName} not found",
                 nameof(DDnsBgService), dDnsConfig.Value.DnsResourceGroupName);
             return null;
         }
@@ -157,9 +198,18 @@ public sealed class DDnsUpdateService(
         }
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            logger.LogError(ex, "{ClassName} Azure DNS Zone {DnsZoneName} not found",
+            logger.Log(FailureLevel(LogLevel.Error), ex, "{ClassName} Azure DNS Zone {DnsZoneName} not found",
                 nameof(DDnsBgService), dDnsConfig.Value.DnsZoneName);
             return null;
         }
     }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} {Stage} failing, retrying each refresh")]
+    private static partial void LogCycleFailing(ILogger logger, string className, string stage);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} {Stage} still failing ConsecutiveFailures={ConsecutiveFailures}")]
+    private static partial void LogCycleStillFailing(ILogger logger, string className, string stage, int consecutiveFailures);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} recovered ConsecutiveFailures={ConsecutiveFailures} Downtime={Downtime}")]
+    private static partial void LogCycleRecovered(ILogger logger, string className, int consecutiveFailures, TimeSpan downtime);
 }

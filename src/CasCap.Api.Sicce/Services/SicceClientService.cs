@@ -43,7 +43,7 @@ public sealed class SicceClientService : HttpClientBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, $"{nameof(GetDeviceInfo)} failure");
+            _logger.LogWarning(ex, "{ClassName} {MethodName} failure", nameof(SicceClientService), nameof(GetDeviceInfo));
         }
         return tpl.result?.Data;
     }
@@ -80,8 +80,8 @@ public sealed class SicceClientService : HttpClientBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "{ClassName} failure to process request {@request}",
-                nameof(_UpdateStatus), req);
+            _logger.LogError(ex, "{ClassName} failure to process {RequestType} request",
+                nameof(SicceClientService), req.GetType().Name);
         }
         return tpl.result is not null && tpl.result.Result;
     }

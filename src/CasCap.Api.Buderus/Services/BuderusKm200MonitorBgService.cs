@@ -3,7 +3,7 @@ namespace CasCap.Services;
 /// <summary>
 /// Manipulates endpoint+event data from the Buderus KM200 in conjunction with EventSinks.
 /// </summary>
-public sealed class BuderusKm200MonitorBgService(
+public sealed partial class BuderusKm200MonitorBgService(
     ILogger<BuderusKm200MonitorBgService> logger,
     IOptions<BuderusConfig> buderusConfig,
     TimeProvider timeProvider,
@@ -13,21 +13,26 @@ public sealed class BuderusKm200MonitorBgService(
     ) : IBgFeature
 {
 
+    private readonly Dictionary<string, (int ConsecutiveFailures, DateTimeOffset FailingSince)> _failingDatapoints = [];
+
     /// <inheritdoc/>
     public string FeatureName => "Buderus";
 
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<BuderusEvent>)} is configured!");
-        logger.LogInformation("{ClassName} starting", nameof(BuderusKm200MonitorBgService));
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<BuderusEvent>)} is configured!");
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} starting", nameof(BuderusKm200MonitorBgService));
         try
         {
-            logger.LogInformation("{ClassName} endpoint is '{Endpoint}'", nameof(BuderusKm200MonitorBgService), buderusKm200ClientSvc.Client.BaseAddress);
+            if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("{ClassName} endpoint is '{Endpoint}'", nameof(BuderusKm200MonitorBgService), buderusKm200ClientSvc.Client.BaseAddress);
             await RunServiceAsync(cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex) when (ex is not OperationCanceledException and not TaskCanceledException) { throw; }
-        logger.LogInformation("{ClassName} exiting", nameof(BuderusKm200MonitorBgService));
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} exiting", nameof(BuderusKm200MonitorBgService));
     }
 
     private Task RunServiceAsync(CancellationToken cancellationToken) => RunLogger(cancellationToken);
@@ -44,10 +49,12 @@ public sealed class BuderusKm200MonitorBgService(
             return;
         }
 
-        logger.LogInformation("{ClassName} polling {Count} configured datapoints",
-            nameof(BuderusKm200MonitorBgService), buderusConfig.Value.DatapointMappings.Count);
-        foreach (var (id, column) in buderusConfig.Value.DatapointMappings)
-            logger.LogInformation("{ClassName} configured datapoint {DatapointId} -> {ColumnName}", nameof(BuderusKm200MonitorBgService), id, column);
+        if (logger.IsEnabled(LogLevel.Information))
+            logger.LogInformation("{ClassName} polling {Count} configured datapoints",
+                nameof(BuderusKm200MonitorBgService), buderusConfig.Value.DatapointMappings.Count);
+        if (logger.IsEnabled(LogLevel.Debug))
+            foreach (var (id, column) in buderusConfig.Value.DatapointMappings)
+                logger.LogDebug("{ClassName} configured datapoint {DatapointId} -> {ColumnName}", nameof(BuderusKm200MonitorBgService), id, column);
 
         foreach (var eventSink in eventSinks)
             await eventSink.InitializeAsync(cancellationToken).ConfigureAwait(false);
@@ -57,6 +64,8 @@ public sealed class BuderusKm200MonitorBgService(
         {
             if (km200ConnectionHealthCheck.ConnectionActive)
             {
+                if (attempt > 1)
+                    LogConnectionRecovered(logger, nameof(BuderusKm200MonitorBgService), attempt);
                 await RecordDataPoints().ConfigureAwait(false);
                 await Task.Delay(buderusConfig.Value.PollingIntervalMs, cancellationToken).ConfigureAwait(false);
                 attempt = 1;
@@ -84,16 +93,49 @@ public sealed class BuderusKm200MonitorBgService(
                     foreach (var eventSink in eventSinks)
                         tasks.Add(eventSink.WriteEvent(buderusEvent, cancellationToken));
                     await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
-                    logger.LogDebug("{ClassName} logged datapoint {@BuderusEvent}", nameof(BuderusKm200MonitorBgService), buderusEvent);
+                    LogDatapointRecorded(logger, nameof(BuderusKm200MonitorBgService), buderusEvent);
+                    OnDatapointSucceeded(datapointId);
                 }
                 else
-                {
-                    logger.LogWarning("{ClassName} datapoint id {Id} returns a null object", nameof(BuderusKm200MonitorBgService), datapointId);
-                }
+                    OnDatapointFailed(datapointId);
                 //TODO: investigate how low DatapointDelayMs can be reduced without overwhelming the KM200 gateway
                 await Task.Delay(buderusConfig.Value.DatapointDelayMs, cancellationToken).ConfigureAwait(false);
             }
         }
     }
 
+    private void OnDatapointFailed(string datapointId)
+    {
+        if (_failingDatapoints.TryGetValue(datapointId, out var failure))
+        {
+            _failingDatapoints[datapointId] = (failure.ConsecutiveFailures + 1, failure.FailingSince);
+            LogDatapointStillFailing(logger, nameof(BuderusKm200MonitorBgService), datapointId, failure.ConsecutiveFailures + 1);
+            return;
+        }
+        _failingDatapoints[datapointId] = (1, timeProvider.GetUtcNow());
+        LogDatapointFailing(logger, nameof(BuderusKm200MonitorBgService), datapointId);
+    }
+
+    private void OnDatapointSucceeded(string datapointId)
+    {
+        if (!_failingDatapoints.Remove(datapointId, out var failure))
+            return;
+        LogDatapointRecovered(logger, nameof(BuderusKm200MonitorBgService), datapointId,
+            failure.ConsecutiveFailures, timeProvider.GetUtcNow() - failure.FailingSince);
+    }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} readiness probe healthy after {Attempt} attempt(s)")]
+    private static partial void LogConnectionRecovered(ILogger logger, string className, int attempt);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} logged datapoint {@BuderusEvent}")]
+    private static partial void LogDatapointRecorded(ILogger logger, string className, BuderusEvent buderusEvent);
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} datapoint {DatapointId} returned no value, retrying each poll")]
+    private static partial void LogDatapointFailing(ILogger logger, string className, string datapointId);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} datapoint {DatapointId} still returning no value ConsecutiveFailures={ConsecutiveFailures}")]
+    private static partial void LogDatapointStillFailing(ILogger logger, string className, string datapointId, int consecutiveFailures);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} datapoint {DatapointId} recovered ConsecutiveFailures={ConsecutiveFailures} Downtime={Downtime}")]
+    private static partial void LogDatapointRecovered(ILogger logger, string className, string datapointId, int consecutiveFailures, TimeSpan downtime);
 }

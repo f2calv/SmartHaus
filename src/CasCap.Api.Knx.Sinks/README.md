@@ -7,6 +7,9 @@ They persist decoded `KnxEvent` data and raw CEMI frames according to the featur
 
 Targets .NET 8 and .NET 10; includes the core KNX library.
 
+Use the same repository version for the client and sinks. Release dependencies use Common
+5.1.0 and Azure authentication/storage 2.0.0.
+
 ```bash
 dotnet add package CasCap.Api.Knx.Sinks
 ```

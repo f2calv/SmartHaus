@@ -24,7 +24,7 @@ public sealed class WizConnectionHealthCheck(
             return Task.FromResult(HealthCheckResult.Healthy($"{bulbCount} Wiz bulb(s) discovered"));
         }
 
-        logger.LogWarning("{ClassName} degraded, no bulbs discovered", nameof(WizConnectionHealthCheck));
+        logger.LogDebug("{ClassName} degraded, no bulbs discovered", nameof(WizConnectionHealthCheck));
         return Task.FromResult(HealthCheckResult.Degraded("No Wiz bulbs discovered on the network"));
     }
 }

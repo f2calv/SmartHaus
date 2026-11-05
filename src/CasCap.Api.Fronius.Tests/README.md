@@ -51,7 +51,7 @@ CasCap.Api.Fronius.Tests/
 
 ```bash
 # Offline regression cases only
-dotnet test --project src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj -- --filter-trait "Category=Deserialization"
+dotnet test --project src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj --filter-trait "Category=Deserialization"
 ```
 
 Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. Omit the trait filter

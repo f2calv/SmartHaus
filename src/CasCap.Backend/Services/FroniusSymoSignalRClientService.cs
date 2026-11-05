@@ -61,35 +61,38 @@ public class FroniusSymoSignalRClientService(ILogger<FroniusSymoSignalRClientSer
             await connection.SendAsync(nameof(IHausServerHub.SendMessage), appConfig.PodName ?? AppDomain.CurrentDomain.FriendlyName, $"{msg}", timeProvider.GetUtcNow().UtcDateTime);
         }
 
-        async Task<bool> ConnectWithRetryAsync(CancellationToken cancellationToken = default)
+    }
+
+    private async Task<bool> ConnectWithRetryAsync(CancellationToken cancellationToken = default)
+    {
+        var retry = 5;
+        var attempt = 0;
+        while (!cancellationToken.IsCancellationRequested)
         {
-            var retry = 5;
-            while (!cancellationToken.IsCancellationRequested)
+            try
             {
-                try
-                {
-                    logger.LogInformation("{ClassName} attempting to connect to {Url}", nameof(FroniusSymoSignalRClientService), url);
-                    await connection.StartAsync(cancellationToken);
-                    Debug.Assert(connection.State == HubConnectionState.Connected);
-                    return true;
-                }
-                catch (System.Net.Http.HttpRequestException hre)
-                {
-                    logger.LogError("{ClassName} {ExceptionMessage} Will retry in {Retry} seconds.", nameof(FroniusSymoSignalRClientService), hre.Message, retry);
-                }
-                catch when (cancellationToken.IsCancellationRequested)
-                {
-                    logger.LogError("{ClassName} cancellationToken.IsCancellationRequested", nameof(FroniusSymoSignalRClientService));
-                    return false;
-                }
-                catch (Exception ex)
-                {
-                    logger.LogError(ex, "{ClassName} {MethodName} failure", nameof(FroniusSymoSignalRClientService), nameof(ConnectWithRetryAsync));
-                }
-                await Task.Delay(retry * 1_000, cancellationToken);
+                attempt++;
+                logger.LogDebug("{ClassName} attempting to connect to the hub", nameof(FroniusSymoSignalRClientService));
+                await connection!.StartAsync(cancellationToken);
+                Debug.Assert(connection.State == HubConnectionState.Connected);
+                if (logger.IsEnabled(LogLevel.Information))
+                    logger.LogInformation("{ClassName} connected after {Attempt} attempt(s)", nameof(FroniusSymoSignalRClientService), attempt);
+                return true;
             }
-            return false;
+            catch when (cancellationToken.IsCancellationRequested)
+            {
+                logger.LogDebug("{ClassName} connection cancelled", nameof(FroniusSymoSignalRClientService));
+                return false;
+            }
+            catch (Exception ex)
+            {
+                logger.Log(attempt == 1 ? LogLevel.Warning : LogLevel.Debug, ex,
+                    "{ClassName} {MethodName} failure, Attempt={Attempt}, will retry in {Retry} seconds",
+                    nameof(FroniusSymoSignalRClientService), nameof(ConnectWithRetryAsync), attempt, retry);
+            }
+            await Task.Delay(retry * 1_000, cancellationToken);
         }
+        return false;
     }
 
     /// <inheritdoc/>

@@ -106,7 +106,7 @@ public sealed partial class FroniusSinkAzureTablesService : IEventSink<FroniusEv
     public async Task<IEnumerable<FroniusReadingEntity>> GetReadings(int limit = 100)
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
+        _logger.LogDebug("{ClassName} Getting data from table storage for partitionKey '{PartitionKey}'",
             nameof(FroniusSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<FroniusReadingEntity>(
             p => p.PartitionKey == partitionKey

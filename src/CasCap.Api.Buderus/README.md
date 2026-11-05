@@ -10,6 +10,15 @@ Targets .NET 8 and .NET 10.
 dotnet add package CasCap.Api.Buderus
 ```
 
+## Compatibility
+
+In 2.0, starting the monitor without an event sink throws `ConfigurationException` instead of
+`GenericException`. Update consumers that catch the old concrete type. The library uses Common
+5.1.0 and retains both target frameworks.
+
+Datapoint read/write diagnostics omit requested IDs and values. Query and write-result contracts
+still provide their existing caller-facing context.
+
 ## Usage
 
 Load the configuration below in a .NET host, then register and resolve the client:

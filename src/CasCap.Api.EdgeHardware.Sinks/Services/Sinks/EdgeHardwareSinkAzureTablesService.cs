@@ -89,7 +89,7 @@ public sealed partial class EdgeHardwareSinkAzureTablesService : IEventSink<Edge
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        _logger.LogInformation("{ClassName} getting data from table storage for partitionKey {PartitionKey}",
+        _logger.LogDebug("{ClassName} getting data from table storage for partitionKey {PartitionKey}",
             nameof(EdgeHardwareSinkAzureTablesService), partitionKey);
 
         var entities = await _lineItemTableClient.QueryAsync<EdgeHardwareReadingEntity>(

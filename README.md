@@ -73,8 +73,12 @@ its own device, cloud authentication and configuration requirements.
 
 ## Compatibility
 
-The 1.1 release intentionally includes incompatible contracts despite its minor version.
-Rebuild package consumers and migrate the
+Version 2.0 classifies missing application or event-sink configuration as `ConfigurationException`
+and duplicate KNX export metadata as `InvalidDataException`, rather than `GenericException`.
+Consumers catching the old concrete exception must update their handlers and rebuild. Device
+packages retain .NET 8 and .NET 10 support; application hosts remain .NET 10.
+
+When migrating from versions before 1.1, also update the
 [Buderus query-service write result](src/CasCap.Api.Buderus/README.md#migrating-to-11).
 HTTP callers must also check the current typed device responses, string-enum JSON and
 [validated Miele command bodies](src/CasCap.Api.Miele/README.md#commands-and-failures);
@@ -138,33 +142,24 @@ Redis is a server prerequisite even for a single-process profile. Azure storage 
 are optional capabilities; corresponding options may still require syntactically valid endpoints.
 The local demo uses Azurite rather than an Azure subscription.
 
-## Data Flow
+## System Context
 
-Feature services collect device readings or receive webhooks and dispatch events to selected sinks.
-SignalR broadcasts events; Redis streams connect domain events and media to communications.
-SmartHaus exposes its own MCP tools but does not construct or select language-model agents.
+SmartHaus integrates devices and cloud APIs, exposes HTTP/SignalR/MCP surfaces, and delegates model
+execution and Signal account ownership to separate services. The
+[architecture drilldown](docs/architecture.md) covers event flow and package dependencies;
+[artifact publication](docs/artifact-publication.md) separates CI releases from registry publication.
 
 ```mermaid
 flowchart LR
-    classDef owned fill:#e0f2fe,stroke:#0369a1,color:#082f49
-    classDef external fill:#dcfce7,stroke:#15803d,color:#052e16
-    classDef state fill:#fef3c7,stroke:#b45309,color:#451a03
-    DEVICES["Devices and cloud APIs"]:::external
-    FEATURES["SmartHaus feature services"]:::owned
-    SINKS["Event sinks"]:::owned
-    REDIS[("Redis state, streams<br/>and media cache")]:::state
-    STORAGE[("Optional Azure Storage")]:::external
-    HUB["SignalR hub"]:::owned
-    COMMS["Communications and media"]:::owned
-    MCP["Domain MCP tools"]:::owned
-    RUNTIME["External Agent Runtime"]:::external
-    SIGNAL["External Signal gateway"]:::external
-    DEVICES --> FEATURES --> SINKS
-    SINKS --> REDIS & STORAGE & HUB
-    REDIS --> COMMS
-    COMMS --> RUNTIME
-    RUNTIME --> MCP --> FEATURES
-    SIGNAL <-->|"messages and attachments"| COMMS
+    classDef system fill:#dbeafe,stroke:#1d4ed8,color:#1e3a8a
+    classDef person fill:#ede9fe,stroke:#6d28d9,color:#2e1065
+    classDef external fill:#fef3c7,stroke:#d97706,color:#78350f
+    users([Operators and client applications]):::person -->|"HTTP and SignalR"| haus[SmartHaus]:::system
+    devices["Devices and cloud APIs"]:::external <-->|"readings, events and commands"| haus
+    haus -.->|"agent runs"| runtime[Agent Runtime]:::external
+    runtime -->|"MCP tools"| haus
+    haus <-->|"messages and attachments"| signal[Signal gateway]:::external
+    haus -.->|"optional persistence"| azure[Azure Storage]:::external
 ```
 
 The [backend README](src/CasCap.Backend/README.md) documents Signal groups, speech-to-text providers,

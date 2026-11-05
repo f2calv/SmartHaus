@@ -13,7 +13,7 @@ Custom hosts register it with `services.AddDDns(configuration)` from
 `Microsoft.Extensions.DependencyInjection`, and start its [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) worker through the shared
 feature runner.
 
-The leadership runner is available in `CasCap.Common.Caching` 4.17.0. Release builds resolve it
+The leadership runner is consumed from `CasCap.Common.Caching` 5.1.0. Release builds resolve it
 from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 ## Services

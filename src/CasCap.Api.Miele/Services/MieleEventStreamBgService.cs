@@ -32,6 +32,7 @@ public sealed class MieleEventStreamBgService(
     private async Task RunServiceAsync(CancellationToken cancellationToken)
     {
         var attempt = 1;
+        var streamFailures = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             if (mieleConnectionHealthCheck.ConnectionActive)
@@ -55,6 +56,13 @@ public sealed class MieleEventStreamBgService(
             try
             {
                 using var stream = await _httpClient.GetStreamAsync(mieleConfig.Value.EventStreamUrl, cancellationToken);
+                if (streamFailures > 0)
+                {
+                    if (logger.IsEnabled(LogLevel.Information))
+                        logger.LogInformation("{ClassName} SSE stream reconnected ConsecutiveFailures={ConsecutiveFailures}",
+                            nameof(MieleEventStreamBgService), streamFailures);
+                    streamFailures = 0;
+                }
                 string? json;
                 using var reader = new StreamReader(stream);
                 while ((json = await reader.ReadLineAsync(cancellationToken)) is not null)
@@ -64,7 +72,8 @@ public sealed class MieleEventStreamBgService(
                     //    OnRaiseHeartbeatEvent(new Heartbeat { time = DateTime.UtcNow });
                     else
                     {
-                        logger.LogInformation("{ClassName} Miele event received, json={Json}", nameof(MieleEventStreamBgService), json);
+                        if (logger.IsEnabled(LogLevel.Debug))
+                            logger.LogDebug("{ClassName} Miele event received, Length={Length}", nameof(MieleEventStreamBgService), json.Length);
                         var evt = new MieleEvent
                         {
                             DeviceId = "unknown",
@@ -82,7 +91,9 @@ public sealed class MieleEventStreamBgService(
             }
             catch (HttpRequestException ex)
             {
-                logger.LogError(ex, "{ClassName} SSE stream failure", nameof(MieleEventStreamBgService));
+                logger.Log(streamFailures++ == 0 ? LogLevel.Warning : LogLevel.Debug, ex,
+                    "{ClassName} SSE stream failure ConsecutiveFailures={ConsecutiveFailures}",
+                    nameof(MieleEventStreamBgService), streamFailures);
             }
         }
     }

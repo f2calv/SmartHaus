@@ -12,6 +12,8 @@ public static partial class AppHost
         IReadOnlySet<string> enabledFeatures,
         SignalRHubConfig? signalRHubConfig)
     {
+        // First, so the summary times the whole pipeline and records authentication rejections.
+        app.UseCasCapRequestLogging();
         app.UseExceptionHandler();
         app.UseStatusCodePages();
         app.UseStaticFiles();
@@ -74,7 +76,5 @@ public static partial class AppHost
 
         if (app.Environment.IsDevelopment() && appConfig.OtlpExporterEndpoint is not null)
             app.UseOpenTelemetryPrometheusScrapingEndpoint();
-
-        app.UseCasCapRequestLogging();
     }
 }

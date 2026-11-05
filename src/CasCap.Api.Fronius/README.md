@@ -10,6 +10,12 @@ Targets .NET 8 and .NET 10.
 dotnet add package CasCap.Api.Fronius
 ```
 
+## Compatibility
+
+In 2.0, starting the monitor without an event sink throws `ConfigurationException` instead of
+`GenericException`. Update consumers that catch the old concrete type. The library uses Common
+5.1.0 and retains both target frameworks.
+
 ## Usage
 
 Load the JSON configuration below in a .NET host and read a live power-flow response:

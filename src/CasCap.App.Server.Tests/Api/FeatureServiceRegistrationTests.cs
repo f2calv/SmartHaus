@@ -29,7 +29,7 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
     /// </summary>
     [Fact]
     [Trait("Category", "Integration")]
-    public void TestFeature_RegistersNoBackgroundFeatures()
+    public void TestFeature_RegistersOnlySharedCacheExpiry()
     {
         var features = Services
             .GetServices<IBgFeature>()
@@ -39,7 +39,9 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
         foreach (var f in features)
             output.WriteLine($"  {f.GetType().Name} – FeatureName={f.FeatureName}");
 
-        Assert.Empty(features);
+        var feature = Assert.Single(features);
+        Assert.IsType<CacheExpiryBgService>(feature);
+        Assert.Equal(IBgFeature.AlwaysEnabled, feature.FeatureName);
     }
 
     /// <summary>

@@ -32,7 +32,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
 
         var groupValue = kga.ToGroupValue(request.ActualValue);
         await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken).ConfigureAwait(false);
-        logger.LogInformation("{ClassName} sending {DptSubType} value {ActualValue} ({Value}) to {GroupAddress}",
+        logger.LogDebug("{ClassName} sending {DptSubType} value {ActualValue} ({Value}) to {GroupAddress}",
             nameof(KnxQueryService), kga.GetDptBase(), request.ActualValue, groupValue.Value, kga.Name);
 
         var iterations = 0;
@@ -40,7 +40,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         {
             await Task.Delay(100, cancellationToken).ConfigureAwait(false);
             var stateAfter = await knxState.GetKnxState(request.GroupAddressName, cancellationToken).ConfigureAwait(false);
-            logger.LogInformation("{ClassName} state is currently {ValueAfter}", nameof(KnxQueryService), stateAfter?.Value);
+            logger.LogDebug("{ClassName} state is currently {ValueAfter}", nameof(KnxQueryService), stateAfter?.Value);
             if (stateAfter is not null && !stateAfter.Equals(stateBefore))
             {
                 logger.LogInformation("{ClassName} state changed for {GroupAddress} from {ValueBefore} to {ValueAfter} after {Iterations} poll(s)",
@@ -89,11 +89,11 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             {
                 var vfbState = await knxState.GetKnxState(vfbName, cancellationToken).ConfigureAwait(false);
                 isDimmed = vfbState is not null && vfbState.Value != "100";
-                logger.LogInformation("{ClassName} {GroupAddress} {Function}={VfbValue}, {IsDimmedLabel}={IsDimmed}",
+                logger.LogDebug("{ClassName} {GroupAddress} {Function}={VfbValue}, {IsDimmedLabel}={IsDimmed}",
                     nameof(KnxQueryService), request.GroupName, nameof(LightingFunction.VFB), vfbState?.Value, nameof(isDimmed), isDimmed);
             }
             else
-                logger.LogInformation("{ClassName} {GroupAddress} has no {Function} address, using {OffFunction}=false for off",
+                logger.LogDebug("{ClassName} {GroupAddress} has no {Function} address, using {OffFunction}=false for off",
                     nameof(KnxQueryService), request.GroupName, nameof(LightingFunction.VFB), nameof(LightingFunction.SW));
         }
 
@@ -157,7 +157,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
 
         var lastDirectionDown = IsDirectionDown(directionState);
         if (logger.IsEnabled(LogLevel.Information))
-            logger.LogInformation("{ClassName} {GroupAddress} {Function}={DirectionValue}, {DirectionLabel}={LastDirectionDown}",
+            logger.LogDebug("{ClassName} {GroupAddress} {Function}={DirectionValue}, {DirectionLabel}={LastDirectionDown}",
                 nameof(KnxQueryService), groupName, nameof(ShutterFunction.DIRECTION), directionState.Value, nameof(lastDirectionDown), lastDirectionDown);
         return lastDirectionDown;
     }
@@ -247,7 +247,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
             var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false);
             if (stateBefore is not null && stateBefore.Value == desiredValue)
             {
-                logger.LogWarning("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
+                logger.LogDebug("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
                     nameof(KnxQueryService), feedbackName, value);
                 results.Add(new KnxStateChangeResult
                 {
@@ -349,7 +349,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         var stateBefore = await knxState.GetKnxState(feedbackName, cancellationToken).ConfigureAwait(false);
         if (stateBefore is not null && stateBefore.Value == desiredValue)
         {
-            logger.LogWarning("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
+            logger.LogDebug("{ClassName} {GroupAddress} already has desired value {DesiredValue}, skipping send",
                 nameof(KnxQueryService), feedbackName, value);
             return new KnxStateChangeResult
             {
@@ -361,7 +361,7 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
 
         var groupValue = kga.ToGroupValue(value);
         await outgoingBroker.PublishAsync(new KnxOutgoingTelegram { Kga = kga, GroupValueData = groupValue.Value }, cancellationToken).ConfigureAwait(false);
-        logger.LogInformation("{ClassName} sending {DptSubType} desired value {DesiredValue} ({GroupValue}) to {GroupAddressName}",
+        logger.LogDebug("{ClassName} sending {DptSubType} desired value {DesiredValue} ({GroupValue}) to {GroupAddressName}",
             nameof(KnxQueryService), kga.GetDptBase(), value, groupValue, kga.Name);
 
         var lastSeenValue = stateBefore?.Value;
@@ -459,14 +459,14 @@ public sealed class KnxQueryService(ILogger<KnxQueryService> logger, IOptions<Kn
         if (groupAddressFilter is GroupAddressFilter.Active)
         {
             var activeAddresses = gaLookup.Values.Where(p => keys.Contains(p.Name)).ToList();
-            logger.LogInformation("{ClassName} filtering {Count} group addresses to return {ActiveCount} active addresses",
+            logger.LogDebug("{ClassName} filtering {Count} group addresses to return {ActiveCount} active addresses",
                 nameof(KnxQueryService), gaLookup.Count, activeAddresses.Count);
             return activeAddresses;
         }
         else if (groupAddressFilter is GroupAddressFilter.Inactive)
         {
             var inactiveAddresses = gaLookup.Values.Where(p => !keys.Contains(p.Name)).ToList();
-            logger.LogInformation("{ClassName} filtering {Count} group addresses to return {InactiveCount} inactive addresses",
+            logger.LogDebug("{ClassName} filtering {Count} group addresses to return {InactiveCount} inactive addresses",
                 nameof(KnxQueryService), gaLookup.Count, inactiveAddresses.Count);
             return inactiveAddresses;
         }

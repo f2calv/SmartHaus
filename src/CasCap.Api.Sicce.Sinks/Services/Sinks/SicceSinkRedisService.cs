@@ -26,7 +26,7 @@ public sealed partial class SicceSinkRedisService(
         LogWriteEvent(logger, nameof(SicceSinkRedisService));
         if (string.IsNullOrWhiteSpace(_summaryValues))
         {
-            logger.LogWarning("{ClassName} setting {SettingName} is not set", nameof(SicceSinkRedisService), SinkSettingKeys.SnapshotValues);
+            ReportSettingNotSet(SinkSettingKeys.SnapshotValues);
             return;
         }
 
@@ -104,4 +104,15 @@ public sealed partial class SicceSinkRedisService(
 
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} writing pump event to Redis")]
     private static partial void LogWriteEvent(ILogger logger, string className);
+
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, byte> _reportedMissingSettings = new();
+
+    private void ReportSettingNotSet(string settingName)
+    {
+        if (_reportedMissingSettings.TryAdd(settingName, 0))
+            LogSettingNotSet(logger, nameof(SicceSinkRedisService), settingName);
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} setting {SettingName} is not set")]
+    private static partial void LogSettingNotSet(ILogger logger, string className, string settingName);
 }

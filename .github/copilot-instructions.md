@@ -58,7 +58,7 @@ SmartHaus follows the standard provider order and options-synchronisation rules 
 - When a bindable property changes, follow the central synchronisation rule across all four existing
   tiers; environment and local files restate only values that differ from earlier providers.
 - After changing `appsettings.Local.json` for production deployment, use the central
-  `sync-file-to-configmap` skill with `Format=Json`. Follow its non-secret review and approval
+  `kubernetes-configmap-sync` skill with `Format=Json`. Follow its non-secret review and approval
   requirements; stop if the central skill is unavailable.
 - Preserve existing gitignored `deploy.local.psd1` settings. Map `ManifestRepo` to `TargetRoot`,
   `AppSettingsConfigMapPath` to `TargetPath`, `AppSettingsConfigMapName` to `ConfigMapName`, and

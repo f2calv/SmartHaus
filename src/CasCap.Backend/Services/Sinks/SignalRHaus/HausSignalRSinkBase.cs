@@ -41,7 +41,7 @@ public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : c
     {
         _cancellationToken = cancellationToken;
         var uri = new Uri(_signalRHubConfig.SignalRHub, _signalRHubConfig.HubPath);
-        _logger.LogInformation("{ClassName} connecting to {Uri}", GetType().Name, uri);
+        _logger.LogDebug("{ClassName} connecting to {Uri}", GetType().Name, uri);
         _connection = new HubConnectionBuilder()
             .WithUrl(uri, options =>
             {
@@ -104,12 +104,14 @@ public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : c
     private async Task ConnectWithRetryAsync(CancellationToken cancellationToken)
     {
         const int retrySeconds = 5;
+        var attempt = 0;
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
+                attempt++;
                 await _connection!.StartAsync(cancellationToken);
-                _logger.LogInformation("{ClassName} connected to SignalR hub at {HubPath}", GetType().Name, _signalRHubConfig.HubPath);
+                _logger.LogInformation("{ClassName} connected to SignalR hub at {HubPath} after {Attempt} attempt(s)", GetType().Name, _signalRHubConfig.HubPath, attempt);
                 return;
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
@@ -118,8 +120,9 @@ public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : c
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "{ClassName} failed to connect to SignalR hub, retrying in {RetrySeconds}s",
-                    GetType().Name, retrySeconds);
+                _logger.Log(attempt == 1 ? LogLevel.Warning : LogLevel.Debug, ex,
+                    "{ClassName} failed to connect to SignalR hub, Attempt={Attempt}, retrying in {RetrySeconds}s",
+                    GetType().Name, attempt, retrySeconds);
             }
             await Task.Delay(retrySeconds * 1_000, cancellationToken);
         }
@@ -130,7 +133,7 @@ public abstract partial class HausSignalRSinkBase<T> : IEventSink<T> where T : c
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} sending event to SignalR hub")]
     private static partial void LogWriteEvent(ILogger logger, string className);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} hub not connected, skipping event")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} hub not connected, skipping event")]
     private static partial void LogHubNotConnected(ILogger logger, string className);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} error sending event via SignalR")]

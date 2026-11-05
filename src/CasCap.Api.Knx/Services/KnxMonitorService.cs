@@ -225,15 +225,15 @@ public sealed partial class KnxMonitorService(
             var backoffMs = config.Value.ReconnectBackoffMs;
             var maxBackoffMs = config.Value.ReconnectMaxBackoffMs;
             var connected = false;
+            var attempt = 0;
             while (!connected && !cancellationToken.IsCancellationRequested)
             {
+                attempt++;
                 await Task.Delay(TimeSpan.FromMilliseconds(backoffMs), timeProvider, cancellationToken).ConfigureAwait(false);
-                connected = config.Value.ServiceFamily == ServiceFamily.Routing
-                    ? await ReconnectRoutingAsync(areaLine, cancellationToken).ConfigureAwait(false)
-                    : await ConnectLine(areaLine, cancellationToken).ConfigureAwait(false);
+                connected = await ReconnectAsync(areaLine, cancellationToken).ConfigureAwait(false);
                 if (!connected)
                 {
-                    LogReconnectionFailed(logger, nameof(KnxMonitorService), areaLine, backoffMs);
+                    LogReconnectionFailed(logger, attempt == 1 ? LogLevel.Warning : LogLevel.Debug, nameof(KnxMonitorService), areaLine, attempt, backoffMs);
                     backoffMs = Math.Min(backoffMs * 2, maxBackoffMs);
                 }
             }
@@ -241,7 +241,7 @@ public sealed partial class KnxMonitorService(
             if (connected)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                LogReconnectionSucceeded(logger, nameof(KnxMonitorService), areaLine);
+                LogReconnectionSucceeded(logger, nameof(KnxMonitorService), areaLine, attempt);
                 connectionNotifier.Notify(new KnxConnectionStateChange
                 {
                     AreaLine = areaLine,
@@ -251,6 +251,11 @@ public sealed partial class KnxMonitorService(
             }
         }
     }
+
+    private Task<bool> ReconnectAsync(KnxAreaLine areaLine, CancellationToken cancellationToken) =>
+        config.Value.ServiceFamily == ServiceFamily.Routing
+            ? ReconnectRoutingAsync(areaLine, cancellationToken)
+            : ConnectLine(areaLine, cancellationToken);
 
     /// <summary>
     /// Attempts to connect to a single area/line using the stored discovery parameters.
@@ -311,7 +316,7 @@ public sealed partial class KnxMonitorService(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var bus = new KnxBus(parameters);
-        logger.LogInformation("{ClassName} connecting to {Name} {HostAddress} ({IndividualAddress})...",
+        logger.LogDebug("{ClassName} connecting to {Name} {HostAddress} ({IndividualAddress})...",
             nameof(KnxMonitorService), parameters.Name, parameters.HostAddress, parameters.IndividualAddress);
         try
         {
@@ -324,7 +329,7 @@ public sealed partial class KnxMonitorService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} tunneling connection failed", nameof(KnxMonitorService));
+            logger.LogDebug(ex, "{ClassName} tunneling connection failed", nameof(KnxMonitorService));
             await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
@@ -395,7 +400,7 @@ public sealed partial class KnxMonitorService(
                 var allowed = config.Value.TunnelingAreaLineFilter.Any(p => parameters.IndividualAddress.Value.ToString().StartsWith($"{p}."));
                 if (allowed)
                     allowedParameters.Add(parameters);
-                logger.LogInformation("{ClassName} {Index}: {DisplayName} {Skipped}", nameof(KnxMonitorService), index++,
+                logger.LogDebug("{ClassName} {Index}: {DisplayName} {Skipped}", nameof(KnxMonitorService), index++,
                     displayName, allowed ? string.Empty : " (Skipped)");
             }
             return allowedParameters;
@@ -437,7 +442,7 @@ public sealed partial class KnxMonitorService(
     {
         cancellationToken.ThrowIfCancellationRequested();
         var bus = new KnxBus(parameters);
-        logger.LogInformation("{ClassName} connecting to routing multicast {MulticastAddress}...",
+        logger.LogDebug("{ClassName} connecting to routing multicast {MulticastAddress}...",
             nameof(KnxMonitorService), parameters.MulticastAddress);
         try
         {
@@ -450,7 +455,7 @@ public sealed partial class KnxMonitorService(
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} routing connection failed", nameof(KnxMonitorService));
+            logger.LogDebug(ex, "{ClassName} routing connection failed", nameof(KnxMonitorService));
             await bus.DisposeAsync().ConfigureAwait(false);
             return null;
         }
@@ -572,7 +577,7 @@ public sealed partial class KnxMonitorService(
     [LoggerMessage(Level = LogLevel.Trace, Message = "{ClassName} InterfaceConfiguration {InterfaceConfiguration}")]
     private static partial void LogInterfaceConfiguration(ILogger logger, string className, string interfaceConfiguration);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} ConnectionStateChanged, ConnectionState={ConnectionState}")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} ConnectionStateChanged, ConnectionState={ConnectionState}")]
     private static partial void LogConnectionStateChanged(ILogger logger, string className, string connectionState);
 
     [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} dropped telegram [cross-line] from {SourceAddress} to {DestinationAddress} on {BusAddress}")]
@@ -581,19 +586,19 @@ public sealed partial class KnxMonitorService(
     [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} dropped telegram [rival tunneling address] from {SourceAddress} to {DestinationAddress} on {BusAddress}")]
     private static partial void LogDroppedRivalAddress(ILogger logger, string className, string sourceAddress, GroupAddress destinationAddress, IndividualAddress busAddress);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} reconnection requested for {AreaLine}")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} reconnection requested for {AreaLine}")]
     private static partial void LogReconnectionRequested(ILogger logger, string className, KnxAreaLine areaLine);
 
-    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} reconnection to {AreaLine} failed, retrying in {BackoffMs}ms")]
-    private static partial void LogReconnectionFailed(ILogger logger, string className, KnxAreaLine areaLine, int backoffMs);
+    [LoggerMessage(Message = "{ClassName} reconnection to {AreaLine} failed, Attempt={Attempt}, retrying in {BackoffMs}ms")]
+    private static partial void LogReconnectionFailed(ILogger logger, LogLevel level, string className, KnxAreaLine areaLine, int attempt, int backoffMs);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} reconnection to {AreaLine} succeeded")]
-    private static partial void LogReconnectionSucceeded(ILogger logger, string className, KnxAreaLine areaLine);
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} reconnection to {AreaLine} succeeded after {Attempt} attempt(s)")]
+    private static partial void LogReconnectionSucceeded(ILogger logger, string className, KnxAreaLine areaLine, int attempt);
 
     [LoggerMessage(Level = LogLevel.Error, Message = "{ClassName} no stored discovery parameters for {AreaLine}")]
     private static partial void LogNoStoredParameters(ILogger logger, string className, KnxAreaLine areaLine);
 
-    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} connecting to {AreaLine}")]
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} connecting to {AreaLine}")]
     private static partial void LogConnectingToAreaLine(ILogger logger, string className, KnxAreaLine areaLine);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} connection dropped for {AreaLine}, queuing reconnection")]

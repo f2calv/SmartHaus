@@ -1,475 +1,126 @@
 ---
 name: new-feature-library
-description: Create a new Feature library (+ Sinks library) for the KNX smart home application following all established conventions.
+description: 'Create a feature integration and optional sinks library for the KNX smart home application. Use for the application-specific event/sink contract, lite-mode registration, feature-gated MCP and controller wiring; central .NET skills and instructions own coding conventions.'
 disable-model-invocation: true
 ---
+
 # New Feature Library
 
-Create a new Feature integration library pair for the KNX smart home application.
-
-## User Input Required
-
-Ask the user for the following before proceeding:
-
-1. **Feature name** (PascalCase, e.g. `Fronius`, `Shelly`, `Ubiquiti`) — this becomes `CasCap.Api.{Feature}` and `CasCap.Api.{Feature}.Sinks`.
-2. **MCP domain name** — the human/LLM-friendly domain label (e.g. `Inverter`, `SmartPlug`, `Cameras`) used for the MCP query service class name `{Domain}McpQueryService` and DI method `Add{Domain}Mcp()`.
-3. **Event properties** — what telemetry fields the device produces (e.g. temperature, power, state, RSSI). Include types and units.
-4. **Device identifier** — which property uniquely identifies a device instance (e.g. `DeviceId`, `Mac`, `CameraId`). This becomes the Azure Table `PartitionKey` for multi-device scenarios.
-5. **Single device or multi-device?** — determines whether Azure Table `PartitionKey` is date-based (`yyMMdd`) or entity-scoped (DeviceId).
-6. **Data source type** — HTTP polling, UDP discovery, event stream, GPIO, etc. This determines the background service pattern.
-7. **CommsStream alert conditions** — what thresholds or state changes should trigger comms alerts (e.g. "temperature above X", "state changed from on to off").
-
-## Checklist — Files to Create/Modify
-
-Work through each section below in order. Mark each step complete before moving to the next.
-
----
-
-### Phase 1: Base Feature Library — `CasCap.Api.{Feature}/`
-
-#### 1.1 Create project file
-
-Create `src/CasCap.Api.{Feature}/CasCap.Api.{Feature}.csproj`:
-
-- `<TargetFramework>net10.0</TargetFramework>`
-- `<InternalsVisibleTo Include="CasCap.Api.{Feature}.Sinks" />`
-- Reference pattern: Debug uses `<ProjectReference>`, Release uses `<PackageReference>` — follow existing `.csproj` files in the workspace for the exact conditional include pattern.
-- Common package references: `Asp.Versioning.Mvc`, `Microsoft.AspNetCore.Mvc.Core`, `Microsoft.Extensions.Http`, `Microsoft.Extensions.Diagnostics.HealthChecks`.
-- Common project references: `CasCap.Common.Configuration`, `CasCap.Common.Extensions`, `CasCap.Common.Logging`, `CasCap.Common.Net`, `CasCap.Common.Serialization.Json`.
-
-#### 1.2 Create `GlobalUsings.cs`
-
-File: `src/CasCap.Api.{Feature}/GlobalUsings.cs`
-
-Follow pure alphabetical ordering. Typical global usings:
-
-```csharp
-global using CasCap.Abstractions;
-global using CasCap.Models;
-global using CasCap.Services;
-global using Microsoft.Extensions.Logging;
-global using Microsoft.Extensions.Options;
-global using System.ComponentModel;
-```
-
-#### 1.3 Create `Models/{Feature}Event.cs`
-
-- `public record {Feature}Event` with all telemetry properties.
-- Must include `DeviceId` as a `required string` property (first property).
-- Must include `DateTime TimestampUtc { get; init; }`.
-- Add `[Description("...")]` on every property (MCP-consumable).
-- Add XML `<summary>` on every property.
-- If the event is constructed from an API response, add a constructor that accepts the response DTO and maps fields.
-- Add an `internal` constructor for test factories.
-
-#### 1.4 Create `Models/_{Feature}Config.cs`
-
-- `public record {Feature}Config : IAppConfig` with:
-  - `string? AzureTableStorageConnectionString { get; init; }` (if using AzTables)
-  - `string? BaseAddress { get; init; }` (if HTTP polling)
-  - `int PollingDelayMs { get; init; } = 60_000;` (with `[Range(1, int.MaxValue)]`)
-  - `int RedisSeriesExpiryDays { get; init; } = 7;` (with `[Range(1, 365)]`)
-  - `SinkConfig Sinks { get; init; } = new();` (with `[ValidateObjectMembers]`)
-  - Feature-specific thresholds for CommsStream alerts (e.g. `double AlertThresholdC`, `double AlertHysteresis`, `int AlertCooldownMs`).
-- Add `[Url]` on URI properties, `[Range]` on numeric properties, `[MinLength(1)]` on identifier strings.
-- Config section name: `CasCap:{Feature}Config`.
-
-#### 1.5 Create `Models/_Enums.cs` (if needed)
-
-- Consolidate all feature-specific enums into a single `_Enums.cs` file.
-- Add XML `<summary>` on every enum and member.
-
-#### 1.6 Create `Models/Dtos/` (if needed)
-
-- API response DTOs for the device protocol.
-- One class per file matching the type name.
-
-#### 1.7 Create `Abstractions/I{Feature}Query.cs`
-
-```csharp
-namespace CasCap.Abstractions;
-
-public interface I{Feature}Query
-{
-    Task<List<{Feature}Snapshot>> GetSnapshots();
-    IAsyncEnumerable<{Feature}Event> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default);
-}
-```
-
-#### 1.8 Create `Abstractions/I{Feature}QueryService.cs`
-
-```csharp
-namespace CasCap.Abstractions;
-
-public interface I{Feature}QueryService
-{
-    Task<List<{Feature}Snapshot>> GetSnapshots();
-    IAsyncEnumerable<{Feature}Event> GetEvents(string? id = null, int limit = 1000, CancellationToken cancellationToken = default);
-}
-```
-
-#### 1.9 Create `Models/{Feature}Snapshot.cs` (if multi-device)
-
-- `public record {Feature}Snapshot` with summary fields + `DateTimeOffset? ReadingUtc`.
-- Add `[Description("...")]` on every property.
-
-#### 1.10 Create `Services/{Feature}ClientService.cs` (if HTTP-based)
-
-- Inject `ILogger`, `IOptions<{Feature}Config>`, `IHttpClientFactory`.
-- Use primary constructor.
-- Named `HttpClient` matching the health check class name.
-
-#### 1.11 Create `Services/{Feature}MonitorBgService.cs`
-
-- Implement `IBgFeature` (or `BackgroundService` if non-standard polling).
-- `FeatureName` property returns `nameof({Feature})` matching the `FeatureNames` constant.
-- Poll device, construct `{Feature}Event`, fan out to all `IEventSink<{Feature}Event>` instances.
-- Log with `{ClassName}` first pattern.
-
-#### 1.12 Create `Services/{Feature}QueryService.cs`
-
-- Implement `I{Feature}QueryService`.
-- Inject `ILogger`, `IEnumerable<IEventSink<{Feature}Event>>`, resolve `I{Feature}Query` from sinks.
-- Delegate `GetSnapshots()` and `GetEvents()` to the primary query-capable sink.
-
-#### 1.13 Create `Services/Sinks/{Feature}SinkConsoleService.cs`
-
-```csharp
-[SinkType("Console")]
-public class {Feature}SinkConsoleService(ILogger<{Feature}SinkConsoleService> logger) : IEventSink<{Feature}Event>
-```
-
-- Log the event at `LogDebug` level.
-
-#### 1.14 Create `Services/Sinks/{Feature}SinkMemoryService.cs`
-
-```csharp
-[SinkType("Memory")]
-public class {Feature}SinkMemoryService(ILogger<{Feature}SinkMemoryService> logger) : IEventSink<{Feature}Event>, I{Feature}Query
-```
-
-- `ConcurrentDictionary<string, {Feature}Event>` keyed by `DeviceId`.
-- Implements `I{Feature}Query` for snapshot + event retrieval.
-
-#### 1.15 Create `Services/Sinks/{Feature}SinkMetricsService.cs`
-
-```csharp
-[SinkType("Metrics")]
-public class {Feature}SinkMetricsService : IEventSink<{Feature}Event>
-```
-
-- Use `IMeterFactory` to create OTel gauges for key numeric properties.
-
-#### 1.16 Create `Controllers/{Feature}Controller.cs`
-
-- `[ApiController]`, `[Route("api/v{version:apiVersion}/{feature}")]`, `[ApiVersion("1.0")]`.
-- Inject `I{Feature}QueryService`.
-- `GET /snapshots` → `GetSnapshots()`
-- `GET /events` → `GetEvents()`
-
-#### 1.17 Create `HealthChecks/{Feature}ConnectionHealthCheck.cs`
-
-- Implement `IHealthCheck`.
-- Use named `HttpClient` to verify device connectivity.
-
-#### 1.18 Create `Extensions/ServiceCollectionExtensions.cs`
-
-- `public static void Add{Feature}(this IServiceCollection services, IConfiguration configuration, bool lite = false, Action<{Feature}Config>? configure = null)`
-- Pattern:
-  1. Bind config via `AddAndGetCasCapConfiguration<{Feature}Config>()`.
-  2. Register named `HttpClient`.
-  3. Register client service.
-  4. Auto-discover sinks via `AddEventSinks<{Feature}Event>(config.Sinks, typeof(...).Assembly)`.
-  5. Ensure primary keyed sink (fallback to Memory).
-  6. Unless `lite`: register health check + `IBgFeature` background service.
-  7. Register `{Feature}QueryService` + `I{Feature}QueryService`.
-
-#### 1.19 Create `README.md`
-
-- Purpose → Services/Extensions → Configuration → Dependencies (NuGet packages table + Project references table).
-- Include `## Configuration Examples` section with `appsettings.json` snippets.
-
----
-
-### Phase 2: Sinks Library — `CasCap.Api.{Feature}.Sinks/`
-
-#### 2.1 Create project file
-
-Create `src/CasCap.Api.{Feature}.Sinks/CasCap.Api.{Feature}.Sinks.csproj`:
-
-- `<TargetFramework>net10.0</TargetFramework>`
-- Always reference: `<ProjectReference Include="..\CasCap.Api.{Feature}\CasCap.Api.{Feature}.csproj" />`
-- Debug references: `CasCap.Api.Azure.Auth`, `CasCap.Api.Azure.Storage`, `CasCap.Common.Caching`.
-
-#### 2.2 Create `GlobalUsings.cs`
-
-```csharp
-global using Azure;
-global using Azure.Data.Tables;
-global using CasCap.Abstractions;
-global using CasCap.Models;
-global using CasCap.Services;
-global using Microsoft.Extensions.Logging;
-global using Microsoft.Extensions.Options;
-global using System.Runtime.CompilerServices;
-global using System.Runtime.Serialization;
-```
-
-#### 2.3 Create `Models/{Feature}ReadingEntity.cs`
-
-- `public class {Feature}ReadingEntity : ITableEntity`
-- Parameterless constructor (required by SDK).
-- Event-accepting constructor: `public {Feature}ReadingEntity({Feature}Event evt)`.
-  - `PartitionKey` = `evt.DeviceId` (multi-device) or `evt.TimestampUtc.ToString("yyMMdd")` (single-device).
-  - `RowKey` = `evt.TimestampUtc.Ticks.ToString()` (raw Ticks, **never** divided by 10_000).
-  - Map event properties to ultra-short column names (single letters where possible).
-- Ultra-short `get; init;` properties for storage columns (e.g. `public double p { get; init; }`).
-- Full-name expression-bodied accessor properties with `[IgnoreDataMember]` (e.g. `public double Power => p;`).
-- `TimestampUtc` accessor: `public DateTime TimestampUtc => new(long.Parse(RowKey), DateTimeKind.Utc);`
-- `GetEntity()` method returning a `TableEntity` with all column fields.
-
-#### 2.4 Create `Models/{Feature}SnapshotEntity.cs`
-
-- `public class {Feature}SnapshotEntity : ITableEntity`
-- Parameterless constructor.
-- Event-accepting constructor:
-  - If `RowKey` is derivable from the event (e.g. `DeviceId`): `public {Feature}SnapshotEntity(string partitionKey, {Feature}Event evt)` — derive `RowKey` internally.
-  - If `RowKey` is a constant (single-device, e.g. `"latest"`): `public {Feature}SnapshotEntity(string partitionKey, string rowKey, {Feature}Event evt)`.
-- Use readable column names (snapshot is low-volume).
-- Include `DateTimeOffset? ReadingUtc { get; init; }`.
-- `GetEntity()` method.
-
-#### 2.5 Create `Services/Sinks/{Feature}SinkAzureTablesService.cs`
-
-```csharp
-[SinkType("AzureTables")]
-public class {Feature}SinkAzureTablesService : IEventSink<{Feature}Event>, I{Feature}Query
-```
-
-- Inject `ILogger`, `IOptions<AzureAuthConfig>`, `IOptions<{Feature}Config>`.
-- Read table names from `config.Sinks.AvailableSinks["AzureTables"].Settings` using `SinkSettingKeys.LineItemTableName` / `SinkSettingKeys.SnapshotTableName`.
-- Fallback table names: `"{feature}lineitemsv1"`, `"{feature}snapshotv1"`.
-- `WriteEvent()`: create both line item + snapshot entities, upsert both in parallel.
-- `GetSnapshots()`: query snapshot table by `SnapshotPartitionKey`.
-- `GetEvents()`: query line items, optionally filtered by `id` (= PartitionKey = DeviceId).
-
-#### 2.6 Create `Services/Sinks/{Feature}SinkRedisService.cs`
-
-```csharp
-[SinkType("Redis")]
-public class {Feature}SinkRedisService : IEventSink<{Feature}Event>, I{Feature}Query
-```
-
-- Inject `ILogger`, `IOptions<{Feature}Config>`, `IRemoteCacheService`.
-- Read Redis key names from sink settings: `SnapshotValues` and `SeriesValues`.
-- `WriteEvent()`:
-  1. Upsert snapshot hash: key = `{snapshotKey}:{DeviceId}`, fields = property name/value pairs.
-  2. Add to series sorted set: key = `{seriesKey}:{yyMMdd}`, score = `Ticks`, member = pipe-delimited values.
-  3. Set series TTL from `config.RedisSeriesExpiryDays`.
-- `GetSnapshots()`: scan snapshot keys, `HGETALL` each.
-- `GetEvents()`: `ZRANGEBYSCORE` on today's series key.
-
-#### 2.7 Create `Services/Sinks/{Feature}SinkCommsStreamService.cs`
-
-```csharp
-[SinkType("CommsStream")]
-public class {Feature}SinkCommsStreamService : IEventSink<{Feature}Event>
-```
-
-- Inject `ILogger`, `IOptions<{Feature}Config>`, `IEventSink<CommsEvent>`.
-- Implement hysteresis + cooldown pattern for threshold alerts:
-  - Read threshold, hysteresis, and cooldown from config.
-  - Track per-device state in `ConcurrentDictionary<string, (bool IsAlerting, DateTime LastAlertUtc)>`.
-  - Alert when value exceeds threshold (and not in cooldown).
-  - Rearm when value drops below `threshold - hysteresis`.
-- For state-change alerts (on/off): track previous state per device, alert on transitions (skip first-seen).
-
-#### 2.8 Create `Extensions/ServiceCollectionExtensions.cs`
-
-```csharp
-public static class {Feature}SinksServiceCollectionExtensions
-{
-    public static void Add{Feature}WithExtraSinks(this IServiceCollection services, IConfiguration configuration,
-        bool lite = false, Action<{Feature}Config>? configure = null)
-    {
-        services.Add{Feature}(configuration, lite, configure);
-        var config = configuration.GetCasCapConfiguration<{Feature}Config>();
-        services.AddEventSinks<{Feature}Event>(
-            lite ? config.Sinks.WithoutSinkType("Redis") : config.Sinks,
-            typeof({Feature}SinksServiceCollectionExtensions).Assembly);
-    }
-}
-```
-
-#### 2.9 Create `README.md`
-
-- Purpose → Sinks overview → Configuration → Dependencies.
-
----
-
-### Phase 3: MCP Integration — `CasCap.Backend/`
-
-#### 3.1 Create `Services/Mcp/{Domain}McpQueryService.cs`
-
-```csharp
-[McpServerToolType]
-public class {Domain}McpQueryService(I{Feature}QueryService querySvc)
-```
-
-- `[McpServerTool]` + `[Description("...")]` on every method.
-- `[Description("...")]` on every non-CancellationToken parameter.
-- Methods: `Get{Feature}Snapshot`, `Get{Feature}Events`.
-- Domain-prefix tool names for global uniqueness.
-
-#### 3.2 Update `Extensions/ServiceCollectionExtensions.cs`
-
-Add `Add{Domain}Mcp()` method:
-
-```csharp
-public static void Add{Domain}Mcp(this IServiceCollection services)
-    => services.AddSingleton<{Domain}McpQueryService>();
-```
-
----
-
-### Phase 4: Wiring — Composition Root
-
-#### 4.1 Update `FeatureNames.cs`
-
-File: `src/CasCap.Backend/Models/FeatureNames.cs`
-
-Add:
-
-```csharp
-/// <summary>{Feature description} integration.</summary>
-public const string {Feature} = nameof({Feature});
-```
-
-#### 4.2 Update `Program.cs`
-
-File: `src/CasCap.App.Server/Program.cs`
-
-Add feature registration block (follow existing pattern):
-
-```csharp
-if (enabledFeatures.Contains(FeatureNames.{Feature}) || enabledFeatures.Contains(FeatureNames.Comms))
-{
-    builder.Services.Add{Feature}WithExtraSinks(builder.Configuration,
-        lite: !enabledFeatures.Contains(FeatureNames.{Feature}));
-    builder.Services.Add{Domain}Mcp();
-    mcpBuilder.WithToolsFromAssembly(typeof({Domain}McpQueryService).Assembly);
-    mcpBuilder.WithPromptsFromAssembly(typeof({Domain}McpQueryService).Assembly);
-}
-```
-
-Also add the controller application part:
-
-```csharp
-if (enabledFeatures.Contains(FeatureNames.{Feature}))
-    mvcBuilder.AddApplicationPart(typeof({Feature}Controller).Assembly);
-```
-
----
-
-### Phase 5: Configuration Files
-
-#### 5.1 Update `appsettings.json`
-
-Add `{Feature}Config` section under `CasCap:`:
-
-```json
-"{Feature}Config": {
-  "AzureTableStorageConnectionString": "https://yourstore.table.core.windows.net/",
-  "BaseAddress": "http://192.168.1.xxx",
-  "PollingDelayMs": 60000,
-  "RedisSeriesExpiryDays": 7,
-  "Sinks": {
-    "AvailableSinks": {
-      "AzureTables": {
-        "Enabled": true,
-        "Settings": {
-          "LineItemTableName": "{feature}lineitemsv1",
-          "SnapshotTableName": "{feature}snapshotv1"
-        }
-      },
-      "Memory": { "Enabled": false },
-      "Metrics": { "Enabled": true },
-      "Console": { "Enabled": true },
-      "Redis": {
-        "Enabled": true,
-        "Settings": {
-          "SnapshotValues": "{feature}:snapshot:values",
-          "SeriesValues": "{feature}:series"
-        }
-      },
-      "CommsStream": { "Enabled": true }
-    }
-  }
-}
-```
-
-#### 5.2 Update `appsettings.Development.json`
-
-Add development-specific overrides (e.g. shorter polling, disabled sinks).
-
-#### 5.3 Update `EnabledFeatures`
-
-Add `"{Feature}"` to the `EnabledFeatures` array in both `appsettings.json` and `appsettings.Development.json`.
-
----
-
-### Phase 6: Solution & Helm
-
-#### 6.1 Update `SmartHaus.Debug.slnx`
-
-Add both projects under `/SmartHaus/libs/`:
-
-```xml
-<Project Path="src/CasCap.Api.{Feature}/CasCap.Api.{Feature}.csproj" />
-<Project Path="src/CasCap.Api.{Feature}.Sinks/CasCap.Api.{Feature}.Sinks.csproj" />
-```
-
-#### 6.2 Update `SmartHaus.Release.slnx`
-
-Same additions.
-
-#### 6.3 Update Helm values (if applicable)
-
-File: `charts/smarthaus/values.yaml` — add the feature to the enabled features
-list when it belongs in the public deployment defaults. Keep environment-specific
-deployment configuration outside this repository.
-
----
-
-### Phase 7: Verification
-
-#### 7.1 Build
-
-Run `dotnet build SmartHaus.Debug.slnx` and fix all errors.
-
-**Do NOT run tests automatically** — prompt the user first (they may be integration tests requiring device connectivity).
-
-#### 7.2 Review checklist
-
-Before declaring complete, verify:
-
-- [ ] All files follow class-per-file convention (filename matches type name).
-- [ ] All public types have XML documentation.
-- [ ] All `[McpServerTool]` methods have `[Description]` attributes.
-- [ ] Config properties have validation attributes.
-- [ ] ReadingEntity uses ultra-short column names + `[IgnoreDataMember]` expanded accessors.
-- [ ] SnapshotEntity uses readable column names.
-- [ ] ReadingEntity constructor accepts event object (not individual properties).
-- [ ] SnapshotEntity constructor derives RowKey from event when possible.
-- [ ] PartitionKey is entity-scoped for multi-device, date-based for single-device.
-- [ ] RowKey uses raw `Ticks.ToString()`.
-- [ ] Redis keys follow `{domain}:{type}:{detail}` pattern.
-- [ ] Table names follow `{feature}lineitemsv1` / `{feature}snapshotv1` pattern.
-- [ ] Logging uses `{ClassName}` first pattern with `nameof()`.
-- [ ] Primary constructors used throughout.
-- [ ] `GlobalUsings.cs` in both project roots.
-- [ ] `README.md` in both project roots.
-- [ ] appsettings.json + appsettings.Development.json updated.
-- [ ] Solution files updated.
-- [ ] FeatureNames.cs updated.
-- [ ] Program.cs updated with feature + MCP + controller wiring.
+Add a device integration to this application's existing event/sink architecture. Read the central
+C#, configuration, Azure Table, MCP, Web API, NuGet and testing instructions before editing their
+matching files. Load `dotnet-apphost`, `dotnet-dependency-injection`, `dotnet-mcp` and
+`kubernetes-helm` for the surfaces being changed, plus the relevant HTTP, Redis or background
+pipeline skill. Stop if the shared customizations are unavailable.
+
+Do not copy those conventions or a neighbouring feature wholesale. Inspect its actual contracts
+and current host composition; an existing implementation is evidence of integration behavior,
+not authority to reproduce naming or lifecycle drift.
+
+## 1. Establish The Integration Contract
+
+Obtain the feature name, MCP domain, source protocol, event fields/types/units, stable device
+identity, single/multi-device storage model and alert conditions. Decide which sinks and APIs are
+needed before creating projects.
+
+- Base library: `src/CasCap.Api.{Feature}/`.
+- Optional persistence sinks library: `src/CasCap.Api.{Feature}.Sinks/`. Do not add a separate
+  project or storage dependency when the integration does not need it.
+- Test coverage follows the existing feature and backend test projects.
+- Redis, table names and sink settings must be chosen from the shared sink/key conventions;
+  configuration and fixtures use public-safe placeholders, never operational endpoints.
+
+Inspect an existing feature's base and extra-sink registration, query service, sink query contract,
+controller and host registration. Reuse shared event-sink and configuration helpers.
+
+## 2. Implement The Base Feature
+
+1. Follow the repository's current target frameworks and conditional dependency pattern rather
+   than hardcoding an SDK or framework from an old scaffold. Add solution entries as described
+   below; keep persistence dependencies out of the base library.
+2. Define the feature event with stable device identity and a UTC observation time. Define
+   snapshots only where consumers need a distinct current-state projection. Map protocol DTOs
+   at the client boundary.
+3. Define `{Feature}Config` under `CasCap:{Feature}Config`, with source settings, polling controls,
+   sink selection and any alert thresholds. Do not duplicate sink configuration owned by shared
+   types.
+4. Implement the protocol client and monitor. Fan observations out through
+   `IEventSink<{Feature}Event>`; use the existing `IBgFeature` host contract for a feature worker.
+5. Add only the lightweight Console, Memory or Metrics sinks needed by this integration. The
+   memory sink is the fallback query-capable primary when no configured sink supplies one.
+6. Define a capability-named query abstraction for interchangeable sinks, such as
+   `I{Feature}Query`. Keep the application query service separate from the sink contract.
+   Introduce another interface only for a demonstrated boundary or test substitution, with a
+   distinct capability name such as `I{Feature}Readings`; do not scaffold
+   `I{Feature}QueryService` or rename unrelated existing interfaces in this task.
+7. Let the query service delegate to the selected primary query sink. Expose snapshots and
+   bounded event/history queries through the feature controller; include direct device commands
+   only when explicitly required.
+8. Provide a connection health check when the source has a meaningful non-destructive probe.
+
+## 3. Register Base And Extra Sinks
+
+`Add{Feature}(configuration, lite, configure)` owns configuration, clients, base sinks and queries.
+It must be safe to register through both the feature and Comms paths without duplicating clients,
+sink instances or workers.
+
+- Select the primary query sink through the existing sink-discovery/keyed-registration helpers.
+  If none qualifies, register one memory fallback and alias its interfaces to that same instance.
+- `lite: true` retains query dependencies but does not start the monitor or feature health checks.
+- Register the full worker and configured probe only when the feature itself is enabled.
+
+When persistent sinks are required, `Add{Feature}WithExtraSinks(...)` calls the base registration
+and discovers sinks from its assembly plus any supplied `additionalSinkAssemblies`. Preserve the
+current lite-mode exclusions of the chosen integration; do not copy another feature's exclusion
+list without checking its query/storage behavior.
+
+- Azure Tables: map reading and snapshot entities using the central entity/key/versioning rules.
+  Read table names through `SinkSettingKeys` and configured sink settings.
+- Redis: preserve the snapshot/history contract through the shared caching layer. Do not limit a
+  requested history range to today's bucket unless that is the explicit API contract.
+- CommsStream: implement the agreed per-device transition or hysteresis/cooldown behavior.
+  Suppress first-seen transition alerts; select the existing clock and state helpers.
+- Application-specific sinks belong in the backend, not in reusable provider libraries.
+
+## 4. Wire The Host And MCP
+
+Inspect the current composition helpers, not an old `Program.cs` snippet:
+
+1. Add the feature constant in `src/CasCap.Backend/Constants/FeatureNames.cs`.
+2. Register the feature in `src/CasCap.App.Server/AppHost.Features.cs`, supplying the backend
+   assembly when it owns additional sinks. Add Comms to its activation condition only if Comms
+   needs this feature's queries, using lite mode when the feature worker is disabled.
+3. Add `{Domain}McpQueryService` and optional prompts in the backend MCP surface. Delegate to the
+   application query capability; use current tool authorization and approval conventions.
+4. Add a feature-gated entry in
+   `src/CasCap.Backend/Extensions/HausMcpServiceCollectionExtensions.cs`. Register exact tool
+   and prompt types; do not introduce assembly-wide tool discovery or a parallel MCP server.
+5. Add controller discovery through `src/CasCap.App.Server/AppHost.WebApi.cs`, gated by the feature.
+6. Keep the console host consistent only if it supports the new feature. Do not make a disabled
+   feature start because another host happens to register its query facade.
+
+## 5. Synchronize Configuration And Packaging
+
+- Update all existing appsettings tiers under the central configuration synchronization rule;
+  private local files contain only their overrides and are never copied into tracked examples.
+- Add the feature to `EnabledFeatures` only in the tiers where it should run. Comms query access
+  alone must not enable the monitor.
+- Add the created projects to both `SmartHaus.Debug.slnx` and `SmartHaus.Release.slnx` in the
+  existing library groups, preserving Debug project and Release package resolution.
+- Update the base/sinks READMEs with the actual contracts and configuration.
+- Update `charts/smarthaus/values.yaml` only when the feature belongs in public deployment defaults.
+  Keep environment-specific configuration and operational deployment procedures out of this repo.
+
+## 6. Verify
+
+Build the affected projects/solution. With test approval, cover event mapping, primary/fallback
+sink selection, repeated registration, full/lite behavior, selected persistence queries and alerts.
+Verify that disabled features expose neither controllers nor MCP tools, that enabled/Comms tool
+sets resolve, and that lite registration starts no feature worker. Validate affected configuration
+and chart contracts through their existing checks.
+
+## Maintaining This Skill
+
+- Recheck feature/sink contracts, primary selection and lite-mode exclusions when shared packages change.
+- Update host/helper paths and exact-type MCP registration when composition is refactored.
+- Keep framework, coding, storage, documentation and testing rules in their central owners rather
+  than freezing another copy of them in this checklist.

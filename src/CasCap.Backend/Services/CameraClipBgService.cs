@@ -35,7 +35,7 @@ public sealed class CameraClipBgService(
     {
         if (!config.Value.Enabled)
         {
-            logger.LogInformation("{ClassName} is disabled", nameof(CameraClipBgService));
+            logger.LogDebug("{ClassName} is disabled", nameof(CameraClipBgService));
             await Task.Delay(Timeout.InfiniteTimeSpan, timeProvider, cancellationToken);
             return;
         }

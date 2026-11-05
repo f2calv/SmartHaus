@@ -90,7 +90,7 @@ public sealed class KnxAutomationBgService(
         {
             if (item.DirectWrites is not null)
             {
-                logger.LogInformation("{ClassName} processing {Count} direct write(s) for {GroupName}",
+                logger.LogDebug("{ClassName} processing {Count} direct write(s) for {GroupName}",
                     nameof(KnxAutomationBgService), item.DirectWrites.Count, item.GroupName);
 
                 foreach (var (groupAddressName, value) in item.DirectWrites)
@@ -99,7 +99,7 @@ public sealed class KnxAutomationBgService(
 
             if (item.Resolved is not null)
             {
-                logger.LogInformation("{ClassName} processing {Count} state change(s) for {GroupName}",
+                logger.LogDebug("{ClassName} processing {Count} state change(s) for {GroupName}",
                     nameof(KnxAutomationBgService), item.Resolved.Count, item.GroupName);
 
                 foreach (var (function, feedback, value) in item.Resolved)

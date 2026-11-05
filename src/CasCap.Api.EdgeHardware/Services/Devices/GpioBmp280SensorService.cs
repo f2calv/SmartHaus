@@ -31,11 +31,8 @@ public sealed class GpioBmp280SensorService(ILogger<GpioBmp280SensorService> log
     public async Task ReadFromSensor(CancellationToken cancellationToken)
     {
         var i2cSettings = new I2cConnectionSettings(BusId, Bme280.DefaultI2cAddress);
-        logger.LogInformation("{ClassName} 1", nameof(GpioBmp280SensorService));
         using I2cDevice i2cDevice = I2cDevice.Create(i2cSettings);
-        logger.LogInformation("{ClassName} 2", nameof(GpioBmp280SensorService));
         using var i2CBmp280 = new Bmp280(i2cDevice);
-        logger.LogInformation("{ClassName} 3", nameof(GpioBmp280SensorService));
 
         //var measurementTime = i2CBmp280.GetMeasurementDuration();
         //_logger.LogInformation("{ClassName} measurementTime {measurementTime}",
@@ -56,25 +53,26 @@ public sealed class GpioBmp280SensorService(ILogger<GpioBmp280SensorService> log
             var readResult = await i2CBmp280.ReadAsync();
             if (readResult is null)
             {
-                logger.LogWarning("{ClassName} ReadAsync is null",
+                logger.LogDebug("{ClassName} ReadAsync is null",
                     nameof(GpioBmp280SensorService));
+                await Task.Delay(1_000, cancellationToken);
                 continue;
             }
 
             // Print out the measured data
-            logger.LogInformation("{ClassName} Pressure: {PreValue:#.##} hPa",
+            logger.LogDebug("{ClassName} Pressure: {PreValue:#.##} hPa",
                 nameof(GpioBmp280SensorService), readResult.Pressure?.Hectopascals);
 
             if (i2CBmp280.TryReadTemperature(out var tempValue))
-                logger.LogInformation("{ClassName} Temperature: {TempValue:0.#}",
+                logger.LogDebug("{ClassName} Temperature: {TempValue:0.#}",
                     nameof(GpioBmp280SensorService), tempValue.DegreesCelsius);
 
             if (i2CBmp280.TryReadPressure(out var preValue))
-                logger.LogInformation("{ClassName} Pressure: {PreValue:#.##} hPa",
+                logger.LogDebug("{ClassName} Pressure: {PreValue:#.##} hPa",
                     nameof(GpioBmp280SensorService), preValue.Hectopascals);
 
             if (i2CBmp280.TryReadAltitude(out var altValue))
-                logger.LogInformation("{ClassName} Estimated altitude: {AltValue:#} m",
+                logger.LogDebug("{ClassName} Estimated altitude: {AltValue:#} m",
                     nameof(GpioBmp280SensorService), altValue.Meters);
 
             await Task.Delay(1_000, cancellationToken);

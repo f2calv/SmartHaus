@@ -44,16 +44,24 @@ public sealed class LibreHardwareCpuTemperatureService(ILogger<LibreHardwareCpuT
                 if (fallback?.Value is not null)
                     return Math.Round(fallback.Value.Value, 2);
 
-                logger.LogWarning("{ClassName} CPU hardware found but no temperature sensors — ensure the process is running with administrator privileges",
-                    nameof(LibreHardwareCpuTemperatureService));
+                if (!_readFailureLogged)
+                {
+                    logger.LogWarning("{ClassName} CPU hardware found but no temperature sensors — ensure the process is running with administrator privileges",
+                        nameof(LibreHardwareCpuTemperatureService));
+                    _readFailureLogged = true;
+                }
             }
         }
         catch (Exception ex)
         {
-            logger.LogWarning(ex, "{ClassName} failed to read CPU temperature", nameof(LibreHardwareCpuTemperatureService));
+            logger.Log(_readFailureLogged ? LogLevel.Debug : LogLevel.Warning, ex,
+                "{ClassName} failed to read CPU temperature", nameof(LibreHardwareCpuTemperatureService));
+            _readFailureLogged = true;
         }
         return null;
     }
+
+    private bool _readFailureLogged;
 
     /// <inheritdoc/>
     public void Dispose() => _computer.Close();

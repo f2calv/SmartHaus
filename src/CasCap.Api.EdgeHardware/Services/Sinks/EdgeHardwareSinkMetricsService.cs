@@ -49,7 +49,7 @@ internal sealed class EdgeHardwareSinkMetricsService : IEventSink<EdgeHardwareEv
         meter.CreateObservableGauge($"{prefix}.hw.temperature", () => _cpuTemp,
             unit: "Cel", description: "CPU temperature", tags: tags);
 
-        _logger.LogInformation("{ClassName} registered edge hardware gauges under {Prefix}",
+        _logger.LogDebug("{ClassName} registered edge hardware gauges under {Prefix}",
             nameof(EdgeHardwareSinkMetricsService), prefix);
     }
 

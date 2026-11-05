@@ -110,7 +110,7 @@ public sealed partial class DoorBirdSinkAzureTablesService : IEventSink<DoorBird
     public async Task<IEnumerable<DoorBirdReadingEntity>> GetReadings(int limit = 100)
     {
         var partitionKey = _timeProvider.GetUtcNow().UtcDateTime.ToString("yyMMdd");
-        _logger.LogInformation("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
+        _logger.LogDebug("{ClassName} Getting data from table storage for partitionKey {PartitionKey}",
             nameof(DoorBirdSinkAzureTablesService), partitionKey);
         var entities = await _lineItemTableClient.QueryAsync<DoorBirdReadingEntity>(
             p => p.PartitionKey == partitionKey

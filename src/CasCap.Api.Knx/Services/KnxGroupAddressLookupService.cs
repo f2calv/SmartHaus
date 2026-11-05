@@ -102,10 +102,13 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     {
         if (dLookupByAddress.TryGetValue(GroupAddress, out var kga))
             return kga;
-        logger.LogCritical("{ClassName} group address '{GroupAddress}' not found in lookup, export a fresh XML file!? (Called from '{Caller}')",
-            nameof(KnxGroupAddressLookupService), GroupAddress, caller);
+        if (_reportedMissingKeys.TryAdd(GroupAddress, 0))
+            logger.LogWarning("{ClassName} group address not found by address, export a fresh XML file",
+                nameof(KnxGroupAddressLookupService));
         return null;
     }
+
+    private readonly ConcurrentDictionary<string, byte> _reportedMissingKeys = new();
 
     /// <summary>
     /// Retrieve a KnxGroupAddressParsed object by its name.
@@ -115,9 +118,9 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
     {
         if (dLookupByName.TryGetValue(GroupAddressName, out var kga))
             return kga;
-        logger.LogCritical("{ClassName} group address '{GroupAddressName}' not found! Export a fresh XML file!? (Called from '{Caller}')",
-            nameof(KnxGroupAddressLookupService), GroupAddressName, caller);
-        //throw new GenericException($"group address name '{GroupAddressName}' not found in lookup!");
+        if (_reportedMissingKeys.TryAdd(GroupAddressName, 0))
+            logger.LogWarning("{ClassName} group address not found by name, export a fresh XML file",
+                nameof(KnxGroupAddressLookupService));
         return null;
     }
 
@@ -166,12 +169,12 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
                     duplicates = true;
                 }
                 if (!dLookupByAddress.TryAdd(kga.GroupAddress, kga))
-                    throw new GenericException($"duplicate group address detected '{kga.GroupAddress}'");
+                    throw new InvalidDataException($"duplicate group address detected '{kga.GroupAddress}'");
                 if (!dLookupByName.TryAdd(kga.Name, kga))
-                    throw new GenericException($"duplicate group address name detected '{kga.Name}'");
+                    throw new InvalidDataException($"duplicate group address name detected '{kga.Name}'");
             }
             if (duplicates)
-                throw new GenericException("duplicate group address names detected!");
+                throw new InvalidDataException("duplicate group address names detected!");
             logger.LogInformation("{ClassName} {Count} filtered group addresses loaded in {ElapsedMilliseconds}ms",
                 nameof(KnxGroupAddressLookupService), dLookupByAddress.Count, sw.ElapsedMilliseconds);
         }
@@ -192,13 +195,13 @@ public sealed class KnxGroupAddressLookupService(ILogger<KnxGroupAddressLookupSe
             if (gae is not null)
             {
                 var count = gae.GroupRange.SelectMany(p => p.GroupRange.SelectMany(q => q.GroupAddress)).Count();
-                logger.LogInformation("{ClassName} XML group address file '{FullPath}' contains '{Count}' unfiltered addresses, loaded in {ElapsedMilliseconds}ms",
-                    nameof(KnxGroupAddressLookupService), fullPath, count, sw.ElapsedMilliseconds);
+                logger.LogInformation("{ClassName} XML group address file '{FileName}' contains '{Count}' unfiltered addresses, loaded in {ElapsedMilliseconds}ms",
+                    nameof(KnxGroupAddressLookupService), Path.GetFileName(fullPath), count, sw.ElapsedMilliseconds);
             }
         }
         else
         {
-            logger.LogCritical("{ClassName} XML group address file not found at '{FullPath}'", nameof(KnxGroupAddressLookupService), fullPath);
+            logger.LogCritical("{ClassName} XML group address file '{FileName}' not found", nameof(KnxGroupAddressLookupService), Path.GetFileName(fullPath));
         }
         return gae;
     }

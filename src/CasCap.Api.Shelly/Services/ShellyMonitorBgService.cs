@@ -1,7 +1,7 @@
 namespace CasCap.Services;
 
 /// <summary>Background service for polling all configured Shelly smart plugs and publishing events to sinks.</summary>
-public sealed class ShellyMonitorBgService(
+public sealed partial class ShellyMonitorBgService(
     ILogger<ShellyMonitorBgService> logger,
     IOptions<ShellyConfig> shellyConfig,
     ShellyCloudConnectionHealthCheck shellyCloudConnectionHealthCheck,
@@ -17,7 +17,7 @@ public sealed class ShellyMonitorBgService(
     /// <inheritdoc/>
     public async Task ExecuteAsync(CancellationToken cancellationToken)
     {
-        if (eventSinks.IsNullOrEmpty()) throw new GenericException($"no {nameof(IEventSink<ShellyEvent>)} is configured!");
+        if (eventSinks.IsNullOrEmpty()) throw new ConfigurationException($"no {nameof(IEventSink<ShellyEvent>)} is configured!");
         logger.LogInformation("{ClassName} starting, {DeviceCount} device(s) configured",
             nameof(ShellyMonitorBgService), shellyConfig.Value.Devices.Length);
         try
@@ -42,10 +42,9 @@ public sealed class ShellyMonitorBgService(
 
             var response = await shellyCloudClientSvc.GetDeviceStatus(device.DeviceId).ConfigureAwait(false);
             if (response is null || !response.IsOk)
-                logger.LogWarning("{ClassName} configured device {DeviceId} ({DeviceName}) not reachable via Shelly Cloud — device may be unplugged or offline",
-                    nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName);
-            else
-                logger.LogInformation("{ClassName} validated device {DeviceId} ({DeviceName}) exists in Shelly Cloud account",
+                OnDeviceFailed(device);
+            else if (logger.IsEnabled(LogLevel.Debug))
+                logger.LogDebug("{ClassName} validated device {DeviceId} ({DeviceName}) exists in Shelly Cloud account",
                     nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName);
         }
     }
@@ -90,11 +89,42 @@ public sealed class ShellyMonitorBgService(
                     foreach (var eventSink in eventSinks)
                         tasks.Add(eventSink.WriteEvent(shellyEvent, cancellationToken));
                     await Task.WhenAll(tasks.ToArray()).ConfigureAwait(false);
+                    OnDeviceSucceeded(device);
                 }
                 else
-                    logger.LogWarning("{ClassName} get device status returns a null or failed response for {DeviceId} ({DeviceName})",
-                        nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName);
+                    OnDeviceFailed(device);
             }
         }
     }
+
+    private readonly Dictionary<string, (int ConsecutiveFailures, DateTimeOffset FailingSince)> _failingDevices = [];
+
+    private void OnDeviceFailed(ShellyDevice device)
+    {
+        if (_failingDevices.TryGetValue(device.DeviceId, out var failure))
+        {
+            _failingDevices[device.DeviceId] = (failure.ConsecutiveFailures + 1, failure.FailingSince);
+            LogDeviceStillFailing(logger, nameof(ShellyMonitorBgService), device.DeviceId, failure.ConsecutiveFailures + 1);
+            return;
+        }
+        _failingDevices[device.DeviceId] = (1, timeProvider.GetUtcNow());
+        LogDeviceFailing(logger, nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName);
+    }
+
+    private void OnDeviceSucceeded(ShellyDevice device)
+    {
+        if (!_failingDevices.Remove(device.DeviceId, out var failure))
+            return;
+        LogDeviceRecovered(logger, nameof(ShellyMonitorBgService), device.DeviceId, device.DeviceName,
+            failure.ConsecutiveFailures, timeProvider.GetUtcNow() - failure.FailingSince);
+    }
+
+    [LoggerMessage(Level = LogLevel.Warning, Message = "{ClassName} device {DeviceId} ({DeviceName}) not reachable via Shelly Cloud, device may be unplugged or offline")]
+    private static partial void LogDeviceFailing(ILogger logger, string className, string deviceId, string deviceName);
+
+    [LoggerMessage(Level = LogLevel.Debug, Message = "{ClassName} device {DeviceId} still not reachable ConsecutiveFailures={ConsecutiveFailures}")]
+    private static partial void LogDeviceStillFailing(ILogger logger, string className, string deviceId, int consecutiveFailures);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "{ClassName} device {DeviceId} ({DeviceName}) recovered ConsecutiveFailures={ConsecutiveFailures} Downtime={Downtime}")]
+    private static partial void LogDeviceRecovered(ILogger logger, string className, string deviceId, string deviceName, int consecutiveFailures, TimeSpan downtime);
 }

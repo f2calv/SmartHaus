@@ -42,6 +42,9 @@ belong to the multi-tenant Agent Runtime maintained by
 | `CasCap.Comms` | Shared communications stream and Signal gateway pipeline, including voice transcription and spoken replies |
 | `CasCap.Comms.AI` | Agent Runtime responder, session commands, delegation diagnostics, and poll-tool adaptation for the communications pipeline |
 
+The camera-to-communications sink logs event types and numeric diagnostics, not camera identifiers
+or names. Its domain events and notification messages retain the camera context for their recipients.
+
 Names such as `CommsAgent` and `SecurityAgent` are references to active remote definitions. Public
 examples under [docs/agent-examples](../../docs/agent-examples/README.md) illustrate expected
 behaviour but are not runtime authority.
@@ -344,7 +347,7 @@ identifiers.
 | --- | --- | --- |
 | `CasCap:SignalRHubConfig:HubPath` | `"/hubs/haus"` | Authorized hub route |
 | `CasCap:SignalRHubConfig:Sinks:AvailableSinks` | Console and Metrics enabled | Hub-side event sinks |
-| `CasCap:SignalRHubConfig:ConsoleLogIntervalMs` | `30000` | Console count interval |
+| `CasCap:SignalRHubConfig:ConsoleLogIntervalMs` | `300000` | Console count summary interval |
 | `CasCap:SignalRHubConfig:MetricsBatchSize` | `10` | Events accumulated before metric flush |
 | `CasCap:SignalRHubConfig:MetricsFlushIntervalMs` | `60000` | Periodic metric flush interval |
 
@@ -459,6 +462,9 @@ Real camera identifiers belong only in private configuration.
 
 Debug builds use adjacent project references for these repositories. Release builds resolve the
 same dependencies from NuGet, including Agent Runtime contracts and communications packages.
+
+The Release graph uses Agent Runtime 1.4.0, Signalizr 1.2.0, Azure 2.0.0 and Common 5.1.0.
+The [repository dependency graph](../../docs/architecture.md#dependency-graph) shows their boundaries.
 
 ### Feature Projects
 

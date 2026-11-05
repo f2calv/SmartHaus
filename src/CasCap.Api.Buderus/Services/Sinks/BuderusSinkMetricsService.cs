@@ -43,11 +43,11 @@ public sealed class BuderusSinkMetricsService : IEventSink<BuderusEvent>
                     unit: mapping.MetricUnit,
                     description: mapping.MetricDescription);
 
-                _logger.LogInformation("{ClassName} registered gauge {MetricName}",
+                _logger.LogDebug("{ClassName} registered gauge {MetricName}",
                     nameof(BuderusSinkMetricsService), metricName);
             }
 
-            _logger.LogInformation("{ClassName} tracking {DatapointId} under gauge {MetricName}",
+            _logger.LogDebug("{ClassName} tracking {DatapointId} under gauge {MetricName}",
                 nameof(BuderusSinkMetricsService), datapointId, mapping.MetricName);
         }
 

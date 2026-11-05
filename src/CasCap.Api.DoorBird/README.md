@@ -8,6 +8,9 @@ The integration is validated against a DoorBird D2100E and uses only the model-i
 
 Targets .NET 8 and .NET 10.
 
+The Release graph uses Common 5.1.0. Keep the optional storage-sink package on the same
+SmartHaus repository release as this client.
+
 ```bash
 dotnet add package CasCap.Api.DoorBird
 ```
@@ -39,6 +42,9 @@ runner contract. Device callbacks reach `DoorBirdController`, which delegates ev
 `DoorBirdQueryService` and its configured sinks.
 
 A REST API (`DoorBirdController`) exposes real-time photo, MJPEG video stream, relay trigger, and light-on endpoints, as well as event callbacks for push notifications from the device.
+
+Notification subscription success logs omit caller-supplied URLs and event-type strings.
+The device still receives the original subscription parameters.
 
 `DoorBirdQueryService.CaptureAudio` provides bounded receive-only microphone capture through the
 official `bha-api/audio-receive.cgi` endpoint. DoorBird returns raw 8 kHz mono G.711 μ-law audio;

@@ -111,7 +111,7 @@ public sealed class KnxSinkMetricsService : IEventSink<KnxEvent>
             unit: metricAttr.Unit,
             description: $"KNX {metricKey} readings");
 
-        _logger.LogInformation("{ClassName} registered gauge {MetricName}",
+        _logger.LogDebug("{ClassName} registered gauge {MetricName}",
             nameof(KnxSinkMetricsService), metricName);
     }
 
