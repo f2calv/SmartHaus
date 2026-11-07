@@ -71,7 +71,7 @@ Older tests live at the project root; new leadership tests use `Tests/Unit/`.
 dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -c Debug --filter-not-trait "Category=Integration"
 ```
 
-Use .NET 10, xUnit v3 and Microsoft.Testing.Platform from the repository root. Remove the filter
+Use the .NET 11 RC3 SDK, xUnit v3 and Microsoft.Testing.Platform from the repository root. Remove the filter
 only with approval and the required ETS/storage setup.
 
 ## Dependencies

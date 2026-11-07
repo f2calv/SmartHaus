@@ -4,7 +4,7 @@ A .NET client library for the [Buderus](https://www.buderus.com) KM200 heat-pump
 
 ## Installation
 
-Targets .NET 8 and .NET 10.
+This checkout targets .NET 10 and .NET 11.
 
 ```bash
 dotnet add package CasCap.Api.Buderus

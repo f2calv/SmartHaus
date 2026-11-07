@@ -1,6 +1,6 @@
 # SmartHaus
 
-SmartHaus is an open-source .NET 10 smart-home and IoT application for edge hosts. It connects
+SmartHaus is an open-source .NET 11 smart-home and IoT application for edge hosts. It connects
 heating, solar, KNX building automation, cameras, lighting and appliance APIs to event sinks,
 versioned HTTP endpoints and Model Context Protocol (MCP) tools for AI agents.
 
@@ -49,8 +49,8 @@ agent or Signal recipient is configured.
 
 ## Projects
 
-The eight package listings below are published on NuGet; their source targets .NET 8 and .NET 10.
-Other application libraries are source-only and target .NET 10. Each integration README describes
+The eight package listings below are published on NuGet; this checkout targets .NET 10 and .NET 11.
+Other application libraries are source-only and target .NET 11. Each integration README describes
 its own device, cloud authentication and configuration requirements.
 
 | Integration | Client and usage | Optional storage sinks | Published packages |
@@ -76,7 +76,7 @@ its own device, cloud authentication and configuration requirements.
 Version 2.0 classifies missing application or event-sink configuration as `ConfigurationException`
 and duplicate KNX export metadata as `InvalidDataException`, rather than `GenericException`.
 Consumers catching the old concrete exception must update their handlers and rebuild. Device
-packages retain .NET 8 and .NET 10 support; application hosts remain .NET 10.
+packages in this checkout target .NET 10 and .NET 11; application hosts target .NET 11.
 
 When migrating from versions before 1.1, also update the
 [Buderus query-service write result](src/CasCap.Api.Buderus/README.md#migrating-to-11).
@@ -169,7 +169,7 @@ to the external runtime.
 
 ## Development
 
-Use a stable .NET 10 SDK. For the current source tree, the Debug solution uses sibling source
+Use the .NET 11 RC3 SDK pinned in `global.json`. For the current source tree, the Debug solution uses sibling source
 dependencies:
 
 ```bash

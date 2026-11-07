@@ -4,7 +4,7 @@ Pluggable event sink implementations for the Sicce smart water pump integration 
 
 ## Purpose
 
-This source-only library targets .NET 10; it is not published as a NuGet package.
+This source-only library targets .NET 11; it is not published as a NuGet package.
 
 ## Usage
 

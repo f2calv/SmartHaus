@@ -4,7 +4,7 @@ Pluggable event sink implementations for the edge hardware integration library (
 
 ## Purpose
 
-This source-only .NET 10 library provides `EdgeHardwareSinkRedisService` and
+This source-only .NET 11 library provides `EdgeHardwareSinkRedisService` and
 `EdgeHardwareSinkAzureTablesService`. Redis stores per-node snapshots and daily series; Azure
 Tables stores event rows and snapshots. Sinks are selected through `EdgeHardwareConfig.Sinks`.
 

@@ -6,7 +6,7 @@ External storage sinks for the Shelly smart plug integration.
 
 Provides Redis and Azure Table Storage sinks for persisting Shelly smart plug events outside the application process.
 
-This source-only library targets .NET 10; it is not published as a NuGet package.
+This source-only library targets .NET 11; it is not published as a NuGet package.
 
 ## Usage
 

@@ -4,7 +4,7 @@ A .NET library that integrates with [Ubiquiti UniFi Protect](https://ui.com/came
 
 ## Purpose
 
-This source-only .NET 10 library is not published as a NuGet package.
+This source-only .NET 11 library is not published as a NuGet package.
 
 ## Usage
 

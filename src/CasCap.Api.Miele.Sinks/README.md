@@ -6,7 +6,7 @@ Pluggable event sink implementations for the Miele appliance integration library
 
 This project provides additional [`IEventSink<T>`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IEventSink%7BT%7D.cs) implementations for the Miele integration. Sinks are discovered at runtime via `SinkTypeAttribute` and loaded based on the feature's `SinkConfig` when `AddMieleWithExtraSinks()` is called.
 
-This source-only library targets .NET 10 and is not published as a NuGet package.
+This source-only library targets .NET 11 and is not published as a NuGet package.
 `MieleSinkRedisService` stores per-device snapshots and daily series; `MieleSinkAzureTablesService`
 persists event rows and snapshots.
 

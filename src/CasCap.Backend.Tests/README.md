@@ -24,7 +24,8 @@ Host endpoint and application-bootstrap coverage lives in
 | `LiteSinkRegistrationTests` | 1 | 9 | Sinks | Asserts Redis sink selection and Azure Tables exclusion for nine lite registrations |
 | `HausMcpToolSetTests` | 8 | 20 | Mcp | Feature-dependent MCP tool selection and the door-unlock approval gate |
 | `ShutterTargetValidationTests` | 3 | 3 | Knx | Shutter target bounds |
-| Total | 29 | 63 | | Source-declared cases, including theories |
+| `GpioControllerFactoryTests` | 4 | 4 | Gpio | GPIO chip selection using synthetic descriptors, without hardware |
+| Total | 33 | 67 | | Source-declared cases, including theories |
 
 ## Trait Categories
 
@@ -36,6 +37,7 @@ Host endpoint and application-bootstrap coverage lives in
 | `Media` | Media-event translation into remote Agent Runtime requests |
 | `Sinks` | Event-sink selection for lite registration |
 | `Mcp` | Feature-dependent MCP tool registration |
+| `Gpio` | Native chip selection with synthetic descriptors; no GPIO hardware |
 
 ## Skipped Tests
 
@@ -48,7 +50,7 @@ activation. This project keeps no evaluation scenarios or fixtures.
 
 ## Running The Tests
 
-Use a .NET 10 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
+Use the .NET 11 RC3 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
 The inventory above was derived from source; it does not report execution results.
 
 ```bash

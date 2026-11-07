@@ -51,7 +51,7 @@ This project currently keeps its tests at the project root rather than under `Te
 dotnet test --project src/CasCap.Api.Buderus.Tests/CasCap.Api.Buderus.Tests.csproj
 ```
 
-Run from the repository root using the .NET 10 SDK, xUnit v3 and Microsoft.Testing.Platform.
+Run from the repository root using the .NET 11 RC3 SDK, xUnit v3 and Microsoft.Testing.Platform.
 Run only with explicit approval to access and modify the configured device.
 
 ## Dependencies

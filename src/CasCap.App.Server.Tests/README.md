@@ -58,7 +58,7 @@ Key Vault disabled before startup.
 
 ## Running The Tests
 
-Use a .NET 10 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
+Use the .NET 11 RC3 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
 The inventory is derived from source, not an observed test run. `Integration` here includes
 in-process host tests and must not be assumed to mean live-device access.
 

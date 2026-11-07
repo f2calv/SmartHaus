@@ -7,14 +7,14 @@
 # ------------------------------------------------------------------------------
 # Stage 1 of 2: build
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
 WORKDIR /repo
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
 ARG WORKLOAD=CasCap.App.Server
 ARG PROJECT=src/${WORKLOAD}/${WORKLOAD}.csproj
 ARG CONFIGURATION=Debug
-ARG TARGET_FRAMEWORK=net10.0
+ARG TARGET_FRAMEWORK=net11.0
 ARG VERSION=0.0.0-local
 ARG GIT_REPOSITORY=n/a
 ARG GIT_BRANCH=n/a
@@ -82,7 +82,7 @@ EOF
 #
 # Matches Dockerfile; see the base-image rationale there.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
@@ -90,13 +90,13 @@ WORKDIR /app
 RUN <<EOF
 set -eux
 apt-get update
-apt-get install -y --no-install-recommends curl libgpiod2t64 ffmpeg
-for lib in /usr/lib/*/libgpiod.so.2; do
+apt-get install -y --no-install-recommends curl libgpiod3 ffmpeg
+for lib in /usr/lib/*/libgpiod.so.3; do
     ln -sf "$(basename "$lib")" "$(dirname "$lib")/libgpiod.so"
 done
 rm -rf /var/lib/apt/lists/*
 ffmpeg -version
-test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.2)")/libgpiod.so"
+test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.3)")/libgpiod.so"
 EOF
 
 COPY --link --from=build /app/publish .

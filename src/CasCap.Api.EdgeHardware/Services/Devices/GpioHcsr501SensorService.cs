@@ -19,7 +19,7 @@ public class GpioHcsr501SensorService : IMotionDetectionDevice
         _edgeHardwareConfig = edgeHardwareConfig.Value;
 
         //https://github.com/dotnet/iot/tree/master/src/devices/Hcsr501
-        _sensor = new Hcsr501(_edgeHardwareConfig.Sensors.HcSr501.OutPin, new GpioController());
+        _sensor = new Hcsr501(_edgeHardwareConfig.Sensors.HcSr501.OutPin, GpioControllerFactory.Create());
         _sensor.Hcsr501ValueChanged += OnHcsr501ValueChanged;
     }
 

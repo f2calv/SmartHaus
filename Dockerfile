@@ -12,14 +12,14 @@
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
 # target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
 WORKDIR /repo
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
 ARG WORKLOAD=CasCap.App.Server
 ARG PROJECT=src/${WORKLOAD}/${WORKLOAD}.csproj
 ARG CONFIGURATION=Release
-ARG TARGET_FRAMEWORK=net10.0
+ARG TARGET_FRAMEWORK=net11.0
 ARG VERSION=0.0.0-local
 ARG GIT_REPOSITORY=n/a
 ARG GIT_BRANCH=n/a
@@ -82,35 +82,29 @@ EOF
 # No --platform override here, so buildx resolves the base image for
 # $TARGETPLATFORM and the resulting image is genuinely native to the target.
 #
-# Alternatives, smallest to largest:
-#   mcr.microsoft.com/dotnet/aspnet:10.0-noble-chiseled  no shell and no apt, so the helper
-#                                                        scripts and libgpiod cannot be installed
-#   mcr.microsoft.com/dotnet/aspnet:10.0-alpine          musl, has a shell, no tzdata by default
-#   mcr.microsoft.com/dotnet/aspnet:10.0                 full Ubuntu, largest (used here)
-#
 # The full Ubuntu image is required: workloads need apt-installable runtime dependencies
 # (libgpiod) and a shell for wait-for-it.sh / ffmpeg-record.sh. It already ships tzdata.
+# Chiselled has no shell or apt; Alpine changes the required glibc native-library ABI to musl.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
 # Installed before the application layers so editing source never re-runs this install.
 # ffmpeg is required, not optional: voice-message speech-to-text normalises every inbound
 # attachment through it, and ffmpeg-record.sh depends on it too.
-# libgpiod2t64 ships only libgpiod.so.2, but System.Device.Gpio P/Invokes the unversioned
-# "libgpiod" and .NET never probes a versioned soname, so the symlink that libgpiod-dev would
-# otherwise supply is recreated here rather than pulling headers and static libs into the image.
+# libgpiod3 supplies the v2 ABI used by the sensor controller factory. Provide the unversioned
+# library name too without installing development headers.
 RUN <<EOF
 set -eux
 apt-get update
-apt-get install -y --no-install-recommends curl libgpiod2t64 ffmpeg
-for lib in /usr/lib/*/libgpiod.so.2; do
+apt-get install -y --no-install-recommends curl libgpiod3 ffmpeg
+for lib in /usr/lib/*/libgpiod.so.3; do
     ln -sf "$(basename "$lib")" "$(dirname "$lib")/libgpiod.so"
 done
 rm -rf /var/lib/apt/lists/*
 ffmpeg -version
-test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.2)")/libgpiod.so"
+test -e "$(dirname "$(ls /usr/lib/*/libgpiod.so.3)")/libgpiod.so"
 EOF
 
 COPY --link --from=build /app/publish .

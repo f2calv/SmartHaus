@@ -4,7 +4,7 @@ A .NET library that connects to a [KNX](https://www.knx.org) bus via KNXnet/IP t
 
 ## Installation
 
-Targets .NET 8 and .NET 10. A reachable KNXnet/IP interface and an ETS group-address XML export
+This checkout targets .NET 10 and .NET 11. A reachable KNXnet/IP interface and an ETS group-address XML export
 matching the naming contract below are required for live bus access.
 
 ```bash
@@ -213,7 +213,7 @@ The `ShardingMode` property on `KnxConfig` controls how `KnxMonitorBgService` po
 4. **Leader runs** — each ownership run gets fresh connection, callback-buffer and reconnect state. Health monitoring, reconnection, incoming publication, outbound delivery and enabled day/night scheduling are supervised together. A fatal child failure withdraws readiness and requests host shutdown immediately, before cancelling/joining siblings and disposing connections. Ownership-only cancellation does not stop the host. Initial connection failures and subsequent drops are retried for both tunneling and routing.
 5. **Ownership ends** — the runner observes lease loss at `Redlock.LeadershipCheckIntervalMs` (default 1000 ms) and cancels the ownership token. Health is withdrawn, callbacks stop accepting telegrams, and all publication/write work is awaited before handlers are detached and buses asynchronously disposed. Cleanup is also applied to partial startup failures. Only then may this replica start a fresh ownership run. Host shutdown owns the forced-termination budget; cleanup has no independent timeout.
 
-The .NET 8+ leadership runner is consumed from `CasCap.Common.Caching` 5.1.0. Release builds
+The leadership runner is consumed from `CasCap.Common.Caching` 5.1.0. Release builds
 resolve it from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 Lease cancellation cannot retract a telegram already accepted by Redis or a device. Callback

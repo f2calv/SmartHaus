@@ -8,7 +8,7 @@
 
 Squad ships as a Node CLI (`squad`, installed via `npm`) that scaffolds a `.squad/` directory of team state (members, charters, routing rules, decisions) and a `squad` agent for Copilot (CLI or VS Code). It coordinates issue triage, parallel execution, and PR handoffs while keeping humans accountable for priorities, approvals, and final changes.
 
-SmartHaus is a mature, feature-flag-driven .NET 10 codebase with 30+ projects (see the [root README](../../README.md)). This is a textbook **brownfield** scenario: the application already exists, so the goal is **not** to generate it from scratch but to:
+SmartHaus is a mature, feature-flag-driven .NET 11 codebase with 30+ projects (see the [root README](../../README.md)). This is a textbook **brownfield** scenario: the application already exists, so the goal is **not** to generate it from scratch but to:
 
 1. Install and operate Squad in a controlled, reproducible way (via the [VS Code dev container](../../.devcontainer/devcontainer.json)).
 2. Stand up a **team charter** that captures the conventions already enforced by [`.github/instructions/`](../../.github/instructions) and [`copilot-instructions.md`](../../.github/copilot-instructions.md), so the agents inherit the repo's rules.
@@ -106,7 +106,7 @@ Goal: make the `squad` CLI available automatically whenever the dev container st
   squad init
   ```
 
-  Walk the guided setup (do **not** use `--preset default`) to choose a team makeup suited to a brownfield .NET 10 backend codebase. Review the resulting diff carefully. Expected new paths: `.squad/` (team, members, charters, routing, decisions) and possibly a `squad.agent.md` plus `.github/` workflow files. **Commit in a dedicated commit** ("chore: scaffold Squad") with nothing else mixed in, so the scaffold is easy to audit and revert.
+  Walk the guided setup (do **not** use `--preset default`) to choose a team makeup suited to a brownfield .NET 11 backend codebase. Review the resulting diff carefully. Expected new paths: `.squad/` (team, members, charters, routing, decisions) and possibly a `squad.agent.md` plus `.github/` workflow files. **Commit in a dedicated commit** ("chore: scaffold Squad") with nothing else mixed in, so the scaffold is easy to audit and revert.
 
 - [ ] **`SQ-7` (Medium)** — Reconcile `.gitignore`. Decide what is tracked vs. ignored:
   - **Track**: `.squad/` team charters, routing, and decision archives (these are the value and the audit trail).
@@ -129,7 +129,7 @@ This is the heart of brownfield adoption: teach the Squad the rules, then point 
 
   In the first Squad session, describe the platform so members inherit the rules:
 
-  > I'm adopting Squad on an existing .NET 10 edge IoT platform: feature-flag-driven modular architecture, ILogger+Serilog logging, ConfigureAwait(false) in libraries, xUnit Unit/Integration test separation, IAppConfig four-tier appsettings strategy, README-must-stay-in-sync, no legacy/back-compat code, public-repo hygiene (no PII, no private-repo references). Set up the team to respect these conventions.
+  > I'm adopting Squad on an existing .NET 11 edge IoT platform: feature-flag-driven modular architecture, ILogger+Serilog logging, ConfigureAwait(false) in libraries, xUnit Unit/Integration test separation, IAppConfig four-tier appsettings strategy, README-must-stay-in-sync, no legacy/back-compat code, public-repo hygiene (no PII, no private-repo references). Set up the team to respect these conventions.
 
 - [ ] **`SQ-10` (Medium)** — Cross-check the generated charters against the instruction files; remove anything Squad invented that contradicts existing conventions, and add any rule the description missed. The charter must be a **faithful distillation**, not a competing source of truth.
 

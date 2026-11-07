@@ -7,7 +7,7 @@ namespace CasCap.Services;
 /// </summary>
 public sealed class GpioYfS201SensorService(ILogger<GpioYfS201SensorService> logger, IKubeAppConfig kubeAppConfig, TimeProvider timeProvider)
 {
-    private readonly GpioController _controller = new();
+    private readonly GpioController _controller = GpioControllerFactory.Create();
 
     /// <summary>Starts the flow sensor monitoring loop.</summary>
     /// <param name="cancellationToken">Cancellation token.</param>

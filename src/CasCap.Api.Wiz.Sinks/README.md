@@ -4,7 +4,7 @@ Pluggable event sink implementations for the Wiz smart lighting integration libr
 
 ## Purpose
 
-This source-only .NET 10 library provides `WizSinkRedisService` and `WizSinkAzureTablesService`.
+This source-only .NET 11 library provides `WizSinkRedisService` and `WizSinkAzureTablesService`.
 Redis stores per-device snapshots and daily series; Azure Tables persists event rows and snapshots.
 
 ## Usage

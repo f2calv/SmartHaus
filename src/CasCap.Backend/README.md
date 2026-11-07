@@ -6,7 +6,7 @@ for Signalizr and the remote Agent Runtime.
 
 ## Usage
 
-This source-only .NET 10 library is composed by the
+This source-only .NET 11 library is composed by the
 [server host](../CasCap.App.Server/README.md); it is not an independently runnable application or
 published NuGet package. Select `Comms` for Signal messaging/media processing or `SignalRHub` for
 event broadcasts, and configure only the features you intend to use.
