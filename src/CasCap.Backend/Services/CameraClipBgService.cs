@@ -1,3 +1,5 @@
+using System.Net.Mime;
+
 namespace CasCap.Services;
 
 /// <summary>
@@ -100,7 +102,7 @@ public sealed class CameraClipBgService(
             var bytes = await File.ReadAllBytesAsync(outputFile, budget.Token);
             var media = await mediaStore.StoreAsync(
                 bytes,
-                "video/mp4",
+                MediaTypeNames.Video.Mp4,
                 "camera-event.mp4",
                 budget.Token);
 
