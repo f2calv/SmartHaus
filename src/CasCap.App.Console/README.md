@@ -5,7 +5,7 @@ Agent Runtime.
 
 ## Quick Start
 
-Use the .NET 11 RC3 SDK and the Debug source dependencies described in the
+Use the .NET 11 SDK and the Debug source dependencies described in the
 [root development guide](../../README.md#development). A reachable Agent Runtime with active
 agent definitions is required; this program does not start an inference service.
 

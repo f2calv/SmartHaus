@@ -169,7 +169,7 @@ to the external runtime.
 
 ## Development
 
-Use the .NET 11 RC3 SDK pinned in `global.json`. For the current source tree, the Debug solution uses sibling source
+Use the .NET 11 SDK pinned in `global.json`. For the current source tree, the Debug solution uses sibling source
 dependencies:
 
 ```bash

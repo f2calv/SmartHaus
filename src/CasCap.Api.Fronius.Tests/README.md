@@ -54,7 +54,7 @@ CasCap.Api.Fronius.Tests/
 dotnet test --project src/CasCap.Api.Fronius.Tests/CasCap.Api.Fronius.Tests.csproj --filter-trait "Category=Deserialization"
 ```
 
-Use the .NET 11 RC3 SDK, xUnit v3 and Microsoft.Testing.Platform from the repository root. Omit the trait filter
+Use the .NET 11 SDK, xUnit v3 and Microsoft.Testing.Platform from the repository root. Omit the trait filter
 only when explicitly approved to access the live inverter.
 
 ## Dependencies

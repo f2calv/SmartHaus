@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net11.0</TargetFramework>
+    <TargetFrameworks>net10.0;net11.0</TargetFrameworks>
     <RootNamespace>CasCap.Tests</RootNamespace>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
@@ -18,7 +18,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\CasCap.Api.DoorBird\CasCap.Api.DoorBird.csproj" />
-    <ProjectReference Include="..\CasCap.App.Hosting\CasCap.App.Hosting.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(Configuration)'=='Debug'">

@@ -47,7 +47,7 @@ Tests currently live at the project root rather than under `Tests/`.
 dotnet test --project src/CasCap.Api.Miele.Tests/CasCap.Api.Miele.Tests.csproj
 ```
 
-Run from the repository root with the .NET 11 RC3 SDK, xUnit v3 and Microsoft.Testing.Platform. The command
+Run from the repository root with the .NET 11 SDK, xUnit v3 and Microsoft.Testing.Platform. The command
 discovers skipped cases; it is not evidence of cloud connectivity.
 
 ## Dependencies

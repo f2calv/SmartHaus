@@ -50,7 +50,7 @@ activation. This project keeps no evaluation scenarios or fixtures.
 
 ## Running The Tests
 
-Use the .NET 11 RC3 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
+Use the .NET 11 SDK with xUnit v3 and Microsoft.Testing.Platform from the repository root.
 The inventory above was derived from source; it does not report execution results.
 
 ```bash
