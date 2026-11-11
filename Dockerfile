@@ -12,7 +12,7 @@
 # Pinned to $BUILDPLATFORM and CROSS-COMPILES to $TARGETPLATFORM; emulating the
 # target under QEMU instead is often an order of magnitude slower.
 # ------------------------------------------------------------------------------
-FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0.100-rc.3-resolute AS build
+FROM --platform=$BUILDPLATFORM mcr.microsoft.com/dotnet/sdk:11.0-resolute AS build
 WORKDIR /repo
 COPY ["Directory.Build.props", "Directory.Packages.props", "global.json", "./"]
 
@@ -86,7 +86,7 @@ EOF
 # (libgpiod) and a shell for wait-for-it.sh / ffmpeg-record.sh. It already ships tzdata.
 # Chiselled has no shell or apt; Alpine changes the required glibc native-library ABI to musl.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:11.0.0-rc.3-resolute AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0-resolute AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
