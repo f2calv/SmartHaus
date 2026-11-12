@@ -82,7 +82,7 @@ EOF
 #
 # Matches Dockerfile; see the base-image rationale there.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
