@@ -91,7 +91,7 @@ EOF
 # The full Ubuntu image is required: workloads need apt-installable runtime dependencies
 # (libgpiod) and a shell for wait-for-it.sh / ffmpeg-record.sh. It already ships tzdata.
 # ------------------------------------------------------------------------------
-FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:11.0 AS runtime
 WORKDIR /app
 
 # -- Runtime dependencies ------------------------------------------------------
