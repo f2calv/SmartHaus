@@ -6,7 +6,7 @@
 
 [GitHub Spec Kit](https://github.com/github/spec-kit) is an open-source toolkit for **Spec-Driven Development (SDD)** — a workflow where executable specifications drive implementation rather than ad-hoc prompting. It ships as a Python CLI (`specify`, installed via [`uv`](https://docs.astral.sh/uv/)) that scaffolds a `.specify/` directory and a set of `/speckit.*` slash commands for a coding agent (here, [GitHub Copilot](https://github.com/features/copilot) in VS Code).
 
-SmartHaus is a mature, feature-flag-driven .NET 10 codebase with 30+ projects (see the [root README](../../README.md)). This is a textbook **brownfield** scenario: the application already exists, so the goal is **not** to generate it from scratch but to:
+SmartHaus is a mature, feature-flag-driven .NET 11 codebase with 30+ projects (see the [root README](../../README.md)). This is a textbook **brownfield** scenario: the application already exists, so the goal is **not** to generate it from scratch but to:
 
 1. Install and operate Spec Kit in a controlled, reproducible way (via the [VS Code dev container](../../.devcontainer/devcontainer.json)).
 2. Establish a **constitution** that captures the conventions already enforced by [`.github/instructions/`](../../.github/instructions) and [`copilot-instructions.md`](../../.github/copilot-instructions.md).
@@ -125,7 +125,7 @@ This is the heart of brownfield adoption: teach Spec Kit the rules, then capture
 
   Example prompt:
 
-  > `/speckit.constitution` Create principles for a .NET 10 edge IoT platform: feature-flag-driven modular architecture, ILogger+Serilog logging, ConfigureAwait(false) in libraries, xUnit test structure with Unit/Integration separation, IAppConfig four-tier appsettings strategy, README-must-stay-in-sync, no legacy/back-compat code, public-repo hygiene (no PII, no private-repo references).
+  > `/speckit.constitution` Create principles for a .NET 11 edge IoT platform: feature-flag-driven modular architecture, ILogger+Serilog logging, ConfigureAwait(false) in libraries, xUnit test structure with Unit/Integration separation, IAppConfig four-tier appsettings strategy, README-must-stay-in-sync, no legacy/back-compat code, public-repo hygiene (no PII, no private-repo references).
 
 - [ ] **`SK-10` (Medium)** — Cross-check the generated constitution against the instruction files; remove anything Spec Kit invented that contradicts existing conventions, and add any rule the prompt missed. The constitution must be a **faithful distillation**, not a competing source of truth.
 
@@ -141,7 +141,7 @@ The brownfield insight: write **one baseline spec describing the system as it ex
 
   > `/speckit.specify` Document the existing EdgeHardware feature: it monitors edge hardware telemetry (GPU via nvidia-smi, CPU temperature, Raspberry Pi GPIO), is feature-flag gated by `EdgeHardware`, exposes a REST snapshot endpoint and MCP tools, and writes to configurable sinks. This is a baseline spec of current behaviour — do not invent new requirements.
 
-- [ ] **`SK-13` (Medium)** — Run `/speckit.plan` to record the **actual** tech stack/architecture for that module (.NET 10, DI registration extension, `IBgFeature`, sinks, MCP tool service). This produces a `plan.md` that reflects reality — useful as living architecture documentation.
+- [ ] **`SK-13` (Medium)** — Run `/speckit.plan` to record the **actual** tech stack/architecture for that module (.NET 11, DI registration extension, `IBgFeature`, sinks, MCP tool service). This produces a `plan.md` that reflects reality — useful as living architecture documentation.
 
 - [ ] **`SK-14` (Low)** — Do **not** run `/speckit.implement` on the baseline spec (the code already exists). The baseline `spec.md` + `plan.md` are the deliverable. Optionally cross-link them from the module README under a "Specification" heading.
 

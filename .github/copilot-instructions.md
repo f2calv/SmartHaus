@@ -29,15 +29,13 @@ or operational procedures in tracked files or public pull requests.
 
 ## NuGet Package Holds
 
-- `Asp.Versioning.Mvc` has target-framework-specific major ceilings: retain the latest compatible
-  8.x version for `net8.0` projects and the latest compatible 10.x version for `net10.0` projects.
-  The 10.x package targets .NET 10 and must not replace the conditioned 8.x entry while SmartHaus
-  multi-targets `net8.0`.
+- `Asp.Versioning.Mvc` has a 10.x major ceiling for both `net10.0` and `net11.0` projects.
+  Its .NET 10 assets serve both targets; retain explicit conditions for each target.
 - Keep the `Asp.Versioning.Mvc` `PackageVersion` conditions in `Directory.Packages.props`. A full
   dependency update may advance each framework-compatible line independently, but must not collapse
   them into one unconditional version.
-- `Asp.Versioning.Mvc.ApiExplorer` has a 10.x major ceiling matching the server project's .NET 10
-  target. Reassess the family only when the corresponding application target framework changes.
+- `Asp.Versioning.Mvc.ApiExplorer` has a 10.x major ceiling compatible with the server project's
+  .NET 11 target. Reassess the family when its target-framework requirements change.
 
 ## Configuration File Strategy
 

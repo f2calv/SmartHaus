@@ -6,9 +6,9 @@ The integration is validated against a DoorBird D2100E and uses only the model-i
 
 ## Installation
 
-Targets .NET 8 and .NET 10.
+This checkout targets .NET 10 and .NET 11.
 
-The Release graph uses Common 5.1.0. Keep the optional storage-sink package on the same
+The Release graph uses Common 5.2.0. Keep the optional storage-sink package on the same
 SmartHaus repository release as this client.
 
 ```bash

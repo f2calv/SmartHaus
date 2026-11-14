@@ -4,7 +4,7 @@ A .NET library that integrates with a [Fronius](https://www.fronius.com) solar i
 
 ## Installation
 
-Targets .NET 8 and .NET 10.
+This checkout targets .NET 10 and .NET 11.
 
 ```bash
 dotnet add package CasCap.Api.Fronius
@@ -14,7 +14,7 @@ dotnet add package CasCap.Api.Fronius
 
 In 2.0, starting the monitor without an event sink throws `ConfigurationException` instead of
 `GenericException`. Update consumers that catch the old concrete type. The library uses Common
-5.1.0 and retains both target frameworks.
+5.2.0 and retains both target frameworks.
 
 ## Usage
 

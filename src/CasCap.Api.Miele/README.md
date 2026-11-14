@@ -1,7 +1,7 @@
 # CasCap.Api.Miele
 
 A .NET client for the Miele 3rd Party Cloud API, with appliance queries, control commands and a
-server-sent event (SSE) reader. This source-only library targets .NET 10 and is not packaged for NuGet.
+server-sent event (SSE) reader. This source-only library targets .NET 11 and is not packaged for NuGet.
 
 ## Usage
 

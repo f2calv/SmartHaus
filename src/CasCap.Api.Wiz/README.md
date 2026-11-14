@@ -4,7 +4,7 @@ A .NET library that integrates with [WiZ](https://www.wizconnected.com) smart bu
 
 ## Purpose
 
-This source-only library targets .NET 10 and is not published as a NuGet package. Discovery and
+This source-only library targets .NET 11 and is not published as a NuGet package. Discovery and
 commands need UDP access to the bulbs' LAN; routed or container networks may need an explicit
 `BindAddress` and subnet broadcast address.
 

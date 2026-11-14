@@ -1,6 +1,6 @@
 # CasCap.Api.EdgeHardware
 
-Source-only .NET 10 hardware monitoring library for edge applications. It collects NVIDIA GPU and
+Source-only .NET 11 hardware monitoring library for edge applications. It collects NVIDIA GPU and
 CPU temperature readings and provides Raspberry Pi GPIO/peripheral services.
 
 ## Usage
@@ -103,11 +103,15 @@ flowchart TD
 
 NVIDIA readings need a working driver and `nvidia-smi` accessible to the process. CPU temperature
 uses IoT thermal bindings on Linux; the Windows provider is compiled only for a Windows-targeted
-build. The default project target is `net10.0`, so do not assume Windows hardware sensor support
+build. The default project target is `net11.0`, so do not assume Windows hardware sensor support
 from that artifact. Raspberry Pi GPIO, I²C, 1-Wire and MMAL camera services require compatible
 hardware, native libraries and device permissions; they are not portable desktop implementations.
 The GPIO worker also has a fixed node-name gate in source, so feature configuration alone does
 not enable its sensor loop on an arbitrary Raspberry Pi.
+
+Linux GPIO sensors use the libgpiod v2 driver with Ubuntu's `libgpiod3` package. The controller
+factory prefers the 54-line chip, then chip zero, preserving logical pin numbering. Chip selection
+is covered with synthetic descriptors; physical GPIO behavior requires separate hardware validation.
 
 ### Pi registration
 

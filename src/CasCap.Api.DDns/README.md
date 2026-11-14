@@ -4,7 +4,7 @@ Dynamic DNS library that monitors the public IP address and automatically update
 
 ## Usage
 
-This source-only .NET 10 library is included by the SmartHaus host; it is not published as a NuGet
+This source-only .NET 11 library is included by the SmartHaus host; it is not published as a NuGet
 package. Enable `DDns` in `CasCap:FeatureConfig:EnabledFeatures` and supply the configuration below.
 It needs Azure DNS write permission, Azure authentication and the host's Redis/RedLock services.
 It modifies DNS records, so configure an appropriate test zone before enabling it.
@@ -13,7 +13,7 @@ Custom hosts register it with `services.AddDDns(configuration)` from
 `Microsoft.Extensions.DependencyInjection`, and start its [`IBgFeature`](https://github.com/f2calv/CasCap.Common/blob/main/src/CasCap.Common.Abstractions/Abstractions/IBgFeature.cs) worker through the shared
 feature runner.
 
-The leadership runner is consumed from `CasCap.Common.Caching` 5.1.0. Release builds resolve it
+The leadership runner is consumed from `CasCap.Common.Caching` 5.2.0. Release builds resolve it
 from NuGet; Debug builds use the adjacent shared-library source checkout.
 
 ## Services

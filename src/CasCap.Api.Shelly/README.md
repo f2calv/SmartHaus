@@ -1,7 +1,7 @@
 # CasCap.Api.Shelly
 
 Shelly Cloud REST API integration for .NET applications monitoring or controlling Plug S (Gen1)
-devices. This source-only library targets .NET 10 and is not published as a NuGet package.
+devices. This source-only library targets .NET 11 and is not published as a NuGet package.
 
 ## Usage
 

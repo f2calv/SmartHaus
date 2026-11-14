@@ -4,7 +4,7 @@ A .NET library that integrates with the [Sicce](https://www.sicce.com) smart wat
 
 ## Purpose
 
-This source-only library targets .NET 10 and is not published as a NuGet package.
+This source-only library targets .NET 11 and is not published as a NuGet package.
 
 ## Usage
 

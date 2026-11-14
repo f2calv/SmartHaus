@@ -4,7 +4,7 @@ A .NET client library for the [Buderus](https://www.buderus.com) KM200 heat-pump
 
 ## Installation
 
-Targets .NET 8 and .NET 10.
+This checkout targets .NET 10 and .NET 11.
 
 ```bash
 dotnet add package CasCap.Api.Buderus
@@ -14,7 +14,7 @@ dotnet add package CasCap.Api.Buderus
 
 In 2.0, starting the monitor without an event sink throws `ConfigurationException` instead of
 `GenericException`. Update consumers that catch the old concrete type. The library uses Common
-5.1.0 and retains both target frameworks.
+5.2.0 and retains both target frameworks.
 
 Datapoint read/write diagnostics omit requested IDs and values. Query and write-result contracts
 still provide their existing caller-facing context.

@@ -24,13 +24,7 @@ public abstract class TestBase : IAsyncDisposable
             .AddSingleton<IConfiguration>(configuration)
             .AddXUnitLogging(output);
 
-        var appConfigSection = configuration.GetSection(AppConfig.ConfigurationSectionName);
-        var appConfig = appConfigSection.Exists() ? appConfigSection.Get<AppConfig>() : null;
-        if (appConfig is not null)
-        {
-            services.AddCasCapConfiguration<AppConfig>();
-            services.AddKnx(configuration);
-        }
+        services.AddKnx(configuration);
 
         IHostEnvironment env = new HostingEnvironment { EnvironmentName = Environments.Development };
         services.AddSingleton(env);

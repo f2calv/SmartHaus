@@ -1,6 +1,6 @@
 # CasCap.App.Server
 
-The .NET 10 ASP.NET Core host for SmartHaus device integrations, versioned REST endpoints, SignalR
+The .NET 11 ASP.NET Core host for SmartHaus device integrations, versioned REST endpoints, SignalR
 and stateless MCP tools. Communications call an external Agent Runtime; the server does not host
 language-model agents.
 
