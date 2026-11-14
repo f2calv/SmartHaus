@@ -463,7 +463,7 @@ Real camera identifiers belong only in private configuration.
 Debug builds use adjacent project references for these repositories. Release builds resolve the
 same dependencies from NuGet, including Agent Runtime contracts and communications packages.
 
-The Release graph uses Agent Runtime 1.4.0, Signalizr 1.2.0, Azure 2.0.0 and Common 5.1.0.
+The Release graph uses Agent Runtime 1.6.0, Signalizr 1.3.0, Azure 2.1.0 and Common 5.2.0.
 The [repository dependency graph](../../docs/architecture.md#dependency-graph) shows their boundaries.
 
 ### Feature Projects

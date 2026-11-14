@@ -25,6 +25,7 @@
     <PackageReference Include="Asp.Versioning.Mvc" />
     <PackageReference Include="Knx.Falcon.Sdk" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Core" />
+    <PackageReference Include="Microsoft.AspNetCore.WebUtilities" />
     <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks.Abstractions" />
     <PackageReference Include="Tiveria.Home.Knx" />
     <PackageReference Include="SolarCalculator" />

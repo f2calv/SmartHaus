@@ -13,6 +13,10 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
   </PropertyGroup>
 
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net10.0'">
+    <LangVersion>14.0</LangVersion>
+  </PropertyGroup>
+
   <!-- Exclude test projects from XML documentation requirements -->
   <PropertyGroup Condition="$(MSBuildProjectName.Contains('Test'))">
     <GenerateDocumentationFile>false</GenerateDocumentationFile>

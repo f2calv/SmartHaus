@@ -8,7 +8,7 @@ They persist `DoorBirdEvent` data and captured images according to the feature's
 This checkout targets .NET 10 and .NET 11; includes the core DoorBird library.
 
 Use the same repository version for the client and sinks. Release dependencies use Common
-5.1.0 and Azure authentication/storage 2.0.0.
+5.2.0 and Azure authentication/storage 2.1.0.
 
 ```bash
 dotnet add package CasCap.Api.DoorBird.Sinks
