@@ -80,7 +80,7 @@ services:
       - ./.docker/otelcol.yaml:/etc/otelcol/config.yaml:ro
   azurite:
     # Upstream publishes no :3 major alias; retain this verified release tag.
-    image: mcr.microsoft.com/azure-storage/azurite:3.37.0
+    image: mcr.microsoft.com/azure-storage/azurite:3.38.0
     restart: unless-stopped
     command: azurite --skipApiVersionCheck --location /data --blobHost 0.0.0.0 --queueHost 0.0.0.0 --tableHost 0.0.0.0
     ports:
