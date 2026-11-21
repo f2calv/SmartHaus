@@ -1,9 +1,10 @@
-﻿namespace CasCap.Tests;
+namespace CasCap.Tests;
 
 /// <summary>
 /// Integration tests for <see cref="DoorBirdClientService"/> against a real DoorBird device.
 /// </summary>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class DoorBirdClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]

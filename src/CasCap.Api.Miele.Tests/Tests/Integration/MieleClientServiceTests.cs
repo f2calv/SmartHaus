@@ -8,6 +8,7 @@ namespace CasCap.Tests;
 /// Tests will fail if the token is expired or invalid.
 /// </remarks>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class MieleClientServiceTests(ITestOutputHelper output)
 {
     private const string MieleBaseAddress = "https://api.mcs3.miele.com/v1/";

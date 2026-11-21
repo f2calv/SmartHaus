@@ -43,7 +43,8 @@ jobs:
     with:
       version: ${{ needs.versioning.outputs.version }}
       solution-name: SmartHaus.Release.slnx
-      dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--ignore-exit-code", "8"]'
+      # TODO: Run local integrations after the in-process server fixture starts reliably.
+      dotnet-test-args: '["--filter-not-trait", "Category=Integration", "--filter-not-trait", "Category=Live", "--ignore-exit-code", "8"]'
 
   release:
     needs: [lint, helm, versioning, build]

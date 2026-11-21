@@ -9,6 +9,7 @@ namespace CasCap.Tests;
 /// Tests are skipped by default to avoid failures in CI environments without hardware access.
 /// </remarks>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class BuderusKm200ClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     #region Read datapoints

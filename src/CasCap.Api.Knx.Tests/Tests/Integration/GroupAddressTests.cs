@@ -4,6 +4,7 @@ namespace CasCap.Tests;
 /// Integration tests for KNX group address parsing and lookup.
 /// </summary>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class GroupAddressTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]

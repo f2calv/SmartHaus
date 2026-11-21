@@ -5,10 +5,10 @@ using System.Net.Http.Json;
 namespace CasCap.Tests.Api;
 
 /// <summary>Integration tests for Basic authentication on the MCP endpoint.</summary>
+[Trait("Category", "Integration")]
 public sealed class McpAuthenticationTests
 {
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task Mcp_WithAnonymousClient_Returns401()
     {
         await using var factory = new StrictAuthCasCapAppWebApplicationFactory();
@@ -20,7 +20,6 @@ public sealed class McpAuthenticationTests
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task Mcp_WithAuthorizedClient_ReachesProtocolEndpoint()
     {
         await using var factory = new StrictAuthCasCapAppWebApplicationFactory();

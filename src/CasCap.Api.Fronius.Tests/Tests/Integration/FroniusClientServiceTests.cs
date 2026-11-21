@@ -3,6 +3,8 @@ namespace CasCap.Tests;
 /// <summary>
 /// Integration tests for <see cref="FroniusClientService"/> against a real Fronius inverter.
 /// </summary>
+[Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBase(output)
 {
     [Theory]
@@ -14,7 +16,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     [InlineData("solar_api/v1/GetActiveDeviceInfo.cgi", typeof(ApiWrapper<ActiveDeviceInfoData>))]
     [InlineData("solar_api/v1/GetMeterRealtimeData.cgi?Scope=System", typeof(ApiWrapper<Dictionary<string, MeterRealtimeData>>))]
     [InlineData("solar_api/v1/GetStorageRealtimeData.cgi?Scope=System", typeof(ApiWrapper<Dictionary<string, StorageRealtimeData>>))]
-    [Trait("Category", "Integration")]
     public async Task ApiPayloadMatchesDtoContract(string requestUri, Type dtoType)
     {
         var rawResponse = await svc.Client.GetStringAsync(requestUri, TestContext.Current.CancellationToken);
@@ -24,7 +25,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetPowerFlowRealtimeData_ReturnsData()
     {
         var result = await svc.GetPowerFlowRealtimeData();
@@ -43,7 +43,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetInverterRealtimeData_CommonInverterData_ReturnsData()
     {
         var result = await svc.GetInverterRealtimeData("CommonInverterData");
@@ -59,7 +58,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetInverterInfo_ReturnsDeviceInfo()
     {
         var result = await svc.GetInverterInfo();
@@ -73,7 +71,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetActiveDeviceInfo_ReturnsDevices()
     {
         var result = await svc.GetActiveDeviceInfo();
@@ -85,7 +82,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact(Skip = "planned in 1.13")]
-    [Trait("Category", "Integration")]
     public async Task GetMeterRealtimeData_ReturnsData()
     {
         var result = await svc.GetMeterRealtimeData();
@@ -98,7 +94,6 @@ public sealed class FroniusClientServiceTests(ITestOutputHelper output) : TestBa
     }
 
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetStorageRealtimeData_ReturnsData()
     {
         var result = await svc.GetStorageRealtimeData();

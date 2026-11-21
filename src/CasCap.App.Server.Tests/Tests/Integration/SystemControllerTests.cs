@@ -18,6 +18,7 @@ namespace CasCap.Tests.Api;
 /// The explicit-credentials tests exercise the real Basic authentication handler
 /// by temporarily restoring credential checking.
 /// </remarks>
+[Trait("Category", "Integration")]
 public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
@@ -25,7 +26,6 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     /// called with the authorized client.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetSystem_WithAuthorizedClient_Returns200AndApplicationMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
@@ -46,7 +46,6 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     /// The metadata returned by <c>GET /api/system</c> matches the registered singleton.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetSystem_ReturnsRegisteredApplicationMetadata()
     {
         var response = await AuthorizedClient.GetAsync("/api/system", TestContext.Current.CancellationToken);
@@ -78,7 +77,6 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     /// is tested via a separate, stricter factory subclass.
     /// </remarks>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetSystem_WithWrongCredentials_Returns401()
     {
         await using var strictFactory = new StrictAuthCasCapAppWebApplicationFactory();
@@ -98,7 +96,6 @@ public class SystemControllerTests(ITestOutputHelper output) : WebApiTestBase
     /// Verifies that the Basic authentication handler accepts correct credentials.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task GetSystem_WithCorrectCredentials_Returns200()
     {
         await using var strictFactory = new StrictAuthCasCapAppWebApplicationFactory();

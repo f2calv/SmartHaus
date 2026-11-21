@@ -15,6 +15,7 @@ namespace CasCap.Tests.Api;
 /// throwing an unhandled exception.
 /// </para>
 /// </remarks>
+[Trait("Category", "Integration")]
 public class HealthTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
@@ -22,7 +23,6 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     /// dependencies (Redis, Azure Storage) are unavailable.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task HealthEndpoint_Responds()
     {
         var response = await AnonymousClient.GetAsync("/healthz", TestContext.Current.CancellationToken);
@@ -41,7 +41,6 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     /// The liveness probe endpoint (<c>/healthz/live</c>) should always respond.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task LivenessProbe_Responds()
     {
         var response = await AnonymousClient.GetAsync("/healthz/live", TestContext.Current.CancellationToken);
@@ -57,7 +56,6 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     /// The readiness probe endpoint (<c>/healthz/ready</c>) should always respond.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public async Task ReadinessProbe_Responds()
     {
         var response = await AnonymousClient.GetAsync("/healthz/ready", TestContext.Current.CancellationToken);
@@ -77,7 +75,6 @@ public class HealthTests(ITestOutputHelper output) : WebApiTestBase
     [InlineData("/healthz/live")]
     [InlineData("/healthz/ready")]
     [InlineData("/healthz/startup")]
-    [Trait("Category", "Integration")]
     public async Task AllProbeEndpoints_AllowAnonymous(string path)
     {
         // Use an anonymous client (no auth header) – probes must be AllowAnonymous

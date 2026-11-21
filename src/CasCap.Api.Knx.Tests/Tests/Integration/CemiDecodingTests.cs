@@ -9,6 +9,7 @@ namespace CasCap.Tests;
 /// Reads CEMI data from Azure Table Storage via <see cref="KnxSinkAzureTablesCemiService"/>.
 /// </summary>
 [Trait("Category", "Integration")]
+[Trait("Category", "Live")]
 public class CemiDecodingTests(ITestOutputHelper output) : TestBase(output)
 {
     [Fact]

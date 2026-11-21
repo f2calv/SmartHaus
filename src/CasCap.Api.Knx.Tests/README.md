@@ -36,7 +36,7 @@ interfaces, send physical telegrams, exercise Falcon disposal bounds or prove li
 | --- | --- | ---: |
 | `GroupAddressTests.ParseGroupAddressInt` | unfinished | 1 |
 
-Other integration cases do not automatically skip when configuration or storage is missing.
+Live cases skip unless `SMARTHAUS_RUN_LIVE_TESTS=true`; opting in still requires the applicable configuration and storage.
 
 ## Test Layout
 
@@ -68,11 +68,11 @@ Older tests live at the project root; new leadership tests use `Tests/Unit/`.
 
 ```bash
 # Offline broker and shutter cases
-dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -c Debug --filter-not-trait "Category=Integration"
+dotnet test --project src/CasCap.Api.Knx.Tests/CasCap.Api.Knx.Tests.csproj -c Debug --filter-not-trait Category=Live
 ```
 
-Use the .NET 11 SDK, xUnit v3 and Microsoft.Testing.Platform from the repository root. Remove the filter
-only with approval and the required ETS/storage setup.
+Use the .NET 11 SDK, xUnit v3 and Microsoft.Testing.Platform from the repository root. Select
+`Category=Live` and opt in only with approval and the required ETS/storage setup.
 
 ## Dependencies
 

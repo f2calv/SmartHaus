@@ -22,13 +22,13 @@ namespace CasCap.Tests.Api;
 ///   <item>Hosted execution is removed by the factory; tests inspect registrations only.</item>
 /// </list>
 /// </remarks>
+[Trait("Category", "Integration")]
 public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiTestBase
 {
     /// <summary>
     /// The synthetic Test feature must not register domain background features.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public void TestFeature_RegistersOnlySharedCacheExpiry()
     {
         var features = Services
@@ -49,7 +49,6 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
     /// (Knx, Buderus, DoorBird, Fronius, Sicce, RaspberryPi…).
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public void HardwareFeatures_AreNotRegistered_WhenEnabledFeaturesIsApiOnly()
     {
         var features = Services
@@ -85,7 +84,6 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
     /// "Comms") that is registered unconditionally but only started when its name is active.
     /// </summary>
     [Fact]
-    [Trait("Category", "Integration")]
     public void RegisteredFeatures_HaveCompatibleFeatureName_WithCurrentEnabledFeatures()
     {
         var featureFlagConfig = Services.GetRequiredService<IOptions<FeatureFlagConfig>>().Value;
@@ -118,7 +116,6 @@ public class FeatureServiceRegistrationTests(ITestOutputHelper output) : WebApiT
     /// with any feature you want to exercise.
     /// </remarks>
     [Fact(Skip = "Requires KNX infrastructure (bus + Azure Storage) for KnxGroupAddressLookupService")]
-    [Trait("Category", "Integration")]
     public async Task KnxFeatures_AreRegistered_WhenKnxFlagIsSet()
     {
         await using var knxFactory = new KnxModeCasCapAppWebApplicationFactory();

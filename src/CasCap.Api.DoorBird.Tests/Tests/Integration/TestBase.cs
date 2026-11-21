@@ -12,6 +12,8 @@ public abstract class TestBase : IAsyncDisposable
 
     protected TestBase(ITestOutputHelper output)
     {
+        Assert.SkipUnless(Environment.GetEnvironmentVariable("SMARTHAUS_RUN_LIVE_TESTS") == "true",
+            "Set SMARTHAUS_RUN_LIVE_TESTS=true only for approved hardware.");
         _output = output;
 
         var configuration = _configuration.AddDeviceTestConfiguration(typeof(TestBase).Assembly);
