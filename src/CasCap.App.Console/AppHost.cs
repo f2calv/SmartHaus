@@ -1,3 +1,4 @@
+using CasCap.Common.Logging;
 using System.Reflection;
 
 namespace CasCap.App.Console;

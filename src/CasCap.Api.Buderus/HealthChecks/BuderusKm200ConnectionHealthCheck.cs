@@ -1,4 +1,4 @@
-using CasCap.Common.Diagnostics.HealthChecks;
+using CasCap.Common.HealthChecks;
 
 namespace CasCap.HealthChecks;
 

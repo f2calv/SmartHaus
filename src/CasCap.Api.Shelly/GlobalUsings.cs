@@ -1,7 +1,6 @@
 global using Asp.Versioning;
 global using CasCap.Abstractions;
 global using CasCap.Common.Abstractions;
-global using CasCap.Common.Diagnostics.HealthChecks.Abstractions;
 global using CasCap.Common.Exceptions;
 global using CasCap.Common.Extensions;
 global using CasCap.HealthChecks;
