@@ -31,13 +31,13 @@ Other live cases do not automatically skip when hardware is unavailable.
 ## Test Layout
 
 ```text
-CasCap.Api.Fronius.Tests/
-├── FroniusClientServiceTests.cs
-├── JsonContractAuditor.cs
-├── TestBase.cs
-└── Tests/
-    └── Unit/
-        └── UnitValueTests.cs
+Tests/
+├── Integration/
+│   ├── FroniusClientServiceTests.cs
+│   ├── JsonContractAuditor.cs
+│   └── TestBase.cs
+└── Unit/
+    └── UnitValueTests.cs
 ```
 
 ## Prerequisites

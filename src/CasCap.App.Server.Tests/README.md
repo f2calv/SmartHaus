@@ -76,11 +76,6 @@ dotnet test --project src/CasCap.App.Server.Tests/CasCap.App.Server.Tests.csproj
 
 ```text
 CasCap.App.Server.Tests/
-├── Api/
-│   ├── FeatureServiceRegistrationTests.cs
-│   ├── HealthTests.cs
-│   ├── McpAuthenticationTests.cs
-│   └── SystemControllerTests.cs
 ├── Infrastructure/
 │   ├── ApiContractProbeController.cs
 │   ├── ApiContractWebApplicationFactory.cs
@@ -88,15 +83,19 @@ CasCap.App.Server.Tests/
 │   ├── DeviceApiWebApplicationFactory.cs
 │   ├── MieleApiWebApplicationFactory.cs
 │   ├── MieleHttpHandler.cs
-│   ├── StrictAuthCasCapAppWebApplicationFactory.cs
-│   └── WebApiTestBase.cs
+│   └── StrictAuthCasCapAppWebApplicationFactory.cs
 ├── Tests/
 │   ├── Integration/
 │   │   ├── DeviceApiContractTests.cs
+│   │   ├── FeatureServiceRegistrationTests.cs
+│   │   ├── HealthTests.cs
 │   │   ├── HostStartupConfigurationTests.cs
+│   │   ├── McpAuthenticationTests.cs
 │   │   ├── MieleApiContractTests.cs
 │   │   ├── MieleMcpContractTests.cs
+│   │   ├── SystemControllerTests.cs
 │   │   ├── UbiquitiApiContractTests.cs
+│   │   ├── WebApiTestBase.cs
 │   │   └── WebApiContractTests.cs
 │   └── Unit/
 │       ├── BuderusQueryServiceTests.cs

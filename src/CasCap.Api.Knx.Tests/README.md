@@ -41,16 +41,16 @@ Other integration cases do not automatically skip when configuration or storage 
 ## Test Layout
 
 ```text
-CasCap.Api.Knx.Tests/
-├── ChannelKnxTelegramBrokerTests.cs
-├── CemiDecodingTests.cs
-├── GroupAddressTests.cs
-├── KnxShutterMovementTests.cs
-├── TestBase.cs
-└── Tests/
-    └── Unit/
-        ├── KnxLeadershipTests.cs
-        └── KnxTestClock.cs
+Tests/
+├── Integration/
+│   ├── CemiDecodingTests.cs
+│   ├── GroupAddressTests.cs
+│   └── TestBase.cs
+└── Unit/
+    ├── ChannelKnxTelegramBrokerTests.cs
+    ├── KnxLeadershipTests.cs
+    ├── KnxShutterMovementTests.cs
+    └── KnxTestClock.cs
 ```
 
 Older tests live at the project root; new leadership tests use `Tests/Unit/`.

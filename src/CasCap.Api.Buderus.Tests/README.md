@@ -29,12 +29,11 @@ The remaining integration tests are not automatically skipped when credentials a
 ## Test Layout
 
 ```text
-CasCap.Api.Buderus.Tests/
-├── BuderusKm200ClientServiceTests.cs
-└── TestBase.cs
+Tests/
+└── Integration/
+    ├── BuderusKm200ClientServiceTests.cs
+    └── TestBase.cs
 ```
-
-This project currently keeps its tests at the project root rather than under `Tests/`.
 
 ## Prerequisites
 

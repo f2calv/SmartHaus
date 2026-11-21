@@ -27,19 +27,16 @@ Supplying credentials does not remove these explicit `[Fact(Skip = ...)]` attrib
 ## Test Layout
 
 ```text
-CasCap.Api.Miele.Tests/
-├── MieleClientServiceTests.cs
-└── TestBase.cs
+Tests/
+└── Integration/
+    └── MieleClientServiceTests.cs
 ```
-
-Tests currently live at the project root rather than under `Tests/`.
 
 ## Prerequisites
 
 - A Miele account with at least one registered appliance.
 - Standard configuration with `CasCap:MieleConfig:OAuthToken` and the required sink options.
 - Credentials supplied by local/user-secret/environment providers, never tracked JSON.
-- `TestBase` loads standard configuration and optional Key Vault through `AzureAuthConfig`.
 
 ## Running the tests
 
